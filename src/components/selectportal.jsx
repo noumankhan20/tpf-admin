@@ -6,13 +6,21 @@ import { LogOut, TrendingUp, FileText } from 'lucide-react';
 export default function SelectPanel() {
   const [selectedPanel, setSelectedPanel] = useState(null);
   const [isLoaded, setIsLoaded] = useState(false);
-
+  const [currentTime, setCurrentTime] = useState(new Date());
   useEffect(() => {
-    // Trigger animations after component mounts
     const timer = setTimeout(() => {
       setIsLoaded(true);
     }, 80);
     return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    // Update time every second
+    const interval = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+
+    return () => clearInterval(interval);
   }, []);
 
   const handlePanelSelect = (panelType) => {

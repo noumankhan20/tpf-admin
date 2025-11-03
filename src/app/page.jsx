@@ -117,13 +117,6 @@ export default function AdminLogin() {
           </div>
         </form>
       </div>
-
-      {/* Footer
-      <div className="absolute bottom-4 left-0 right-0 text-center">
-        <p className="text-gray-500 text-xs">
-          © 2024 Your Mac Name. All rights reserved.
-        </p>
-      </div> */}
     </div>
   );
 }
