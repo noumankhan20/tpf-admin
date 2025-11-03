@@ -11,7 +11,7 @@ export default function SelectPanel() {
     // Trigger animations after component mounts
     const timer = setTimeout(() => {
       setIsLoaded(true);
-    }, 100);
+    }, 80);
     return () => clearTimeout(timer);
   }, []);
 
