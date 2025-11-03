@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Eye, EyeOff, User, Lock } from 'lucide-react';
-
+import {useRouter} from 'next/navigation';
 export default function AdminLogin() {
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
@@ -23,7 +23,7 @@ export default function AdminLogin() {
     // Handle login logic here
     console.log('Login attempt:', formData);
   };
-
+  const router = useRouter();
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-emerald-900 flex items-center justify-center p-4">
       <div className="w-full max-w-md bg-gray-800/90 backdrop-blur-sm rounded-2xl shadow-2xl border border-gray-700/50 p-8">
@@ -99,6 +99,7 @@ export default function AdminLogin() {
 
           {/* Login Button */}
           <button
+            onClick={() => router.push('/select-portal')}
             type="submit"
             className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-200 transform hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 focus:ring-offset-gray-900"
           >
