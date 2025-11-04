@@ -1,5 +1,5 @@
 import React from 'react'
-import SelectPanel from '@/components/selectportal'
+import SelectPanel from '@/components/Login/selectportal'
 const page = () => {
   return (
     <div>
