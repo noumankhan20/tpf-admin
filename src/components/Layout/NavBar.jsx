@@ -17,40 +17,6 @@ export default function Navbar({ onMenuClick }) {
                     <Menu size={20} />
                 </button>
 
-                {/* Search Bar */}
-                <div className={`${isSearchExpanded ? 'absolute inset-x-0 px-4 bg-white border-b border-gray-200' : 'relative'} 
-                    transition-all duration-200 mx-auto sm:mx-0 sm:w-96`}>
-                    
-                    {!isSearchExpanded && (
-                        <button
-                            onClick={() => setIsSearchExpanded(true)}
-                            className="sm:hidden text-gray-700 hover:text-gray-900 p-2 rounded-lg hover:bg-gray-100"
-                        >
-                            <Search size={20} />
-                        </button>
-                    )}
-
-                    <div className={`relative ${isSearchExpanded ? 'flex items-center py-3' : 'hidden sm:block'}`}>
-                        <div className="relative flex-1">
-                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
-                            <input
-                                type="text"
-                                placeholder="Search..."
-                                className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 text-gray-900 placeholder-gray-400 
-                                    focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent rounded-lg"
-                            />
-                        </div>
-
-                        {isSearchExpanded && (
-                            <button
-                                onClick={() => setIsSearchExpanded(false)}
-                                className="ml-3 text-gray-600 hover:text-gray-900 font-medium"
-                            >
-                                Cancel
-                            </button>
-                        )}
-                    </div>
-                </div>
 
                 {/* Right Section */}
                 <div className="flex items-center space-x-4">
