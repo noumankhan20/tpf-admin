@@ -212,7 +212,7 @@ export default function SelectPanel() {
             onClick={handleContinue}
             className="group relative bg-emerald-500 hover:bg-emerald-600 text-white font-semibold px-8 py-4 rounded-xl transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 focus:ring-offset-gray-900 shadow-lg shadow-emerald-500/30 hover:shadow-xl hover:shadow-emerald-500/40 overflow-hidden"
           >
-            <span className="relative z-10 flex items-center space-x-2">
+            <span className="relative z-10 flex items-center space-x-2 cursor-pointer">
               <span className="text-lg">Continue to Dashboard</span>
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform duration-300" />
             </span>
