@@ -284,7 +284,7 @@ const AdminManagement = () => {
                                                 <td className="py-4 px-6">
                                                     <span className={`px-3 py-1 rounded-full text-sm font-medium ${admin.role === 'Admin'
                                                         ? 'bg-blue-100 text-blue-800'
-                                                        : 'bg-purple-100 text-purple-800'
+                                                        : 'bg-purple-100 text-blue-800'
                                                         }`}>
                                                         {admin.role}
                                                     </span>
@@ -329,7 +329,7 @@ const AdminManagement = () => {
                                 <div key={admin.id} className="p-6 border-b border-gray-100 last:border-b-0">
                                     <div className="flex items-start justify-between mb-3">
                                         <div className="flex items-center gap-3">
-                                            <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-medium">
+                                            <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white font-medium">
                                                 {admin.name.split(' ').map(n => n[0]).join('')}
                                             </div>
                                             <div>
@@ -346,7 +346,7 @@ const AdminManagement = () => {
                                         <div className="flex items-center gap-2">
                                             <span className={`px-2 py-1 rounded-full text-xs font-medium ${admin.role === 'Admin'
                                                 ? 'bg-blue-100 text-blue-800'
-                                                : 'bg-purple-100 text-purple-800'
+                                                : 'bg-purple-100 text-black-800'
                                                 }`}>
                                                 {admin.role}
                                             </span>
