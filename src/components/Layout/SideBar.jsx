@@ -11,7 +11,8 @@ import {
     LogOut,
     X,
     ChevronLeft,
-    ChevronRight
+    ChevronRight,
+    UserPlus,
 } from 'lucide-react';
 
 const navLinks = [
@@ -20,15 +21,17 @@ const navLinks = [
     { icon: Users, label: "Donors", path: "/donors" },
     { icon: FileText, label: "Reports", path: "/reports" },
     { icon: Settings, label: "Settings", path: "/settings" },
+    { icon: UserPlus, label: "Add Admin", path: "/add-admin" },
 ];
 
-export default function Sidebar({ 
-    isCollapsed, 
-    setIsCollapsed, 
-    isMobileOpen, 
+export default function Sidebar({
+    isCollapsed,
+    setIsCollapsed,
+    isMobileOpen,
     setIsMobileOpen,
     activeTab = "Dashboard",
-    onTabChange 
+    onTabChange,
+    onAddAdmin,
 }) {
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -47,7 +50,7 @@ export default function Sidebar({
     const handleTabChange = (tabLabel) => {
         onTabChange(tabLabel);
         setIsMobileOpen(false);
-        
+
         // Update URL with tab parameter
         const tabParam = tabLabel.toLowerCase();
         router.push(`?tab=${tabParam}`, { scroll: false });
@@ -65,7 +68,7 @@ export default function Sidebar({
             {/* Sidebar */}
             <aside
                 className={`fixed h-full z-50 transition-all duration-300 bg-white border-r border-gray-200
-                    lg:relative lg:left-0 
+                    lg:relative lg:left-0 cursor-pointer
                     ${isMobileOpen ? 'left-0' : '-left-full'} 
                     ${isCollapsed ? 'lg:w-20' : 'lg:w-64'} 
                     w-64 flex flex-col shadow-lg lg:shadow-none`}
@@ -107,14 +110,14 @@ export default function Sidebar({
                         {navLinks.map((link) => {
                             const Icon = link.icon;
                             const isActive = activeTab === link.label;
-                            
+
                             return (
                                 <li key={link.label}>
                                     <button
                                         onClick={() => handleTabChange(link.label)}
                                         className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors
-                                            ${isActive 
-                                                ? 'bg-blue-50 text-blue-600' 
+                                            ${isActive
+                                                ? 'bg-blue-50 text-blue-600'
                                                 : 'text-gray-700 hover:bg-gray-50'
                                             }`}
                                     >
