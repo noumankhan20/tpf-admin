@@ -21,7 +21,7 @@ const navLinks = [
     { icon: Users, label: "Donors", path: "/donors" },
     { icon: FileText, label: "Reports", path: "/reports" },
     { icon: Settings, label: "Settings", path: "/settings" },
-    { icon: UserPlus, label: "Add Admin", path: "/add-admin" },
+    { icon: UserPlus, label: "Add-Admin", path: "/add-admin" },
 ];
 
 export default function Sidebar({
