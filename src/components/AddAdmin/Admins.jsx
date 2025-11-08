@@ -345,7 +345,7 @@ const AdminManagement = () => {
                                             <div className="flex items-center gap-2">
                                                 <span className={`px-2 py-1 rounded-full text-xs font-medium ${admin.role === 'Admin'
                                                     ? 'bg-blue-100 text-blue-800'
-                                                    : 'bg-purple-100 text-purple-800'
+                                                    : 'bg-purple-100 text-black-800'
                                                     }`}>
                                                     {admin.role}
                                                 </span>
