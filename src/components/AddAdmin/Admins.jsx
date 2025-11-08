@@ -68,6 +68,8 @@ const AdminManagement = () => {
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
     const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
     const [activeTab, setActiveTab] = useState("AdminManagement");
+    const [showRolesDropdown, setShowRolesDropdown] = useState(false);
+
 
     // Close modal on escape key
     useEffect(() => {
@@ -281,7 +283,7 @@ const AdminManagement = () => {
                                                 <td className="py-4 px-3">
                                                     <span className={`px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap inline-block ${admin.role === 'Admin'
                                                         ? 'bg-blue-100 text-blue-800'
-                                                        : 'bg-purple-100 text-purple-800'
+                                                        : 'bg-purple-100 text-black-800'
                                                         }`}>
                                                         {admin.role}
                                                     </span>
@@ -467,29 +469,59 @@ const AdminManagement = () => {
                                     </div>
                                 </div>
 
-                                {/* Role Selection */}
-                                <div>
+                                {/* Role Selection (Multi-option Dropdown) */}
+                                <div className="relative">
                                     <label className="block text-sm font-medium text-gray-700 mb-3">
                                         Role Selection
                                     </label>
+
                                     <div className="relative">
-                                        <select
-                                            multiple
-                                            value={formData.role}
-                                            onChange={(e) => {
-                                                const selected = Array.from(e.target.selectedOptions, (option) => option.value);
-                                                setFormData({ ...formData, role: selected });
-                                            }}
-                                            className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 cursor-pointer"
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowRolesDropdown(!showRolesDropdown)}
+                                            className="w-full flex justify-between items-center border border-gray-300 rounded-xl px-4 py-3 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200"
                                         >
-                                            <option value="Admin">Admin</option>
-                                            <option value="CMS Admin">CMS Admin</option>
-                                            <option value="Volunteer Manager">Volunteer Manager</option>
-                                            <option value="Campaign Manager">Campaign Manager</option>
-                                        </select>
-                                        <p className="text-xs text-gray-500 mt-2">
-                                            Hold <kbd className="px-1 bg-gray-100 rounded">Ctrl</kbd> (Windows) or <kbd className="px-1 bg-gray-100 rounded">Cmd</kbd> (Mac) to select multiple roles.
-                                        </p>
+                                            {formData.role.length > 0
+                                                ? formData.role.join(", ")
+                                                : "Select roles..."}
+                                            <ChevronDown className="w-5 h-5 text-gray-400 ml-2" />
+                                        </button>
+
+                                        {showRolesDropdown && (
+                                            <div className="absolute z-10 mt-2 w-full bg-white border border-gray-200 rounded-xl shadow-lg p-3 max-h-60 overflow-y-auto">
+                                                {[
+                                                    "Admin",
+                                                    "CMS Admin",
+                                                    "Volunteer Manager",
+                                                    "Campaign Manager",
+                                                ].map((role) => (
+                                                    <label
+                                                        key={role}
+                                                        className="flex items-center space-x-2 px-3 py-2 hover:bg-blue-50 rounded-lg cursor-pointer transition-all duration-200"
+                                                    >
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={formData.role.includes(role)}
+                                                            onChange={() => {
+                                                                if (formData.role.includes(role)) {
+                                                                    setFormData({
+                                                                        ...formData,
+                                                                        role: formData.role.filter((r) => r !== role),
+                                                                    });
+                                                                } else {
+                                                                    setFormData({
+                                                                        ...formData,
+                                                                        role: [...formData.role, role],
+                                                                    });
+                                                                }
+                                                            }}
+                                                            className="text-blue-600 focus:ring-blue-500 rounded"
+                                                        />
+                                                        <span className="text-gray-800 text-sm">{role}</span>
+                                                    </label>
+                                                ))}
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
 
