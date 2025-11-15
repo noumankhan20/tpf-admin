@@ -26,7 +26,7 @@ export default function SelectPanel() {
     if (panelType === 'main-admin') {
       router.push('/home?tab=dashboard');
     } else if (panelType === 'cms-admin') {
-      router.push('/cmsadmin');
+      router.push('/cms-admin/hero-section');
     }
   };
 
@@ -35,7 +35,7 @@ export default function SelectPanel() {
     if (selectedPanel === 'main-admin') {
       router.push('/home?tab=dashboard');
     } else if (selectedPanel === 'cms-admin') {
-      router.push('/cmsadmin');
+      router.push('/cms-admin/hero-section');
     }
   };
 
