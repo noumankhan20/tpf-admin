@@ -1,14 +1,14 @@
 "use client";
 import React from "react";
 import {
-  Home, Heart, DollarSign, Rss, Calendar,
+  Home, Heart, IndianRupee, Rss, Calendar,
   Users, Award, MessageSquare, Flag, FileText
 } from "lucide-react";
 
 const menuItems = [
   { id: 'hero', label: 'Hero Section', icon: Home },
   { id: 'stories', label: 'Impact Stories', icon: Heart },
-  { id: 'fundraising', label: 'Fundraising Now', icon: DollarSign },
+  { id: 'fundraising', label: 'Fundraising Now', icon: IndianRupee },
   { id: 'feed', label: 'Tailored Feed', icon: Rss },
   { id: 'giving', label: 'Start Giving Daily', icon: Calendar },
   { id: 'communities', label: 'Communities', icon: Users },
