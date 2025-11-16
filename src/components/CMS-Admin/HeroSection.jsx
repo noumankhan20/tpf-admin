@@ -9,20 +9,9 @@ import {
     Trash2,
     Search,
     Menu,
-    X,
-    Bell,
-    ChevronDown,
-    Heart,
-    DollarSign,
-    Rss,
-    Calendar,
-    Users,
-    Award,
-    MessageSquare,
-    Flag,
-    FileText,
     ImageIcon,
 } from "lucide-react";
+import Sidebar from "../Layout/CMSSideBar";
 
 export default function CMSAdminPanel() {
     // SIDEBAR STATE
@@ -30,7 +19,7 @@ export default function CMSAdminPanel() {
     const [activeSection, setActiveSection] = useState("hero");
 
     // HERO PAGE STATES
-    const [viewMode, setViewMode] = useState("list"); // 'list' | 'edit'
+    const [viewMode, setViewMode] = useState("list");
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedHero, setSelectedHero] = useState(null);
 
@@ -68,20 +57,6 @@ export default function CMSAdminPanel() {
         },
     ]);
 
-    const menuItems = [
-        { id: "hero", label: "Hero Section", icon: Home },
-        { id: "stories", label: "Impact Stories", icon: Heart },
-        { id: "fundraising", label: "Fundraising Now", icon: DollarSign },
-        { id: "feed", label: "Tailored Feed", icon: Rss },
-        { id: "giving", label: "Start Giving Daily", icon: Calendar },
-        { id: "communities", label: "Communities", icon: Users },
-        { id: "trusted", label: "Trusted By", icon: Award },
-        { id: "influencer", label: "Influencer Section", icon: MessageSquare },
-        { id: "footer", label: "Before Footer", icon: Flag },
-        { id: "audit", label: "Audit Logs", icon: FileText },
-    ];
-
-    // HANDLE IMAGE UPLOAD (EDIT FORM)
     const handleImageUpload = (e) => {
         const file = e.target.files[0];
         if (!file) return;
@@ -97,7 +72,6 @@ export default function CMSAdminPanel() {
         reader.readAsDataURL(file);
     };
 
-    // EDIT BUTTON → OPEN EDIT FORM
     const handleEditHero = (hero) => {
         setSelectedHero(hero);
         setHeroForm({
@@ -111,7 +85,6 @@ export default function CMSAdminPanel() {
         setViewMode("edit");
     };
 
-    // SAVE (UI ONLY)
     const handleSave = () => {
         alert("Changes saved (UI only – connect API later).");
         setViewMode("list");
@@ -119,7 +92,6 @@ export default function CMSAdminPanel() {
         setHeroForm(emptyHeroForm);
     };
 
-    // CANCEL → BACK TO LIST
     const handleCancel = () => {
         setViewMode("list");
         setSelectedHero(null);
@@ -132,100 +104,34 @@ export default function CMSAdminPanel() {
         }
     };
 
-    const closeSidebarOnMobile = () => {
-        if (typeof window !== "undefined" && window.innerWidth < 768) {
-            setSidebarOpen(false);
-        }
-    };
-
     const filteredHeros = existingHeros.filter((hero) =>
         hero.title.toLowerCase().includes(searchQuery.toLowerCase().trim())
     );
 
     return (
         <div className="flex h-screen bg-[#F8FAFC] overflow-hidden">
-            {/* MOBILE OVERLAY */}
-            {sidebarOpen && (
-                <div
-                    className="fixed inset-0 bg-black/50 z-40 md:hidden"
-                    onClick={() => setSidebarOpen(false)}
-                />
-            )}
-
-            {/* SIDEBAR */}
-            <aside
-                className={`
-        fixed md:static inset-y-0 left-0 z-50
-        w-64 bg-[#0D1B1E] text-white
-        transform transition-transform duration-300 ease-in-out
-        ${sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
-        overflow-y-auto md:overflow-visible
-      `}
-            >
-                <div className="p-6">
-                    {/* LOGO & CLOSE BUTTON */}
-                    <div className="flex items-center justify-between mb-8">
-                        <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 bg-[#3B82F6] rounded-lg flex items-center justify-center">
-                                <span className="text-white font-bold text-lg">C</span>
-                            </div>
-                            <span className="font-bold text-lg">Content Studio</span>
-                        </div>
-                        <button
-                            onClick={() => setSidebarOpen(false)}
-                            className="md:hidden p-1 hover:bg-white/10 rounded"
-                        >
-                            <X size={20} />
-                        </button>
-                    </div>
-
-                    <p className="text-[#94A3B8] text-xs uppercase tracking-wider mb-4">
-                        Website Sections
-                    </p>
-
-                    {/* MENU ITEMS */}
-                    <nav className="space-y-1">
-                        {menuItems.map((item) => {
-                            const Icon = item.icon;
-                            const isActive = activeSection === item.id;
-                            return (
-                                <button
-                                    key={item.id}
-                                    onClick={() => {
-                                        setActiveSection(item.id);
-                                        setViewMode("list");
-                                        closeSidebarOnMobile();
-                                    }}
-                                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${isActive
-                                            ? "bg-[#1E293B] border-l-4 border-[#3B82F6] font-semibold"
-                                            : "hover:bg-[#1E293B]/50 border-l-4 border-transparent"
-                                        }`}
-                                >
-                                    <Icon
-                                        size={20}
-                                        className={isActive ? "text-[#3B82F6]" : "text-[#94A3B8]"}
-                                    />
-                                    <span className="text-sm">{item.label}</span>
-                                </button>
-                            );
-                        })}
-                    </nav>
-                </div>
-            </aside>
+            {/* IMPORTED SIDEBAR COMPONENT */}
+            <Sidebar
+                sidebarOpen={sidebarOpen}
+                setSidebarOpen={setSidebarOpen}
+                activeSection={activeSection}
+                setActiveSection={setActiveSection}
+            />
 
             {/* MAIN CONTENT AREA */}
-            <div className="flex-1 flex flex-col overflow-hidden w-full md:w-auto">
-                {/* NAVBAR */}
+            <div className="flex-1 flex flex-col overflow-hidden">
+                {/* MOBILE MENU BUTTON */}
                 <button
-                    onClick={() => setSidebarOpen(!sidebarOpen)}
-                    className="md:hidden fixed top-4 left-4 z-50 p-2 bg-[#0D1B1E] text-white rounded-lg shadow-lg"
+                    onClick={() => setSidebarOpen(true)}
+                    className="md:hidden fixed top-4 left-4 z-30 p-2 bg-[#0F172A] text-white rounded-lg shadow-lg"
+                    aria-label="Open menu"
                 >
                     <Menu size={22} />
                 </button>
 
                 {/* PAGE CONTENT */}
                 <main className="flex-1 overflow-y-auto">
-                    <div className="p-4 sm:p-6">
+                    <div className="p-4 sm:p-6 md:p-8">
                         {activeSection === "hero" ? (
                             <>
                                 {/* PAGE HEADER */}
@@ -257,9 +163,7 @@ export default function CMSAdminPanel() {
                                     </p>
                                 </div>
 
-                                {/* ======================= */}
-                                {/* VIEW 1: LIST / EDIT EXISTING */}
-                                {/* ======================= */}
+                                {/* LIST VIEW */}
                                 {viewMode === "list" && (
                                     <div>
                                         {/* SEARCH BAR */}
@@ -284,21 +188,11 @@ export default function CMSAdminPanel() {
                                                 <table className="w-full min-w-[800px]">
                                                     <thead className="bg-[#1E293B] text-white">
                                                         <tr>
-                                                            <th className="px-4 py-3 text-left text-sm">
-                                                                Image
-                                                            </th>
-                                                            <th className="px-4 py-3 text-left text-sm">
-                                                                Title
-                                                            </th>
-                                                            <th className="px-4 py-3 text-left text-sm">
-                                                                Description
-                                                            </th>
-                                                            <th className="px-4 py-3 text-left text-sm">
-                                                                Updated
-                                                            </th>
-                                                            <th className="px-4 py-3 text-left text-sm">
-                                                                Actions
-                                                            </th>
+                                                            <th className="px-4 py-3 text-left text-sm">Image</th>
+                                                            <th className="px-4 py-3 text-left text-sm">Title</th>
+                                                            <th className="px-4 py-3 text-left text-sm">Description</th>
+                                                            <th className="px-4 py-3 text-left text-sm">Updated</th>
+                                                            <th className="px-4 py-3 text-left text-sm">Actions</th>
                                                         </tr>
                                                     </thead>
 
@@ -366,8 +260,8 @@ export default function CMSAdminPanel() {
                                                             </h3>
                                                             <span
                                                                 className={`px-2 py-1 rounded-full text-xs font-semibold shrink-0 ml-2 ${hero.status === "Active"
-                                                                        ? "bg-[#3B82F6] text-white"
-                                                                        : "bg-[#94A3B8] text-white"
+                                                                    ? "bg-[#3B82F6] text-white"
+                                                                    : "bg-[#94A3B8] text-white"
                                                                     }`}
                                                             >
                                                                 {hero.status}
@@ -402,9 +296,7 @@ export default function CMSAdminPanel() {
                                     </div>
                                 )}
 
-                                {/* ======================= */}
-                                {/* VIEW 2: EDIT FORM PAGE */}
-                                {/* ======================= */}
+                                {/* EDIT VIEW */}
                                 {viewMode === "edit" && selectedHero && (
                                     <div className="grid lg:grid-cols-2 gap-4 sm:gap-6">
                                         {/* FORM */}
@@ -591,22 +483,8 @@ export default function CMSAdminPanel() {
                         ) : (
                             // Placeholder for other sections
                             <div className="bg-white rounded-xl shadow border border-[#E2E8F0] p-8 sm:p-12 text-center">
-                                <div className="w-16 h-16 sm:w-20 sm:h-20 bg-[#3B82F6] rounded-full flex items-center justify-center mx-auto mb-6">
-                                    {React.createElement(
-                                        menuItems.find((item) => item.id === activeSection)?.icon ||
-                                        Home,
-                                        {
-                                            size: 40,
-                                            className: "text-white",
-                                        }
-                                    )}
-                                </div>
-                                <h2 className="text-xl sm:text-2xl font-bold text-[#0F172A] mb-3">
-                                    {menuItems.find((item) => item.id === activeSection)?.label}
-                                </h2>
                                 <p className="text-sm sm:text-base text-[#94A3B8]">
-                                    This section is under development. Check back
-                                    soon for content management features.
+                                    This section is under development. Check back soon for content management features.
                                 </p>
                             </div>
                         )}
