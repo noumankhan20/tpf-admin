@@ -10,9 +10,9 @@ export default function StartGivingDaily() {
   // Initial banner data (this would come from your database)
   const [bannerData, setBannerData] = useState({
     imageUrl: "https://images.unsplash.com/photo-1622864352372-a68fa7dac64e?ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTJ8fFN0YW5kJTIwd2l0aCUyMEdhemF8ZW58MHx8MHx8fDA%3D&auto=format&fit=crop&q=60&w=600",
-    title: "Start your fundraiser in minutes",
-    description: "No platform fees. Reach millions of generous hearts across the Ummah. Turn your cause into lasting ṣadaqah jāriyah — a reward that continues beyond this world.",
-    buttonText: "Create Fundraiser Now",
+    title: "Stand with Gaza ",
+    description: "Your daily support delivers relief, care, and dignity to families in urgent need.",
+    buttonText: "Start Giving Daily",
     lastUpdated: "2025-11-16 10:30",
   });
 
