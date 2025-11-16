@@ -5,7 +5,7 @@ import Sidebar from '../Layout/SideBar';
 import Navbar from '../Layout/NavBar';
 import {
     Users,
-    DollarSign,
+    IndianRupee,
     TrendingUp,
     Briefcase,
     ArrowUp,
@@ -95,8 +95,8 @@ export default function Dashboard() {
         },
         {
             title: "Total Donations",
-            value: `₹${totalDonations.toLocaleString()}`,
-            icon: DollarSign,
+            value: `${totalDonations.toLocaleString()}`,
+            icon: IndianRupee,
             trend: "+8.7%",
             bgColor: "bg-green-50",
             iconColor: "text-green-600",
