@@ -6,7 +6,7 @@ export default function StartFundraiserBannerCMS() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showPreview, setShowPreview] = useState(true);
   const [hasChanges, setHasChanges] = useState(false);
-
+  const [activeSection, setActiveSection] = useState("before-footer");
   // Initial banner data (this would come from your database)
   const [bannerData, setBannerData] = useState({
     imageUrl: "https://images.unsplash.com/photo-1576381394626-53b3d2d48145?ixlib=rb-4.1.0&auto=format&fit=crop&q=60&w=500",
@@ -95,7 +95,13 @@ export default function StartFundraiserBannerCMS() {
 
   return (
     <div className="flex h-screen bg-[#F8FAFC] overflow-hidden">
-      <Sidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
+       <Sidebar 
+              sidebarOpen={sidebarOpen} 
+              setSidebarOpen={setSidebarOpen} 
+              activeSection={activeSection} 
+              setActiveSection={setActiveSection} 
+            />
+      
       
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Mobile Header */}

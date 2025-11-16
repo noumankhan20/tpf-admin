@@ -273,12 +273,16 @@ export default function FundraisingCMS() {
       />
 
       <div className="flex-1 flex flex-col overflow-hidden w-full md:w-auto">
-        <button
-          onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="md:hidden fixed top-4 left-4 z-50 p-2 bg-[#0D1B1E] text-white rounded-lg shadow-lg"
-        >
-          <Menu size={22} />
-        </button>
+       <div className="md:hidden bg-white border-b border-gray-200 px-4 py-3 flex items-center">
+                 <button
+                   onClick={() => setSidebarOpen(true)}
+                   className="p-2 hover:bg-gray-100 rounded-lg"
+                   aria-label="Open menu"
+                 >
+                   <Menu size={24} className="text-gray-700" />
+                 </button>
+                 <h1 className="ml-3 text-lg font-bold text-[#0F172A]">Fundraising</h1>
+               </div>
 
         <main className="flex-1 overflow-y-auto">
           <div className="p-4 sm:p-6">

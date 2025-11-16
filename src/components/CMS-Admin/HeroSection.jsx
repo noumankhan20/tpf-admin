@@ -121,13 +121,16 @@ export default function CMSAdminPanel() {
             {/* MAIN CONTENT AREA */}
             <div className="flex-1 flex flex-col overflow-hidden">
                 {/* MOBILE MENU BUTTON */}
-                <button
-                    onClick={() => setSidebarOpen(true)}
-                    className="md:hidden fixed top-4 left-4 z-30 p-2 bg-[#0F172A] text-white rounded-lg shadow-lg"
-                    aria-label="Open menu"
-                >
-                    <Menu size={22} />
-                </button>
+                <div className="md:hidden bg-white border-b border-gray-200 px-4 py-3 flex items-center">
+                          <button
+                            onClick={() => setSidebarOpen(true)}
+                            className="p-2 hover:bg-gray-100 rounded-lg"
+                            aria-label="Open menu"
+                          >
+                            <Menu size={24} className="text-gray-700" />
+                          </button>
+                          <h1 className="ml-3 text-lg font-bold text-[#0F172A]">Hero Section</h1>
+                        </div>
 
                 {/* PAGE CONTENT */}
                 <main className="flex-1 overflow-y-auto">

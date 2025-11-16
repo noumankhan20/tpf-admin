@@ -16,7 +16,6 @@ const menuItems = [
   { id: 'trusted', label: 'Trusted By', icon: Award,path:'/cms-admin/trusted-by' },
   { id: 'influencer', label: 'Influencer Section', icon: MessageSquare ,path:'/cms-admin/influencer'},
   { id: 'footer', label: 'Before Footer', icon: Flag ,path:'/cms-admin/before-footer' },
-  { id: 'audit', label: 'Audit Logs', icon: FileText ,path:'/cms-admin/impact-stories'}
 ];
 
 export default function Sidebar({
