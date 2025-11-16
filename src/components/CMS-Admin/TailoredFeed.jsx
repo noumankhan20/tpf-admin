@@ -189,7 +189,6 @@ export default function TailoredFeedCMS() {
                         <div className="p-4 sm:p-5">
                           <h3 className="font-bold text-[#0F172A] text-lg mb-2 line-clamp-1">{item.title}</h3>
                           <p className="text-sm text-[#475569] mb-3 line-clamp-2">{item.description}</p>
-                          <p className="text-xs text-[#94A3B8] mb-4">Updated: {item.lastUpdated}</p>
 
                           <div className="flex gap-2">
                             <button

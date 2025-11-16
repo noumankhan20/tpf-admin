@@ -6,7 +6,7 @@ export default function StartGivingDaily() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showPreview, setShowPreview] = useState(true);
   const [hasChanges, setHasChanges] = useState(false);
-
+  const [activeSection, setActiveSection] = useState("start-giving-daily");
   // Initial banner data (this would come from your database)
   const [bannerData, setBannerData] = useState({
     imageUrl: "https://images.unsplash.com/photo-1622864352372-a68fa7dac64e?ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTJ8fFN0YW5kJTIwd2l0aCUyMEdhemF8ZW58MHx8MHx8fDA%3D&auto=format&fit=crop&q=60&w=600",
@@ -95,7 +95,12 @@ export default function StartGivingDaily() {
 
   return (
     <div className="flex h-screen bg-[#F8FAFC] overflow-hidden">
-      <Sidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
+      <Sidebar 
+              sidebarOpen={sidebarOpen} 
+              setSidebarOpen={setSidebarOpen} 
+              activeSection={activeSection} 
+              setActiveSection={setActiveSection} 
+            />
       
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Mobile Header */}

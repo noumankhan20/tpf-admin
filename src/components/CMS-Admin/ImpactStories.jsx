@@ -68,7 +68,7 @@ export default function StoryCardsCMS() {
     const [selectedCard, setSelectedCard] = useState(null);
     const [showPreview, setShowPreview] = useState(false);
     const [previewDarkMode, setPreviewDarkMode] = useState(false);
-
+    const [activeSection, setActiveSection] = useState("story-cards");
     const [storyCards, setStoryCards] = useState([
         {
             id: 1,
@@ -226,7 +226,12 @@ export default function StoryCardsCMS() {
 
     return (
         <div className="flex h-screen bg-[#F8FAFC] overflow-hidden">
-            <Sidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
+            <Sidebar 
+                          sidebarOpen={sidebarOpen} 
+                          setSidebarOpen={setSidebarOpen} 
+                          activeSection={activeSection} 
+                          setActiveSection={setActiveSection} 
+                        />
 
             <div className="flex-1 flex flex-col overflow-hidden">
                 <div className="md:hidden bg-white border-b px-4 py-3 flex items-center">

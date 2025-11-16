@@ -8,7 +8,7 @@ export default function InfluencerGalleryCMS() {
   const [selectedImage, setSelectedImage] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [previewMode, setPreviewMode] = useState(false);
-   const [activeSection, setActiveSection] = useState("influencers");
+    const [activeSection, setActiveSection] = useState("influencers");
   const [influencerImages, setInfluencerImages] = useState([
     { id: 1, imageUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=256",  lastUpdated: "2025-11-15 10:30", order: 1 },
     { id: 2, imageUrl: "https://images.unsplash.com/photo-1527980965255-d3b416303d12?w=256",  lastUpdated: "2025-11-14 15:20", order: 2 },

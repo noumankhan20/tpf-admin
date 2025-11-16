@@ -304,7 +304,7 @@ export default function FundraisingCMS() {
                 {viewMode === "view" && (
                   <button
                     onClick={() => setViewMode("edit")}
-                    className="bg-[#2D6A4F] text-white px-6 py-3 rounded-xl font-semibold hover:bg-[#1E3D36] transition-colors flex items-center gap-2 justify-center sm:justify-start cursor-pointer"
+                    className="bg-blue-900 text-white px-6 py-3 rounded-xl font-semibold hover:bg-blue-700 transition-colors flex items-center gap-2 justify-center sm:justify-start cursor-pointer"
                   >
                     <PlusIcon size={20} />
                     Add New Campaign
@@ -405,7 +405,6 @@ export default function FundraisingCMS() {
                                     Urgent
                                   </span>
                                 )}
-
                                 {card.taxBenefits && (
                                   <span className="flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full font-medium w-fit whitespace-nowrap">
                                     <CheckCircle size={12} />
@@ -731,7 +730,7 @@ export default function FundraisingCMS() {
                               </div>
 
                               <div className="mt-4 flex flex-wrap items-center justify-center gap-3">
-                                <label className="px-4 py-2 bg-[#2D6A4F] text-white text-sm rounded-lg font-medium cursor-pointer hover:bg-[#1E3D36]">
+                                <label className="px-4 py-2 bg-blue-900 text-white text-sm rounded-lg font-medium cursor-pointer hover:bg-blue-700">
                                   Replace Image
                                   <input
                                     type="file"
@@ -836,7 +835,7 @@ export default function FundraisingCMS() {
                       <div className="flex flex-col sm:flex-row gap-3 pt-4">
                         <button
                           onClick={handleSave}
-                          className="flex-1 bg-[#2D6A4F] text-white py-3 rounded-lg font-semibold hover:bg-[#1E3D36] transition-colors flex items-center justify-center gap-2"
+                          className="flex-1 bg-blue-900 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
                         >
                           <Save size={20} />
                           Save Campaign

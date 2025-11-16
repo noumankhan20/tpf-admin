@@ -3,20 +3,20 @@ import React from "react";
 import {
   Home, Heart, IndianRupee, Rss, Calendar,
   Users, Award, MessageSquare, Flag, FileText,
-  X, ChevronLeft, ChevronRight,
+  X,
 } from "lucide-react";
-
+import { useRouter } from "next/navigation";
 const menuItems = [
-  { id: 'hero', label: 'Hero Section', icon: Home },
-  { id: 'stories', label: 'Impact Stories', icon: Heart },
-  { id: 'fundraising', label: 'Fundraising Now', icon: IndianRupee },
-  { id: 'feed', label: 'Tailored Feed', icon: Rss },
-  { id: 'giving', label: 'Start Giving Daily', icon: Calendar },
-  { id: 'communities', label: 'Communities', icon: Users },
-  { id: 'trusted', label: 'Trusted By', icon: Award },
-  { id: 'influencer', label: 'Influencer Section', icon: MessageSquare },
-  { id: 'footer', label: 'Before Footer', icon: Flag },
-  { id: 'audit', label: 'Audit Logs', icon: FileText }
+  { id: 'hero', label: 'Hero Section', icon: Home ,path:'/cms-admin/hero-section'},
+  { id: 'stories', label: 'Impact Stories', icon: Heart,path:'/cms-admin/impact-stories' },
+  { id: 'fundraising', label: 'Fundraising Now', icon: IndianRupee ,path:'/cms-admin/fundraiser' },
+  { id: 'feed', label: 'Tailored Feed', icon: Rss ,path:'/cms-admin/tailored-feed' },
+  { id: 'giving', label: 'Start Giving Daily', icon: Calendar ,path:'/cms-admin/start-giving'},
+  { id: 'communities', label: 'Communities', icon: Users ,path:'/cms-admin/communities'},
+  { id: 'trusted', label: 'Trusted By', icon: Award,path:'/cms-admin/trusted-by' },
+  { id: 'influencer', label: 'Influencer Section', icon: MessageSquare ,path:'/cms-admin/influencer'},
+  { id: 'footer', label: 'Before Footer', icon: Flag ,path:'/cms-admin/before-footer' },
+  { id: 'audit', label: 'Audit Logs', icon: FileText ,path:'/cms-admin/impact-stories'}
 ];
 
 export default function Sidebar({
@@ -25,9 +25,11 @@ export default function Sidebar({
   activeSection,
   setActiveSection
 }) {
-
-  const handleMenuClick = (itemId) => {
-    setActiveSection(itemId);
+  
+  const router = useRouter();
+  const handleMenuClick = (item) => {
+    setActiveSection(item.id);
+      router.push(item.path);  
     // Auto-close sidebar on mobile after selecting an item
     if (typeof window !== 'undefined' && window.innerWidth < 768) {
       setSidebarOpen(false);
@@ -109,7 +111,7 @@ export default function Sidebar({
               return (
                 <button
                   key={item.id}
-                  onClick={() => handleMenuClick(item.id)}
+                  onClick={() => handleMenuClick(item)}
                   className={`
                     w-full flex items-center gap-3 px-3 py-3 rounded-lg 
                     transition-all duration-200 group relative
