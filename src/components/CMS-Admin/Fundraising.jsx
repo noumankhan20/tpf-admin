@@ -27,7 +27,7 @@ import {
   FileText,
   PlusIcon,
 } from "lucide-react";
-
+import Sidebar from "../Layout/CMSSideBar";
 export default function FundraisingCMS() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeSection, setActiveSection] = useState("fundraising");
@@ -121,19 +121,6 @@ export default function FundraisingCMS() {
       daysLeft: 120,
     },
   ]);
-
-  const menuItems = [
-    { id: "hero", label: "Hero Section", icon: Home },
-    { id: "stories", label: "Impact Stories", icon: Heart },
-    { id: "fundraising", label: "Fundraising Now", icon: DollarSign },
-    { id: "feed", label: "Tailored Feed", icon: Rss },
-    { id: "giving", label: "Start Giving Daily", icon: Calendar },
-    { id: "communities", label: "Communities", icon: Users },
-    { id: "trusted", label: "Trusted By", icon: Award },
-    { id: "influencer", label: "Influencer Section", icon: MessageSquare },
-    { id: "footer", label: "Before Footer", icon: Flag },
-    { id: "audit", label: "Audit Logs", icon: FileText },
-  ];
 
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
@@ -265,7 +252,7 @@ export default function FundraisingCMS() {
     const num = Number(amount) || 0;
     return new Intl.NumberFormat("en-US", {
       style: "currency",
-      currency: "USD",
+      currency: "INR",
       minimumFractionDigits: 0,
     }).format(num);
   };
@@ -278,70 +265,12 @@ export default function FundraisingCMS() {
 
   return (
     <div className="flex h-screen bg-[#F8FAFC] overflow-hidden">
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 bg-black/50 z-40 md:hidden"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
-
-      <aside
-        className={`
-        fixed md:static inset-y-0 left-0 z-50
-        w-64 bg-[#0D1B1E] text-white
-        transform transition-transform duration-300 ease-in-out
-        ${sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
-        overflow-y-auto md:overflow-visible
-      `}
-      >
-        <div className="p-6">
-          <div className="flex items-center justify-between mb-8">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-[#3B82F6] rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-lg">C</span>
-              </div>
-              <span className="font-bold text-lg">Content Studio</span>
-            </div>
-            <button
-              onClick={() => setSidebarOpen(false)}
-              className="md:hidden p-1 hover:bg-white/10 rounded"
-            >
-              <X size={20} />
-            </button>
-          </div>
-
-          <p className="text-[#94A3B8] text-xs uppercase tracking-wider mb-4">
-            Website Sections
-          </p>
-
-          <nav className="space-y-1">
-            {menuItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = activeSection === item.id;
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => {
-                    setActiveSection(item.id);
-                    closeSidebarOnMobile();
-                  }}
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
-                    isActive
-                      ? "bg-[#1E293B] border-l-4 border-[#3B82F6] font-semibold"
-                      : "hover:bg-[#1E293B]/50 border-l-4 border-transparent"
-                  }`}
-                >
-                  <Icon
-                    size={20}
-                    className={isActive ? "text-[#3B82F6]" : "text-[#94A3B8]"}
-                  />
-                  <span className="text-sm">{item.label}</span>
-                </button>
-              );
-            })}
-          </nav>
-        </div>
-      </aside>
+       <Sidebar 
+        sidebarOpen={sidebarOpen} 
+        setSidebarOpen={setSidebarOpen} 
+        activeSection={activeSection} 
+        setActiveSection={setActiveSection} 
+      />
 
       <div className="flex-1 flex flex-col overflow-hidden w-full md:w-auto">
         <button
@@ -375,7 +304,7 @@ export default function FundraisingCMS() {
                 {viewMode === "view" && (
                   <button
                     onClick={() => setViewMode("edit")}
-                    className="bg-[#2D6A4F] text-white px-6 py-3 rounded-xl font-semibold hover:bg-[#1E3D36] transition-colors flex items-center gap-2 justify-center sm:justify-start"
+                    className="bg-[#2D6A4F] text-white px-6 py-3 rounded-xl font-semibold hover:bg-[#1E3D36] transition-colors flex items-center gap-2 justify-center sm:justify-start cursor-pointer"
                   >
                     <PlusIcon size={20} />
                     Add New Campaign
@@ -622,7 +551,7 @@ export default function FundraisingCMS() {
                 <div className="mb-6">
                   <button
                     onClick={handleCancel}
-                    className="text-[#2D6A4F] hover:text-[#1E3D36] font-medium flex items-center gap-2 text-sm"
+                    className="text-[#2D6A4F] hover:text-[#1E3D36] font-medium flex items-center gap-2 text-sm cursor-pointer"
                   >
                     ← Back to list
                   </button>
@@ -748,7 +677,7 @@ export default function FundraisingCMS() {
 
                       <div>
                         <label className="block text-sm font-semibold text-[#0F172A] mb-2">
-                          Required Amount ($)
+                          Required Amount (₹)
                         </label>
                         <input
                           type="number"
