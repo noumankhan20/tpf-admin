@@ -60,7 +60,11 @@ const MODULES = [
   { id: 'legal', name: 'Legal & Compliance', icon: Scale, route: '/legal', desc: 'Legal documents and compliance tracking', category: 'documentation', roles: ['hr-admin', 'superadmin', 'donor-admin'] },
 
   { id: 'cms', name: 'Content Management System (CMS)', icon: Globe, route: '/cms', desc: 'Manage website and app content', category: 'documentation', roles: ['cms-admin', 'superadmin'] },
+
+  // NEW: Communication & Notification Module
+  { id: 'communication', name: 'Communication & Notification', icon: Bell, route: '/communication', desc: 'Manage internal/external communications and notifications', category: 'operations', roles: ['communication-admin', 'superadmin'] },
 ];
+
 
 const CATEGORIES = [
   { id: 'administration', name: 'Administration', icon: Settings },
