@@ -19,11 +19,48 @@ export default function AdminLogin() {
     }));
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    // Handle login logic here
-    console.log('Login attempt:', formData);
-  };
+const handleSubmit = (e) => {
+  e.preventDefault();
+
+  let userMap = {
+    "superadmin@test.com": { 
+      password: "admin123", 
+      roles: ["superadmin"] },
+    "hr@test.com": { 
+      password: "hr123", 
+      roles: ["hr-admin","documentation-admin","legal-admin","finance-admin"] },
+    "volunteer@test.com": { 
+      password: "vol123", 
+      roles: ["volunteer-admin","finance-admin","hr-admin","cms-admin","legal-admin"] },
+      "cms@test.com": { 
+      password: "cms123",
+      roles: ["cms-admin"] },
+      "donor@test.com":{
+        password: "donor123",
+        roles: ["donor-admin","legal-admin"]
+      }
+  };  
+
+  const user = userMap[formData.email];
+
+  if (!user) {
+    alert("❌ Invalid Email");
+    return;
+  }
+
+  if (formData.password !== user.password) {
+    alert("❌ Incorrect Password");
+    return;
+  }
+
+  // Save roles for Select Portal Page
+  localStorage.setItem("roles", JSON.stringify(user.roles));
+
+  // Redirect
+  router.push("/select-portal");
+};
+
+
   
   const router = useRouter();
   
@@ -119,7 +156,7 @@ export default function AdminLogin() {
 
           {/* Login Button */}
           <button
-            onClick={() => router.push('/select-portal')}
+            // onClick={() => router.push('/select-portal')}
             type="submit"
             className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-200 transform hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 focus:ring-offset-gray-900 cursor-pointer"
           >
