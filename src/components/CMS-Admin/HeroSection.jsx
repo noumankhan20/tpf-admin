@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
     Upload,
     Save,
@@ -12,6 +12,7 @@ import {
     ImageIcon,
 } from "lucide-react";
 import Sidebar from "../Layout/CMSSideBar";
+import axios from "axios";
 
 export default function CMSAdminPanel() {
     // SIDEBAR STATE
@@ -21,35 +22,44 @@ export default function CMSAdminPanel() {
     // HERO PAGE STATES
     const [viewMode, setViewMode] = useState("list");
     const [searchQuery, setSearchQuery] = useState("");
-    const [selectedHero, setSelectedHero] = useState(null);
-
-    const emptyHeroForm = {
+    const [heroForm, setHeroForm] = useState({
         image: null,
         imagePreview: null,
         title: "",
         description: "",
         buttonText: "",
         buttonLink: "",
+    });
+    const [existingHeros, setExistingHeros] = useState([]);
+    const [selectedHero, setSelectedHero] = useState(null);
+
+    // Fetch existing heroes from backend
+    const fetchHeroes = async () => {
+        try {
+            const res = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_API}/hero/get`);
+            const heroes = res.data["Hero section fetched successfully"] || [];
+            // Convert image paths to full URLs
+            const heroesWithUrls = heroes.map(hero => ({
+                ...hero,
+                id: hero._id, // Map MongoDB _id to id
+                // Use NEXT_PUBLIC_BACKEND_URL for static files (without /api)
+                image: `${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:7000'}/${hero.image}`,
+                lastUpdated: new Date(hero.updatedAt).toLocaleDateString()
+            }));
+            setExistingHeros(heroesWithUrls);
+        } catch (error) {
+            console.error("Failed to fetch heroes:", error);
+        }
     };
 
-    const [heroForm, setHeroForm] = useState(emptyHeroForm);
+    useEffect(() => {
+        fetchHeroes();
+    }, []);
 
-    const [existingHeros, setExistingHeros] = useState([
-        {
-            id: 1,
-            image: "https://images.unsplash.com/photo-1532629345422-7515f3d16bb6?w=400",
-            title: "Make a Difference Today",
-            description: "Join thousands of donors making an impact worldwide.",
-            lastUpdated: "2025-11-10 14:30",
-        },
-        {
-            id: 2,
-            image: "https://images.unsplash.com/photo-1469571486292-0ba58a3f068b?w=400",
-            title: "Transform Lives Together",
-            description: "Your donation provides food, shelter, and hope.",
-            lastUpdated: "2025-11-08 09:15",
-        },
-    ]);
+    const filteredHeros = existingHeros.filter((hero) =>
+        hero.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        hero.description.toLowerCase().includes(searchQuery.toLowerCase())
+    );
 
     const handleImageUpload = (e) => {
         const file = e.target.files[0];
@@ -60,17 +70,66 @@ export default function CMSAdminPanel() {
             setHeroForm((prev) => ({
                 ...prev,
                 image: file,
-                imagePreview: reader.result,
+                imagePreview: reader.result, // Preview image
             }));
         };
         reader.readAsDataURL(file);
+    };
+
+    const handleSave = async () => {
+        const formData = new FormData();
+        formData.append("title", heroForm.title);
+        formData.append("description", heroForm.description);
+        if (heroForm.image) {
+            formData.append("image", heroForm.image); // Append the image file only if new image is uploaded
+        }
+
+        try {
+            // If selectedHero is not null, update the Hero section
+            if (selectedHero) {
+                const res = await axios.put(
+                    `${process.env.NEXT_PUBLIC_BACKEND_API}/hero/update/${selectedHero.id}`,
+                    formData,
+                    {
+                        headers: { "Content-Type": "multipart/form-data" },
+                    }
+                );
+                alert(res.data.message || "Hero updated successfully");
+            } else {
+                // Create a new Hero section
+                const res = await axios.post(
+                    `${process.env.NEXT_PUBLIC_BACKEND_API}/hero/add`,
+                    formData,
+                    {
+                        headers: { "Content-Type": "multipart/form-data" },
+                    }
+                );
+                alert(res.data.message || "Hero created successfully");
+            }
+
+            // Reset the form and go back to the list view
+            setHeroForm({
+                image: null,
+                imagePreview: null,
+                title: "",
+                description: "",
+                buttonText: "",
+                buttonLink: "",
+            });
+            setSelectedHero(null);
+            setViewMode("list");
+            fetchHeroes(); // Refresh the list of heroes after creating or updating
+        } catch (error) {
+            console.error("Error while saving hero:", error);
+            alert("Failed to save hero section");
+        }
     };
 
     const handleEditHero = (hero) => {
         setSelectedHero(hero);
         setHeroForm({
             image: null,
-            imagePreview: hero.image || null,
+            imagePreview: hero.image || null, // Image preview for the edit view
             title: hero.title || "",
             description: hero.description || "",
             buttonText: hero.buttonText || "",
@@ -79,28 +138,18 @@ export default function CMSAdminPanel() {
         setViewMode("edit");
     };
 
-    const handleSave = () => {
-        alert("Changes saved (UI only – connect API later).");
-        setViewMode("list");
-        setSelectedHero(null);
-        setHeroForm(emptyHeroForm);
-    };
-
     const handleCancel = () => {
-        setViewMode("list");
+        setHeroForm({
+            image: null,
+            imagePreview: null,
+            title: "",
+            description: "",
+            buttonText: "",
+            buttonLink: "",
+        });
         setSelectedHero(null);
-        setHeroForm(emptyHeroForm);
+        setViewMode("list");
     };
-
-    const handleDelete = (id) => {
-        if (confirm("Are you sure you want to delete this hero section?")) {
-            setExistingHeros((prev) => prev.filter((h) => h.id !== id));
-        }
-    };
-
-    const filteredHeros = existingHeros.filter((hero) =>
-        hero.title.toLowerCase().includes(searchQuery.toLowerCase().trim())
-    );
 
     return (
         <div className="flex h-screen bg-[#F8FAFC] overflow-hidden">
@@ -116,15 +165,15 @@ export default function CMSAdminPanel() {
             <div className="flex-1 flex flex-col overflow-hidden">
                 {/* MOBILE MENU BUTTON */}
                 <div className="md:hidden bg-white border-b border-gray-200 px-4 py-3 flex items-center">
-                          <button
-                            onClick={() => setSidebarOpen(true)}
-                            className="p-2 hover:bg-gray-100 rounded-lg"
-                            aria-label="Open menu"
-                          >
-                            <Menu size={24} className="text-gray-700" />
-                          </button>
-                          <h1 className="ml-3 text-lg font-bold text-[#0F172A]">Hero Section</h1>
-                        </div>
+                    <button
+                        onClick={() => setSidebarOpen(true)}
+                        className="p-2 hover:bg-gray-100 rounded-lg"
+                        aria-label="Open menu"
+                    >
+                        <Menu size={24} className="text-gray-700" />
+                    </button>
+                    <h1 className="ml-3 text-lg font-bold text-[#0F172A]">Hero Section</h1>
+                </div>
 
                 {/* PAGE CONTENT */}
                 <main className="flex-1 overflow-y-auto">
@@ -270,13 +319,6 @@ export default function CMSAdminPanel() {
                                                                 <Edit2 size={16} />
                                                                 Edit
                                                             </button>
-                                                            <button
-                                                                onClick={() => handleDelete(hero.id)}
-                                                                className="flex-1 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 flex items-center justify-center gap-2 text-sm"
-                                                            >
-                                                                <Trash2 size={16} />
-                                                                Delete
-                                                            </button>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -370,42 +412,6 @@ export default function CMSAdminPanel() {
                                                 />
                                             </div>
 
-                                            {/* BUTTON TEXT */}
-                                            <div className="mb-5">
-                                                <label className="block text-sm font-semibold text-[#0F172A] mb-2">
-                                                    Button Text
-                                                </label>
-                                                <input
-                                                    className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-[#CBD5E1] rounded-lg focus:ring-2 focus:ring-[#60A5FA] text-sm sm:text-base"
-                                                    placeholder="Donate Now"
-                                                    value={heroForm.buttonText}
-                                                    onChange={(e) =>
-                                                        setHeroForm((prev) => ({
-                                                            ...prev,
-                                                            buttonText: e.target.value,
-                                                        }))
-                                                    }
-                                                />
-                                            </div>
-
-                                            {/* BUTTON LINK */}
-                                            <div className="mb-5">
-                                                <label className="block text-sm font-semibold text-[#0F172A] mb-2">
-                                                    Button Link
-                                                </label>
-                                                <input
-                                                    className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-[#CBD5E1] rounded-lg focus:ring-2 focus:ring-[#60A5FA] text-sm sm:text-base"
-                                                    placeholder="https://..."
-                                                    value={heroForm.buttonLink}
-                                                    onChange={(e) =>
-                                                        setHeroForm((prev) => ({
-                                                            ...prev,
-                                                            buttonLink: e.target.value,
-                                                        }))
-                                                    }
-                                                />
-                                            </div>
-
                                             {/* BUTTONS */}
                                             <div className="flex flex-col sm:flex-row gap-3">
                                                 <button
@@ -457,12 +463,6 @@ export default function CMSAdminPanel() {
                                                         {heroForm.description ||
                                                             "Your description will appear here…"}
                                                     </p>
-
-                                                    {heroForm.buttonText && (
-                                                        <button className="bg-[#3B82F6] text-white px-6 sm:px-8 py-2.5 sm:py-3 rounded-lg font-semibold hover:bg-[#2563EB] shadow-xl text-sm sm:text-base">
-                                                            {heroForm.buttonText}
-                                                        </button>
-                                                    )}
                                                 </div>
                                             </div>
                                         </div>
