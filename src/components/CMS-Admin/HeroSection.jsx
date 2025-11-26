@@ -40,20 +40,14 @@ export default function CMSAdminPanel() {
             image: "https://images.unsplash.com/photo-1532629345422-7515f3d16bb6?w=400",
             title: "Make a Difference Today",
             description: "Join thousands of donors making an impact worldwide.",
-            status: "Active",
             lastUpdated: "2025-11-10 14:30",
-            buttonText: "Donate Now",
-            buttonLink: "https://example.com/donate",
         },
         {
             id: 2,
             image: "https://images.unsplash.com/photo-1469571486292-0ba58a3f068b?w=400",
             title: "Transform Lives Together",
             description: "Your donation provides food, shelter, and hope.",
-            status: "Draft",
             lastUpdated: "2025-11-08 09:15",
-            buttonText: "Know More",
-            buttonLink: "https://example.com/more",
         },
     ]);
 
@@ -261,14 +255,6 @@ export default function CMSAdminPanel() {
                                                             <h3 className="font-bold text-[#0F172A] text-base">
                                                                 {hero.title}
                                                             </h3>
-                                                            <span
-                                                                className={`px-2 py-1 rounded-full text-xs font-semibold shrink-0 ml-2 ${hero.status === "Active"
-                                                                    ? "bg-[#3B82F6] text-white"
-                                                                    : "bg-[#94A3B8] text-white"
-                                                                    }`}
-                                                            >
-                                                                {hero.status}
-                                                            </span>
                                                         </div>
                                                         <p className="text-sm text-[#475569] mb-3">
                                                             {hero.description}
