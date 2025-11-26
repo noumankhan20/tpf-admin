@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 const menuItems = [
-  { id: 'hero', label: 'Hero Section', icon: Home ,path:'/cms-admin/hero-section'},
+  { id: 'hero', label: 'Hero Section', icon: Home ,path:'/cms-admin'},
   { id: 'stories', label: 'Impact Stories', icon: Heart,path:'/cms-admin/impact-stories' },
   { id: 'fundraising', label: 'Fundraising Now', icon: IndianRupee ,path:'/cms-admin/fundraiser' },
   { id: 'feed', label: 'Tailored Feed', icon: Rss ,path:'/cms-admin/tailored-feed' },
@@ -113,7 +113,7 @@ export default function Sidebar({
                   onClick={() => handleMenuClick(item)}
                   className={`
                     w-full flex items-center gap-3 px-3 py-3 rounded-lg 
-                    transition-all duration-200 group relative
+                    transition-all duration-200 group relative cursor-pointer
                     ${isActive
                       ? 'bg-[#1E293B] text-[#F1F5F9] font-semibold shadow-md'
                       : 'hover:bg-[#1E293B]/60 text-[#94A3B8] hover:text-[#F1F5F9]'

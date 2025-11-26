@@ -59,7 +59,7 @@ const MODULES = [
 
   { id: 'legal', name: 'Legal & Compliance', icon: Scale, route: '/legal', desc: 'Legal documents and compliance tracking', category: 'documentation', roles: ['hr-admin', 'superadmin', 'donor-admin'] },
 
-  { id: 'cms', name: 'Content Management System (CMS)', icon: Globe, route: '/cms', desc: 'Manage website and app content', category: 'documentation', roles: ['cms-admin', 'superadmin'] },
+  { id: 'cms', name: 'Content Management System (CMS)', icon: Globe, route: '/cms-admin', desc: 'Manage website and app content', category: 'documentation', roles: ['cms-admin', 'superadmin'] },
 
   // NEW: Communication & Notification Module
   { id: 'communication', name: 'Communication & Notification', icon: Bell, route: '/communication', desc: 'Manage internal/external communications and notifications', category: 'operations', roles: ['communication-admin', 'superadmin'] },
@@ -251,7 +251,7 @@ function CardView({ selectedPanel, setSelectedPanel, roles }) {
   const PANEL_MAP = {
     'hr-admin': { id: 'hr', title: 'HR Admin', icon: UserCog, desc: 'HR & employee records', route: '/hr' },
     'volunteer-admin': { id: 'field', title: 'Volunteer Admin', icon: MapPin, desc: 'Volunteers & activities', route: '/field-operations' },
-    'cms-admin': { id: 'cms', title: 'CMS Admin', icon: Globe, desc: 'Content Management System', route: '/cms' },
+    'cms-admin': { id: 'cms', title: 'CMS Admin', icon: Globe, desc: 'Content Management System', route: '/cms-admin' },
     'finance-admin': { id: 'finance', title: 'Finance Admin', icon: Calculator, desc: 'Financial operations', route: '/finance' },
     'donor-admin': { id: 'donor', title: 'Donor Admin', icon: Users, desc: 'Donor relationships', route: '/donor' },
     'project-admin': { id: 'projects', title: 'Project Admin', icon: FolderKanban, desc: 'Organisation projects', route: '/projects' },
