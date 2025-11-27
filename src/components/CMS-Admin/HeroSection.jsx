@@ -43,7 +43,7 @@ export default function CMSAdminPanel() {
                 ...hero,
                 id: hero._id, // Map MongoDB _id to id
                 // Use NEXT_PUBLIC_BACKEND_URL for static files (without /api)
-                image: `${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:7000'}/${hero.image}`,
+                image: `${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:7000'}${hero.image}`,
                 lastUpdated: new Date(hero.updatedAt).toLocaleDateString()
             }));
             setExistingHeros(heroesWithUrls);
