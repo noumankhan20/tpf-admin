@@ -268,15 +268,9 @@ export default function CMSAdminPanel() {
                                                                     <div className="flex gap-2">
                                                                         <button
                                                                             onClick={() => handleEditHero(hero)}
-                                                                            className="p-2 bg-[#3B82F6] text-white rounded-lg hover:bg-[#2563EB]"
+                                                                            className="p-2 bg-[#3B82F6] text-white rounded-lg hover:bg-[#2563EB] cursor-pointer"
                                                                         >
                                                                             <Edit2 size={14} />
-                                                                        </button>
-                                                                        <button
-                                                                            onClick={() => handleDelete(hero.id)}
-                                                                            className="p-2 bg-red-500 text-white rounded-lg hover:bg-red-600"
-                                                                        >
-                                                                            <Trash2 size={14} />
                                                                         </button>
                                                                     </div>
                                                                 </td>
@@ -416,7 +410,7 @@ export default function CMSAdminPanel() {
                                             <div className="flex flex-col sm:flex-row gap-3">
                                                 <button
                                                     onClick={handleSave}
-                                                    className="flex-1 bg-[#3B82F6] text-white py-2.5 sm:py-3 rounded-lg font-semibold hover:bg-[#2563EB] flex items-center justify-center gap-2 text-sm sm:text-base"
+                                                    className="flex-1 bg-[#3B82F6] text-white py-2.5 sm:py-3 rounded-lg font-semibold hover:bg-[#2563EB] flex items-center justify-center gap-2 text-sm sm:text-base cursor-pointer"
                                                 >
                                                     <Save size={18} />
                                                     Save Changes
@@ -424,7 +418,7 @@ export default function CMSAdminPanel() {
 
                                                 <button
                                                     onClick={handleCancel}
-                                                    className="px-6 py-2.5 sm:py-3 border border-[#CBD5E1] rounded-lg font-semibold hover:bg-[#E2E8F0] flex items-center justify-center gap-2 text-sm sm:text-base"
+                                                    className="px-6 py-2.5 sm:py-3 border border-[#CBD5E1] rounded-lg font-semibold hover:bg-[#E2E8F0] flex items-center justify-center gap-2 text-sm sm:text-base cursor-pointer"
                                                 >
                                                     <XCircle size={18} />
                                                     Cancel
