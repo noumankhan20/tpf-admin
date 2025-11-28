@@ -1,217 +1,41 @@
 "use client";
-import React, { useState } from "react";
-import {
-  Upload,
-  Save,
-  XCircle,
-  Image,
-  Home,
-  Trash2,
-  Search,
-  Calendar,
-  Users,
-  Edit2,
-  AlertCircle,
-  CheckCircle,
-  Shield,
-  Play,
-  Clock,
-  Menu,
-  X,
-  Heart,
-  Rss,
-  Award,
-  MessageSquare,
-  Flag,
-  FileText,
-  PlusIcon,
-} from "lucide-react";
-import Sidebar from "../Layout/CMSSideBar";
-export default function FundraisingCMS() {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [activeSection, setActiveSection] = useState("fundraising");
-  const [viewMode, setViewMode] = useState("view");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [editingCard, setEditingCard] = useState(null);
-
-  const [formData, setFormData] = useState({
-    category: "Emergency Aid",
-    isUrgent: false,
-    taxBenefits: false,
-    zakatVerified: false,
-    title: "",
-    organization: "",
-    requiredAmount: "",
-    deadline: "",
-    mediaType: "image", // New field: 'image' or 'video'
-    image: null,
-    imagePreview: null,
-    video: null,
-    videoPreview: null,
-    currentAmount: 0,
-    totalDonors: 0,
-  });
-
-  const categories = [
-    "Emergency Aid",
-    "Medical Aid",
-    "Orphans",
-    "Education",
-    "Clean Water",
-  ];
-
-  const categoryColors = {
-    "Emergency Aid": "bg-red-100 text-red-800",
-    "Medical Aid": "bg-blue-100 text-blue-800",
-    Orphans: "bg-purple-100 text-purple-800",
-    Education: "bg-amber-100 text-amber-800",
-    "Clean Water": "bg-cyan-100 text-cyan-800",
-  };
-
-  const [fundraisingCards, setFundraisingCards] = useState([
-    {
-      id: 1,
-      mediaType: "image",
-      image: "https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?w=400",
-      video: null,
-      title: "Emergency Relief for Earthquake Victims",
-      organization: "Global Relief Foundation",
-      category: "Emergency Aid",
-      isUrgent: true,
-      taxBenefits: true,
-      zakatVerified: true,
-      requiredAmount: 500000,
-      currentAmount: 342000,
-      totalDonors: 1240,
-      deadline: "2025-12-31",
-      daysLeft: 46,
-    },
-    {
-      id: 2,
-      mediaType: "video",
-      image: null,
-      video: "https://example.com/video.mp4",
-      title: "Medical Treatment for Children",
-      organization: "Children's Health Fund",
-      category: "Medical Aid",
-      isUrgent: false,
-      taxBenefits: true,
-      zakatVerified: false,
-      requiredAmount: 250000,
-      currentAmount: 180000,
-      totalDonors: 850,
-      deadline: "2025-11-30",
-      daysLeft: 15,
-    },
-    {
-      id: 3,
-      mediaType: "image",
-      image: "https://images.unsplash.com/photo-1497633762265-9d179a990aa6?w=400",
-      video: null,
-      title: "Build Schools in Rural Areas",
-      organization: "Education for All",
-      category: "Education",
-      isUrgent: false,
-      taxBenefits: true,
-      zakatVerified: true,
-      requiredAmount: 750000,
-      currentAmount: 425000,
-      totalDonors: 2100,
-      deadline: "2026-03-15",
-      daysLeft: 120,
-    },
-  ]);
-
-  const handleMediaTypeChange = (type) => {
-    setFormData((prev) => ({
-      ...prev,
-      mediaType: type,
-      image: null,
-      imagePreview: null,
-      video: null,
-      videoPreview: null,
-    }));
-  };
-
-  const handleImageUpload = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setFormData((prev) => ({
-        ...prev,
-        image: file,
-        imagePreview: reader.result,
-      }));
-    };
-
-    reader.readAsDataURL(file);
-  };
-
-  const handleVideoUpload = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setFormData((prev) => ({
-        ...prev,
-        video: file,
-        videoPreview: reader.result,
-      }));
-    };
-
-    reader.readAsDataURL(file);
-  };
-
-  const handleRemoveImage = () => {
-    setFormData((prev) => ({
-      ...prev,
-      image: null,
-      imagePreview: null,
-    }));
-  };
-
-  const handleRemoveVideo = () => {
-    setFormData((prev) => ({
-      ...prev,
-      video: null,
-      videoPreview: null,
-    }));
-  };
-
-  const handleEdit = (card) => {
-    setEditingCard(card);
-    setFormData({
-      category: card.category,
-      isUrgent: card.isUrgent,
-      taxBenefits: card.taxBenefits,
-      zakatVerified: card.zakatVerified,
-      title: card.title,
-      organization: card.organization,
-      requiredAmount: card.requiredAmount,
-      deadline: card.deadline,
-      mediaType: card.mediaType || "image",
-      image: null,
-      imagePreview: card.image,
-      video: null,
-      videoPreview: card.video,
-      currentAmount: card.currentAmount,
-      totalDonors: card.totalDonors,
-    });
-    setViewMode("edit");
-  };
-
-  const handleSave = () => {
-    alert("Fundraising card saved successfully!");
-    setViewMode("view");
-  };
-
-  const handleCancel = () => {
-    setViewMode("view");
-    setEditingCard(null);
-    setFormData({
+  import React, { useState,useEffect } from "react";
+  import {
+    Upload,
+    Save,
+    XCircle,
+    Image,
+    Home,
+    Trash2,
+    Search,
+    Users,
+    Edit2,
+    AlertCircle,
+    CheckCircle,
+    Shield,
+    Play,
+    Clock,
+    Menu,
+    X,
+    Heart,
+    Rss,
+    Award,
+    MessageSquare,
+    Flag,
+    FileText,
+    PlusIcon,
+  } from "lucide-react";
+  import axios from "axios";
+  import Sidebar from "../Layout/CMSSideBar";
+  export default function FundraisingCMS() {
+    const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [activeSection, setActiveSection] = useState("fundraising");
+    const [viewMode, setViewMode] = useState("view");
+    const [searchQuery, setSearchQuery] = useState("");
+    const [editingCard, setEditingCard] = useState(null);
+    const API_BASE = process.env.NEXT_PUBLIC_BACKEND_API; 
+    const IMAGE_URL = process.env.NEXT_PUBLIC_BACKEND_URL; 
+    const [formData, setFormData] = useState({
       category: "Emergency Aid",
       isUrgent: false,
       taxBenefits: false,
@@ -220,158 +44,376 @@ export default function FundraisingCMS() {
       organization: "",
       requiredAmount: "",
       deadline: "",
-      mediaType: "image",
+      mediaType: "image", // New field: 'image' or 'video'
       image: null,
       imagePreview: null,
       video: null,
       videoPreview: null,
       currentAmount: 0,
       totalDonors: 0,
+      isExistingImage: false, // Track if it's an existing image from backend
+      isExistingVideo: false, // Track if it's an existing video from backend
     });
-  };
 
-  const handleDelete = (id) => {
-    if (confirm("Are you sure you want to delete this fundraising card?")) {
-      setFundraisingCards((prev) => prev.filter((card) => card.id !== id));
+    const categories = [
+      "Emergency Aid",
+      "Medical Aid",
+      "Orphans",
+      "Education",
+      "Clean Water",
+    ];
+
+    const categoryColors = {
+      "Emergency Aid": "bg-red-100 text-red-800",
+      "Medical Aid": "bg-blue-100 text-blue-800",
+      Orphans: "bg-purple-100 text-purple-800",
+      Education: "bg-amber-100 text-amber-800",
+      "Clean Water": "bg-cyan-100 text-cyan-800",
+    };
+
+    const [fundraisingCards, setFundraisingCards] = useState([]);
+
+    useEffect(() => {
+      fetchFundraisers();
+    }, []);
+
+    const fetchFundraisers = async () => {
+      try {
+        const res = await axios.get(`${API_BASE}/cms/fundraiser/get`);
+        const data = await res.data;
+
+        if (data.success) {
+          setFundraisingCards(data.data);
+        }
+      } catch (err) {
+        console.error("Error fetching fundraisers:", err);
+      }
+    };
+
+    const handleMediaTypeChange = (type) => {
+      setFormData((prev) => ({
+        ...prev,
+        mediaType: type,
+        image: null,
+        imagePreview: null,
+        video: null,
+        videoPreview: null,
+        isExistingImage: false,
+        isExistingVideo: false,
+      }));
+    };
+
+    const handleImageUpload = (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFormData((prev) => ({
+          ...prev,
+          image: file,
+          imagePreview: reader.result,
+          isExistingImage: false, // This is a new upload
+        }));
+      };
+
+      reader.readAsDataURL(file);
+    };
+
+    const handleVideoUpload = (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFormData((prev) => ({
+          ...prev,
+          video: file,
+          videoPreview: reader.result,
+          isExistingVideo: false, // This is a new upload
+        }));
+      };
+
+      reader.readAsDataURL(file);
+    };
+
+    const handleRemoveImage = () => {
+      setFormData((prev) => ({
+        ...prev,
+        image: null,
+        imagePreview: null,
+        isExistingImage: false,
+      }));
+    };
+
+    const handleRemoveVideo = () => {
+      setFormData((prev) => ({
+        ...prev,
+        video: null,
+        videoPreview: null,
+        isExistingVideo: false,
+      }));
+    };
+
+    const handleEdit = (card) => {
+      setEditingCard(card);
+      setFormData({
+        category: card.category,
+        isUrgent: card.isUrgent,
+        taxBenefits: card.taxBenefits,
+        zakatVerified: card.zakatVerified,
+        title: card.title,
+        organization: card.organization,
+        requiredAmount: card.requiredAmount,
+        deadline: card.deadline,
+        mediaType: card.mediaType || "image",
+        image: null,
+        imagePreview: card.imageUrl, // Use imageUrl from backend
+        video: null,
+        videoPreview: card.videoUrl, // Use videoUrl from backend
+        currentAmount: card.currentAmount,
+        totalDonors: card.totalDonors,
+        isExistingImage: !!card.imageUrl, // Mark as existing if there's an imageUrl
+        isExistingVideo: !!card.videoUrl, // Mark as existing if there's a videoUrl
+      });
+      setViewMode("edit");
+    };
+
+    // Helper function to get the correct image URL
+    const getImageUrl = (preview, isExisting) => {
+      if (!preview) return null;
+      if (isExisting) {
+        // For existing images from backend, prepend the IMAGE_URL
+        return `${IMAGE_URL}${preview}`;
+      }
+      // For new uploads, return the base64 preview as is
+      return preview;
+    };
+
+const handleSave = async () => {
+  try {
+    const form = new FormData();
+
+    form.append("title", formData.title);
+    form.append("organization", formData.organization);
+    form.append("category", formData.category);
+    form.append("requiredAmount", formData.requiredAmount);
+    form.append("deadline", formData.deadline);
+    form.append("mediaType", formData.mediaType);
+
+    form.append("isUrgent", formData.isUrgent);
+    form.append("taxBenefits", formData.taxBenefits);
+    form.append("zakatVerified", formData.zakatVerified);
+
+    // Append ONLY new files (File instances)
+    if (formData.mediaType === "image" && formData.image instanceof File) {
+      form.append("image", formData.image);
     }
-  };
 
-  const calculatePercentage = (current, required) => {
-    const req = Number(required) || 0;
-    const cur = Number(current) || 0;
-    if (req <= 0) return 0;
-    return Math.min(Math.round((cur / req) * 100), 100);
-  };
+    if (formData.mediaType === "video" && formData.video instanceof File) {
+      form.append("video", formData.video);
+    }
 
-  const formatCurrency = (amount) => {
-    const num = Number(amount) || 0;
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "INR",
-      minimumFractionDigits: 0,
-    }).format(num);
-  };
+    let res;
 
-  return (
-    <div className="flex h-screen bg-[#F8FAFC] overflow-hidden">
-    <Sidebar 
-            sidebarOpen={sidebarOpen} 
-            setSidebarOpen={setSidebarOpen} 
-            activeSection={activeSection} 
-            setActiveSection={setActiveSection} 
-          />
+    // ----------------------------------------------------
+    // 🔥 UPDATE MODE
+    // ----------------------------------------------------
+    if (editingCard) {
+      res = await axios.put(
+        `${API_BASE}/cms/fundraiser/update/${editingCard._id}`,
+        form,
+        { headers: { "Content-Type": "multipart/form-data" } }
+      );
+    }
 
-      <div className="flex-1 flex flex-col overflow-hidden w-full md:w-auto">
-        <div className="md:hidden bg-white border-b border-gray-200 px-4 py-3 flex items-center">
-          <button
-            onClick={() => setSidebarOpen(true)}
-            className="p-2 hover:bg-gray-100 rounded-lg"
-          >
-            <Menu size={24} className="text-gray-700" />
-          </button>
-          <h1 className="ml-3 text-lg font-bold text-[#0F172A]">Fundraising</h1>
-        </div>
+    // ----------------------------------------------------
+    // 🆕 CREATE MODE
+    // ----------------------------------------------------
+    else {
+      res = await axios.post(
+        `${API_BASE}/cms/fundraiser/add`,
+        form,
+        { headers: { "Content-Type": "multipart/form-data" } }
+      );
+    }
 
-        <main className="flex-1 overflow-y-auto">
-          <div className="p-4 sm:p-6">
-            <div className="mb-6">
-              <div className="flex items-center gap-2 text-sm text-[#64748B] mb-2">
-                <Home size={16} />
-                <span>Home</span>
-                <span>/</span>
-                <span className="font-semibold text-[#0F172A]">
-                  Fundraising Now
-                </span>
-              </div>
+    const data = res.data;
 
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div>
-                  <h1 className="text-2xl sm:text-3xl font-bold text-[#0F172A] mb-2">
+    if (data.success) {
+      alert(editingCard ? "Updated Successfully!" : "Created Successfully!");
+      fetchFundraisers();   // refresh list
+      resetForm();
+      setEditingCard(null);
+      setViewMode("view");
+    } else {
+      alert(data.message || "Something went wrong");
+    }
+
+  } catch (error) {
+    console.error("Save Fundraiser Error:", error);
+    alert("Something went wrong while saving.");
+  }
+};
+
+
+    const resetForm = () => {
+      setFormData({
+        category: "Emergency Aid",
+        isUrgent: false,
+        taxBenefits: false,
+        zakatVerified: false,
+        title: "",
+        organization: "",
+        requiredAmount: "",
+        deadline: "",
+        mediaType: "image",
+        image: null,
+        imagePreview: null,
+        video: null,
+        videoPreview: null,
+        currentAmount: 0,
+        totalDonors: 0,
+        isExistingImage: false,
+        isExistingVideo: false,
+      });
+    };
+
+    const handleCancel = () => {
+      setViewMode("view");
+      setEditingCard(null);
+      resetForm();
+    };
+
+    const handleDelete = (id) => {
+      if (confirm("Are you sure you want to delete this fundraising card?")) {
+        setFundraisingCards((prev) => prev.filter((card) => card.id !== id));
+      }
+    };
+
+    const calculatePercentage = (current, required) => {
+      const req = Number(required) || 0;
+      const cur = Number(current) || 0;
+      if (req <= 0) return 0;
+      return Math.min(Math.round((cur / req) * 100), 100);
+    };
+
+    const formatCurrency = (amount) => {
+      const num = Number(amount) || 0;
+      return new Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency: "INR",
+        minimumFractionDigits: 0,
+      }).format(num);
+    };
+
+    return (
+      <div className="flex h-screen bg-[#F8FAFC] overflow-hidden">
+        <Sidebar
+          sidebarOpen={sidebarOpen}
+          setSidebarOpen={setSidebarOpen}
+          activeSection={activeSection}
+          setActiveSection={setActiveSection}
+        />
+
+        <div className="flex-1 flex flex-col overflow-hidden w-full md:w-auto">
+          <div className="md:hidden bg-white border-b border-gray-200 px-4 py-3 flex items-center">
+            <button
+              onClick={() => setSidebarOpen(true)}
+              className="p-2 hover:bg-gray-100 rounded-lg"
+            >
+              <Menu size={24} className="text-gray-700" />
+            </button>
+            <h1 className="ml-3 text-lg font-bold text-[#0F172A]">Fundraising</h1>
+          </div>
+
+          <main className="flex-1 overflow-y-auto">
+            <div className="p-4 sm:p-6">
+              <div className="mb-6">
+                <div className="flex items-center gap-2 text-sm text-[#64748B] mb-2">
+                  <Home size={16} />
+                  <span>Home</span>
+                  <span>/</span>
+                  <span className="font-semibold text-[#0F172A]">
                     Fundraising Now
-                  </h1>
-                  <p className="text-sm sm:text-base text-[#475569]">
-                    Manage active fundraising campaigns and donation cards.
-                  </p>
+                  </span>
                 </div>
-                {viewMode === "view" && (
-                  <button
-                    onClick={() => setViewMode("edit")}
-                    className="bg-blue-900 text-white px-6 py-3 rounded-xl font-semibold hover:bg-blue-700 transition-colors flex items-center gap-2 justify-center sm:justify-start cursor-pointer"
-                  >
-                    <PlusIcon size={20} />
-                    Add New Campaign
-                  </button>
-                )}
-              </div>
-            </div>
 
-            {viewMode === "view" && (
-              <div>
-                <div className="bg-white border border-[#E2E8F0] shadow-sm rounded-xl p-4 mb-4 sm:mb-6">
-                  <div className="relative">
-                    <Search
-                      className="absolute left-3 top-1/2 -translate-y-1/2 text-[#94A3B8]"
-                      size={20}
-                    />
-                    <input
-                      className="w-full pl-10 pr-4 py-2 border border-[#CBD5E1] rounded-lg focus:ring-2 focus:ring-[#2D6A4F] focus:border-transparent text-sm sm:text-base"
-                      placeholder="Search fundraising campaigns..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                    />
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                  <div>
+                    <h1 className="text-2xl sm:text-3xl font-bold text-[#0F172A] mb-2">
+                      Fundraising Now
+                    </h1>
+                    <p className="text-sm sm:text-base text-[#475569]">
+                      Manage active fundraising campaigns and donation cards.
+                    </p>
+                  </div>
+                  {viewMode === "view" && (
+                    <button
+                      onClick={() => setViewMode("edit")}
+                      className="bg-blue-900 text-white px-6 py-3 rounded-xl font-semibold hover:bg-blue-700 transition-colors flex items-center gap-2 justify-center sm:justify-start cursor-pointer"
+                    >
+                      <PlusIcon size={20} />
+                      Add New Campaign
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {viewMode === "view" && (
+                <div>
+                  <div className="bg-white border border-[#E2E8F0] shadow-sm rounded-xl p-4 mb-4 sm:mb-6">
+                    <div className="relative">
+                      <Search
+                        className="absolute left-3 top-1/2 -translate-y-1/2 text-[#94A3B8]"
+                        size={20}
+                      />
+                      <input
+                        className="w-full pl-10 pr-4 py-2 border border-[#CBD5E1] rounded-lg focus:ring-2 focus:ring-[#2D6A4F] focus:border-transparent text-sm sm:text-base"
+                        placeholder="Search fundraising campaigns..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Cards List */}
+                  <div className="space-y-4">
+                    {fundraisingCards.map((card) => (
+                      <div key={card._id} className="bg-white rounded-xl shadow-sm border border-[#E2E8F0] p-4 flex items-center gap-4">
+
+                        <div className="w-20 h-20 rounded-lg overflow-hidden">
+                          {card.mediaType === "video" ? (
+                            <video 
+                            src={`${IMAGE_URL}${card.videoUrl}`}
+                            className="w-full h-full object-cover" />
+                          ) : (
+                            <img 
+                            src={`${IMAGE_URL}${card.imageUrl}`}
+                            className="w-full h-full object-cover" />
+                          )}
+                        </div>
+
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-bold text-[#0F172A] truncate">{card.title}</h3>
+                          <p className="text-sm text-[#64748B] truncate">{card.organization}</p>
+                          <span className={`text-xs px-2 py-1 rounded-full ${categoryColors[card.category]}`}>
+                            {card.category}
+                          </span>
+                        </div>
+
+                        <div className="flex gap-2">
+                          <button onClick={() => handleEdit(card)} className="p-2 bg-[#2D6A4F] text-white rounded-lg">
+                            <Edit2 size={16} />
+                          </button>
+                        </div>
+
+                      </div>
+                    ))}
+
                   </div>
                 </div>
-
-                {/* Cards List */}
-                <div className="space-y-4">
-                  {fundraisingCards.map((card) => (
-                    <div
-                      key={card.id}
-                      className="bg-white rounded-xl shadow-sm border border-[#E2E8F0] p-4 flex items-center gap-4"
-                    >
-                      <div className="w-20 h-20 rounded-lg overflow-hidden flex-shrink-0">
-                        {card.mediaType === "video" ? (
-                          <div className="w-full h-full bg-black flex items-center justify-center">
-                            <Play size={24} className="text-white" />
-                          </div>
-                        ) : (
-                          <img
-                            src={card.image}
-                            alt={card.title}
-                            className="w-full h-full object-cover"
-                          />
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-bold text-[#0F172A] truncate">
-                          {card.title}
-                        </h3>
-                        <p className="text-sm text-[#64748B] truncate">
-                          {card.organization}
-                        </p>
-                        <span className={`text-xs px-2 py-1 rounded-full ${categoryColors[card.category]} inline-block mt-1`}>
-                          {card.category}
-                        </span>
-                      </div>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => handleEdit(card)}
-                          className="p-2 bg-[#2D6A4F] text-white rounded-lg hover:bg-[#1E3D36]"
-                        >
-                          <Edit2 size={16} />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(card.id)}
-                          className="p-2 bg-red-500 text-white rounded-lg hover:bg-red-600"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+              )}
 
             {/* EDIT MODE */}
             {viewMode === "edit" && (
@@ -536,26 +578,23 @@ export default function FundraisingCMS() {
                           <button
                             type="button"
                             onClick={() => handleMediaTypeChange("image")}
-                            className={`p-4 rounded-lg border-2 transition-all ${
-                              formData.mediaType === "image"
+                            className={`p-4 rounded-lg border-2 transition-all ${formData.mediaType === "image"
                                 ? "border-[#2D6A4F] bg-[#2D6A4F]/5"
                                 : "border-[#CBD5E1] hover:border-[#94A3B8]"
-                            }`}
+                              }`}
                           >
                             <Image
                               size={32}
-                              className={`mx-auto mb-2 ${
-                                formData.mediaType === "image"
+                              className={`mx-auto mb-2 ${formData.mediaType === "image"
                                   ? "text-[#2D6A4F]"
                                   : "text-[#94A3B8]"
-                              }`}
+                                }`}
                             />
                             <p
-                              className={`text-sm font-semibold ${
-                                formData.mediaType === "image"
+                              className={`text-sm font-semibold ${formData.mediaType === "image"
                                   ? "text-[#2D6A4F]"
                                   : "text-[#64748B]"
-                              }`}
+                                }`}
                             >
                               Image
                             </p>
@@ -567,26 +606,23 @@ export default function FundraisingCMS() {
                           <button
                             type="button"
                             onClick={() => handleMediaTypeChange("video")}
-                            className={`p-4 rounded-lg border-2 transition-all ${
-                              formData.mediaType === "video"
+                            className={`p-4 rounded-lg border-2 transition-all ${formData.mediaType === "video"
                                 ? "border-[#2D6A4F] bg-[#2D6A4F]/5"
                                 : "border-[#CBD5E1] hover:border-[#94A3B8]"
-                            }`}
+                              }`}
                           >
                             <Play
                               size={32}
-                              className={`mx-auto mb-2 ${
-                                formData.mediaType === "video"
+                              className={`mx-auto mb-2 ${formData.mediaType === "video"
                                   ? "text-[#2D6A4F]"
                                   : "text-[#94A3B8]"
-                              }`}
+                                }`}
                             />
                             <p
-                              className={`text-sm font-semibold ${
-                                formData.mediaType === "video"
+                              className={`text-sm font-semibold ${formData.mediaType === "video"
                                   ? "text-[#2D6A4F]"
                                   : "text-[#64748B]"
-                              }`}
+                                }`}
                             >
                               Video
                             </p>
@@ -609,9 +645,13 @@ export default function FundraisingCMS() {
                               <>
                                 <div className="relative max-h-40 mx-auto rounded-lg overflow-hidden">
                                   <img
-                                    src={formData.imagePreview}
+                                    src={getImageUrl(formData.imagePreview, formData.isExistingImage)}
                                     className="w-full h-full object-cover"
                                     alt="Preview"
+                                    onError={(e) => {
+                                      console.error("Image load error:", e.target.src);
+                                      e.target.src = "https://via.placeholder.com/300x200?text=Image+Not+Found";
+                                    }}
                                   />
                                   <button
                                     type="button"
@@ -677,7 +717,7 @@ export default function FundraisingCMS() {
                               <>
                                 <div className="relative max-h-40 mx-auto rounded-lg overflow-hidden bg-black">
                                   <video
-                                    src={formData.videoPreview}
+                                    src={getImageUrl(formData.videoPreview, formData.isExistingVideo)}
                                     className="w-full h-full object-contain"
                                     controls
                                   />
@@ -763,10 +803,10 @@ export default function FundraisingCMS() {
                       {formData.mediaType === "video" ? (
                         // Full card video display
                         <div className="relative">
-                         {formData.videoPreview ? (
+                          {formData.videoPreview ? (
                             <>
                               <video
-                                src={formData.videoPreview}
+                                src={getImageUrl(formData.videoPreview, formData.isExistingVideo)}
                                 className="absolute inset-0 w-full h-full object-cover"
                                 autoPlay
                                 loop
@@ -800,7 +840,7 @@ export default function FundraisingCMS() {
                           <div className="relative z-10">
                             {/* Spacer matching aspect-video */}
                             <div className="aspect-video"></div>
-                            
+
                             {/* Content section */}
                             <div className="p-4">
                               <h3 className="font-semibold text-sm mb-1 line-clamp-2 min-h-[2.5rem] text-white">
@@ -809,7 +849,7 @@ export default function FundraisingCMS() {
                               <p className="text-xs text-zinc-200 mb-3 truncate">
                                 {formData.organization || "Organization Name"}
                               </p>
-                              
+
                               <div className="mb-3">
                                 <div className="flex justify-between text-xs mb-2">
                                   <span className="font-medium text-white">
@@ -819,7 +859,7 @@ export default function FundraisingCMS() {
                                     of {formatCurrency(formData.requiredAmount || 0)}
                                   </span>
                                 </div>
-                                
+
                                 {formData.deadline && (
                                   <div className="mb-2">
                                     <span className="text-[10px] font-semibold bg-amber-100 text-amber-800 px-2 py-0.5 rounded">
@@ -873,30 +913,34 @@ export default function FundraisingCMS() {
                                   </div>
                                 )}
                               </div>
-                              </div>
+                            </div>
 
-                              <div className="w-full h-2.5 bg-white/20 rounded-full overflow-hidden">
-                                <div
-                                  className="h-full bg-emerald-400 rounded-full transition-all duration-500"
-                                  style={{
-                                    width: `${calculatePercentage(
-                                      formData.currentAmount || 0,
-                                      formData.requiredAmount || 0
-                                    )}%`,
-                                  }}
-                                />
-                              </div>
+                            <div className="w-full h-2.5 bg-white/20 rounded-full overflow-hidden">
+                              <div
+                                className="h-full bg-emerald-400 rounded-full transition-all duration-500"
+                                style={{
+                                  width: `${calculatePercentage(
+                                    formData.currentAmount || 0,
+                                    formData.requiredAmount || 0
+                                  )}%`,
+                                }}
+                              />
                             </div>
                           </div>
+                        </div>
                       ) : (
                         // Half card image display
                         <>
                           <div className="relative h-44">
                             {formData.imagePreview ? (
                               <img
-                                src={formData.imagePreview}
+                                src={getImageUrl(formData.imagePreview, formData.isExistingImage)}
                                 alt="Campaign"
                                 className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  console.error("Preview image load error:", e.target.src);
+                                  e.target.src = "https://via.placeholder.com/300x200?text=Image+Preview+Error";
+                                }}
                               />
                             ) : (
                               <div className="w-full h-full bg-gradient-to-br from-[#E2E8F0] to-[#CBD5E1] flex items-center justify-center">
@@ -993,7 +1037,7 @@ export default function FundraisingCMS() {
                     <div className="mt-6 p-4 bg-[#E2E8F0] rounded-xl">
                       <p className="text-sm text-[#475569]">
                         <strong className="text-[#0F172A]">Preview Tip:</strong>{" "}
-                        {formData.mediaType === "video" 
+                        {formData.mediaType === "video"
                           ? "Video will display across the full card with content overlay at the bottom."
                           : "Image will display on the top half of the card with content below."}
                       </p>
