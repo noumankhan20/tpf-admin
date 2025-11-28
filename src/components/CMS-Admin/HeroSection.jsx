@@ -34,23 +34,25 @@ export default function CMSAdminPanel() {
     const [selectedHero, setSelectedHero] = useState(null);
 
     // Fetch existing heroes from backend
-    const fetchHeroes = async () => {
-        try {
-            const res = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_API}/hero/get`);
-            const heroes = res.data["Hero section fetched successfully"] || [];
-            // Convert image paths to full URLs
-            const heroesWithUrls = heroes.map(hero => ({
-                ...hero,
-                id: hero._id, // Map MongoDB _id to id
-                // Use NEXT_PUBLIC_BACKEND_URL for static files (without /api)
-                image: `${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:7000'}${hero.image}`,
-                lastUpdated: new Date(hero.updatedAt).toLocaleDateString()
-            }));
-            setExistingHeros(heroesWithUrls);
-        } catch (error) {
-            console.error("Failed to fetch heroes:", error);
-        }
-    };
+  const fetchHeroes = async () => {
+    try {
+        const res = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_API}/cms/hero/get`);
+        const heroes = res.data.hero || [];
+
+        const heroesWithUrls = heroes.map(hero => ({
+            ...hero,
+            id: hero._id,
+            image: `${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:7000'}${hero.image}`,
+            lastUpdated: new Date(hero.updatedAt).toLocaleDateString()
+        }));
+
+        console.log("Heroes fetched successfully:", heroes);
+        setExistingHeros(heroesWithUrls);
+
+    } catch (error) {
+        console.error("Failed to fetch heroes:", error);
+    }
+};
 
     useEffect(() => {
         fetchHeroes();
@@ -88,7 +90,7 @@ export default function CMSAdminPanel() {
             // If selectedHero is not null, update the Hero section
             if (selectedHero) {
                 const res = await axios.put(
-                    `${process.env.NEXT_PUBLIC_BACKEND_API}/hero/update/${selectedHero.id}`,
+                    `${process.env.NEXT_PUBLIC_BACKEND_API}/cms/hero/update/${selectedHero.id}`,
                     formData,
                     {
                         headers: { "Content-Type": "multipart/form-data" },
@@ -113,8 +115,6 @@ export default function CMSAdminPanel() {
                 imagePreview: null,
                 title: "",
                 description: "",
-                buttonText: "",
-                buttonLink: "",
             });
             setSelectedHero(null);
             setViewMode("list");
