@@ -22,10 +22,10 @@ import Sidebar from "@/components/Layout/CMSSideBar";
 const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_API || "http://localhost:7000/api";
 const IMAGE_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
 const TAILORED_ENDPOINTS = {
-  create: `${API_BASE_URL}/tailored/add`,
-  getAll: `${API_BASE_URL}/tailored/get`,
-  update: (id) => `${API_BASE_URL}/tailored/update/${id}`,
-  delete: (id) => `${API_BASE_URL}/tailored/delete/${id}`,
+  create: `${API_BASE_URL}/cms/tailored/add`,
+  getAll: `${API_BASE_URL}/cms/tailored/get`,
+  update: (id) => `${API_BASE_URL}/cms/tailored/update/${id}`,
+  delete: (id) => `${API_BASE_URL}/cms/tailored/delete/${id}`,
 };
 
 export default function TailoredFeedCMS() {
@@ -81,19 +81,20 @@ export default function TailoredFeedCMS() {
   };
 
   // Fetch Tailored Items
-  const fetchFeedItems = async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const response = await axios.get(TAILORED_ENDPOINTS.getAll);
-      setFeedItems(response.data.tailoredSections || []);
-    } catch (error) {
-      setError("Failed to fetch feed items. Please try again.");
-      console.error("Fetch error:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+ const fetchFeedItems = async () => {
+  setIsLoading(true);
+  setError(null);
+  try {
+    const response = await axios.get(TAILORED_ENDPOINTS.getAll);
+    setFeedItems(response.data.tailored || []);
+  } catch (error) {
+    setError("Failed to fetch feed items. Please try again.");
+    console.error("Fetch error:", error);
+  } finally {
+    setIsLoading(false);
+  }
+};
+
 
   // Create New Feed Item
   const createFeedItem = async (formData) => {
