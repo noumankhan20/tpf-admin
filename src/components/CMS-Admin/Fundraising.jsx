@@ -403,7 +403,7 @@ const handleSave = async () => {
                         </div>
 
                         <div className="flex gap-2">
-                          <button onClick={() => handleEdit(card)} className="p-2 bg-[#2D6A4F] text-white rounded-lg">
+                          <button onClick={() => handleEdit(card)} className="p-2 bg-[#2D6A4F] text-white rounded-lg cursor-pointer">
                             <Edit2 size={16} />
                           </button>
                         </div>
@@ -776,14 +776,14 @@ const handleSave = async () => {
                       <div className="flex flex-col sm:flex-row gap-3 pt-4">
                         <button
                           onClick={handleSave}
-                          className="flex-1 bg-blue-900 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+                          className="flex-1 bg-blue-900 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 cursor-pointer"
                         >
                           <Save size={20} />
                           Save Campaign
                         </button>
                         <button
                           onClick={handleCancel}
-                          className="px-6 py-3 border-2 border-[#CBD5E1] text-[#0F172A] rounded-lg font-semibold hover:bg-[#E2E8F0] transition-colors flex items-center justify-center gap-2"
+                          className="px-6 py-3 border-2 border-[#CBD5E1] text-[#0F172A] rounded-lg font-semibold hover:bg-[#E2E8F0] transition-colors flex items-center justify-center gap-2 cursor-pointer"
                         >
                           <XCircle size={20} />
                           Cancel
