@@ -1,39 +1,58 @@
 "use client";
-import React, { useState } from "react";
-import { Save, XCircle, Home, Menu, Upload, RefreshCw, Eye, EyeOff } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { Save, Home, Menu, Upload, RefreshCw, Eye, EyeOff } from "lucide-react";
 import Sidebar from "../Layout/CMSSideBar";
+import axios from "axios";
+
 export default function StartGivingDaily() {
+  const API_URL = process.env.NEXT_PUBLIC_BACKEND_API;
+  const BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
+
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [activeSection, setActiveSection] = useState("start-giving-daily");
   const [showPreview, setShowPreview] = useState(true);
   const [hasChanges, setHasChanges] = useState(false);
-  const [activeSection, setActiveSection] = useState("start-giving-daily");
-  // Initial banner data (this would come from your database)
-  const [bannerData, setBannerData] = useState({
-    imageUrl: "https://images.unsplash.com/photo-1622864352372-a68fa7dac64e?ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTJ8fFN0YW5kJTIwd2l0aCUyMEdhemF8ZW58MHx8MHx8fDA%3D&auto=format&fit=crop&q=60&w=600",
-    title: "Stand with Gaza ",
-    description: "Your daily support delivers relief, care, and dignity to families in urgent need.",
-    buttonText: "Start Giving Daily",
-    lastUpdated: "2025-11-16 10:30",
-  });
 
-  // Form state for editing
-  const [formData, setFormData] = useState({ ...bannerData });
+  const [bannerData, setBannerData] = useState(null);
+  const [formData, setFormData] = useState(null);
+
   const [imageFile, setImageFile] = useState(null);
-  const [imagePreview, setImagePreview] = useState(bannerData.imageUrl);
+  const [imagePreview, setImagePreview] = useState("");
 
+  // Load start-giving section on mount
+  useEffect(() => {
+    fetchSection();
+  }, []);
+
+  const fetchSection = async () => {
+    try {
+      const res = await axios.get(`${API_URL}/cms/start-giving/get`);
+
+      if (res.data.success && res.data.data.length > 0) {
+        const section = res.data.data[0];
+
+        setBannerData(section);
+
+        setFormData({
+          title: section.title,
+          description: section.description,
+          buttonText: "Start Giving Daily", // fixed button text
+        });
+
+        setImagePreview(`${BASE_URL}${section.image}`);
+      }
+    } catch (err) {
+      console.error("Fetch Start-Giving Error:", err);
+    }
+  };
+
+  // IMAGE UPLOAD
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
-      alert('Please upload a valid image file (JPG, PNG, WebP)');
-      return;
-    }
-
-    // Validate file size (max 10MB)
-    if (file.size > 10 * 1024 * 1024) {
-      alert('Image size should be less than 10MB');
+    if (!file.type.startsWith("image/")) {
+      alert("Please upload a valid image file.");
       return;
     }
 
@@ -41,149 +60,123 @@ export default function StartGivingDaily() {
     reader.onloadend = () => {
       setImagePreview(reader.result);
       setImageFile(file);
-      setFormData(prev => ({ ...prev, imageUrl: reader.result }));
       setHasChanges(true);
     };
     reader.readAsDataURL(file);
   };
 
+  // FORM INPUT CHANGE
   const handleInputChange = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData((prev) => ({ ...prev, [field]: value }));
     setHasChanges(true);
   };
 
-  const handleSave = () => {
-    // Validation
-    if (!formData.title.trim()) {
-      alert("Title is required");
-      return;
-    }
-    if (formData.title.length > 100) {
-      alert("Title must be less than 100 characters");
-      return;
-    }
-    if (!formData.description.trim()) {
-      alert("Description is required");
-      return;
-    }
-    if (formData.description.length > 500) {
-      alert("Description must be less than 500 characters");
-      return;
-    }
-    if (!imagePreview) {
-      alert("Banner image is required");
+  // SAVE BUTTON → calls backend PUT API
+  const handleSave = async () => {
+    if (!formData.title.trim() || !formData.description.trim()) {
+      alert("Title and description cannot be empty");
       return;
     }
 
-    // Update the main banner data
-    setBannerData({
-      ...formData,
-      lastUpdated: new Date().toLocaleString(),
-    });
-    
-    setHasChanges(false);
-    alert("✅ Changes saved successfully! Your banner has been updated.");
+    const form = new FormData();
+    form.append("title", formData.title);
+    form.append("description", formData.description);
+
+    if (imageFile) form.append("image", imageFile);
+
+    try {
+      const res = await axios.put(
+        `${API_URL}/cms/start-giving/update/${bannerData._id}`,
+        form,
+        { headers: { "Content-Type": "multipart/form-data" } }
+      );
+
+      if (res.data.success) {
+        alert("Updated successfully!");
+        fetchSection();
+        setHasChanges(false);
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Failed to update");
+    }
   };
 
+  // RESET
   const handleReset = () => {
     if (hasChanges && !confirm("Discard unsaved changes?")) return;
-    setFormData({ ...bannerData });
-    setImagePreview(bannerData.imageUrl);
+
+    setFormData({
+      title: bannerData.title,
+      description: bannerData.description,
+      buttonText: "Start Giving Daily",
+    });
+
+    setImagePreview(`${BASE_URL}${bannerData.image}`);
     setImageFile(null);
     setHasChanges(false);
   };
 
   return (
     <div className="flex h-screen bg-[#F8FAFC] overflow-hidden">
-      <Sidebar 
-              sidebarOpen={sidebarOpen} 
-              setSidebarOpen={setSidebarOpen} 
-              activeSection={activeSection} 
-              setActiveSection={setActiveSection} 
-            />
-      
+      <Sidebar
+        sidebarOpen={sidebarOpen}
+        setSidebarOpen={setSidebarOpen}
+        activeSection={activeSection}
+        setActiveSection={setActiveSection}
+      />
+
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Mobile Header */}
+        {/* Mobile header */}
         <div className="md:hidden bg-white border-b px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center">
-            <button onClick={() => setSidebarOpen(true)} className="p-2 hover:bg-gray-100 rounded-lg">
-              <Menu size={24} />
-            </button>
-            <h1 className="ml-3 text-lg font-bold">Fundraiser Banner</h1>
-          </div>
+          <button onClick={() => setSidebarOpen(true)} className="p-2">
+            <Menu size={24} />
+          </button>
+
           {hasChanges && (
-            <span className="px-2 py-1 bg-amber-100 text-amber-800 text-xs font-semibold rounded-full">
+            <span className="px-2 py-1 bg-amber-200 text-amber-800 text-xs rounded-full">
               Unsaved
             </span>
           )}
         </div>
 
+        {/* MAIN CONTENT */}
         <main className="flex-1 overflow-y-auto">
-          <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
-            
+          <div className="p-6 max-w-7xl mx-auto">
+
             {/* Header */}
-            <div className="mb-6">
-              <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
-                <Home size={16} />
-                <span>Home</span>
-                <span>/</span>
-                <span className="font-semibold text-gray-900">Start Fundraiser Banner</span>
-              </div>
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div>
-                  <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
-                    Start Giving Daily Banner Management
-                  </h1>
-                  <p className="text-sm text-gray-600 mt-1">
-                    Edit the banner image, title, and description
-                  </p>
-                </div>
-                {hasChanges && (
-                  <span className="hidden md:inline-flex px-3 py-1 bg-amber-100 text-amber-800 text-sm font-semibold rounded-full">
-                    You have unsaved changes
-                  </span>
-                )}
-              </div>
+            <div className="flex items-center gap-2 text-sm text-gray-600 mb-4">
+              <Home size={16} />
+              <span>Home</span>
+              <span>/</span>
+              <span className="font-semibold text-gray-900">Start Giving Daily</span>
             </div>
 
-            {/* Action Buttons */}
-            <div className="mb-6 flex flex-wrap gap-3">
-              <button
-                onClick={() => setShowPreview(!showPreview)}
-                className="px-4 py-2 bg-blue-900 text-white rounded-lg hover:bg-blue-700 transition flex items-center gap-2 font-medium"
-              >
-                {showPreview ? <EyeOff size={18} /> : <Eye size={18} />}
-                {showPreview ? "Hide" : "Show"} Live Preview
-              </button>
-            </div>
+            {/* Preview Toggle */}
+            <button
+              onClick={() => setShowPreview(!showPreview)}
+              className="px-4 py-2 bg-blue-900 text-white rounded-lg flex gap-2 items-center mb-6"
+            >
+              {showPreview ? <EyeOff size={18} /> : <Eye size={18} />}
+              {showPreview ? "Hide Preview" : "Show Preview"}
+            </button>
 
-            {/* Live Preview */}
-            {showPreview && (
-              <div className="mb-6 bg-white rounded-xl shadow-lg border-2 border-purple-200 p-4 sm:p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-lg font-bold text-gray-900">Live Preview</h2>
-                  <span className="px-3 py-1 bg-purple-100 text-blue-700 text-xs font-semibold rounded-full">
-                    Frontend View
-                  </span>
-                </div>
-                
-                {/* Actual banner preview */}
-                <div className="relative overflow-hidden rounded-2xl">
-                  <div className="absolute inset-0 bg-gradient-to-r from-black/60 to-black/30 z-10"></div>
+            {/* LIVE PREVIEW */}
+            {showPreview && formData && (
+              <div className="bg-white rounded-xl shadow-lg border-2 border-blue-200 p-4 mb-6">
+                <div className="relative rounded-2xl overflow-hidden">
+                  <div className="absolute inset-0 bg-black/40 z-10"></div>
+
                   <img
                     src={imagePreview}
-                    alt="Banner Preview"
-                    className="h-64 md:h-96 w-full object-cover object-[50%_75%]"
+                    className="w-full h-64 md:h-96 object-cover object-center"
                   />
-                  <div className="absolute inset-0 p-6 md:p-10 flex items-center z-20">
-                    <div className="max-w-xl text-white">
-                      <h3 className="text-2xl md:text-3xl font-semibold mb-3">
-                        {formData.title || "Your title here..."}
-                      </h3>
-                      <p className="text-sm md:text-base text-white/90 mb-5">
-                        {formData.description || "Your description here..."}
-                      </p>
-                      <button className="px-6 py-3 cursor-pointer bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium text-lg transition-colors">
+
+                  <div className="absolute inset-0 flex items-center px-8 z-20">
+                    <div className="text-white max-w-xl">
+                      <h1 className="text-3xl font-bold mb-3">{formData.title}</h1>
+                      <p className="mb-5">{formData.description}</p>
+                      <button className="bg-emerald-600 hover:bg-emerald-700 px-6 py-3 rounded-lg text-lg">
                         {formData.buttonText}
                       </button>
                     </div>
@@ -192,173 +185,77 @@ export default function StartGivingDaily() {
               </div>
             )}
 
-            {/* Edit Form */}
-            <div className="grid lg:grid-cols-2 gap-6">
-              {/* Left Column - Edit Form */}
-              <div className="bg-white rounded-xl shadow-sm border p-6">
-                <h2 className="text-xl font-bold text-gray-900 mb-6">Edit Banner Content</h2>
+            {/* FORM */}
+            {formData && (
+              <div className="bg-white p-6 rounded-xl shadow-sm border">
 
-                {/* Image Upload */}
-                <div className="mb-6">
-                  <label className="block text-sm font-semibold text-gray-900 mb-2">
-                    Banner Image *
-                  </label>
-                  <p className="text-xs text-gray-600 mb-3">
-                    Recommended: 1200x800px (landscape), JPG/PNG/WebP, max 10MB
-                  </p>
+                {/* IMAGE INPUT */}
+                <label className="block text-sm font-semibold mb-2">Banner Image *</label>
 
-                  <label className="border-2 border-dashed border-gray-300 rounded-xl p-6 block text-center cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition group">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={handleImageUpload}
-                    />
-
-                    {imagePreview ? (
-                      <div className="space-y-3">
-                        <img
-                          src={imagePreview}
-                          alt="Preview"
-                          className="w-full h-48 object-cover rounded-lg shadow-md"
-                        />
-                        <p className="text-sm text-blue-600 font-medium group-hover:text-blue-700">
-                          Click to change image
-                        </p>
-                      </div>
-                    ) : (
-                      <div className="space-y-3">
-                        <Upload size={48} className="mx-auto text-gray-400 group-hover:text-blue-500 transition" />
-                        <div>
-                          <p className="text-sm font-medium text-gray-700">Click or drag to upload</p>
-                          <p className="text-xs text-gray-500 mt-1">JPG, PNG, WebP up to 10MB</p>
-                        </div>
-                      </div>
-                    )}
-                  </label>
-                </div>
-
-                {/* Title */}
-                <div className="mb-6">
-                  <label className="block text-sm font-semibold text-gray-900 mb-2">
-                    Banner Title * <span className="text-xs font-normal text-gray-500">({formData.title.length}/100)</span>
-                  </label>
-                  <input
-                    type="text"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Enter banner title..."
-                    value={formData.title}
-                    onChange={(e) => handleInputChange('title', e.target.value)}
-                    maxLength={100}
-                  />
-                  {formData.title.length > 80 && (
-                    <p className="text-xs text-amber-600 mt-1">
-                      ⚠️ Consider keeping the title concise for better readability
-                    </p>
+                <label className="border-2 border-dashed p-6 rounded-xl block text-center cursor-pointer">
+                  <input type="file" className="hidden" onChange={handleImageUpload} />
+                  {imagePreview ? (
+                    <img src={imagePreview} className="w-full h-40 object-cover rounded-lg" />
+                  ) : (
+                    <Upload size={40} className="mx-auto text-gray-400" />
                   )}
-                </div>
+                </label>
 
-                {/* Description */}
-                <div className="mb-6">
-                  <label className="block text-sm font-semibold text-gray-900 mb-2">
-                    Banner Description * <span className="text-xs font-normal text-gray-500">({formData.description.length}/500)</span>
-                  </label>
-                  <textarea
-                    rows={5}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                    placeholder="Enter banner description..."
-                    value={formData.description}
-                    onChange={(e) => handleInputChange('description', e.target.value)}
-                    maxLength={500}
-                  />
-                  {formData.description.length > 400 && (
-                    <p className="text-xs text-amber-600 mt-1">
-                      ⚠️ Consider keeping the description concise for better user experience
-                    </p>
-                  )}
-                </div>
+                {/* TITLE */}
+                <label className="block mt-6 mb-2 text-sm font-semibold">
+                  Banner Title ({formData.title.length}/100)
+                </label>
+                <input
+                  type="text"
+                  value={formData.title}
+                  maxLength={100}
+                  onChange={(e) => handleInputChange("title", e.target.value)}
+                  className="w-full px-4 py-3 border rounded-lg"
+                />
 
-                {/* Action Buttons */}
-                <div className="flex flex-col sm:flex-row gap-3">
+                {/* DESCRIPTION */}
+                <label className="block mt-6 mb-2 text-sm font-semibold">
+                  Description ({formData.description.length}/500)
+                </label>
+                <textarea
+                  rows={5}
+                  value={formData.description}
+                  maxLength={500}
+                  onChange={(e) =>
+                    handleInputChange("description", e.target.value)
+                  }
+                  className="w-full px-4 py-3 border rounded-lg"
+                />
+
+                {/* ACTION BUTTONS */}
+                <div className="flex gap-4 mt-6">
                   <button
                     onClick={handleSave}
                     disabled={!hasChanges}
-                    className={`flex-1 py-3 rounded-lg font-semibold flex items-center justify-center gap-2 transition ${
+                    className={`px-6 py-3 rounded-lg font-semibold flex items-center gap-2 ${
                       hasChanges
-                        ? 'bg-blue-600 text-white hover:bg-blue-700'
-                        : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                        ? "bg-blue-600 text-white"
+                        : "bg-gray-200 text-gray-400 cursor-not-allowed"
                     }`}
                   >
-                    <Save size={18} />
-                    Save Changes
+                    <Save size={18} /> Save
                   </button>
+
                   <button
                     onClick={handleReset}
                     disabled={!hasChanges}
-                    className={`px-6 py-3 rounded-lg font-semibold flex items-center justify-center gap-2 transition ${
+                    className={`px-6 py-3 rounded-lg border font-semibold ${
                       hasChanges
-                        ? 'border-2 border-gray-300 hover:bg-gray-50'
-                        : 'border-2 border-gray-200 text-gray-400 cursor-not-allowed'
+                        ? "border-gray-400"
+                        : "border-gray-200 text-gray-400 cursor-not-allowed"
                     }`}
                   >
-                    <RefreshCw size={18} />
-                    Reset
+                    <RefreshCw size={18} /> Reset
                   </button>
                 </div>
+
               </div>
-
-              {/* Right Column - Info & Tips */}
-              <div className="space-y-6">
-                {/* Current Status */}
-                <div className="bg-white rounded-xl shadow-sm border p-6">
-                  <h3 className="text-lg font-bold text-gray-900 mb-4">Current Status</h3>
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between py-2 border-b">
-                      <span className="text-sm text-gray-600">Last Updated:</span>
-                      <span className="text-sm font-medium text-gray-900">{bannerData.lastUpdated}</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Best Practices */}
-                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border border-blue-200 p-6">
-                  <h3 className="text-lg font-bold text-gray-900 mb-4">💡 Best Practices</h3>
-                  <ul className="space-y-3 text-sm text-gray-700">
-                    <li className="flex items-start gap-2">
-                      <span className="text-blue-600 font-bold">•</span>
-                      <span><strong>Image:</strong> Use high-quality landscape images (16:9 ratio) with focal point at 50% horizontal, 75% vertical</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-blue-600 font-bold">•</span>
-                      <span><strong>Title:</strong> Keep it short and compelling (5-10 words works best)</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-blue-600 font-bold">•</span>
-                      <span><strong>Description:</strong> Focus on benefits and call-to-action (2-3 sentences)</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-blue-600 font-bold">•</span>
-                      <span><strong>Contrast:</strong> Ensure text is visible against the background image</span>
-                    </li>
-                  </ul>
-                </div>
-
-                {/* Preview Sizes */}
-                <div className="bg-white rounded-xl shadow-sm border p-6">
-                  <h3 className="text-lg font-bold text-gray-900 mb-4">Preview Dimensions</h3>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between py-2 border-b">
-                      <span className="text-gray-600">Mobile (h-64):</span>
-                      <span className="font-medium">256px height</span>
-                    </div>
-                    <div className="flex justify-between py-2">
-                      <span className="text-gray-600">Desktop (h-96):</span>
-                      <span className="font-medium">384px height</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
+            )}
           </div>
         </main>
       </div>
