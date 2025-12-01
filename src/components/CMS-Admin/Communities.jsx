@@ -1,5 +1,6 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState,useEffect } from "react";
+import axios from "axios";
 import {
   Upload,
   Save,
@@ -23,38 +24,33 @@ export default function CommunitiesCMS() {
   const [selectedCommunity, setSelectedCommunity] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeSection, setActiveSection] = useState("communities");
+  const [communities, setCommunities] = useState([]);
+  const API_URL = process.env.NEXT_PUBLIC_BACKEND_API;
 
-  // Communities State
-  const [communities, setCommunities] = useState([
-    {
-      id: 1,
-     name: "Blood Community", 
-    image: "https://www.shutterstock.com/image-vector/high-quality-blood-drop-isolated-600nw-2589564683.jpg",
-      lastUpdated: "2025-11-15 10:30",
-      order: 1,
-    },
-    {
-      id: 2,
-       name: "Masjid Building Initiative", 
-    image: "https://images.unsplash.com/photo-1512167108213-5ee155879c6a?ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8M3x8bWFzamlkJTIwYnVpbGRpbmclMjBpbml0aWF0aXZlfGVufDB8fDB8fHww&auto=format&fit=crop&q=60&w=600",
-      lastUpdated: "2025-11-14 15:20",
-      order: 2,
-    },
-    {
-      id: 3,
-       name: "Quranic Studies Center", 
-    image: "https://media.istockphoto.com/id/1161964542/photo/koran-holy-book-of-muslims-on-the-table-still-life.webp?a=1&b=1&s=612x612&w=0&k=20&c=q8tCvR0FT0W38pRIOTM_vFwV1ndJ3FRK42KhnvSYTPs=",
-      lastUpdated: "2025-11-13 09:45",
-      order: 3,
-    },
-    {
-      id: 4,
-     name: "Modern Islamic School Project", 
-    image: "https://images.unsplash.com/photo-1643429096345-9de0d2ab7e7c?ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Nnx8TW9kZXJuJTIwSXNsYW1pYyUyMFNjaG9vbCUyMFByb2plY3R8ZW58MHx8MHx8fDA%3D&auto=format&fit=crop&q=60&w=600",
-      lastUpdated: "2025-11-12 14:10",
-      order: 4,
-    },
-  ]);
+useEffect(() => {
+  fetchCommunities();
+}, []);
+
+const fetchCommunities = async () => {
+  try {
+    const response = await axios.get(`${API_URL}/cms/communities/get`);
+    
+    if (response.data.success) {
+      const formatted = response.data.commmunities.map((item, index) => ({
+        id: item._id,
+        name: item.title,
+        image: `${process.env.NEXT_PUBLIC_BACKEND_URL}${item.image}`,
+        lastUpdated: new Date(item.updatedAt).toLocaleString(),
+        order: index + 1,
+      }));
+
+      setCommunities(formatted);
+    }
+  } catch (error) {
+    console.error("Fetch error:", error);
+  }
+};
+
 
   const [communityForm, setCommunityForm] = useState({
     name: "",
@@ -111,35 +107,35 @@ export default function CommunitiesCMS() {
   };
 
   // Save Community
-  const handleSaveCommunity = () => {
-    if (viewMode === "add-community") {
-      const newCommunity = {
-        id: Date.now(),
-        ...communityForm,
-        image: communityForm.imagePreview,
-        lastUpdated: new Date().toLocaleString(),
-        order: communities.length + 1,
-      };
-      setCommunities([...communities, newCommunity]);
+const handleSaveCommunity = async () => {
+  if (!communityForm.name || !communityForm.image) {
+    alert("Name & Image are required");
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append("title", communityForm.name);
+  formData.append("image", communityForm.image);
+
+  try {
+    const response = await axios.post(
+      `${API_URL}/cms/communities/add`,
+      formData,
+      {
+        headers: { "Content-Type": "multipart/form-data" }
+      }
+    );
+
+    if (response.data.success) {
       alert("Community added successfully!");
-    } else {
-      setCommunities(
-        communities.map((community) =>
-          community.id === selectedCommunity.id
-            ? { 
-                ...community, 
-                ...communityForm,
-                image: communityForm.imagePreview,
-                lastUpdated: new Date().toLocaleString() 
-              }
-            : community
-        )
-      );
-      alert("Community updated successfully!");
+      fetchCommunities(); // refresh UI
+      setViewMode("overview");
     }
-    setViewMode("overview");
-    setSelectedCommunity(null);
-  };
+  } catch (error) {
+    console.error("Upload error:", error);
+    alert("Failed to add community");
+  }
+};
 
   // Delete Community
   const handleDeleteCommunity = (id) => {
@@ -262,7 +258,7 @@ export default function CommunitiesCMS() {
                     </div>
                     <button
                       onClick={handleAddCommunity}
-                      className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2 self-start sm:self-auto"
+                      className="px-4 py-2 bg-blue-900 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2 self-start sm:self-auto"
                     >
                       <Plus size={16} />
                       <span>Add New Community</span>
