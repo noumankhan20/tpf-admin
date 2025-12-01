@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState,useEffect } from "react";
 import {
   Save,
   XCircle,
@@ -15,58 +15,40 @@ import {
   Image as ImageIcon,
 } from "lucide-react";
 import Sidebar from "../Layout/CMSSideBar";
+import axios from "axios";
 export default function PartnersCMS() {
   const [viewMode, setViewMode] = useState("overview");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedPartner, setSelectedPartner] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeSection, setActiveSection] = useState("trusted");
+  const [partners, setPartners] = useState([]);
 
-  // Partners State
-  const [partners, setPartners] = useState([
-    {
-      id: 1,
-      name: "Seed Charity",
-      image: "https://cdn.builder.io/api/v1/image/assets%2Fc05b786f1645447ab878b73ca4dd6870%2Ff0e211f4eed743b9a70fe6b4b6001b85?format=webp&width=2000",
-      lastUpdated: "2025-11-15 10:30",
-      order: 1,
-    },
-    {
-      id: 2,
-      name: "Global Family Aid",
-      image: "https://cdn.builder.io/api/v1/image/assets%2Fc05b786f1645447ab878b73ca4dd6870%2Fe9df5f33b91d46a293a5d3c661e5ad00?format=webp&width=2000",
-      lastUpdated: "2025-11-14 15:20",
-      order: 2,
-    },
-    {
-      id: 3,
-      name: "Human Relief",
-      image: "https://cdn.builder.io/api/v1/image/assets%2Fc05b786f1645447ab878b73ca4dd6870%2F1bf296792ea647b9aa7980631140b241?format=webp&width=2000",
-      lastUpdated: "2025-11-13 09:45",
-      order: 3,
-    },
-    {
-      id: 4,
-      name: "Maan",
-      image: "https://cdn.builder.io/api/v1/image/assets%2Fc05b786f1645447ab878b73ca4dd6870%2F9256431f39904e7997bbf0d7f19e2f96?format=webp&width=2000",
-      lastUpdated: "2025-11-12 14:10",
-      order: 4,
-    },
-    {
-      id: 5,
-      name: "UN-ICC",
-      image: "https://cdn.builder.io/api/v1/image/assets%2Fc05b786f1645447ab878b73ca4dd6870%2Fed5a55b79ee24f20a5cc6fd1abe39177?format=webp&width=2000",
-      lastUpdated: "2025-11-11 11:25",
-      order: 5,
-    },
-    {
-      id: 6,
-      name: "Little Tree Foundation",
-      image: "https://cdn.builder.io/api/v1/image/assets%2Fc05b786f1645447ab878b73ca4dd6870%2F4d5eb38bd91446389d6773e87a9aa424?format=webp&width=2000",
-      lastUpdated: "2025-11-10 16:40",
-      order: 6,
-    },
-  ]);
+  const API_URL = process.env.NEXT_PUBLIC_BACKEND_API;
+  const BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
+
+useEffect(() => {
+  fetchPartners();
+}, []);
+
+const fetchPartners = async () => {
+  try {
+    const res = await axios.get(`${API_URL}/cms/trusted-by/get`);
+    if (res.data.success) {
+      const formatted = res.data.trustedby.map((item, index) => ({
+        id: item._id,
+        name: item.title,
+        image: `${BASE_URL}${item.image}`,
+        lastUpdated: new Date(item.updatedAt).toLocaleString(),
+        order: index + 1
+      }));
+
+      setPartners(formatted);
+    }
+  } catch (err) {
+    console.error("Fetch trusted-by error:", err);
+  }
+};
 
   const [partnerForm, setPartnerForm] = useState({
     name: "",
@@ -115,76 +97,86 @@ export default function PartnersCMS() {
   };
 
   // Save Partner
-  const handleSavePartner = () => {
-    if (!partnerForm.name.trim()) {
-      alert("Please enter a partner name");
-      return;
-    }
+const handleSavePartner = async () => {
+  if (!partnerForm.name.trim()) return alert("Name required");
 
-    if (viewMode === "add-partner") {
-      const newPartner = {
-        id: Date.now(),
-        name: partnerForm.name,
-        description: partnerForm.description,
-        image: partnerForm.imagePreview,
-        status: "Active",
-        lastUpdated: new Date().toLocaleString(),
-        order: partners.length + 1,
-      };
-      setPartners([...partners, newPartner]);
-      alert("Partner added successfully!");
-    } else {
-      setPartners(
-        partners.map((partner) =>
-          partner.id === selectedPartner.id
-            ? { 
-                ...partner, 
-                name: partnerForm.name,
-                description: partnerForm.description,
-                image: partnerForm.imagePreview,
-                lastUpdated: new Date().toLocaleString() 
-              }
-            : partner
-        )
-      );
-      alert("Partner updated successfully!");
+  if (viewMode === "edit-partner") {
+    return handleUpdatePartner();   // 🔥 call update instead of add
+  }
+
+  // Create mode
+  if (!partnerForm.image) return alert("Image required");
+
+  const formData = new FormData();
+  formData.append("title", partnerForm.name);
+  formData.append("image", partnerForm.image);
+
+  try {
+    const res = await axios.post(
+      `${API_URL}/cms/trusted-by/add`,
+      formData,
+      { headers: { "Content-Type": "multipart/form-data" } }
+    );
+
+    if (res.data.success) {
+      alert("Partner added successfully");
+      fetchPartners();
+      setViewMode("overview");
     }
-    setViewMode("overview");
-    setSelectedPartner(null);
-  };
+  } catch (err) {
+    console.error(err);
+    alert("Failed to add partner");
+  }
+};
+
+
+  const handleUpdatePartner = async () => {
+  if (!selectedPartner) return;
+
+  const formData = new FormData();
+  formData.append("title", partnerForm.name);
+
+  // only append image if user uploads a new one
+  if (partnerForm.image) {
+    formData.append("image", partnerForm.image);
+  }
+
+  try {
+    const res = await axios.put(
+      `${API_URL}/cms/trusted-by/update/${selectedPartner.id}`,
+      formData,
+      { headers: { "Content-Type": "multipart/form-data" } }
+    );
+
+    if (res.data.success) {
+      alert("Partner updated successfully");
+      fetchPartners();
+      setViewMode("overview");
+      setSelectedPartner(null);
+    }
+  } catch (err) {
+    console.error("Update failed:", err);
+    alert("Failed to update partner");
+  }
+};
+
 
   // Delete Partner
-  const handleDeletePartner = (id) => {
-    if (confirm("Are you sure you want to delete this partner?")) {
-      setPartners(partners.filter((partner) => partner.id !== id));
+  const handleDeletePartner = async (id) => {
+  if (!confirm("Delete this partner?")) return;
+
+  try {
+    const res = await axios.delete(`${API_URL}/cms/trusted-by/delete/${id}`);
+
+    if (res.data.success) {
+      alert("Partner deleted");
+      fetchPartners();
     }
-  };
-
-  // Move Partner Up
-  const handleMoveUp = (index) => {
-    if (index === 0) return;
-    const newPartners = [...partners];
-    [newPartners[index], newPartners[index - 1]] = [newPartners[index - 1], newPartners[index]];
-    
-    newPartners.forEach((partner, idx) => {
-      partner.order = idx + 1;
-    });
-    
-    setPartners(newPartners);
-  };
-
-  // Move Partner Down
-  const handleMoveDown = (index) => {
-    if (index === partners.length - 1) return;
-    const newPartners = [...partners];
-    [newPartners[index], newPartners[index + 1]] = [newPartners[index + 1], newPartners[index]];
-    
-    newPartners.forEach((partner, idx) => {
-      partner.order = idx + 1;
-    });
-    
-    setPartners(newPartners);
-  };
+  } catch (err) {
+    console.error("Delete error:", err);
+    alert("Failed to delete partner");
+  }
+};
 
   // Cancel
   const handleCancel = () => {
@@ -199,11 +191,11 @@ export default function PartnersCMS() {
   return (
     <div className="flex h-screen bg-[#F8FAFC] overflow-hidden">
       {/* Sidebar Integration */}
-      <Sidebar 
-        sidebarOpen={sidebarOpen} 
-        setSidebarOpen={setSidebarOpen} 
-        activeSection={activeSection} 
-        setActiveSection={setActiveSection} 
+      <Sidebar
+        sidebarOpen={sidebarOpen}
+        setSidebarOpen={setSidebarOpen}
+        activeSection={activeSection}
+        setActiveSection={setActiveSection}
       />
 
       {/* Main Content Area */}
@@ -223,7 +215,7 @@ export default function PartnersCMS() {
         {/* Page Content */}
         <main className="flex-1 overflow-y-auto">
           <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
-            
+
             {/* Page Header */}
             <div className="mb-6">
               <div className="flex items-center gap-2 text-sm text-[#64748B] mb-2">
@@ -297,35 +289,6 @@ export default function PartnersCMS() {
                         className="border border-[#E2E8F0] rounded-xl overflow-hidden hover:shadow-lg transition-shadow"
                       >
                         <div className="p-4 sm:p-5">
-                          {/* Reorder Controls */}
-                          <div className="flex items-center justify-between mb-4">
-                            <span className="text-xs text-gray-500 font-medium">
-                              Position: {index + 1}
-                            </span>
-                            <div className="flex items-center gap-1">
-                              <button
-                                onClick={() => handleMoveUp(index)}
-                                disabled={index === 0}
-                                className={`p-1.5 rounded hover:bg-gray-100 transition-colors ${
-                                  index === 0 ? 'opacity-30 cursor-not-allowed' : ''
-                                }`}
-                                title="Move up"
-                              >
-                                <ChevronUp size={16} className="text-gray-600 cursor-pointer" />
-                              </button>
-                              <GripVertical size={16} className="text-gray-400" />
-                              <button
-                                onClick={() => handleMoveDown(index)}
-                                disabled={index === filteredPartners.length - 1}
-                                className={`p-1.5 rounded hover:bg-gray-100 transition-colors ${
-                                  index === filteredPartners.length - 1 ? 'opacity-30 cursor-not-allowed' : ''
-                                }`}
-                                title="Move down"
-                              >
-                                <ChevronDown size={16} className="text-gray-600 cursor-pointer" />
-                              </button>
-                            </div>
-                          </div>
 
                           {/* Partner Image & Info */}
                           <div className="flex flex-col items-center mb-4">
@@ -491,7 +454,7 @@ export default function PartnersCMS() {
                     <h2 className="text-xl sm:text-2xl font-bold text-[#0F172A] mb-6">
                       Live Preview
                     </h2>
-                    
+
                     {/* Main Preview Card */}
                     <div className="bg-white rounded-xl border-2 border-zinc-200 hover:border-emerald-500 shadow-lg p-8 flex flex-col items-center justify-center transition-all duration-300 mb-6">
                       <div className="relative w-24 h-24 rounded-full flex items-center justify-center overflow-hidden bg-gray-100 mb-4 shadow-md">
