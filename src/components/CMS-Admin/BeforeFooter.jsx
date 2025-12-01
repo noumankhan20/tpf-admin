@@ -1,25 +1,45 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Save, XCircle, Home, Menu, Upload, RefreshCw, Eye, EyeOff } from "lucide-react";
 import Sidebar from "../Layout/CMSSideBar";
+import axios from "axios"
 export default function StartFundraiserBannerCMS() {
+  const API_URL = process.env.NEXT_PUBLIC_BACKEND_API;
+  const BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [showPreview, setShowPreview] = useState(true);
-  const [hasChanges, setHasChanges] = useState(false);
-  const [activeSection, setActiveSection] = useState("before-footer");
-  // Initial banner data (this would come from your database)
-  const [bannerData, setBannerData] = useState({
-    imageUrl: "https://images.unsplash.com/photo-1576381394626-53b3d2d48145?ixlib=rb-4.1.0&auto=format&fit=crop&q=60&w=500",
-    title: "Start your fundraiser in minutes",
-    description: "No platform fees. Reach millions of generous hearts across the Ummah. Turn your cause into lasting ṣadaqah jāriyah — a reward that continues beyond this world.",
-    buttonText: "Create Fundraiser Now",
-    lastUpdated: "2025-11-16 10:30",
-  });
-
-  // Form state for editing
-  const [formData, setFormData] = useState({ ...bannerData });
+  const [activeSection, setActiveSection] = useState("influencers");
+  const [bannerData, setBannerData] = useState(null);
+  const [formData, setFormData] = useState(null);
   const [imageFile, setImageFile] = useState(null);
-  const [imagePreview, setImagePreview] = useState(bannerData.imageUrl);
+  const [imagePreview, setImagePreview] = useState("");
+  const [hasChanges, setHasChanges] = useState(false);
+  const [showPreview, setShowPreview] = useState(true);
+
+  useEffect(() => {
+    fetchSection();
+  }, []);
+
+  const fetchSection = async () => {
+    try {
+      const res = await axios.get(`${API_URL}/cms/before-footer/get`);
+
+      if (res.data.success && res.data.data.length > 0) {
+        const section = res.data.data[0];
+
+        setBannerData(section);
+        setFormData({
+          title: section.title,
+          description: section.description,
+          buttonText: "Create Fundraiser Now",
+        });
+
+        setImagePreview(`${BASE_URL}${section.image}`);
+      }
+    } catch (err) {
+      console.error("Fetch Before-Footer Error:", err);
+    }
+  };
+
 
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
@@ -52,37 +72,33 @@ export default function StartFundraiserBannerCMS() {
     setHasChanges(true);
   };
 
-  const handleSave = () => {
-    // Validation
-    if (!formData.title.trim()) {
-      alert("Title is required");
-      return;
-    }
-    if (formData.title.length > 100) {
-      alert("Title must be less than 100 characters");
-      return;
-    }
-    if (!formData.description.trim()) {
-      alert("Description is required");
-      return;
-    }
-    if (formData.description.length > 500) {
-      alert("Description must be less than 500 characters");
-      return;
-    }
-    if (!imagePreview) {
-      alert("Banner image is required");
+  const handleSave = async () => {
+    if (!formData.title.trim() || !formData.description.trim()) {
+      alert("All fields required");
       return;
     }
 
-    // Update the main banner data
-    setBannerData({
-      ...formData,
-      lastUpdated: new Date().toLocaleString(),
-    });
-    
-    setHasChanges(false);
-    alert("✅ Changes saved successfully! Your banner has been updated.");
+    const form = new FormData();
+    form.append("title", formData.title);
+    form.append("description", formData.description);
+    if (imageFile) form.append("image", imageFile);
+
+    try {
+      const res = await axios.put(
+        `${API_URL}/cms/before-footer/update/${bannerData._id}`,
+        form,
+        { headers: { "Content-Type": "multipart/form-data" } }
+      );
+
+      if (res.data.success) {
+        alert("Updated successfully!");
+        fetchSection();
+        setHasChanges(false);
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Failed to update");
+    }
   };
 
   const handleReset = () => {
@@ -92,17 +108,20 @@ export default function StartFundraiserBannerCMS() {
     setImageFile(null);
     setHasChanges(false);
   };
+  if (!formData || !bannerData) {
+  return <div className="p-10">Loading...</div>;
+}
 
   return (
     <div className="flex h-screen bg-[#F8FAFC] overflow-hidden">
-       <Sidebar 
-              sidebarOpen={sidebarOpen} 
-              setSidebarOpen={setSidebarOpen} 
-              activeSection={activeSection} 
-              setActiveSection={setActiveSection} 
-            />
-      
-      
+      <Sidebar
+        sidebarOpen={sidebarOpen}
+        setSidebarOpen={setSidebarOpen}
+        activeSection={activeSection}
+        setActiveSection={setActiveSection}
+      />
+
+
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Mobile Header */}
         <div className="md:hidden bg-white border-b px-4 py-3 flex items-center justify-between">
@@ -121,7 +140,7 @@ export default function StartFundraiserBannerCMS() {
 
         <main className="flex-1 overflow-y-auto">
           <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
-            
+
             {/* Header */}
             <div className="mb-6">
               <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
@@ -167,7 +186,7 @@ export default function StartFundraiserBannerCMS() {
                     Frontend View
                   </span>
                 </div>
-                
+
                 {/* Actual banner preview */}
                 <div className="relative overflow-hidden rounded-2xl">
                   <div className="absolute inset-0 bg-gradient-to-r from-black/60 to-black/30 z-10"></div>
@@ -179,13 +198,13 @@ export default function StartFundraiserBannerCMS() {
                   <div className="absolute inset-0 p-6 md:p-10 flex items-center z-20">
                     <div className="max-w-xl text-white">
                       <h3 className="text-2xl md:text-3xl font-semibold mb-3">
-                        {formData.title || "Your title here..."}
+                        {formData?.title || "Your title here..."}
                       </h3>
                       <p className="text-sm md:text-base text-white/90 mb-5">
-                        {formData.description || "Your description here..."}
+                        {formData?.description || "Your description here..."}
                       </p>
                       <button className="px-6 py-3 cursor-pointer bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium text-lg transition-colors">
-                        {formData.buttonText}
+                        {formData?.buttonText}
                       </button>
                     </div>
                   </div>
@@ -242,8 +261,9 @@ export default function StartFundraiserBannerCMS() {
                 {/* Title */}
                 <div className="mb-6">
                   <label className="block text-sm font-semibold text-gray-900 mb-2">
-                    Banner Title * <span className="text-xs font-normal text-gray-500">({formData.title.length}/100)</span>
+                    Banner Title * <span className="text-xs font-normal text-gray-500">({formData?.title?.length || 0}/100)</span>
                   </label>
+
                   <input
                     type="text"
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -284,11 +304,10 @@ export default function StartFundraiserBannerCMS() {
                   <button
                     onClick={handleSave}
                     disabled={!hasChanges}
-                    className={`flex-1 py-3 rounded-lg font-semibold flex items-center justify-center gap-2 transition ${
-                      hasChanges
+                    className={`flex-1 py-3 rounded-lg font-semibold flex items-center justify-center gap-2 transition ${hasChanges
                         ? 'bg-blue-600 text-white hover:bg-blue-700'
                         : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                    }`}
+                      }`}
                   >
                     <Save size={18} />
                     Save Changes
@@ -296,11 +315,10 @@ export default function StartFundraiserBannerCMS() {
                   <button
                     onClick={handleReset}
                     disabled={!hasChanges}
-                    className={`px-6 py-3 rounded-lg font-semibold flex items-center justify-center gap-2 transition ${
-                      hasChanges
+                    className={`px-6 py-3 rounded-lg font-semibold flex items-center justify-center gap-2 transition ${hasChanges
                         ? 'border-2 border-gray-300 hover:bg-gray-50'
                         : 'border-2 border-gray-200 text-gray-400 cursor-not-allowed'
-                    }`}
+                      }`}
                   >
                     <RefreshCw size={18} />
                     Reset

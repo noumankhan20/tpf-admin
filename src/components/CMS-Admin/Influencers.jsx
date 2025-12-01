@@ -1,5 +1,6 @@
 "use client"
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import axios from "axios";
 import { Save, XCircle, Home, Edit2, Trash2, Plus, Menu, ChevronUp, ChevronDown, GripVertical, Eye, Upload } from "lucide-react";
 import Sidebar from "../Layout/CMSSideBar";
 export default function InfluencerGalleryCMS() {
@@ -8,13 +9,34 @@ export default function InfluencerGalleryCMS() {
   const [selectedImage, setSelectedImage] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [previewMode, setPreviewMode] = useState(false);
-    const [activeSection, setActiveSection] = useState("influencers");
-  const [influencerImages, setInfluencerImages] = useState([
-    { id: 1, imageUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=256",  lastUpdated: "2025-11-15 10:30", order: 1 },
-    { id: 2, imageUrl: "https://images.unsplash.com/photo-1527980965255-d3b416303d12?w=256",  lastUpdated: "2025-11-14 15:20", order: 2 },
-    { id: 3, imageUrl: "https://plus.unsplash.com/premium_photo-1661964252605-8ba0cd83b056", lastUpdated: "2025-11-13 09:45", order: 3 },
-  ]);
+  const [activeSection, setActiveSection] = useState("influencers");
+  const [influencerImages, setInfluencerImages] = useState([]);
   const [imageForm, setImageForm] = useState({ imageFile: null, imagePreview: null, imageUrl: "" });
+  const API_URL = process.env.NEXT_PUBLIC_BACKEND_API;
+  const BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
+
+  useEffect(() => {
+    fetchInfluencers();
+  }, []);
+
+  const fetchInfluencers = async () => {
+    try {
+      const res = await axios.get(`${API_URL}/cms/influencer/get`);
+      if (res.data.success) {
+        const formatted = res.data.influencers.map((item, index) => ({
+          id: item._id,
+          imageUrl: `${BASE_URL}${item.image}`,
+          imagePreview: `${BASE_URL}${item.image}`,
+          lastUpdated: new Date(item.updatedAt).toLocaleString(),
+          order: index + 1
+        }));
+
+        setInfluencerImages(formatted);
+      }
+    } catch (err) {
+      console.error("fetch error:", err);
+    }
+  };
 
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
@@ -25,44 +47,87 @@ export default function InfluencerGalleryCMS() {
     reader.readAsDataURL(file);
   };
 
-  const handleSaveImage = () => {
-    if (viewMode === "add-image") {
-      setInfluencerImages([...influencerImages, { id: Date.now(), ...imageForm, status: "Active", lastUpdated: new Date().toLocaleString(), order: influencerImages.length + 1 }]);
-    } else {
-      setInfluencerImages(influencerImages.map(img => img.id === selectedImage.id ? { ...img, ...imageForm, lastUpdated: new Date().toLocaleString() } : img));
+  const handleSaveImage = async () => {
+    if (!imageForm.imageFile) return alert("Please upload an image");
+
+    const formData = new FormData();
+    formData.append("image", imageForm.imageFile);
+
+    try {
+      let res;
+
+      // ADD MODE
+      if (viewMode === "add-image") {
+        res = await axios.post(
+          `${API_URL}/cms/influencer/add`,
+          formData,
+          { headers: { "Content-Type": "multipart/form-data" } }
+        );
+      }
+
+      // EDIT MODE
+      else {
+        res = await axios.put(
+          `${API_URL}/cms/influencer/update/${selectedImage.id}`,
+          formData,
+          { headers: { "Content-Type": "multipart/form-data" } }
+        );
+      }
+
+      if (res.data.success) {
+        alert("Saved successfully");
+        fetchInfluencers();
+        setViewMode("overview");
+      }
+
+    } catch (err) {
+      console.error(err);
+      alert("Failed to save image");
     }
-    alert("Saved!");
-    setViewMode("overview");
   };
 
-  const handleMoveUp = (idx) => {
-    if (idx === 0) return;
-    const arr = [...influencerImages];
-    [arr[idx], arr[idx - 1]] = [arr[idx - 1], arr[idx]];
-    arr.forEach((img, i) => img.order = i + 1);
-    setInfluencerImages(arr);
+  const handleDeleteImage = async (id) => {
+    if (!confirm("Delete this image?")) return;
+
+    try {
+      const res = await axios.delete(`${API_URL}/cms/influencer/delete/${id}`);
+
+      if (res.data.success) {
+        alert("Deleted successfully");
+        fetchInfluencers();
+      }
+
+    } catch (err) {
+      console.error(err);
+      alert("Delete failed");
+    }
   };
 
-  const handleMoveDown = (idx) => {
-    if (idx === influencerImages.length - 1) return;
-    const arr = [...influencerImages];
-    [arr[idx], arr[idx + 1]] = [arr[idx + 1], arr[idx]];
-    arr.forEach((img, i) => img.order = i + 1);
-    setInfluencerImages(arr);
+  const handleEditImage = (img) => {
+    setSelectedImage(img);
+    setImageForm({
+      imageFile: null,
+      imagePreview: img.imageUrl,
+      imageUrl: img.imageUrl
+    });
+    setViewMode("edit-image");
   };
-const filteredImages = influencerImages.filter(img =>
-  img.imageUrl.toLowerCase().includes(searchQuery.toLowerCase())
-);
+
+  const filteredImages = influencerImages.filter(img =>
+    img.imageUrl
+      ?.toLowerCase()
+      .includes(searchQuery.toLowerCase())
+  );
 
 
   return (
     <div className="flex h-screen bg-gray-50 overflow-hidden">
-      <Sidebar 
-              sidebarOpen={sidebarOpen} 
-              setSidebarOpen={setSidebarOpen} 
-              activeSection={activeSection} 
-              setActiveSection={setActiveSection} 
-            />
+      <Sidebar
+        sidebarOpen={sidebarOpen}
+        setSidebarOpen={setSidebarOpen}
+        activeSection={activeSection}
+        setActiveSection={setActiveSection}
+      />
       <div className="flex-1 flex flex-col overflow-hidden">
         <div className="md:hidden bg-white border-b px-4 py-3 flex items-center">
           <button onClick={() => setSidebarOpen(true)} className="p-2 hover:bg-gray-100 rounded-lg"><Menu size={24} /></button>
@@ -78,7 +143,7 @@ const filteredImages = influencerImages.filter(img =>
                 <div className="flex flex-col sm:flex-row justify-between gap-4 mb-6">
                   <div><h2 className="text-xl font-bold">{influencerImages.length} Images</h2></div>
                   <div className="flex gap-2">
-                    <button onClick={() => { setImageForm({imageFile: null, imagePreview: null, imageUrl: "" }); setViewMode("add-image"); }} className="px-4 py-2 bg-blue-900 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2">
+                    <button onClick={() => { setImageForm({ imageFile: null, imagePreview: null, imageUrl: "" }); setViewMode("add-image"); }} className="px-4 py-2 bg-blue-900 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2">
                       <Plus size={18} />Add
                     </button>
                   </div>
@@ -105,11 +170,20 @@ const filteredImages = influencerImages.filter(img =>
                         <img src={img.imageUrl} alt={img.title} className="w-24 h-24 rounded-full object-cover mb-2 ring-2 ring-blue-400/40" />
                       </div>
                       <div className="flex gap-2">
-                        <button onClick={() => { setSelectedImage(img); setImageForm({ imageFile: null, imagePreview: img.imageUrl, imageUrl: img.imageUrl }); setViewMode("edit-image"); }} className="flex-1 py-2 bg-blue-600 text-white rounded-lg text-sm flex items-center justify-center gap-1">
-                          <Edit2 size={14} />Edit
+                        <button
+                          onClick={() => handleEditImage(img)}
+                          className="flex items-center justify-center gap-1 flex-1 py-2 bg-blue-600 text-white rounded-lg"
+                        >
+                          <Edit2 size={14} />
+                          <span>Edit</span>
                         </button>
-                        <button onClick={() => confirm("Delete?") && setInfluencerImages(influencerImages.filter(i => i.id !== img.id))} className="flex-1 py-2 bg-red-500 text-white rounded-lg text-sm flex items-center justify-center gap-1">
-                          <Trash2 size={14} />Delete
+
+                        <button
+                          onClick={() => handleDeleteImage(img.id)}
+                          className="flex items-center justify-center gap-1 flex-1 py-2 bg-red-500 text-white rounded-lg"
+                        >
+                          <Trash2 size={14} />
+                          <span>Delete</span>
                         </button>
                       </div>
                     </div>
