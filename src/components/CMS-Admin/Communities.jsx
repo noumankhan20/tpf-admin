@@ -108,11 +108,25 @@ const fetchCommunities = async () => {
 
   // Save Community
 const handleSaveCommunity = async () => {
-  if (!communityForm.name || !communityForm.image) {
-    alert("Name & Image are required");
+  // Validation for both add & update
+  if (!communityForm.name) {
+    alert("Name is required");
     return;
   }
 
+  // If editing → call update
+  if (viewMode === "edit-community") {
+    await handleUpdateCommunity();
+    return;
+  }
+
+  // If adding → image is required
+  if (!communityForm.image) {
+    alert("Image is required");
+    return;
+  }
+
+  // ADD API
   const formData = new FormData();
   formData.append("title", communityForm.name);
   formData.append("image", communityForm.image);
@@ -122,13 +136,13 @@ const handleSaveCommunity = async () => {
       `${API_URL}/cms/communities/add`,
       formData,
       {
-        headers: { "Content-Type": "multipart/form-data" }
+        headers: { "Content-Type": "multipart/form-data" },
       }
     );
 
     if (response.data.success) {
       alert("Community added successfully!");
-      fetchCommunities(); // refresh UI
+      fetchCommunities();
       setViewMode("overview");
     }
   } catch (error) {
@@ -137,12 +151,58 @@ const handleSaveCommunity = async () => {
   }
 };
 
-  // Delete Community
-  const handleDeleteCommunity = (id) => {
-    if (confirm("Are you sure you want to delete this community?")) {
-      setCommunities(communities.filter((community) => community.id !== id));
+
+  const handleUpdateCommunity = async () => {
+  if (!selectedCommunity) return;
+
+  const formData = new FormData();
+  formData.append("title", communityForm.name);
+
+  // Only append image if user uploaded a new one
+  if (communityForm.image) {
+    formData.append("image", communityForm.image);
+  }
+
+  try {
+    const response = await axios.put(
+      `${API_URL}/cms/communities/update/${selectedCommunity.id}`,
+      formData,
+      {
+        headers: { "Content-Type": "multipart/form-data" }
+      }
+    );
+
+    if (response.data.success) {
+      alert("Community updated successfully!");
+      fetchCommunities(); // Refresh UI
+      setViewMode("overview");
+      setSelectedCommunity(null);
     }
-  };
+  } catch (error) {
+    console.error("Update error:", error);
+    alert("Failed to update community");
+  }
+};
+
+
+  // Delete Community
+ const handleDeleteCommunity = async (id) => {
+  const confirmDelete = confirm("Are you sure you want to delete this community?");
+  if (!confirmDelete) return;
+
+  try {
+    const response = await axios.delete(`${API_URL}/cms/communities/delete/${id}`);
+
+    if (response.data.success) {
+      alert("Community deleted successfully!");
+      fetchCommunities(); // refresh list
+    }
+  } catch (error) {
+    console.error("Delete error:", error);
+    alert("Failed to delete community");
+  }
+};
+
 
   // Move Community Up
   const handleMoveUp = (index) => {
