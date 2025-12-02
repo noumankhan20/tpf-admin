@@ -1,8 +1,9 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Save, XCircle, Home, Menu, Upload, Edit2, Trash2, Plus, Search, Eye, EyeOff, Users, ArrowRight } from "lucide-react";
 import Sidebar from "../Layout/CMSSideBar";
-
+import axios from "axios";
+const IMAGE_URL = process.env.NEXT_PUBLIC_BACKEND_URL
 // Live Preview Component
 const StoryCardPreview = ({ story, darkMode = false }) => {
     const [isHovered, setIsHovered] = useState(false);
@@ -17,13 +18,16 @@ const StoryCardPreview = ({ story, darkMode = false }) => {
         border ${darkMode ? 'border-zinc-700/50' : 'border-zinc-200'}`}
         >
             <div className="relative overflow-hidden h-48">
-                {story.image ? (
-                    <img
-                        src={story.image}
-                        alt={story.title}
-                        className="h-full w-full object-cover transition-all duration-1000 group-hover:scale-125 group-hover:rotate-2"
-                    />
-                ) : null}
+                <img
+                    src={
+                        story.image?.startsWith("data:")
+                            ? story.image                     // base64
+                            : `${IMAGE_URL}${story.image}`    // backend file
+                    }
+                    alt={story.title}
+                    className="h-full w-full object-cover transition-all duration-1000 group-hover:scale-125 group-hover:rotate-2"
+                />
+
 
                 <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent opacity-60"></div>
                 <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
@@ -46,7 +50,7 @@ const StoryCardPreview = ({ story, darkMode = false }) => {
 
                 <p className={`text-sm mb-4 line-clamp-2 leading-relaxed ${darkMode ? 'text-zinc-400' : 'text-zinc-600'
                     }`}>
-                    {story.excerpt || "Story description goes here..."}
+                    {story.excerpt || story.description || "Story description goes here..."}
                 </p>
 
                 <div className={`pt-3 border-t ${darkMode ? 'border-zinc-700' : 'border-zinc-200'}`}>
@@ -69,40 +73,32 @@ export default function StoryCardsCMS() {
     const [showPreview, setShowPreview] = useState(false);
     const [previewDarkMode, setPreviewDarkMode] = useState(false);
     const [activeSection, setActiveSection] = useState("story-cards");
-    const [storyCards, setStoryCards] = useState([
-        {
-            id: 1,
-            image: "https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?w=600",
-            title: "Building Wells in Rural Communities",
-            excerpt: "Providing clean water access to villages across East Africa, transforming lives one well at a time.",
-            status: "Active",
-            lastUpdated: "2025-11-16 10:30",
-        },
-        {
-            id: 2,
-            image: "https://images.unsplash.com/photo-1497486751825-1233686d5d80?w=600",
-            title: "Education for Underprivileged Children",
-            excerpt: "Supporting schools and providing scholarships to children who dream of a better future through education.",
-            status: "Active",
-            lastUpdated: "2025-11-15 14:20",
-        },
-        {
-            id: 3,
-            image: "https://images.unsplash.com/photo-1593113598332-cd288d649433?w=600",
-            title: "Medical Aid for Refugee Families",
-            excerpt: "Delivering essential healthcare and medical supplies to displaced families in crisis zones.",
-            status: "Active",
-            lastUpdated: "2025-11-14 09:15",
-        },
-    ]);
+    const [storyCards, setStoryCards] = useState([]);
+    useEffect(() => {
+        fetchStories();
+    }, []);
+    const fetchStories = async () => {
+        try {
+            const res = await axios.get(
+                `${process.env.NEXT_PUBLIC_BACKEND_API}/cms/impact-stories/get`
+            );
+            setStoryCards(res.data.data);
+        } catch (err) {
+            console.error("Error loading impact stories:", err);
+            alert("Failed to load stories");
+        }
+    };
 
     const [cardForm, setCardForm] = useState({
         title: "",
-        excerpt: "",
+        excerpt: "",       // maps to description
+        story: "",         // long story
+        mediaLinks: [],
         image: "",
         imageFile: null,
         imagePreview: null,
     });
+
 
     const handleImageUpload = (e) => {
         const file = e.target.files[0];
@@ -134,90 +130,96 @@ export default function StoryCardsCMS() {
         setCardForm({
             title: "",
             excerpt: "",
+            story: "",
+            mediaLinks: [],
             image: "",
             imageFile: null,
             imagePreview: null,
         });
+
         setViewMode("add-card");
     };
 
     const handleEditCard = (card) => {
         setSelectedCard(card);
+
         setCardForm({
             title: card.title,
-            excerpt: card.excerpt,
+            excerpt: card.description,
+            story: card.story,
+            mediaLinks: card.mediaLinks || [],
             image: card.image,
             imageFile: null,
-            imagePreview: card.image,
+            imagePreview: `${IMAGE_URL}${card.image}`,  // FIXED!
         });
+
         setViewMode("edit-card");
     };
 
-    const handleSaveCard = () => {
-        if (!cardForm.title.trim()) {
-            alert("Title is required");
-            return;
-        }
-        if (cardForm.title.length > 100) {
-            alert("Title must be less than 100 characters");
-            return;
-        }
-        if (!cardForm.excerpt.trim()) {
-            alert("Description is required");
-            return;
-        }
-        if (cardForm.excerpt.length > 300) {
-            alert("Description must be less than 300 characters");
-            return;
-        }
-        if (!cardForm.imagePreview) {
-            alert("Image is required");
-            return;
-        }
 
-        if (viewMode === "add-card") {
-            const newCard = {
-                id: Date.now(),
-                title: cardForm.title,
-                excerpt: cardForm.excerpt,
-                image: cardForm.imagePreview,
-                status: "Active",
-                lastUpdated: new Date().toLocaleString(),
-            };
-            setStoryCards([...storyCards, newCard]);
-            alert("✅ Story card added successfully!");
-        } else {
-            setStoryCards(storyCards.map(card =>
-                card.id === selectedCard.id
-                    ? {
-                        ...card,
-                        title: cardForm.title,
-                        excerpt: cardForm.excerpt,
-                        image: cardForm.imagePreview,
-                        lastUpdated: new Date().toLocaleString(),
-                    }
-                    : card
-            ));
-            alert("✅ Story card updated successfully!");
-        }
+    const handleSaveCard = async () => {
+        if (!cardForm.title.trim()) return alert("Title is required");
+        if (!cardForm.excerpt.trim()) return alert("Description is required");
 
-        setViewMode("overview");
-        setSelectedCard(null);
-    };
+        try {
+            const formData = new FormData();
+            formData.append("title", cardForm.title);
+            formData.append("description", cardForm.excerpt);
+            formData.append("story", cardForm.story);
 
-    const handleDeleteCard = (id) => {
-        if (confirm("Are you sure you want to delete this story card?")) {
-            setStoryCards(storyCards.filter(card => card.id !== id));
-            alert("Story card deleted successfully");
+            // Only append if changed
+            if (cardForm.imageFile) {
+                formData.append("image", cardForm.imageFile);
+            }
+
+            cardForm.mediaLinks.forEach(link => formData.append("mediaLinks", link));
+
+            let res;
+
+            // 🔥 UPDATE MODE
+            if (viewMode === "edit-card" && selectedCard) {
+                res = await axios.put(
+                    `${process.env.NEXT_PUBLIC_BACKEND_API}/cms/impact-stories/update/${selectedCard._id}`,
+                    formData,
+                    { headers: { "Content-Type": "multipart/form-data" } }
+                );
+                alert("Story updated successfully!");
+            }
+            else {
+                // 🔥 ADD MODE
+                res = await axios.post(
+                    `${process.env.NEXT_PUBLIC_BACKEND_API}/cms/impact-stories/add`,
+                    formData,
+                    { headers: { "Content-Type": "multipart/form-data" } }
+                );
+                alert("Story added successfully!");
+            }
+
+            fetchStories();
+            setViewMode("overview");
+
+        } catch (err) {
+            console.error("Error saving story:", err);
+            alert(err.response?.data?.message || "Failed to save story");
         }
     };
 
-    const handleExportData = () => {
-        const exportData = storyCards.map(({ id, image, title, excerpt }) => ({
-            id, image, title, excerpt
-        }));
-        console.log("Story Cards Data:", JSON.stringify(exportData, null, 2));
-        alert("Story cards data exported to console!");
+
+    const handleDeleteCard = async (id) => {
+        if (!confirm("Are you sure you want to delete this story?")) return;
+
+        try {
+            await axios.delete(
+                `${process.env.NEXT_PUBLIC_BACKEND_API}/cms/impact-stories/delete/${id}`
+            );
+
+            alert("Story deleted successfully!");
+
+            fetchStories(); // refresh list
+        } catch (err) {
+            console.error("Error deleting story:", err);
+            alert("Failed to delete story");
+        }
     };
 
     const filteredCards = storyCards.filter(card =>
@@ -226,12 +228,12 @@ export default function StoryCardsCMS() {
 
     return (
         <div className="flex h-screen bg-[#F8FAFC] overflow-hidden">
-            <Sidebar 
-                          sidebarOpen={sidebarOpen} 
-                          setSidebarOpen={setSidebarOpen} 
-                          activeSection={activeSection} 
-                          setActiveSection={setActiveSection} 
-                        />
+            <Sidebar
+                sidebarOpen={sidebarOpen}
+                setSidebarOpen={setSidebarOpen}
+                activeSection={activeSection}
+                setActiveSection={setActiveSection}
+            />
 
             <div className="flex-1 flex flex-col overflow-hidden">
                 <div className="md:hidden bg-white border-b px-4 py-3 flex items-center">
@@ -269,13 +271,6 @@ export default function StoryCardsCMS() {
                                         </div>
                                         <div className="flex flex-wrap gap-2">
                                             <button
-                                                onClick={() => setShowPreview(!showPreview)}
-                                                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center gap-2"
-                                            >
-                                                {showPreview ? <EyeOff size={18} /> : <Eye size={18} />}
-                                                {showPreview ? "Hide" : "Show"} Preview
-                                            </button>
-                                            <button
                                                 onClick={handleAddCard}
                                                 className="px-4 py-2 bg-blue-900 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
                                             >
@@ -289,18 +284,12 @@ export default function StoryCardsCMS() {
                                         <div className="mb-6 p-6 bg-gradient-to-br from-purple-50 to-indigo-50 rounded-xl border border-purple-200">
                                             <div className="flex items-center justify-between mb-4">
                                                 <h3 className="text-lg font-bold">Live Preview Gallery</h3>
-                                                <button
-                                                    onClick={() => setPreviewDarkMode(!previewDarkMode)}
-                                                    className="px-3 py-1 bg-gray-800 text-white text-sm rounded-lg hover:bg-gray-700"
-                                                >
-                                                    {previewDarkMode ? "Light" : "Dark"} Mode
-                                                </button>
                                             </div>
                                             <div className={`rounded-xl p-6 ${previewDarkMode ? 'bg-zinc-900' : 'bg-white'}`}>
                                                 <div className="flex gap-4 overflow-x-auto pb-4">
                                                     {storyCards.map(card => (
                                                         <div key={card.id} className="w-[320px] flex-shrink-0">
-                                                            <StoryCardPreview story={card} darkMode={previewDarkMode} />
+                                                            <StoryCardPreview story={card} />
                                                         </div>
                                                     ))}
                                                 </div>
@@ -320,19 +309,19 @@ export default function StoryCardsCMS() {
 
                                     <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
                                         {filteredCards.map(card => (
-                                            <div key={card.id} className="border rounded-xl overflow-hidden hover:shadow-lg transition">
+                                            <div key={card._id} className="border rounded-xl overflow-hidden hover:shadow-lg transition">
                                                 <div className="relative h-48">
-                                                    <img src={card.image} alt={card.title} className="w-full h-full object-cover" />
-                                                    <div className="absolute top-2 right-2">
-                                                        <span className="px-2 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded-full">
-                                                            {card.status}
-                                                        </span>
-                                                    </div>
+                                                    <img
+                                                        src={`${IMAGE_URL}${card.image}`}
+                                                        alt={card.title} className="w-full h-full object-cover" />
                                                 </div>
                                                 <div className="p-4">
                                                     <h3 className="font-bold text-lg mb-2 line-clamp-2">{card.title}</h3>
-                                                    <p className="text-sm text-gray-600 mb-3 line-clamp-2">{card.excerpt}</p>
-                                                    <p className="text-xs text-gray-400 mb-4">Updated: {card.lastUpdated}</p>
+                                                    <p className="text-sm text-gray-600 mb-3 line-clamp-2">{card.description}</p>
+                                                    <p className="text-xs text-gray-400 mb-4">
+                                                        Updated: {new Date(card.updatedAt).toLocaleString()}
+                                                    </p>
+
                                                     <div className="flex gap-2">
                                                         <button
                                                             onClick={() => handleEditCard(card)}
@@ -342,7 +331,7 @@ export default function StoryCardsCMS() {
                                                             Edit
                                                         </button>
                                                         <button
-                                                            onClick={() => handleDeleteCard(card.id)}
+                                                            onClick={() => handleDeleteCard(card._id)}
                                                             className="flex-1 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 flex items-center justify-center gap-1 text-sm"
                                                         >
                                                             <Trash2 size={14} />
@@ -388,7 +377,9 @@ export default function StoryCardsCMS() {
                                                 <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
                                                 {cardForm.imagePreview ? (
                                                     <div className="space-y-3">
-                                                        <img src={cardForm.imagePreview} alt="Preview" className="w-full h-48 object-cover rounded-lg" />
+                                                        <img
+                                                            src={cardForm.imagePreview}
+                                                            alt="Preview" className="w-full h-48 object-cover rounded-lg" />
                                                         <p className="text-sm text-blue-600 font-medium">Click to change</p>
                                                     </div>
                                                 ) : (
@@ -432,6 +423,62 @@ export default function StoryCardsCMS() {
                                             </p>
                                         </div>
 
+                                        <div className="mb-6">
+                                            <label className="block text-sm font-semibold mb-2">
+                                                Story (Full Content)
+                                            </label>
+                                            <textarea
+                                                rows={5}
+                                                className="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                                                placeholder="Enter full story..."
+                                                value={cardForm.story}
+                                                onChange={e => setCardForm(prev => ({ ...prev, story: e.target.value }))}
+                                            />
+                                        </div>
+                                        <div className="mb-6">
+                                            <label className="block text-sm font-semibold mb-2">Media Links</label>
+
+                                            {cardForm.mediaLinks.map((link, index) => (
+                                                <div key={index} className="flex items-center gap-2 mb-2">
+                                                    <input
+                                                        type="text"
+                                                        value={link}
+                                                        onChange={(e) => {
+                                                            const updated = [...cardForm.mediaLinks];
+                                                            updated[index] = e.target.value;
+                                                            setCardForm(prev => ({ ...prev, mediaLinks: updated }));
+                                                        }}
+                                                        className="w-full px-3 py-2 border rounded-lg"
+                                                        placeholder="Enter media link (YouTube / Drive / Image URL)"
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() =>
+                                                            setCardForm(prev => ({
+                                                                ...prev,
+                                                                mediaLinks: prev.mediaLinks.filter((_, i) => i !== index)
+                                                            }))
+                                                        }
+                                                        className="px-3 py-2 bg-red-500 text-white rounded-lg"
+                                                    >
+                                                        X
+                                                    </button>
+                                                </div>
+                                            ))}
+
+                                            <button
+                                                type="button"
+                                                onClick={() =>
+                                                    setCardForm(prev => ({
+                                                        ...prev,
+                                                        mediaLinks: [...prev.mediaLinks, ""]
+                                                    }))
+                                                }
+                                                className="px-4 py-2 bg-blue-600 text-white rounded-lg mt-2"
+                                            >
+                                                + Add Link
+                                            </button>
+                                        </div>
                                         <div className="flex gap-3">
                                             <button
                                                 onClick={handleSaveCard}
@@ -456,13 +503,7 @@ export default function StoryCardsCMS() {
                                             <div className="space-y-4">
                                                 <div>
                                                     <label className="text-sm font-semibold mb-2 block">Light Mode</label>
-                                                    <StoryCardPreview story={cardForm} darkMode={false} />
-                                                </div>
-                                                <div>
-                                                    <label className="text-sm font-semibold mb-2 block">Dark Mode</label>
-                                                    <div className="bg-zinc-900 p-4 rounded-xl">
-                                                        <StoryCardPreview story={cardForm} darkMode={true} />
-                                                    </div>
+                                                    <StoryCardPreview story={cardForm} />
                                                 </div>
                                             </div>
                                         </div>
