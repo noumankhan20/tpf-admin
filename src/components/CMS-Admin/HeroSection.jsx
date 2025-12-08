@@ -32,31 +32,54 @@ export default function CMSAdminPanel() {
     });
     const [existingHeros, setExistingHeros] = useState([]);
     const [selectedHero, setSelectedHero] = useState(null);
+    const heroExists = existingHeros.length > 0;
 
     // Fetch existing heroes from backend
-  const fetchHeroes = async () => {
-    try {
-        const res = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_API}/cms/hero/get`);
-        const heroes = res.data.hero || [];
+    const fetchHeroes = async () => {
+        try {
+            const res = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_API}/cms/hero/get`);
+            const heroes = res.data.hero || [];
 
-        const heroesWithUrls = heroes.map(hero => ({
-            ...hero,
-            id: hero._id,
-            image: `${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:7000'}${hero.image}`,
-            lastUpdated: new Date(hero.updatedAt).toLocaleDateString()
-        }));
+            const heroesWithUrls = heroes.map(hero => ({
+                ...hero,
+                id: hero._id,
+                image: `${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:7000'}${hero.image}`,
+                lastUpdated: new Date(hero.updatedAt).toLocaleDateString()
+            }));
 
-        console.log("Heroes fetched successfully:", heroes);
-        setExistingHeros(heroesWithUrls);
+            console.log("Heroes fetched successfully:", heroes);
+            setExistingHeros(heroesWithUrls);
 
-    } catch (error) {
-        console.error("Failed to fetch heroes:", error);
-    }
-};
+        } catch (error) {
+            console.error("Failed to fetch heroes:", error);
+        }
+    };
 
     useEffect(() => {
         fetchHeroes();
     }, []);
+
+    useEffect(() => {
+        if (existingHeros.length > 0) {
+            const hero = existingHeros[0];
+
+            setSelectedHero(hero);
+            setHeroForm({
+                image: null,
+                imagePreview: hero.image || null,
+                title: hero.title || "",
+                description: hero.description || "",
+                buttonText: hero.buttonText || "",
+                buttonLink: hero.buttonLink || "",
+            });
+
+            setViewMode("edit");
+        } else {
+            setViewMode("list");
+        }
+    }, [existingHeros]);
+
+
 
     const filteredHeros = existingHeros.filter((hero) =>
         hero.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -89,25 +112,28 @@ export default function CMSAdminPanel() {
         try {
             // If selectedHero is not null, update the Hero section
             if (selectedHero) {
+                // ✅ UPDATE EXISTING HERO ONLY
                 const res = await axios.put(
                     `${process.env.NEXT_PUBLIC_BACKEND_API}/cms/hero/update/${selectedHero.id}`,
                     formData,
-                    {
-                        headers: { "Content-Type": "multipart/form-data" },
-                    }
+                    { headers: { "Content-Type": "multipart/form-data" } }
                 );
                 alert(res.data.message || "Hero updated successfully");
             } else {
-                // Create a new Hero section
+                // ✅ EXTRA SAFETY: BLOCK CREATE
+                if (existingHeros.length > 0) {
+                    alert("Only one hero banner is allowed.");
+                    return;
+                }
+
                 const res = await axios.post(
-                    `${process.env.NEXT_PUBLIC_BACKEND_API}/hero/add`,
+                    `${process.env.NEXT_PUBLIC_BACKEND_API}/cms/hero/add`,
                     formData,
-                    {
-                        headers: { "Content-Type": "multipart/form-data" },
-                    }
+                    { headers: { "Content-Type": "multipart/form-data" } }
                 );
                 alert(res.data.message || "Hero created successfully");
             }
+
 
             // Reset the form and go back to the list view
             setHeroForm({
@@ -116,8 +142,8 @@ export default function CMSAdminPanel() {
                 title: "",
                 description: "",
             });
-            setSelectedHero(null);
-            setViewMode("list");
+            // setSelectedHero(null);
+            // setViewMode("list");
             fetchHeroes(); // Refresh the list of heroes after creating or updating
         } catch (error) {
             console.error("Error while saving hero:", error);
@@ -138,18 +164,38 @@ export default function CMSAdminPanel() {
         setViewMode("edit");
     };
 
-    const handleCancel = () => {
-        setHeroForm({
-            image: null,
-            imagePreview: null,
-            title: "",
-            description: "",
-            buttonText: "",
-            buttonLink: "",
-        });
-        setSelectedHero(null);
-        setViewMode("list");
-    };
+  const handleCancel = () => {
+  if (heroExists && existingHeros.length > 0) {
+    const hero = existingHeros[0];
+
+    // ✅ Restore original hero data
+    setSelectedHero(hero);
+    setHeroForm({
+      image: null,
+      imagePreview: hero.image || null,
+      title: hero.title || "",
+      description: hero.description || "",
+      buttonText: hero.buttonText || "",
+      buttonLink: hero.buttonLink || "",
+    });
+
+    setViewMode("edit"); // ✅ Always go back to edit
+  } else {
+    // ✅ No hero exists → reset to add mode
+    setHeroForm({
+      image: null,
+      imagePreview: null,
+      title: "",
+      description: "",
+      buttonText: "",
+      buttonLink: "",
+    });
+
+    setSelectedHero(null);
+    setViewMode("list");
+  }
+};
+
 
     return (
         <div className="flex h-screen bg-[#F8FAFC] overflow-hidden">
@@ -210,114 +256,107 @@ export default function CMSAdminPanel() {
                                 </div>
 
                                 {/* LIST VIEW */}
-                                {viewMode === "list" && (
-                                    <div>
-                                        {/* SEARCH BAR */}
-                                        <div className="bg-white border border-[#E2E8F0] shadow rounded-xl p-4 mb-4 sm:mb-6">
-                                            <div className="relative">
-                                                <Search
-                                                    className="absolute left-3 top-1/2 -translate-y-1/2 text-[#94A3B8]"
-                                                    size={20}
-                                                />
-                                                <input
-                                                    className="w-full pl-10 pr-4 py-2 border border-[#CBD5E1] rounded-lg focus:ring-2 focus:ring-[#60A5FA] text-sm sm:text-base"
-                                                    placeholder="Search by title..."
-                                                    value={searchQuery}
-                                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                                />
-                                            </div>
-                                        </div>
+                                {viewMode === "list" && !heroExists && (
+                                    <div className="grid lg:grid-cols-2 gap-4 sm:gap-6">
 
-                                        {/* DESKTOP TABLE */}
-                                        <div className="hidden md:block bg-white shadow rounded-xl border border-[#E2E8F0] overflow-hidden">
-                                            <div className="overflow-x-auto">
-                                                <table className="w-full min-w-[800px]">
-                                                    <thead className="bg-[#1E293B] text-white">
-                                                        <tr>
-                                                            <th className="px-4 py-3 text-left text-sm">Image</th>
-                                                            <th className="px-4 py-3 text-left text-sm">Title</th>
-                                                            <th className="px-4 py-3 text-left text-sm">Description</th>
-                                                            <th className="px-4 py-3 text-left text-sm">Updated</th>
-                                                            <th className="px-4 py-3 text-left text-sm">Actions</th>
-                                                        </tr>
-                                                    </thead>
+                                        {/* ✅ ADD HERO FORM */}
+                                        <div className="bg-white rounded-xl shadow border border-[#E2E8F0] p-4 sm:p-6">
+                                            <h2 className="text-lg sm:text-xl font-bold text-[#0F172A] mb-4 sm:mb-6">
+                                                Add Hero Section
+                                            </h2>
 
-                                                    <tbody>
-                                                        {filteredHeros.map((hero) => (
-                                                            <tr
-                                                                key={hero.id}
-                                                                className="border-b border-[#E2E8F0] hover:bg-[#F8FAFC]"
-                                                            >
-                                                                <td className="px-4 py-3">
-                                                                    <img
-                                                                        src={hero.image}
-                                                                        className="w-14 h-14 rounded-lg object-cover"
-                                                                        alt={hero.title}
-                                                                    />
-                                                                </td>
-                                                                <td className="px-4 py-3 font-semibold text-sm">
-                                                                    {hero.title}
-                                                                </td>
-                                                                <td className="px-4 py-3 text-sm text-[#475569] max-w-[220px] truncate">
-                                                                    {hero.description}
-                                                                </td>
-                                                                <td className="px-4 py-3 text-xs text-[#64748B]">
-                                                                    {hero.lastUpdated}
-                                                                </td>
-                                                                <td className="px-4 py-3">
-                                                                    <div className="flex gap-2">
-                                                                        <button
-                                                                            onClick={() => handleEditHero(hero)}
-                                                                            className="p-2 bg-[#3B82F6] text-white rounded-lg hover:bg-[#2563EB] cursor-pointer"
-                                                                        >
-                                                                            <Edit2 size={14} />
-                                                                        </button>
-                                                                    </div>
-                                                                </td>
-                                                            </tr>
-                                                        ))}
-                                                    </tbody>
-                                                </table>
-                                            </div>
-                                        </div>
+                                            {/* IMAGE UPLOAD */}
+                                            <div className="mb-5">
+                                                <label className="block text-sm font-semibold text-[#0F172A] mb-2">
+                                                    Hero Image
+                                                </label>
 
-                                        {/* MOBILE CARD VIEW */}
-                                        <div className="md:hidden space-y-4">
-                                            {filteredHeros.map((hero) => (
-                                                <div
-                                                    key={hero.id}
-                                                    className="bg-white rounded-xl shadow border border-[#E2E8F0] overflow-hidden"
-                                                >
-                                                    <img
-                                                        src={hero.image}
-                                                        alt={hero.title}
-                                                        className="w-full h-48 object-cover"
+                                                <label className="border-2 border-dashed border-[#CBD5E1] rounded-xl p-6 sm:p-8 block text-center cursor-pointer hover:border-[#3B82F6] transition">
+                                                    <input
+                                                        type="file"
+                                                        accept="image/*"
+                                                        className="hidden"
+                                                        onChange={handleImageUpload}
                                                     />
-                                                    <div className="p-4">
-                                                        <div className="flex items-start justify-between mb-2">
-                                                            <h3 className="font-bold text-[#0F172A] text-base">
-                                                                {hero.title}
-                                                            </h3>
-                                                        </div>
-                                                        <p className="text-sm text-[#475569] mb-3">
-                                                            {hero.description}
-                                                        </p>
-                                                        <p className="text-xs text-[#94A3B8] mb-4">
-                                                            Updated: {hero.lastUpdated}
-                                                        </p>
-                                                        <div className="flex gap-2">
-                                                            <button
-                                                                onClick={() => handleEditHero(hero)}
-                                                                className="flex-1 py-2 bg-[#3B82F6] text-white rounded-lg hover:bg-[#2563EB] flex items-center justify-center gap-2 text-sm"
-                                                            >
-                                                                <Edit2 size={16} />
-                                                                Edit
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            ))}
+
+                                                    {heroForm.imagePreview ? (
+                                                        <img
+                                                            src={heroForm.imagePreview}
+                                                            className="max-h-32 sm:max-h-40 mx-auto rounded-lg mb-3"
+                                                            alt="Preview"
+                                                        />
+                                                    ) : (
+                                                        <Upload size={40} className="mx-auto text-[#94A3B8] mb-3" />
+                                                    )}
+
+                                                    <p className="text-sm text-[#1E293B] font-medium">
+                                                        Click or drag to upload
+                                                    </p>
+                                                </label>
+                                            </div>
+
+                                            {/* TITLE */}
+                                            <div className="mb-5">
+                                                <label className="block text-sm font-semibold text-[#0F172A] mb-2">
+                                                    Title
+                                                </label>
+                                                <input
+                                                    className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg"
+                                                    value={heroForm.title}
+                                                    onChange={(e) =>
+                                                        setHeroForm((prev) => ({ ...prev, title: e.target.value }))
+                                                    }
+                                                />
+                                            </div>
+
+                                            {/* DESCRIPTION */}
+                                            <div className="mb-5">
+                                                <label className="block text-sm font-semibold text-[#0F172A] mb-2">
+                                                    Description
+                                                </label>
+                                                <textarea
+                                                    rows={3}
+                                                    className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg"
+                                                    value={heroForm.description}
+                                                    onChange={(e) =>
+                                                        setHeroForm((prev) => ({ ...prev, description: e.target.value }))
+                                                    }
+                                                />
+                                            </div>
+
+                                            {/* SAVE BUTTON */}
+                                            <button
+                                                onClick={handleSave}
+                                                className="w-full bg-[#22C55E] text-white py-3 rounded-lg font-semibold"
+                                            >
+                                                Create Hero
+                                            </button>
                                         </div>
+
+                                        {/* ✅ PREVIEW */}
+                                        <div className="bg-white rounded-xl shadow border border-[#E2E8F0] p-4 sm:p-6">
+                                            <h2 className="text-lg font-bold mb-4">Live Preview</h2>
+
+                                            <div className="relative rounded-xl overflow-hidden bg-gradient-to-br from-[#1E293B] to-[#0F172A] min-h-[300px] flex items-center justify-center">
+                                                {heroForm.imagePreview && (
+                                                    <img
+                                                        src={heroForm.imagePreview}
+                                                        className="absolute inset-0 w-full h-full object-cover opacity-50"
+                                                    />
+                                                )}
+
+                                                <div className="relative z-10 text-center px-4">
+                                                    <h1 className="text-3xl font-bold text-white mb-3">
+                                                        {heroForm.title || "Your Hero Title"}
+                                                    </h1>
+
+                                                    <p className="text-white/90">
+                                                        {heroForm.description || "Hero description here…"}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+
                                     </div>
                                 )}
 
