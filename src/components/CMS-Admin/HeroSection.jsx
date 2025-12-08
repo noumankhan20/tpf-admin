@@ -455,13 +455,13 @@ export default function CMSAdminPanel() {
                                                     Save Changes
                                                 </button>
 
-                                                <button
+                                                {/* <button
                                                     onClick={handleCancel}
                                                     className="px-6 py-2.5 sm:py-3 border border-[#CBD5E1] rounded-lg font-semibold hover:bg-[#E2E8F0] flex items-center justify-center gap-2 text-sm sm:text-base cursor-pointer"
                                                 >
                                                     <XCircle size={18} />
                                                     Cancel
-                                                </button>
+                                                </button> */}
                                             </div>
                                         </div>
 
