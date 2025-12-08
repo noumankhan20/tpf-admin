@@ -38,6 +38,7 @@ export default function TailoredFeedCMS() {
   const [feedItems, setFeedItems] = useState([]);
   const [itemForm, setItemForm] = useState({
     title: "",
+    route: "",
     mediaFile: null,
     mediaPreview: null,
     mediaUrl: "",
@@ -51,13 +52,12 @@ export default function TailoredFeedCMS() {
   // Alert Component
   const Alert = ({ type, message, onDismiss }) => {
     const isSuccess = type === "success";
-    
+
     return (
-      <div className={`fixed top-4 right-4 z-50 max-w-sm w-full mx-4 sm:mx-0 ${
-        isSuccess 
-          ? "bg-green-50 border border-green-200 text-green-800" 
-          : "bg-red-50 border border-red-200 text-red-800"
-      } rounded-lg p-4 shadow-lg animate-in slide-in-from-top-2 duration-300`}>
+      <div className={`fixed top-4 right-4 z-50 max-w-sm w-full mx-4 sm:mx-0 ${isSuccess
+        ? "bg-green-50 border border-green-200 text-green-800"
+        : "bg-red-50 border border-red-200 text-red-800"
+        } rounded-lg p-4 shadow-lg animate-in slide-in-from-top-2 duration-300`}>
         <div className="flex items-start gap-3">
           {isSuccess ? (
             <CheckCircle size={20} className="text-green-600 flex-shrink-0 mt-0.5" />
@@ -68,8 +68,8 @@ export default function TailoredFeedCMS() {
             <p className="text-sm font-medium">{message}</p>
           </div>
           {onDismiss && (
-            <button 
-              onClick={onDismiss} 
+            <button
+              onClick={onDismiss}
               className="flex-shrink-0 hover:opacity-70 transition-opacity"
             >
               <X size={16} />
@@ -81,19 +81,19 @@ export default function TailoredFeedCMS() {
   };
 
   // Fetch Tailored Items
- const fetchFeedItems = async () => {
-  setIsLoading(true);
-  setError(null);
-  try {
-    const response = await axios.get(TAILORED_ENDPOINTS.getAll);
-    setFeedItems(response.data.tailored || []);
-  } catch (error) {
-    setError("Failed to fetch feed items. Please try again.");
-    console.error("Fetch error:", error);
-  } finally {
-    setIsLoading(false);
-  }
-};
+  const fetchFeedItems = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await axios.get(TAILORED_ENDPOINTS.getAll);
+      setFeedItems(response.data.tailored || []);
+    } catch (error) {
+      setError("Failed to fetch feed items. Please try again.");
+      console.error("Fetch error:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
 
   // Create New Feed Item
@@ -183,6 +183,7 @@ export default function TailoredFeedCMS() {
   const handleAddItem = () => {
     setItemForm({
       title: "",
+      route: "",
       mediaFile: null,
       mediaPreview: null,
       mediaUrl: "",
@@ -197,6 +198,7 @@ export default function TailoredFeedCMS() {
     setSelectedItem(item);
     setItemForm({
       title: item.title || "",
+      route: item.route || "",
       mediaFile: null,
       mediaPreview: item.image ? `${IMAGE_BASE_URL}${item.image}` : null,
       mediaUrl: item.image ? `${IMAGE_BASE_URL}${item.image}` : "",
@@ -223,7 +225,7 @@ export default function TailoredFeedCMS() {
 
     const formData = new FormData();
     formData.append("title", itemForm.title.trim());
-
+    formData.append("route", itemForm.route.trim());
     if (itemForm.mediaFile) {
       formData.append("image", itemForm.mediaFile);
     }
@@ -234,12 +236,13 @@ export default function TailoredFeedCMS() {
       } else if (viewMode === "edit-item" && selectedItem) {
         await updateFeedItem(selectedItem._id, formData);
       }
-      
+
       // Reset form and go to overview
       setViewMode("overview");
       setSelectedItem(null);
       setItemForm({
         title: "",
+        route: "",
         mediaFile: null,
         mediaPreview: null,
         mediaUrl: "",
@@ -274,6 +277,7 @@ export default function TailoredFeedCMS() {
     setSelectedItem(null);
     setItemForm({
       title: "",
+      route: "",
       mediaFile: null,
       mediaPreview: null,
       mediaUrl: "",
@@ -304,16 +308,16 @@ export default function TailoredFeedCMS() {
         {/* Mobile Header */}
         <div className="md:hidden bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between sticky top-0 z-40">
           <div className="flex items-center">
-            <button 
-              onClick={() => setSidebarOpen(true)} 
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors" 
+            <button
+              onClick={() => setSidebarOpen(true)}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
               aria-label="Open menu"
             >
               <Menu size={24} className="text-gray-700" />
             </button>
             <h1 className="ml-3 text-lg font-bold text-[#0F172A]">
-              {viewMode === "overview" ? "Feed Items" : 
-               viewMode === "add-item" ? "Add Item" : "Edit Item"}
+              {viewMode === "overview" ? "Feed Items" :
+                viewMode === "add-item" ? "Add Item" : "Edit Item"}
             </h1>
           </div>
           {viewMode === "overview" && (
@@ -345,7 +349,7 @@ export default function TailoredFeedCMS() {
 
         <main className="flex-1 overflow-y-auto">
           <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
-            
+
             {/* Overview Section */}
             {viewMode === "overview" && (
               <div className="space-y-6">
@@ -360,7 +364,7 @@ export default function TailoredFeedCMS() {
                         {feedItems.length} items in carousel
                       </p>
                     </div>
-                    <button 
+                    <button
                       onClick={handleAddItem}
                       disabled={isLoading}
                       className="flex items-center gap-2 bg-blue-600 text-white px-6 py-2.5 rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
@@ -397,15 +401,15 @@ export default function TailoredFeedCMS() {
                     <>
                       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 lg:gap-6">
                         {filteredItems.map((item) => (
-                          <div 
-                            key={item._id} 
+                          <div
+                            key={item._id}
                             className="border border-[#E2E8F0] rounded-xl overflow-hidden hover:shadow-lg transition-all duration-200 bg-white"
                           >
                             <div className="relative h-48 bg-gray-100">
                               {item.image ? (
-                                <img 
-                                  src={`${IMAGE_BASE_URL}${item.image}`} 
-                                  alt={item.title} 
+                                <img
+                                  src={`${IMAGE_BASE_URL}${item.image}`}
+                                  alt={item.title}
                                   className="w-full h-full object-cover"
                                   onError={(e) => {
                                     e.target.src = "/placeholder-image.jpg";
@@ -424,7 +428,7 @@ export default function TailoredFeedCMS() {
                               </h3>
 
                               <div className="flex flex-col sm:flex-row gap-2">
-                                <button 
+                                <button
                                   onClick={() => handleEditItem(item)}
                                   disabled={isLoading}
                                   className="flex items-center justify-center gap-2 flex-1 py-2.5 bg-[#3B82F6] text-white rounded-lg hover:bg-[#2563EB] transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
@@ -433,7 +437,7 @@ export default function TailoredFeedCMS() {
                                   <span>Edit</span>
                                 </button>
 
-                                <button 
+                                <button
                                   onClick={() => handleDeleteItem(item)}
                                   disabled={isLoading}
                                   className="flex items-center justify-center gap-2 flex-1 py-2.5 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
@@ -457,7 +461,7 @@ export default function TailoredFeedCMS() {
                             {feedItems.length === 0 ? "No items yet" : "No items found"}
                           </p>
                           <p className="text-gray-400 text-sm mb-6">
-                            {feedItems.length === 0 
+                            {feedItems.length === 0
                               ? "Get started by adding your first feed item"
                               : "Try adjusting your search query"
                             }
@@ -483,7 +487,7 @@ export default function TailoredFeedCMS() {
               <div className="space-y-6">
                 {/* Desktop Back Button */}
                 <div className="hidden md:flex items-center gap-3 mb-2">
-                  <button 
+                  <button
                     onClick={handleCancel}
                     disabled={isSubmitting}
                     className="text-gray-600 hover:text-gray-900 transition-colors disabled:opacity-50"
@@ -506,20 +510,20 @@ export default function TailoredFeedCMS() {
                       </label>
 
                       <label className="border-2 border-dashed border-[#CBD5E1] rounded-xl p-6 sm:p-8 block text-center cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition-all">
-                        <input 
-                          type="file" 
-                          accept="image/*" 
-                          className="hidden" 
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
                           onChange={handleMediaUpload}
                           disabled={isSubmitting}
                         />
 
                         {itemForm.mediaPreview ? (
                           <div className="space-y-3">
-                            <img 
-                              src={itemForm.mediaPreview} 
-                              alt="Preview" 
-                              className="max-h-40 sm:max-h-48 mx-auto rounded-lg shadow-sm" 
+                            <img
+                              src={itemForm.mediaPreview}
+                              alt="Preview"
+                              className="max-h-40 sm:max-h-48 mx-auto rounded-lg shadow-sm"
                             />
                             <p className="text-sm text-blue-600 font-medium">
                               Click to change image
@@ -559,6 +563,21 @@ export default function TailoredFeedCMS() {
                       </p>
                     </div>
 
+                    {/* ✅ ROUTE FIELD */}
+                    <div className="mb-5">
+                      <label className="block text-sm font-semibold text-[#0F172A] mb-2">
+                        Route (Frontend Path)
+                      </label>
+                      <input
+                        className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg"
+                        placeholder="/services/web-development"
+                        value={itemForm.route}
+                        onChange={(e) =>
+                          setItemForm((prev) => ({ ...prev, route: e.target.value }))
+                        }
+                      />
+                    </div>
+
                     {/* Action Buttons */}
                     <div className="flex flex-col-reverse sm:flex-row gap-3">
                       <button
@@ -591,9 +610,8 @@ export default function TailoredFeedCMS() {
                   </div>
 
                   {/* Preview - Hidden on mobile for add mode, always visible for edit */}
-                  <div className={`bg-white rounded-xl shadow-sm border border-[#E2E8F0] p-4 sm:p-6 ${
-                    viewMode === "add-item" ? "hidden lg:block" : ""
-                  }`}>
+                  <div className={`bg-white rounded-xl shadow-sm border border-[#E2E8F0] p-4 sm:p-6 ${viewMode === "add-item" ? "hidden lg:block" : ""
+                    }`}>
                     <h2 className="text-xl sm:text-2xl font-bold mb-6 text-[#0F172A]">
                       Live Preview
                     </h2>
@@ -601,10 +619,10 @@ export default function TailoredFeedCMS() {
                     <div className="border border-[#E2E8F0] rounded-xl overflow-hidden shadow-sm">
                       <div className="relative h-48 sm:h-64 bg-gray-100">
                         {itemForm.mediaPreview ? (
-                          <img 
-                            src={itemForm.mediaPreview} 
-                            alt="Preview" 
-                            className="w-full h-full object-cover" 
+                          <img
+                            src={itemForm.mediaPreview}
+                            alt="Preview"
+                            className="w-full h-full object-cover"
                           />
                         ) : (
                           <div className="w-full h-full flex flex-col items-center justify-center">
