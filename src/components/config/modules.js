@@ -34,4 +34,5 @@ export const MODULES = [
   { id: "legal", name: "Legal & Compliance", icon: Scale, route: "/legal", category: "documentation", desc: "Legal approvals and compliance" },
   { id: "cms", name: "CMS", icon: Globe, route: "/cms-admin", category: "documentation", desc: "Manage content & pages" },
   { id: "communication", name: "Communication", icon: Bell, route: "/communication", category: "operations", desc: "Notices, messages & alerts" },
+  { id: "photography", name: "Photography", icon: Bell, route: "/photography", category: "operations", desc: "Manage photography content" },
 ];
