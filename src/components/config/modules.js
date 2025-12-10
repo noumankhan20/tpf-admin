@@ -14,7 +14,8 @@ import {
   Bell,
   FileText,
   Scale,
-  Globe
+  Globe,
+  ShieldCheck
 } from "lucide-react";
 
 export const MODULES = [
@@ -35,4 +36,12 @@ export const MODULES = [
   { id: "cms", name: "CMS", icon: Globe, route: "/cms-admin", category: "documentation", desc: "Manage content & pages" },
   { id: "communication", name: "Communication", icon: Bell, route: "/communication", category: "operations", desc: "Notices, messages & alerts" },
   { id: "photography", name: "Photography", icon: Bell, route: "/photography", category: "operations", desc: "Manage photography content" },
+   { 
+    id: "financial-aid-verify", 
+    name: "Financial Aid", 
+    icon: ShieldCheck, 
+    route: "/verify", 
+    category: "verify-forms",
+    desc: "Verify financial aid forms" 
+  },
 ];
