@@ -15,6 +15,7 @@ export const ROLE_PERMISSIONS = {
     "cms",
     "communication",
     "photography",
+    "social-media",
   ],
 
   "hr-admin": ["hr", "dms", "legal"],

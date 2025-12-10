@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect, useRef } from 'react';
-import { Camera, Upload, MapPin, Calendar, CheckCircle, XCircle, Bell, Eye, Download, AlertCircle, Clock, UserCheck, FileText, ImageIcon, Trash2, MessageSquare, ChevronRight, Home, Grid, Settings, User, Menu, X } from 'lucide-react';
-
+import { Camera, Upload, MapPin, Calendar, CheckCircle, XCircle, Bell, ArrowLeft, Eye, Download, AlertCircle, Clock, UserCheck, FileText, ImageIcon, Trash2, MessageSquare, ChevronRight, Home, Grid, Settings, User, Menu, X } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 // Mock Data
 const mockCampaigns = [
     { id: 1, name: 'Rural Education Initiative', location: 'Rajasthan, India', deadline: '2025-01-15' },
@@ -102,7 +102,7 @@ const PhotographyDashboard = ({ activeView, setActiveView, userRole, notificatio
     const [assignments, setAssignments] = useState(mockAssignments);
     const [uploads, setUploads] = useState(mockUploads);
     const [activeFilter, setActiveFilter] = useState('notifications');
-    
+
     const pendingAssignments = assignments.filter(a => a.status === 'pending');
     const approvedUploads = uploads.filter(u => u.status === 'approved');
     const pendingUploads = uploads.filter(u => u.status === 'pending');
@@ -119,15 +119,11 @@ const PhotographyDashboard = ({ activeView, setActiveView, userRole, notificatio
                             <Camera className="w-6 h-6 md:w-8 md:h-8" />
                         </div>
                         <div>
-                            <h1 className="text-xl md:text-3xl font-bold font-serif">Photography Dashboard</h1>
+                            <h1 className="text-xl md:text-3xl font-bold">Photography Dashboard</h1>
                             <p className="text-blue-100 text-sm md:text-lg">Documenting impact, building trust</p>
                         </div>
                     </div>
                     <div className="flex flex-wrap gap-4 md:gap-6 text-xs md:text-sm">
-                        <div className="flex items-center gap-2">
-                            <Bell className="w-3 h-3 md:w-4 md:h-4" />
-                            <span>{notifications.length} new assignments</span>
-                        </div>
                         <div className="flex items-center gap-2">
                             <Clock className="w-3 h-3 md:w-4 md:h-4" />
                             <span>{pendingAssignments.length} pending visits</span>
@@ -140,11 +136,10 @@ const PhotographyDashboard = ({ activeView, setActiveView, userRole, notificatio
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
                 <div
                     onClick={() => setActiveFilter('notifications')}
-                    className={`bg-white rounded-xl p-4 md:p-6 shadow-sm border-2 transition-all cursor-pointer ${
-                        activeFilter === 'notifications' 
-                            ? 'border-orange-300 bg-orange-50' 
-                            : 'border-gray-100 hover:border-gray-200 hover:shadow-md'
-                    }`}
+                    className={`bg-white rounded-xl p-4 md:p-6 shadow-sm border-2 transition-all cursor-pointer ${activeFilter === 'notifications'
+                        ? 'border-orange-300 bg-orange-50'
+                        : 'border-gray-100 hover:border-gray-200 hover:shadow-md'
+                        }`}
                 >
                     <div className="flex items-center justify-between mb-3 md:mb-4">
                         <div className="w-8 h-8 md:w-12 md:h-12 bg-orange-100 rounded-lg flex items-center justify-center">
@@ -158,11 +153,10 @@ const PhotographyDashboard = ({ activeView, setActiveView, userRole, notificatio
 
                 <div
                     onClick={() => setActiveFilter('pending-review')}
-                    className={`bg-white rounded-xl p-4 md:p-6 shadow-sm border-2 transition-all cursor-pointer ${
-                        activeFilter === 'pending-review' 
-                            ? 'border-blue-300 bg-blue-50' 
-                            : 'border-gray-100 hover:border-gray-200 hover:shadow-md'
-                    }`}
+                    className={`bg-white rounded-xl p-4 md:p-6 shadow-sm border-2 transition-all cursor-pointer ${activeFilter === 'pending-review'
+                        ? 'border-blue-300 bg-blue-50'
+                        : 'border-gray-100 hover:border-gray-200 hover:shadow-md'
+                        }`}
                 >
                     <div className="flex items-center justify-between mb-3 md:mb-4">
                         <div className="w-8 h-8 md:w-12 md:h-12 bg-blue-100 rounded-lg flex items-center justify-center">
@@ -176,11 +170,10 @@ const PhotographyDashboard = ({ activeView, setActiveView, userRole, notificatio
 
                 <div
                     onClick={() => setActiveFilter('approved')}
-                    className={`bg-white rounded-xl p-4 md:p-6 shadow-sm border-2 transition-all cursor-pointer ${
-                        activeFilter === 'approved' 
-                            ? 'border-green-300 bg-green-50' 
-                            : 'border-gray-100 hover:border-gray-200 hover:shadow-md'
-                    }`}
+                    className={`bg-white rounded-xl p-4 md:p-6 shadow-sm border-2 transition-all cursor-pointer ${activeFilter === 'approved'
+                        ? 'border-green-300 bg-green-50'
+                        : 'border-gray-100 hover:border-gray-200 hover:shadow-md'
+                        }`}
                 >
                     <div className="flex items-center justify-between mb-3 md:mb-4">
                         <div className="w-8 h-8 md:w-12 md:h-12 bg-green-100 rounded-lg flex items-center justify-center">
@@ -194,11 +187,10 @@ const PhotographyDashboard = ({ activeView, setActiveView, userRole, notificatio
 
                 <div
                     onClick={() => setActiveFilter('rejected')}
-                    className={`bg-white rounded-xl p-4 md:p-6 shadow-sm border-2 transition-all cursor-pointer ${
-                        activeFilter === 'rejected' 
-                            ? 'border-red-300 bg-red-50' 
-                            : 'border-gray-100 hover:border-gray-200 hover:shadow-md'
-                    }`}
+                    className={`bg-white rounded-xl p-4 md:p-6 shadow-sm border-2 transition-all cursor-pointer ${activeFilter === 'rejected'
+                        ? 'border-red-300 bg-red-50'
+                        : 'border-gray-100 hover:border-gray-200 hover:shadow-md'
+                        }`}
                 >
                     <div className="flex items-center justify-between mb-3 md:mb-4">
                         <div className="w-8 h-8 md:w-12 md:h-12 bg-red-100 rounded-lg flex items-center justify-center">
@@ -245,7 +237,7 @@ const PhotographyDashboard = ({ activeView, setActiveView, userRole, notificatio
                                     <span>Assigned {formatDate(notification.createdAt)}</span>
                                 </div>
                             </div>
-                            <button 
+                            <button
                                 onClick={() => setActiveView('upload')}
                                 className="w-full md:w-auto bg-blue-600 text-white px-4 py-2 rounded-lg text-xs md:text-sm font-medium hover:bg-blue-700 transition-colors flex-shrink-0"
                             >
@@ -407,7 +399,7 @@ const UploadPage = ({ setActiveView }) => {
             setSelectedCampaign(parsed.campaignName);
             setBeneficiaryName(parsed.beneficiaryName);
             setNotes(parsed.notes);
-            localStorage.removeItem('editUpload'); // Clear after loading
+            localStorage.removeItem('editUpload');
         }
     }, []);
 
@@ -549,11 +541,10 @@ const UploadPage = ({ setActiveView }) => {
                             Images <span className="text-red-500">*</span>
                         </label>
                         <div
-                            className={`border-2 border-dashed rounded-lg p-6 md:p-8 text-center transition-colors ${
-                                dragOver 
-                                    ? 'border-blue-400 bg-blue-50' 
-                                    : 'border-gray-300 hover:border-gray-400'
-                            }`}
+                            className={`border-2 border-dashed rounded-lg p-6 md:p-8 text-center transition-colors ${dragOver
+                                ? 'border-blue-400 bg-blue-50'
+                                : 'border-gray-300 hover:border-gray-400'
+                                }`}
                             onDragOver={handleDragOver}
                             onDragLeave={handleDragLeave}
                             onDrop={handleDrop}
@@ -634,7 +625,7 @@ const UploadPage = ({ setActiveView }) => {
                                 <span className="font-medium text-blue-800 text-sm md:text-base">Uploading images...</span>
                             </div>
                             <div className="w-full bg-blue-200 rounded-full h-2">
-                                <div 
+                                <div
                                     className="bg-blue-600 h-2 rounded-full transition-all duration-300"
                                     style={{ width: `${uploadProgress}%` }}
                                 ></div>
@@ -679,10 +670,10 @@ const UploadPage = ({ setActiveView }) => {
 // Main Photography Module Component
 const PhotographyModule = () => {
     const [activeView, setActiveView] = useState('dashboard');
-    const [userRole, setUserRole] = useState('photographer'); // 'photographer' or 'admin'
+    const [userRole, setUserRole] = useState('photographer');
     const [notifications] = useState(mockAssignments);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
+    const router = useRouter();
     const navigation = [
         { id: 'dashboard', name: 'Dashboard', icon: Home, roles: ['photographer', 'admin'] },
         { id: 'upload', name: 'Upload', icon: Upload, roles: ['photographer'] },
@@ -702,45 +693,65 @@ const PhotographyModule = () => {
                                 <Camera className="w-4 h-4 md:w-6 md:h-6 text-white" />
                             </div>
                             <div>
-                                <h1 className="text-base md:text-xl font-bold text-gray-800 font-serif">NGO Photography</h1>
+                                <h1 className="text-base md:text-xl font-bold text-gray-800">NGO Photography</h1>
                                 <p className="text-xs text-gray-500 hidden sm:block">Impact Documentation</p>
                             </div>
                         </div>
 
+                        {/* Desktop Navigation */}
                         {/* Desktop Navigation */}
                         <nav className="hidden md:flex items-center space-x-1">
                             {visibleNavigation.map(item => (
                                 <button
                                     key={item.id}
                                     onClick={() => setActiveView(item.id)}
-                                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                                        activeView === item.id
-                                            ? 'bg-blue-600 text-white'
-                                            : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
-                                    }`}
+                                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeView === item.id
+                                        ? 'bg-blue-600 text-white'
+                                        : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
+                                        }`}
                                 >
                                     <item.icon className="w-4 h-4" />
                                     {item.name}
                                 </button>
                             ))}
+                            <button
+                                onClick={() => router.push("/select-portal")}
+                                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-100 transition-colors"
+                            >
+                                <ArrowLeft className="w-4 h-4" />
+                                Back
+                            </button>
                         </nav>
 
-                        {/* User Role Switcher & Mobile Menu Button */}
+                        {/* Notifications & User Menu */}
                         <div className="flex items-center gap-2 md:gap-3">
-                            <select
-                                value={userRole}
-                                onChange={(e) => {
-                                    setUserRole(e.target.value);
-                                    setActiveView(e.target.value === 'admin' ? 'admin' : 'dashboard');
-                                }}
-                                className="text-xs md:text-sm border border-gray-300 rounded-lg px-2 md:px-3 py-1 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            >
-                                <option value="photographer">Photographer</option>
-                            </select>
-                            <div className="w-6 h-6 md:w-8 md:h-8 bg-gray-200 rounded-full flex items-center justify-center">
-                                <User className="w-3 h-3 md:w-4 md:h-4 text-gray-600" />
+                            {/* Notification Bell - Visible on all screens */}
+                            <div className="relative">
+                                <button className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors">
+                                    <Bell className="w-5 h-5" />
+                                    {notifications.length > 0 && (
+                                        <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-semibold">
+                                            {notifications.length}
+                                        </span>
+                                    )}
+                                </button>
                             </div>
-                            <button 
+
+                            {/* User Role + Profile - Desktop */}
+                            <div className="hidden md:flex items-center gap-2 border border-gray-300 rounded-lg px-3 py-1.5">
+                                <span className="text-sm">Photographer</span>
+                                <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
+                                    <User className="w-4 h-4 text-gray-600" />
+                                </div>
+                            </div>
+
+                            {/* User Profile Icon - Mobile */}
+                            <div className="md:hidden w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
+                                <User className="w-4 h-4 text-gray-600" />
+                            </div>
+
+                            {/* Mobile Menu Button */}
+                            <button
                                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                                 className="md:hidden p-2 text-gray-600 hover:text-gray-800"
                             >
@@ -748,49 +759,62 @@ const PhotographyModule = () => {
                             </button>
                         </div>
                     </div>
-                </div>
+                </div >
 
                 {/* Mobile Navigation */}
-                {mobileMenuOpen && (
-                    <div className="md:hidden px-4 pb-3 border-t border-gray-200 bg-white">
-                        <div className="flex flex-col space-y-1 pt-3">
-                            {visibleNavigation.map(item => (
-                                <button
-                                    key={item.id}
-                                    onClick={() => {
-                                        setActiveView(item.id);
-                                        setMobileMenuOpen(false);
-                                    }}
-                                    className={`flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium transition-colors ${
-                                        activeView === item.id
+                {
+                    mobileMenuOpen && (
+                        <div className="md:hidden px-4 pb-3 border-t border-gray-200 bg-white">
+                            <div className="flex flex-col space-y-1 pt-3">
+                                {visibleNavigation.map(item => (
+                                    <button
+                                        key={item.id}
+                                        onClick={() => {
+                                            setActiveView(item.id);
+                                            setMobileMenuOpen(false);
+                                        }}
+                                        className={`flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium transition-colors ${activeView === item.id
                                             ? 'bg-blue-600 text-white'
                                             : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
-                                    }`}
+                                            }`}
+                                    >
+                                        <item.icon className="w-4 h-4" />
+                                        {item.name}
+                                    </button>
+                                ))}
+                                <button
+                                    onClick={() => {
+                                        setMobileMenuOpen(false);
+                                        router.push("/select-portal");
+                                    }}
+                                    className="flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-100 transition-colors"
                                 >
-                                    <item.icon className="w-4 h-4" />
-                                    {item.name}
+                                    <ArrowLeft className="w-4 h-4" />
+                                    Back
                                 </button>
-                            ))}
+                            </div>
                         </div>
-                    </div>
-                )}
-            </header>
+                    )
+                }
+            </header >
 
             {/* Main Content */}
-            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8">
+            < main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8" >
                 {activeView === 'dashboard' && (
-                    <PhotographyDashboard 
+                    <PhotographyDashboard
                         activeView={activeView}
                         setActiveView={setActiveView}
                         userRole={userRole}
                         notifications={notifications}
                     />
                 )}
-                {activeView === 'upload' && (
-                    <UploadPage setActiveView={setActiveView} />
-                )}
-            </main>
-        </div>
+                {
+                    activeView === 'upload' && (
+                        <UploadPage setActiveView={setActiveView} />
+                    )
+                }
+            </main >
+        </div >
     );
 };
 
