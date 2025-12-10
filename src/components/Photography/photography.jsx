@@ -1,0 +1,797 @@
+"use client";
+import React, { useState, useEffect, useRef } from 'react';
+import { Camera, Upload, MapPin, Calendar, CheckCircle, XCircle, Bell, Eye, Download, AlertCircle, Clock, UserCheck, FileText, ImageIcon, Trash2, MessageSquare, ChevronRight, Home, Grid, Settings, User, Menu, X } from 'lucide-react';
+
+// Mock Data
+const mockCampaigns = [
+    { id: 1, name: 'Rural Education Initiative', location: 'Rajasthan, India', deadline: '2025-01-15' },
+    { id: 2, name: 'Clean Water Access', location: 'West Bengal, India', deadline: '2025-01-20' },
+    { id: 3, name: 'Healthcare Support', location: 'Odisha, India', deadline: '2025-01-25' }
+];
+
+const mockAssignments = [
+    {
+        id: 1,
+        campaignName: 'Rural Education Initiative',
+        beneficiaryName: 'Priya Sharma',
+        address: 'Village Khajuraho, District Chhatarpur, Madhya Pradesh, 471606',
+        deadline: '2025-01-15',
+        status: 'pending',
+        createdAt: '2024-12-08'
+    },
+    {
+        id: 2,
+        campaignName: 'Clean Water Access',
+        beneficiaryName: 'Rajesh Kumar',
+        address: 'Gram Panchayet Jharia, Dhanbad, Jharkhand, 828111',
+        deadline: '2025-01-20',
+        status: 'pending',
+        createdAt: '2024-12-07'
+    }
+];
+
+const mockUploads = [
+    {
+        id: 1,
+        campaignName: 'Healthcare Support',
+        beneficiaryName: 'Meera Devi',
+        images: ['https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=400', 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1f?w=400'],
+        notes: 'Successfully provided medical equipment to rural clinic. Patient showing remarkable recovery.',
+        uploadDate: '2024-12-05',
+        status: 'approved',
+        adminFeedback: 'Excellent documentation. Clear impact visible.'
+    },
+    {
+        id: 2,
+        campaignName: 'Rural Education Initiative',
+        beneficiaryName: 'Amit Singh',
+        images: ['https://images.unsplash.com/photo-1497486751825-1233686d5d80?w=400'],
+        notes: 'New computer lab setup completed. Students actively using the equipment.',
+        uploadDate: '2024-12-04',
+        status: 'pending',
+        adminFeedback: null
+    },
+    {
+        id: 3,
+        campaignName: 'District Education Initiative',
+        beneficiaryName: 'Amit Singh',
+        images: ['https://images.unsplash.com/photo-1497486751825-1233686d5d80?w=400'],
+        notes: 'New computer lab setup completed. Students actively using the equipment.',
+        uploadDate: '2024-12-04',
+        status: 'rejected',
+        adminFeedback: 'Please retake with better lighting and include more beneficiary interaction shots.'
+    }
+];
+
+const mockAdminReviews = [
+    {
+        id: 1,
+        photographerName: 'Arjun Patel',
+        campaignName: 'Rural Education Initiative',
+        beneficiaryName: 'Amit Singh',
+        images: ['https://images.unsplash.com/photo-1497486751825-1233686d5d80?w=400', 'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=400'],
+        notes: 'New computer lab setup completed. Students actively using the equipment for learning programming.',
+        uploadDate: '2024-12-04',
+        status: 'pending',
+        location: 'Village Khajuraho, MP'
+    },
+    {
+        id: 2,
+        photographerName: 'Meera Shah',
+        campaignName: 'Clean Water Access',
+        beneficiaryName: 'Sunita Kumari',
+        images: ['https://images.unsplash.com/photo-1541888946425-d81bb19240f5?w=400'],
+        notes: 'New well construction completed. Clean water now accessible to 50+ families.',
+        uploadDate: '2024-12-06',
+        status: 'pending',
+        location: 'Gram Panchayat Jharia, JH'
+    }
+];
+
+// Utility Functions
+const formatDate = (dateStr) => {
+    return new Date(dateStr).toLocaleDateString('en-IN', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric'
+    });
+};
+
+// Photography Dashboard Component
+const PhotographyDashboard = ({ activeView, setActiveView, userRole, notifications }) => {
+    const [assignments, setAssignments] = useState(mockAssignments);
+    const [uploads, setUploads] = useState(mockUploads);
+    const [activeFilter, setActiveFilter] = useState('notifications');
+    
+    const pendingAssignments = assignments.filter(a => a.status === 'pending');
+    const approvedUploads = uploads.filter(u => u.status === 'approved');
+    const pendingUploads = uploads.filter(u => u.status === 'pending');
+    const rejectedUploads = uploads.filter(u => u.status === 'rejected');
+
+    return (
+        <div className="space-y-6 md:space-y-8">
+            {/* Welcome Header */}
+            <div className="bg-gradient-to-r from-blue-600 to-blue-800 rounded-xl md:rounded-2xl p-6 md:p-8 text-white relative overflow-hidden">
+                <div className="absolute inset-0 bg-black/10"></div>
+                <div className="relative z-10">
+                    <div className="flex items-center gap-3 md:gap-4 mb-3 md:mb-4">
+                        <div className="w-12 h-12 md:w-16 md:h-16 bg-white/20 rounded-full flex items-center justify-center">
+                            <Camera className="w-6 h-6 md:w-8 md:h-8" />
+                        </div>
+                        <div>
+                            <h1 className="text-xl md:text-3xl font-bold font-serif">Photography Dashboard</h1>
+                            <p className="text-blue-100 text-sm md:text-lg">Documenting impact, building trust</p>
+                        </div>
+                    </div>
+                    <div className="flex flex-wrap gap-4 md:gap-6 text-xs md:text-sm">
+                        <div className="flex items-center gap-2">
+                            <Bell className="w-3 h-3 md:w-4 md:h-4" />
+                            <span>{notifications.length} new assignments</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <Clock className="w-3 h-3 md:w-4 md:h-4" />
+                            <span>{pendingAssignments.length} pending visits</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Quick Stats - Mobile Optimized */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
+                <div
+                    onClick={() => setActiveFilter('notifications')}
+                    className={`bg-white rounded-xl p-4 md:p-6 shadow-sm border-2 transition-all cursor-pointer ${
+                        activeFilter === 'notifications' 
+                            ? 'border-orange-300 bg-orange-50' 
+                            : 'border-gray-100 hover:border-gray-200 hover:shadow-md'
+                    }`}
+                >
+                    <div className="flex items-center justify-between mb-3 md:mb-4">
+                        <div className="w-8 h-8 md:w-12 md:h-12 bg-orange-100 rounded-lg flex items-center justify-center">
+                            <Clock className="w-4 h-4 md:w-6 md:h-6 text-orange-600" />
+                        </div>
+                        <span className="text-lg md:text-2xl font-bold text-orange-600">{pendingAssignments.length}</span>
+                    </div>
+                    <h3 className="font-semibold text-gray-800 text-xs md:text-base">Pending Assignments</h3>
+                    <p className="text-xs text-gray-600 mt-1">Awaiting field visits</p>
+                </div>
+
+                <div
+                    onClick={() => setActiveFilter('pending-review')}
+                    className={`bg-white rounded-xl p-4 md:p-6 shadow-sm border-2 transition-all cursor-pointer ${
+                        activeFilter === 'pending-review' 
+                            ? 'border-blue-300 bg-blue-50' 
+                            : 'border-gray-100 hover:border-gray-200 hover:shadow-md'
+                    }`}
+                >
+                    <div className="flex items-center justify-between mb-3 md:mb-4">
+                        <div className="w-8 h-8 md:w-12 md:h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                            <Upload className="w-4 h-4 md:w-6 md:h-6 text-blue-600" />
+                        </div>
+                        <span className="text-lg md:text-2xl font-bold text-blue-600">{pendingUploads.length}</span>
+                    </div>
+                    <h3 className="font-semibold text-gray-800 text-xs md:text-base">Pending Review</h3>
+                    <p className="text-xs text-gray-600 mt-1">Awaiting approval</p>
+                </div>
+
+                <div
+                    onClick={() => setActiveFilter('approved')}
+                    className={`bg-white rounded-xl p-4 md:p-6 shadow-sm border-2 transition-all cursor-pointer ${
+                        activeFilter === 'approved' 
+                            ? 'border-green-300 bg-green-50' 
+                            : 'border-gray-100 hover:border-gray-200 hover:shadow-md'
+                    }`}
+                >
+                    <div className="flex items-center justify-between mb-3 md:mb-4">
+                        <div className="w-8 h-8 md:w-12 md:h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                            <CheckCircle className="w-4 h-4 md:w-6 md:h-6 text-green-600" />
+                        </div>
+                        <span className="text-lg md:text-2xl font-bold text-green-600">{approvedUploads.length}</span>
+                    </div>
+                    <h3 className="font-semibold text-gray-800 text-xs md:text-base">Approved</h3>
+                    <p className="text-xs text-gray-600 mt-1">Successfully verified</p>
+                </div>
+
+                <div
+                    onClick={() => setActiveFilter('rejected')}
+                    className={`bg-white rounded-xl p-4 md:p-6 shadow-sm border-2 transition-all cursor-pointer ${
+                        activeFilter === 'rejected' 
+                            ? 'border-red-300 bg-red-50' 
+                            : 'border-gray-100 hover:border-gray-200 hover:shadow-md'
+                    }`}
+                >
+                    <div className="flex items-center justify-between mb-3 md:mb-4">
+                        <div className="w-8 h-8 md:w-12 md:h-12 bg-red-100 rounded-lg flex items-center justify-center">
+                            <XCircle className="w-4 h-4 md:w-6 md:h-6 text-red-600" />
+                        </div>
+                        <span className="text-lg md:text-2xl font-bold text-red-600">{rejectedUploads.length}</span>
+                    </div>
+                    <h3 className="font-semibold text-gray-800 text-xs md:text-base">Needs Revision</h3>
+                    <p className="text-xs text-gray-600 mt-1">Requires re-submission</p>
+                </div>
+            </div>
+
+            {/* Filtered Content */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                <div className="px-4 md:px-6 py-4 border-b border-gray-100 bg-gray-50">
+                    <h2 className="text-lg md:text-xl font-semibold text-gray-800 capitalize">
+                        {activeFilter.replace('-', ' ')}
+                    </h2>
+                </div>
+
+                <div className="p-4 md:p-6 space-y-4">
+                    {/* Notifications (Pending Assignments) */}
+                    {activeFilter === 'notifications' && notifications.map((notification, index) => (
+                        <div key={index} className="flex flex-col md:flex-row md:items-start gap-4 p-4 bg-blue-50 rounded-lg border border-blue-100">
+                            <div className="w-8 h-8 md:w-10 md:h-10 bg-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                                <UserCheck className="w-4 h-4 md:w-5 md:h-5 text-white" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <h3 className="font-semibold text-gray-800 mb-1 text-sm md:text-base">
+                                    New Assignment: {notification.campaignName}
+                                </h3>
+                                <p className="text-xs md:text-sm text-gray-600 mb-2">
+                                    <span className="font-medium">Beneficiary:</span> {notification.beneficiaryName}
+                                </p>
+                                <p className="text-xs md:text-sm text-gray-600 mb-2 break-words">
+                                    <MapPin className="w-3 h-3 md:w-4 md:h-4 inline mr-1" />
+                                    {notification.address}
+                                </p>
+                                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-xs text-gray-500">
+                                    <span className="flex items-center gap-1">
+                                        <Calendar className="w-3 h-3" />
+                                        Deadline: {formatDate(notification.deadline)}
+                                    </span>
+                                    <span>Assigned {formatDate(notification.createdAt)}</span>
+                                </div>
+                            </div>
+                            <button 
+                                onClick={() => setActiveView('upload')}
+                                className="w-full md:w-auto bg-blue-600 text-white px-4 py-2 rounded-lg text-xs md:text-sm font-medium hover:bg-blue-700 transition-colors flex-shrink-0"
+                            >
+                                Start Upload
+                            </button>
+                        </div>
+                    ))}
+
+                    {/* Pending Review */}
+                    {activeFilter === 'pending-review' && pendingUploads.map(upload => (
+                        <div key={upload.id} className="p-4 border rounded-lg bg-yellow-50 border-yellow-200">
+                            <div className="flex flex-col sm:flex-row sm:items-start gap-3">
+                                <div className="w-16 h-16 md:w-20 md:h-20 flex-shrink-0">
+                                    <img
+                                        src={upload.images[0]}
+                                        alt="Upload preview"
+                                        className="w-full h-full rounded-lg object-cover"
+                                    />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <h3 className="font-semibold text-gray-800 text-sm md:text-base">{upload.campaignName}</h3>
+                                    <p className="text-xs md:text-sm text-gray-600 mb-1">Beneficiary: {upload.beneficiaryName}</p>
+                                    <p className="text-xs md:text-sm text-gray-600 mb-2">{upload.notes}</p>
+                                    <div className="flex items-center gap-4 text-xs text-gray-500">
+                                        <span>{formatDate(upload.uploadDate)}</span>
+                                        <span>{upload.images.length} images</span>
+                                        <span className="text-yellow-600 font-medium">Under Review</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+
+                    {/* Approved */}
+                    {activeFilter === 'approved' && approvedUploads.map(upload => (
+                        <div key={upload.id} className="p-4 border rounded-lg bg-green-50 border-green-200">
+                            <div className="flex flex-col sm:flex-row sm:items-start gap-3">
+                                <div className="w-16 h-16 md:w-20 md:h-20 flex-shrink-0">
+                                    <img
+                                        src={upload.images[0]}
+                                        alt="Upload preview"
+                                        className="w-full h-full rounded-lg object-cover"
+                                    />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <h3 className="font-semibold text-gray-800 text-sm md:text-base">{upload.campaignName}</h3>
+                                    <p className="text-xs md:text-sm text-gray-600 mb-1">Beneficiary: {upload.beneficiaryName}</p>
+                                    <p className="text-xs md:text-sm text-gray-600 mb-2">{upload.notes}</p>
+                                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-xs text-gray-500">
+                                        <span>{formatDate(upload.uploadDate)}</span>
+                                        <span>{upload.images.length} images</span>
+                                        <span className="text-green-600 font-medium flex items-center gap-1">
+                                            <CheckCircle className="w-3 h-3" />
+                                            Approved
+                                        </span>
+                                    </div>
+                                    {upload.adminFeedback && (
+                                        <p className="text-xs text-green-700 mt-2 p-2 bg-green-100 rounded">
+                                            <span className="font-medium">Admin:</span> {upload.adminFeedback}
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+
+                    {/* Rejected */}
+                    {activeFilter === 'rejected' && rejectedUploads.map(upload => (
+                        <div key={upload.id} className="p-4 border rounded-lg bg-red-50 border-red-200">
+                            <div className="flex flex-col sm:flex-row sm:items-start gap-3">
+                                <div className="w-16 h-16 md:w-20 md:h-20 flex-shrink-0">
+                                    <img
+                                        src={upload.images[0]}
+                                        alt="Upload preview"
+                                        className="w-full h-full rounded-lg object-cover"
+                                    />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <h3 className="font-semibold text-gray-800 text-sm md:text-base">{upload.campaignName}</h3>
+                                    <p className="text-xs md:text-sm text-gray-600 mb-1">Beneficiary: {upload.beneficiaryName}</p>
+                                    <p className="text-xs md:text-sm text-gray-600 mb-2">{upload.notes}</p>
+                                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-xs text-gray-500 mb-2">
+                                        <span>{formatDate(upload.uploadDate)}</span>
+                                        <span>{upload.images.length} images</span>
+                                        <span className="text-red-600 font-medium flex items-center gap-1">
+                                            <XCircle className="w-3 h-3" />
+                                            Needs Revision
+                                        </span>
+                                    </div>
+                                    {upload.adminFeedback && (
+                                        <p className="text-xs text-red-700 mb-3 p-2 bg-red-100 rounded">
+                                            <span className="font-medium">Admin Feedback:</span> {upload.adminFeedback}
+                                        </p>
+                                    )}
+                                    <button
+                                        onClick={() => {
+                                            localStorage.setItem('editUpload', JSON.stringify(upload));
+                                            setActiveView('upload');
+                                        }}
+                                        className="bg-blue-600 text-white px-3 py-1.5 rounded text-xs hover:bg-blue-700 transition-colors"
+                                    >
+                                        Fix & Re-Upload
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+
+                    {/* Empty States */}
+                    {activeFilter === 'notifications' && notifications.length === 0 && (
+                        <div className="text-center py-8">
+                            <Bell className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                            <p className="text-gray-500">No new assignments at the moment</p>
+                        </div>
+                    )}
+
+                    {activeFilter === 'pending-review' && pendingUploads.length === 0 && (
+                        <div className="text-center py-8">
+                            <Clock className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                            <p className="text-gray-500">No uploads pending review</p>
+                        </div>
+                    )}
+
+                    {activeFilter === 'approved' && approvedUploads.length === 0 && (
+                        <div className="text-center py-8">
+                            <CheckCircle className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                            <p className="text-gray-500">No approved uploads yet</p>
+                        </div>
+                    )}
+
+                    {activeFilter === 'rejected' && rejectedUploads.length === 0 && (
+                        <div className="text-center py-8">
+                            <XCircle className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                            <p className="text-gray-500">No rejected uploads</p>
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// Upload Component
+const UploadPage = ({ setActiveView }) => {
+    const [selectedCampaign, setSelectedCampaign] = useState('');
+    const [beneficiaryName, setBeneficiaryName] = useState('');
+    const [notes, setNotes] = useState('');
+    const [location, setLocation] = useState('');
+    const [images, setImages] = useState([]);
+    const [dragOver, setDragOver] = useState(false);
+    const [uploading, setUploading] = useState(false);
+    const [uploadProgress, setUploadProgress] = useState(0);
+    const fileInputRef = useRef(null);
+
+    useEffect(() => {
+        const editData = localStorage.getItem('editUpload');
+        if (editData) {
+            const parsed = JSON.parse(editData);
+            setSelectedCampaign(parsed.campaignName);
+            setBeneficiaryName(parsed.beneficiaryName);
+            setNotes(parsed.notes);
+            localStorage.removeItem('editUpload'); // Clear after loading
+        }
+    }, []);
+
+    const handleDragOver = (e) => {
+        e.preventDefault();
+        setDragOver(true);
+    };
+
+    const handleDragLeave = (e) => {
+        e.preventDefault();
+        setDragOver(false);
+    };
+
+    const handleDrop = (e) => {
+        e.preventDefault();
+        setDragOver(false);
+        const files = Array.from(e.dataTransfer.files);
+        handleFiles(files);
+    };
+
+    const handleFileSelect = (e) => {
+        const files = Array.from(e.target.files);
+        handleFiles(files);
+    };
+
+    const handleFiles = (files) => {
+        const imageFiles = files.filter(file => file.type.startsWith('image/'));
+        const newImages = imageFiles.map(file => ({
+            file,
+            preview: URL.createObjectURL(file),
+            id: Date.now() + Math.random()
+        }));
+        setImages(prev => [...prev, ...newImages]);
+    };
+
+    const removeImage = (imageId) => {
+        setImages(prev => prev.filter(img => img.id !== imageId));
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        if (!selectedCampaign || !beneficiaryName || images.length === 0) {
+            alert('Please fill all required fields and upload at least one image.');
+            return;
+        }
+
+        setUploading(true);
+        setUploadProgress(0);
+
+        // Simulate upload progress
+        const interval = setInterval(() => {
+            setUploadProgress(prev => {
+                if (prev >= 100) {
+                    clearInterval(interval);
+                    setUploading(false);
+                    alert('Images uploaded successfully! They will be reviewed by admin.');
+                    setActiveView('dashboard');
+                    return 100;
+                }
+                return prev + 10;
+            });
+        }, 200);
+    };
+
+    return (
+        <div className="max-w-4xl mx-auto space-y-6 md:space-y-8">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-blue-600 to-blue-800 rounded-xl md:rounded-2xl p-6 md:p-8 text-white">
+                <div className="flex items-center gap-3 md:gap-4 mb-3 md:mb-4">
+                    <div className="w-12 h-12 md:w-16 md:h-16 bg-white/20 rounded-full flex items-center justify-center">
+                        <Upload className="w-6 h-6 md:w-8 md:h-8" />
+                    </div>
+                    <div>
+                        <h1 className="text-xl md:text-3xl font-bold font-serif">Upload Documentation</h1>
+                        <p className="text-blue-100 text-sm md:text-lg">Share the impact of our work</p>
+                    </div>
+                </div>
+            </div>
+
+            {/* Upload Form */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                <div className="px-4 md:px-6 py-4 border-b border-gray-100 bg-gray-50">
+                    <h2 className="text-lg md:text-xl font-semibold text-gray-800">Upload Details</h2>
+                </div>
+                <form onSubmit={handleSubmit} className="p-4 md:p-6 space-y-6">
+                    {/* Campaign Selection */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Campaign <span className="text-red-500">*</span>
+                            </label>
+                            <select
+                                value={selectedCampaign}
+                                onChange={(e) => setSelectedCampaign(e.target.value)}
+                                className="w-full p-3 text-sm md:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                required
+                            >
+                                <option value="">Select Campaign</option>
+                                {mockCampaigns.map(campaign => (
+                                    <option key={campaign.id} value={campaign.name}>
+                                        {campaign.name} - {campaign.location}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Beneficiary Name <span className="text-red-500">*</span>
+                            </label>
+                            <input
+                                type="text"
+                                value={beneficiaryName}
+                                onChange={(e) => setBeneficiaryName(e.target.value)}
+                                className="w-full p-3 text-sm md:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                placeholder="Enter beneficiary name"
+                                required
+                            />
+                        </div>
+                    </div>
+
+                    {/* Location */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Location Details
+                        </label>
+                        <input
+                            type="text"
+                            value={location}
+                            onChange={(e) => setLocation(e.target.value)}
+                            className="w-full p-3 text-sm md:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            placeholder="Specific address or landmark (optional)"
+                        />
+                    </div>
+
+                    {/* Image Upload */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Images <span className="text-red-500">*</span>
+                        </label>
+                        <div
+                            className={`border-2 border-dashed rounded-lg p-6 md:p-8 text-center transition-colors ${
+                                dragOver 
+                                    ? 'border-blue-400 bg-blue-50' 
+                                    : 'border-gray-300 hover:border-gray-400'
+                            }`}
+                            onDragOver={handleDragOver}
+                            onDragLeave={handleDragLeave}
+                            onDrop={handleDrop}
+                        >
+                            <div className="flex flex-col items-center gap-3 md:gap-4">
+                                <div className="w-12 h-12 md:w-16 md:h-16 bg-blue-100 rounded-full flex items-center justify-center">
+                                    <ImageIcon className="w-6 h-6 md:w-8 md:h-8 text-blue-600" />
+                                </div>
+                                <div>
+                                    <p className="text-base md:text-lg font-medium text-gray-800 mb-1">
+                                        Drop images here or click to browse
+                                    </p>
+                                    <p className="text-xs md:text-sm text-gray-600">
+                                        Support for JPG, PNG, WEBP up to 10MB each
+                                    </p>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => fileInputRef.current?.click()}
+                                    className="bg-blue-600 text-white px-4 md:px-6 py-2 rounded-lg text-sm md:text-base font-medium hover:bg-blue-700 transition-colors"
+                                >
+                                    Choose Files
+                                </button>
+                            </div>
+                        </div>
+                        <input
+                            ref={fileInputRef}
+                            type="file"
+                            multiple
+                            accept="image/*"
+                            onChange={handleFileSelect}
+                            className="hidden"
+                        />
+                    </div>
+
+                    {/* Image Preview */}
+                    {images.length > 0 && (
+                        <div className="grid grid-cols-3 md:grid-cols-4 gap-3 md:gap-4">
+                            {images.map(image => (
+                                <div key={image.id} className="relative group">
+                                    <img
+                                        src={image.preview}
+                                        alt="Preview"
+                                        className="w-full h-24 md:h-32 object-cover rounded-lg border border-gray-200"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => removeImage(image.id)}
+                                        className="absolute top-1 md:top-2 right-1 md:right-2 w-5 h-5 md:w-6 md:h-6 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                                    >
+                                        <Trash2 className="w-2 h-2 md:w-3 md:h-3" />
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+
+                    {/* Notes */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Notes & Description <span className="text-red-500">*</span>
+                        </label>
+                        <textarea
+                            value={notes}
+                            onChange={(e) => setNotes(e.target.value)}
+                            rows={4}
+                            className="w-full p-3 text-sm md:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                            placeholder="Describe the impact, activities, or situation documented in these images..."
+                            required
+                        />
+                    </div>
+
+                    {/* Upload Progress */}
+                    {uploading && (
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                            <div className="flex items-center gap-3 mb-2">
+                                <Upload className="w-5 h-5 text-blue-600" />
+                                <span className="font-medium text-blue-800 text-sm md:text-base">Uploading images...</span>
+                            </div>
+                            <div className="w-full bg-blue-200 rounded-full h-2">
+                                <div 
+                                    className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                                    style={{ width: `${uploadProgress}%` }}
+                                ></div>
+                            </div>
+                            <p className="text-xs md:text-sm text-blue-700 mt-1">{uploadProgress}% complete</p>
+                        </div>
+                    )}
+
+                    {/* Submit Button */}
+                    <div className="flex flex-col sm:flex-row gap-3 md:gap-4 pt-4">
+                        <button
+                            type="button"
+                            onClick={() => setActiveView('dashboard')}
+                            className="w-full sm:w-auto px-4 md:px-6 py-3 border border-gray-300 text-gray-700 rounded-lg text-sm md:text-base font-medium hover:bg-gray-50 transition-colors"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="submit"
+                            disabled={uploading}
+                            className="w-full sm:flex-1 bg-blue-600 text-white py-3 rounded-lg text-sm md:text-base font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                        >
+                            {uploading ? (
+                                <>
+                                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                    Uploading...
+                                </>
+                            ) : (
+                                <>
+                                    <Upload className="w-4 h-4 md:w-5 md:h-5" />
+                                    Submit for Review
+                                </>
+                            )}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    );
+};
+
+// Main Photography Module Component
+const PhotographyModule = () => {
+    const [activeView, setActiveView] = useState('dashboard');
+    const [userRole, setUserRole] = useState('photographer'); // 'photographer' or 'admin'
+    const [notifications] = useState(mockAssignments);
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+    const navigation = [
+        { id: 'dashboard', name: 'Dashboard', icon: Home, roles: ['photographer', 'admin'] },
+        { id: 'upload', name: 'Upload', icon: Upload, roles: ['photographer'] },
+    ];
+
+    const visibleNavigation = navigation.filter(item => item.roles.includes(userRole));
+
+    return (
+        <div className="min-h-screen bg-gray-50">
+            {/* Navigation Header */}
+            <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-40">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="flex items-center justify-between h-16">
+                        {/* Logo */}
+                        <div className="flex items-center gap-2 md:gap-3">
+                            <div className="w-8 h-8 md:w-10 md:h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+                                <Camera className="w-4 h-4 md:w-6 md:h-6 text-white" />
+                            </div>
+                            <div>
+                                <h1 className="text-base md:text-xl font-bold text-gray-800 font-serif">NGO Photography</h1>
+                                <p className="text-xs text-gray-500 hidden sm:block">Impact Documentation</p>
+                            </div>
+                        </div>
+
+                        {/* Desktop Navigation */}
+                        <nav className="hidden md:flex items-center space-x-1">
+                            {visibleNavigation.map(item => (
+                                <button
+                                    key={item.id}
+                                    onClick={() => setActiveView(item.id)}
+                                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                                        activeView === item.id
+                                            ? 'bg-blue-600 text-white'
+                                            : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
+                                    }`}
+                                >
+                                    <item.icon className="w-4 h-4" />
+                                    {item.name}
+                                </button>
+                            ))}
+                        </nav>
+
+                        {/* User Role Switcher & Mobile Menu Button */}
+                        <div className="flex items-center gap-2 md:gap-3">
+                            <select
+                                value={userRole}
+                                onChange={(e) => {
+                                    setUserRole(e.target.value);
+                                    setActiveView(e.target.value === 'admin' ? 'admin' : 'dashboard');
+                                }}
+                                className="text-xs md:text-sm border border-gray-300 rounded-lg px-2 md:px-3 py-1 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            >
+                                <option value="photographer">Photographer</option>
+                            </select>
+                            <div className="w-6 h-6 md:w-8 md:h-8 bg-gray-200 rounded-full flex items-center justify-center">
+                                <User className="w-3 h-3 md:w-4 md:h-4 text-gray-600" />
+                            </div>
+                            <button 
+                                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                                className="md:hidden p-2 text-gray-600 hover:text-gray-800"
+                            >
+                                {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Mobile Navigation */}
+                {mobileMenuOpen && (
+                    <div className="md:hidden px-4 pb-3 border-t border-gray-200 bg-white">
+                        <div className="flex flex-col space-y-1 pt-3">
+                            {visibleNavigation.map(item => (
+                                <button
+                                    key={item.id}
+                                    onClick={() => {
+                                        setActiveView(item.id);
+                                        setMobileMenuOpen(false);
+                                    }}
+                                    className={`flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium transition-colors ${
+                                        activeView === item.id
+                                            ? 'bg-blue-600 text-white'
+                                            : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
+                                    }`}
+                                >
+                                    <item.icon className="w-4 h-4" />
+                                    {item.name}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                )}
+            </header>
+
+            {/* Main Content */}
+            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8">
+                {activeView === 'dashboard' && (
+                    <PhotographyDashboard 
+                        activeView={activeView}
+                        setActiveView={setActiveView}
+                        userRole={userRole}
+                        notifications={notifications}
+                    />
+                )}
+                {activeView === 'upload' && (
+                    <UploadPage setActiveView={setActiveView} />
+                )}
+            </main>
+        </div>
+    );
+};
+
+export default PhotographyModule;

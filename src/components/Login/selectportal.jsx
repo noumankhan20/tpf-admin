@@ -2,6 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { MODULES } from "../config/modules";
+import { ROLE_PERMISSIONS } from "../config/permissions";
+
 import {
   LogOut,
   Search,
@@ -25,47 +28,6 @@ import {
   ArrowRight,
 } from 'lucide-react';
 
-/* ------------------------------------------------------
-   MODULE DEFINITIONS (Roles Embedded)
-------------------------------------------------------- */
-const MODULES = [
-  { id: 'dashboard', name: 'Dashboard Module', icon: TrendingUp, route: '/dashboard', desc: 'Overview of key metrics and system status', category: 'administration', roles: ['superadmin'] },
-
-  { id: 'admin', name: 'Admin & System Settings', icon: Settings, route: '/admin-settings', desc: 'System configuration and settings', category: 'administration', roles: ['superadmin'] },
-
-  { id: 'security', name: 'Security & Access Control', icon: Shield, route: '/security', desc: 'Manage permissions and security', category: 'administration', roles: ['superadmin'] },
-
-  { id: 'donor', name: 'Donor Management', icon: Users, route: '/donor', desc: 'Manage donor profiles and relationships', category: 'people', roles: ['donor-admin', 'superadmin'] },
-
-  { id: 'beneficiary', name: 'Beneficiary Management', icon: UserCheck, route: '/beneficiary', desc: 'Manage beneficiary records and support', category: 'people', roles: [] },
-
-  { id: 'field', name: 'Volunteer Management', icon: MapPin, route: '/field-operations', desc: 'Manage volunteers and field activities', category: 'people', roles: ['volunteer-admin', 'superadmin'] },
-
-  { id: 'hr', name: 'HR & Employee Management', icon: UserCog, route: '/hr', desc: 'Employee records, payroll and HR tasks', category: 'people', roles: ['hr-admin', 'superadmin'] },
-
-  { id: 'donations', name: 'Transaction Management', icon: Heart, route: '/donations', desc: 'Individual & Organisation donation tracking', category: 'finance', roles: ['finance-admin', 'superadmin'] },
-
-  { id: 'finance', name: 'Finance & Accounting', icon: Calculator, route: '/finance', desc: 'Financial tracking, budgets and reports', category: 'finance', roles: ['finance-admin', 'superadmin'] },
-
-  { id: 'inventory', name: 'Inventory & Asset Management', icon: Package, route: '/inventory', desc: 'Track inventory, assets and resources', category: 'finance', roles: ['finance-admin', 'superadmin'] },
-
-  { id: 'projects', name: 'Project Management', icon: FolderKanban, route: '/projects', desc: 'Create and track projects', category: 'operations', roles: ['project-admin', 'superadmin'] },
-
-  { id: 'campaigns', name: 'Campaign Management', icon: Bell, route: '/campaigns', desc: 'Manage fundraising campaigns', category: 'operations', roles: ['campaign-admin', 'superadmin'] },
-
-  { id: 'fieldops', name: 'Field Operations', icon: MapPin, route: '/field-ops', desc: 'Coordinate field activities', category: 'operations', roles: [] },
-
-  { id: 'dms', name: 'Document Management', icon: FileText, route: '/documents', desc: 'Store and organize all documents', category: 'documentation', roles: ['hr-admin', 'superadmin'] },
-
-  { id: 'legal', name: 'Legal & Compliance', icon: Scale, route: '/legal', desc: 'Legal documents and compliance tracking', category: 'documentation', roles: ['hr-admin', 'superadmin', 'donor-admin'] },
-
-  { id: 'cms', name: 'Content Management System (CMS)', icon: Globe, route: '/cms-admin', desc: 'Manage website and app content', category: 'documentation', roles: ['cms-admin', 'superadmin'] },
-
-  // NEW: Communication & Notification Module
-  { id: 'communication', name: 'Communication & Notification', icon: Bell, route: '/communication', desc: 'Manage internal/external communications and notifications', category: 'operations', roles: ['communication-admin', 'superadmin'] },
-];
-
-
 const CATEGORIES = [
   { id: 'administration', name: 'Administration', icon: Settings },
   { id: 'people', name: 'People Management', icon: Users },
@@ -78,7 +40,6 @@ const CATEGORIES = [
    MAIN COMPONENT
 ------------------------------------------------------- */
 export default function SelectPanel() {
-  const [selectedPanel, setSelectedPanel] = useState(null);
   const [isLoaded, setIsLoaded] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [openCategories, setOpenCategories] = useState(['administration']);
@@ -102,9 +63,13 @@ export default function SelectPanel() {
     roles.length > 0 && roles.length <= 4 && !roles.includes('superadmin');
 
   /* Filter modules based on roles */
-  const allowedModules = MODULES.filter((m) =>
-    m.roles.some((role) => roles.includes(role))
+  const allowedModuleIds = roles.flatMap((role) => ROLE_PERMISSIONS[role] || []);
+
+  const allowedModules = MODULES.filter((mod) =>
+    allowedModuleIds.includes(mod.id)
   );
+
+
 
   /* Search filter */
   const filteredModules = allowedModules.filter(
@@ -125,11 +90,6 @@ export default function SelectPanel() {
   };
 
   const handleModuleSelect = (moduleId) => setSelectedPanel(moduleId);
-
-  const handleContinue = () => {
-    const module = MODULES.find((m) => m.id === selectedPanel);
-    if (module) router.push(module.route);
-  };
 
   const handleLogout = () => console.log('Logging out...');
 
@@ -163,11 +123,9 @@ export default function SelectPanel() {
         )}
 
         {useCardView ? (
-          <CardView selectedPanel={selectedPanel} setSelectedPanel={setSelectedPanel} roles={roles} />
+          <CardView modules={filteredModules} />
         ) : (
           <AccordionView
-            selectedPanel={selectedPanel}
-            setSelectedPanel={setSelectedPanel}
             filteredModules={filteredModules}
             openCategories={openCategories}
             toggleCategory={toggleCategory}
@@ -176,7 +134,6 @@ export default function SelectPanel() {
           />
         )}
 
-        <ContinueButton selectedPanel={selectedPanel} handleContinue={handleContinue} isLoaded={isLoaded} />
       </main>
     </div>
   );
@@ -245,52 +202,27 @@ function SearchBar({ isLoaded, searchQuery, setSearchQuery }) {
 /* ------------------------------------------------------
    CARD VIEW
 ------------------------------------------------------- */
-function CardView({ selectedPanel, setSelectedPanel, roles }) {
+function CardView({ modules }) {
   const router = useRouter();
-
-  const PANEL_MAP = {
-    'hr-admin': { id: 'hr', title: 'HR Admin', icon: UserCog, desc: 'HR & employee records', route: '/hr' },
-    'volunteer-admin': { id: 'field', title: 'Volunteer Admin', icon: MapPin, desc: 'Volunteers & activities', route: '/field-operations' },
-    'cms-admin': { id: 'cms', title: 'CMS Admin', icon: Globe, desc: 'Content Management System', route: '/cms-admin' },
-    'finance-admin': { id: 'finance', title: 'Finance Admin', icon: Calculator, desc: 'Financial operations', route: '/finance' },
-    'donor-admin': { id: 'donor', title: 'Donor Admin', icon: Users, desc: 'Donor relationships', route: '/donor' },
-    'project-admin': { id: 'projects', title: 'Project Admin', icon: FolderKanban, desc: 'Organisation projects', route: '/projects' },
-    'campaign-admin': { id: 'campaigns', title: 'Campaign Admin', icon: Bell, desc: 'Fundraising campaigns', route: '/campaigns' },
-    'documentation-admin': { id: 'dms', title: 'Documents Admin', icon: FileText, desc: 'Document access & storage', route: '/documents' },
-    'legal-admin': { id: 'legal', title: 'Legal Admin', icon: Scale, desc: 'Legal & compliance tasks', route: '/legal' },
-  };
-
-  const panels = roles.map((r) => PANEL_MAP[r]).filter(Boolean);
 
   return (
     <div className="flex flex-col md:flex-row md:justify-center md:flex-wrap w-full mt-6 px-2 gap-4 max-w-6xl mx-auto">
-      {panels.map((p) => {
+      {modules.map((p) => {
         const Icon = p.icon;
-        const isSelected = selectedPanel === p.id;
 
         return (
           <div
             key={p.id}
-            onClick={() => setSelectedPanel(p.id)}
-            onDoubleClick={() => router.push(p.route)}
-            className={`group relative bg-gray-800/60 border rounded-xl p-4 cursor-pointer transition-all duration-300 w-full md:w-[280px]
-              ${isSelected ? 'border-emerald-500 shadow-emerald-500/20 scale-[1.03]' 
-              : 'border-gray-700 hover:border-emerald-500 hover:scale-[1.02]'}`}
+            onClick={() => router.push(p.route)}
+            className="group relative bg-gray-800/60 border rounded-xl p-4 cursor-pointer transition-all duration-300 w-full md:w-[280px]
+              border-gray-700 hover:border-emerald-500 hover:scale-[1.02]"
           >
-            {isSelected && (
-              <div className="absolute -top-2 -right-2 w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center shadow-md">
-                <svg className="w-4 h-4 text-white">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} stroke="currentColor" d="M5 13l3 3L19 7" />
-                </svg>
-              </div>
-            )}
-
             <div className="text-center">
               <div className="w-14 h-14 mx-auto mb-4 rounded-xl bg-emerald-500 flex items-center justify-center shadow-md">
                 <Icon className="w-7 h-7 text-white" />
               </div>
 
-              <h3 className="text-lg font-semibold text-white mb-1">{p.title}</h3>
+              <h3 className="text-lg font-semibold text-white mb-1">{p.name}</h3>
               <p className="text-gray-400 text-xs leading-tight">{p.desc}</p>
             </div>
           </div>
@@ -299,6 +231,7 @@ function CardView({ selectedPanel, setSelectedPanel, roles }) {
     </div>
   );
 }
+
 
 /* ------------------------------------------------------
    ACCORDION
@@ -312,6 +245,7 @@ function AccordionView({
   getModulesByCategory,
   isLoaded,
 }) {
+  const router = useRouter();
   return (
     <div className={`w-full max-w-xl space-y-3 mb-8 transition-all duration-700 ${isLoaded ? 'opacity-100' : 'opacity-0 translate-y-8'}`}>
       {CATEGORIES.map((category) => {
@@ -343,12 +277,11 @@ function AccordionView({
                   return (
                     <div
                       key={module.id}
-                      onClick={() => setSelectedPanel(module.id)}
-                      className={`flex items-center px-4 py-3 cursor-pointer transition ${
-                        isSelected
+                      onClick={() => router.push(module.route)}
+                      className={`flex items-center px-4 py-3 cursor-pointer transition ${isSelected
                           ? 'bg-emerald-500/20 border-l-2 border-emerald-500'
                           : 'hover:bg-gray-700/30'
-                      }`}
+                        }`}
                     >
                       <div className="flex items-center flex-1 min-w-0 space-x-3">
                         <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isSelected ? 'bg-emerald-500' : 'bg-gray-700/50'}`}>
@@ -372,19 +305,3 @@ function AccordionView({
   );
 }
 
-/* ------------------------------------------------------
-   Continue Button
-------------------------------------------------------- */
-function ContinueButton({ selectedPanel, handleContinue, isLoaded }) {
-  return (
-    <div className={`transition-all ${selectedPanel ? 'opacity-100' : 'opacity-0 pointer-events-none'} duration-500`}>
-      <button
-        onClick={handleContinue}
-        className="bg-emerald-500 hover:bg-emerald-600 text-white px-8 py-4 rounded-xl shadow-lg flex items-center space-x-2 mt-4"
-      >
-        <span className="text-lg">Continue</span>
-        <ArrowRight className="w-5 h-5" />
-      </button>
-    </div>
-  );
-}
