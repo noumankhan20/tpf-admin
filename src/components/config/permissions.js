@@ -16,6 +16,7 @@ export const ROLE_PERMISSIONS = {
     "communication",
     "photography",
     "social-media",
+     "financial-aid-verify"
   ],
 
   "hr-admin": ["hr", "dms", "legal"],
@@ -25,5 +26,6 @@ export const ROLE_PERMISSIONS = {
   "donor-admin": ["donor", "legal"],
   "documentation-admin": ["dms"],
   "legal-admin": ["legal"],
-  "communication-admin": ["communication"],
+  "communication-admin": ["communication"]
+   
 };

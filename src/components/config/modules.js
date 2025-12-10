@@ -14,7 +14,8 @@ import {
   Bell,
   FileText,
   Scale,
-  Globe
+  Globe,
+  ShieldCheck
 } from "lucide-react";
 
 export const MODULES = [
@@ -36,4 +37,12 @@ export const MODULES = [
   { id: "communication", name: "Communication", icon: Bell, route: "/communication", category: "operations", desc: "Notices, messages & alerts" },
   { id: "photography", name: "Photography", icon: Bell, route: "/photography", category: "operations", desc: "Manage photography content" },
   { id: "social-media", name: "Social Media", icon: Bell, route: "/social-media", category: "people", desc: "Manage Social-Media content" },
+   { 
+    id: "financial-aid-verify", 
+    name: "Financial Aid", 
+    icon: ShieldCheck, 
+    route: "/verify", 
+    category: "verify-forms",
+    desc: "Verify financial aid forms" 
+  },
 ];
