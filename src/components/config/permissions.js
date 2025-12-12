@@ -1,6 +1,6 @@
 // /config/permissions.js
 export const ROLE_PERMISSIONS = {
-  superadmin: [
+  SUPERADMIN: [
     "dashboard",
     "admin",
     "security",

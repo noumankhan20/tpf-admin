@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { MODULES } from "../config/modules";
 import { ROLE_PERMISSIONS } from "../config/permissions";
-
+import { useSelector } from 'react-redux';
 import {
   LogOut,
   Search,
@@ -55,21 +55,30 @@ export default function SelectPanel() {
   }, []);
 
   /* Load roles */
+  const admin = useSelector((state) => state.adminAuth.adminInfo);
+  const role = admin?.role; // "SUPERADMIN" | "HR" | "FINANCE"
+  
   useEffect(() => {
-    const stored = JSON.parse(localStorage.getItem('roles') || '[]');
-    setRoles(stored);
-  }, []);
+  if (!admin) {
+    router.push("/");
+  }
+}, [admin]);
+
+
+/* Filter modules based on roles */
+const allowedModuleIds = ROLE_PERMISSIONS?.[role] ?? [];
+
+
+const allowedModules = MODULES.filter((mod) =>
+  allowedModuleIds.includes(mod.id)
+);
 
   /* Card View logic */
-  const useCardView =
-    roles.length > 0 && roles.length <= 4 && !roles.includes('superadmin');
+  const useCardView = allowedModules.length <= 4 && role !== "SUPERADMIN";
 
-  /* Filter modules based on roles */
-  const allowedModuleIds = roles.flatMap((role) => ROLE_PERMISSIONS[role] || []);
 
-  const allowedModules = MODULES.filter((mod) =>
-    allowedModuleIds.includes(mod.id)
-  );
+
+
 
 
 
@@ -104,6 +113,14 @@ export default function SelectPanel() {
       setOpenCategories(matching);
     }
   }, [searchQuery]);
+
+  if (!admin || !role) {
+  return (
+    <div className="text-white p-10 text-center">
+      Loading...
+    </div>
+  );
+}
 
   /* ------------------------------------------------------
         RENDER

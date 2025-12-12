@@ -2,9 +2,13 @@
 
 import { useState } from 'react';
 import { Eye, EyeOff, User, Lock } from 'lucide-react';
-import {useRouter} from 'next/navigation';
-import { USER_MAP } from '../config/users';
+import { useLoginAdminMutation } from '@/utils/slices/adminApiSlice';
+import { useRouter } from 'next/navigation';
+import { ToastContainer, toast } from 'react-toastify';
 export default function AdminLogin() {
+  const router = useRouter();
+  const [loginAdmin, { isLoading }] = useLoginAdminMutation();
+
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
@@ -19,34 +23,33 @@ export default function AdminLogin() {
     }));
   };
 
-const handleSubmit = (e) => {
+
+
+const handleSubmit = async (e) => {
   e.preventDefault();
 
-  const user = USER_MAP[formData.email];
+  try {
+    const res = await loginAdmin({
+      username: formData.email,   // backend accepts username or email
+      password: formData.password
+    }).unwrap();
 
-  if (!user) {
-    alert("❌ Invalid Email");
-    return;
+    // If backend returns admin info, proceed
+    if (res?.admin) {
+      router.push("/select-portal");   // redirect after login
+    }
+
+  } catch (err) {
+    console.log("Login failed:", err);
+    toast.error("Invalid username or password");
   }
-
-  if (formData.password !== user.password) {
-    alert("❌ Incorrect Password");
-    return;
-  }
-
-  // Save roles for Select Portal Page
-  localStorage.setItem("roles", JSON.stringify(user.roles));
-
-  // Redirect
-  router.push("/select-portal");
 };
 
 
   
-  const router = useRouter();
-  
   return (
     <div className="relative min-h-screen w-full overflow-hidden flex items-center justify-center p-4">
+    <ToastContainer />
       {/* Video Background */}
       <div className="absolute inset-0 w-full h-full">
         <video
