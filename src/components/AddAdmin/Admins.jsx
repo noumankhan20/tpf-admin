@@ -214,14 +214,14 @@ const AdminManagement = () => {
                                 Back
                             </button>
                              <button
-                                // onClick={() => setIsModalOpen(true)}
-                                className="bg-gradient-to-r w-full sm:w-auto from-blue-500 to-blue-700 hover:from-blue-600 hover:to-blue-800 text-white px-4 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center gap-2 font-medium cursor-pointer"
+                                onClick={() => router.push("/add-admin/audit-logs")}    
+                                className="bg-gradient-to-r w-full sm:w-auto bg-emerald-700 hover:from-emerald-600 hover:to-emerald-800 text-white px-4 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center gap-2 font-medium cursor-pointer"
                             >
                                 <Eye className="w-5 h-5" />
                             </button>
                             <button
                                 onClick={() => setIsModalOpen(true)}
-                                className="bg-gradient-to-r w-full sm:w-auto from-blue-500 to-blue-700 hover:from-blue-600 hover:to-blue-800 text-white px-4 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center gap-2 font-medium cursor-pointer"
+                                className="bg-gradient-to-r w-full sm:w-auto bg-emerald-800 hover:from-emerald-600 hover:to-emerald-800 text-white px-4 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center gap-2 font-medium cursor-pointer"
                             >
                                 <Plus className="w-5 h-5" />
                                 Add Admin
@@ -283,7 +283,7 @@ const AdminManagement = () => {
                                         >
                                             <td className="py-4 px-4">
                                                 <div className="flex items-center gap-2">
-                                                    <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-blue-600 shrink-0 rounded-full flex items-center justify-center text-white font-medium text-sm">
+                                                    <div className="w-10 h-10 bg-gradient-to-r bg-emerald-700 shrink-0 rounded-full flex items-center justify-center text-white font-medium text-sm">
                                                         {admin.name.split(' ').map(n => n[0]).join('')}
                                                     </div>
                                                     <div className="min-w-0 flex-1">
@@ -429,7 +429,7 @@ const AdminManagement = () => {
 
                                         <div className="relative">
                                             <div className="space-y-2">
-                                                {["SuperAdmin", "CMS Admin", "Volunteer Manager", "Campaign Manager"].map((role) => (
+                                                {["SuperAdmin", "CMS Admin", "Volunteer Manager", "Campaign Manager","HR Admin","Social Media Manager"].map((role) => (
                                                     <label
                                                         key={role}
                                                         className="flex items-center space-x-2 px-3 py-2 hover:bg-blue-50 rounded-lg cursor-pointer transition-all duration-200"
