@@ -414,7 +414,7 @@ export default function DonationManagement() {
                         className="absolute left-0 top-0 flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-100 active:bg-gray-200 transition-colors"
                     >
                         <ChevronDown className="w-3.5 h-3.5 sm:w-4 sm:h-4 rotate-90" />
-                        <span className="hidden sm:inline">Back</span>
+                        <span className="hidden sm:inline cursor-pointer">Back</span>
                     </button>
 
                     {/* Centered Heading */}
@@ -484,7 +484,7 @@ export default function DonationManagement() {
                                 onClick={() => handleSort('date')}
                                 className={`px-3 sm:px-4 py-2 rounded-lg border transition-colors flex items-center gap-2 text-sm sm:text-base ${sortField === 'date'
                                     ? 'bg-emerald-50 border-emerald-500 text-emerald-700'
-                                    : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                                    : 'border-gray-300 text-gray-700 hover:bg-gray-50 cursor-pointer'
                                     }`}
                             >
                                 Date <SortIcon field="date" />
@@ -493,7 +493,7 @@ export default function DonationManagement() {
                                 onClick={() => handleSort('amount')}
                                 className={`px-3 sm:px-4 py-2 rounded-lg border transition-colors flex items-center gap-2 text-sm sm:text-base ${sortField === 'amount'
                                     ? 'bg-emerald-50 border-emerald-500 text-emerald-700'
-                                    : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                                    : 'border-gray-300 text-gray-700 hover:bg-gray-50 cursor-pointer'
                                     }`}
                             >
                                 Amount <SortIcon field="amount" />
@@ -592,7 +592,7 @@ export default function DonationManagement() {
                                                 onClick={() => setSelectedDonation(donation)}
                                                 className="text-emerald-600 hover:text-emerald-900 transition-colors flex items-center gap-1"
                                             >
-                                                <Eye className="w-4 h-4" />
+                                                <Eye className="w-4 h-4 cursor-pointer" />
                                                 View
                                             </button>
                                         </td>
@@ -651,7 +651,7 @@ export default function DonationManagement() {
                                 onClick={() => setSelectedDonation(donation)}
                                 className="mt-4 w-full bg-emerald-500 text-white py-2.5 rounded-lg hover:bg-emerald-600 active:bg-emerald-700 transition-colors flex items-center justify-center gap-2 font-medium text-sm sm:text-base"
                             >
-                                <Eye className="w-4 h-4" />
+                                <Eye className="w-4 h-4 cursor-pointer" />
                                 View Details
                             </button>
                         </div>
