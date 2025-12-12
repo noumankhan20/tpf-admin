@@ -15,14 +15,15 @@ import {
   FileText,
   Scale,
   Globe,
-  ShieldCheck
+  ShieldCheck,
+  HandHeart
 } from "lucide-react";
 
 export const MODULES = [
   { id: "dashboard", name: "Dashboard", icon: TrendingUp, route: "/dashboard", category: "administration", desc: "Overview of key metrics" },
   { id: "admin", name: "Admin Settings", icon: Settings, route: "/admin-settings", category: "administration", desc: "System preferences and configuration" },
   { id: "security", name: "Security & Access", icon: Shield, route: "/add-admin", category: "administration", desc: "Manage system security" },
-  { id: "donor", name: "Donor Management", icon: Users, route: "/donor", category: "people", desc: "Track donor details & activity" },
+  { id: "donor", name: "Donation Management", icon: HandHeart, route: "/donation-management", category: "people", desc: "Track donor details & activity" },
   { id: "beneficiary", name: "Beneficiary Management", icon: UserCheck, route: "/beneficiary", category: "people", desc: "Manage beneficiaries" },
   { id: "field", name: "Volunteer Management", icon: MapPin, route: "/field-operations", category: "people", desc: "Manage volunteer operations" },
   { id: "hr", name: "HR Management", icon: UserCog, route: "/hr", category: "people", desc: "HR functions & employee records" },
@@ -37,6 +38,7 @@ export const MODULES = [
   { id: "communication", name: "Communication", icon: Bell, route: "/communication", category: "operations", desc: "Notices, messages & alerts" },
   { id: "photography", name: "Photography", icon: Bell, route: "/photography", category: "operations", desc: "Manage photography content" },
   { id: "social-media", name: "Social Media", icon: Bell, route: "/social-media", category: "people", desc: "Manage Social-Media content" },
+  { id: "management", name: "TPF Management", icon: Users, route: "/management", category: "people", desc: "Manage TPF content" },
    { 
     id: "financial-aid-verify", 
     name: "Financial Aid", 
