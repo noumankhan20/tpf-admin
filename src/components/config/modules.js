@@ -38,7 +38,7 @@ export const MODULES = [
   { id: "communication", name: "Communication", icon: Bell, route: "/communication", category: "operations", desc: "Notices, messages & alerts" },
   { id: "photography", name: "Photography", icon: Bell, route: "/photography", category: "operations", desc: "Manage photography content" },
   { id: "social-media", name: "Social Media", icon: Bell, route: "/social-media", category: "people", desc: "Manage Social-Media content" },
-  { id: "management", name: "TPF Management", icon: Users, route: "/management", category: "people", desc: "Manage TPF content" },
+  { id: "management", name: "TPF Management", icon: Users, route: "/tpf-management", category: "people", desc: "Manage TPF content" },
    { 
     id: "financial-aid-verify", 
     name: "Financial Aid", 
