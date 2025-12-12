@@ -34,7 +34,9 @@ const CATEGORIES = [
   { id: 'finance', name: 'Finance & Transactions', icon: Calculator },
   { id: 'operations', name: 'Operations', icon: FolderKanban },
   { id: 'documentation', name: 'Documentation', icon: FileText },
+  { id: 'verify-forms', name: 'Verify Forms', icon: Shield }, 
 ];
+
 
 /* ------------------------------------------------------
    MAIN COMPONENT
