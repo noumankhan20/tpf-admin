@@ -1,9 +1,9 @@
 import React from 'react'
-import TPFManagement from '@/components/TPF-Management/tpfmanagement'
+import DonorModule from '@/components/TPF-Management/donor'
 const page = () => {
   return (
     <div>
-      <TPFManagement />
+      <DonorModule />
     </div>
   )
 }
