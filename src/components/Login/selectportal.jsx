@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { MODULES } from "../config/modules";
 import { ROLE_PERMISSIONS } from "../config/permissions";
 import { useSelector } from 'react-redux';
+import { useLogoutAdminApiMutation } from '@/utils/slices/adminApiSlice';
 import {
   LogOut,
   Search,
@@ -38,7 +39,7 @@ const CATEGORIES = [
   { id: 'finance', name: 'Finance & Transactions', icon: Calculator },
   { id: 'operations', name: 'Operations', icon: FolderKanban },
   { id: 'documentation', name: 'Documentation', icon: FileText },
-  { id: 'verify-forms', name: 'Verify Forms', icon: Shield }, 
+  { id: 'verify-forms', name: 'Verify Forms', icon: Shield },
 ];
 
 export default function SelectPanel() {
@@ -47,6 +48,8 @@ export default function SelectPanel() {
   const [openCategories, setOpenCategories] = useState([]);
   const [hasSelectedCategory, setHasSelectedCategory] = useState(false);
   const [mounted, setMounted] = useState(false);
+
+  const [logoutAdmin] = useLogoutAdminApiMutation();
   const router = useRouter();
 
   useEffect(() => {
@@ -54,13 +57,13 @@ export default function SelectPanel() {
   }, []);
 
   useEffect(() => {
-  setMounted(true);
-}, []);
+    setMounted(true);
+  }, []);
 
   const admin = useSelector((state) => state.adminAuth.adminInfo);
   const role = admin?.role;
   const username = admin?.username;
-  
+
   useEffect(() => {
     if (!admin) {
       router.push("/");
@@ -68,14 +71,14 @@ export default function SelectPanel() {
   }, [admin]);
 
   const allowedModuleIds = ROLE_PERMISSIONS?.[role] ?? [];
-  const allowedModules = useMemo(() => 
+  const allowedModules = useMemo(() =>
     MODULES.filter((mod) => allowedModuleIds.includes(mod.id)),
     [allowedModuleIds]
   );
 
   const useCardView = allowedModules.length <= 4 && role !== "SUPERADMIN";
 
-  const filteredModules = useMemo(() => 
+  const filteredModules = useMemo(() =>
     allowedModules.filter((m) =>
       m.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       m.desc.toLowerCase().includes(searchQuery.toLowerCase())
@@ -93,14 +96,20 @@ export default function SelectPanel() {
         setHasSelectedCategory(false);
         return [];
       }
-      
+
       // Otherwise, open only this category (close others)
       setHasSelectedCategory(true);
       return [catId];
     });
   };
 
-  const handleLogout = () => console.log('Logging out...');
+  const handleLogout = async () => {
+  try {
+    await logoutAdmin().unwrap();
+  } catch (err) {
+    console.error("Logout failed:", err);
+  }
+};
 
   useEffect(() => {
     if (searchQuery) {
@@ -122,16 +131,16 @@ export default function SelectPanel() {
     );
   }
   if (!mounted) {
-  return (
-    <div className="min-h-screen bg-white flex items-center justify-center">
-      <div className="text-center">
-        <div className="w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-        <p className="text-gray-600">Loading...</p>
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
       </div>
-    </div>
-  );
+    );
   }
-  
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Header isLoaded={isLoaded} handleLogout={handleLogout} username={username} role={role} />
@@ -187,7 +196,7 @@ function Header({ isLoaded, handleLogout, username, role }) {
       default:
         return 'bg-gray-100 text-gray-700';
     }
-    
+
 
   };
 
@@ -232,8 +241,8 @@ function Header({ isLoaded, handleLogout, username, role }) {
 
               {dropdownOpen && (
                 <>
-                  <div 
-                    className="fixed inset-0 z-10" 
+                  <div
+                    className="fixed inset-0 z-10"
                     onClick={() => setDropdownOpen(false)}
                   ></div>
                   <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-xl border border-gray-200 py-1 z-20">
@@ -307,7 +316,7 @@ function CardView({ modules, isLoaded }) {
             className="group relative bg-white border-2 border-gray-200 rounded-2xl p-6 cursor-pointer transition-all duration-200 hover:border-emerald-500 hover:shadow-lg"
           >
             <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-50 rounded-bl-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
-            
+
             <div className="relative">
               <div className="w-14 h-14 rounded-xl bg-emerald-500 flex items-center justify-center shadow-md mb-4 group-hover:scale-105 transition-transform">
                 <Icon className="w-7 h-7 text-white" />
@@ -339,7 +348,7 @@ function ListView({
   hasSelectedCategory,
 }) {
   const router = useRouter();
-  
+
   return (
     <div className={`w-full mx-auto transition-all duration-1000 ease-in-out ${hasSelectedCategory ? 'max-w-7xl' : 'max-w-3xl'}`}>
       <div className={`grid gap-6 transition-all duration-1000 ease-in-out ${hasSelectedCategory ? 'grid-cols-1 lg:grid-cols-12' : 'grid-cols-1'}`}>
@@ -361,16 +370,14 @@ function ListView({
                   <button
                     key={category.id}
                     onClick={() => toggleCategory(category.id)}
-                    className={`w-full flex items-center justify-between px-3 py-3 sm:py-3.5 rounded-lg transition-colors duration-300 ease-out ${
-                      isOpen
+                    className={`w-full flex items-center justify-between px-3 py-3 sm:py-3.5 rounded-lg transition-colors duration-300 ease-out ${isOpen
                         ? 'bg-emerald-50 text-emerald-700 font-semibold'
                         : 'text-gray-700 hover:bg-gray-50'
-                    }`}
+                      }`}
                   >
                     <div className="flex items-center space-x-3 flex-1 overflow-hidden">
-                      <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center transition-colors duration-300 ease-out flex-shrink-0 ${
-                        isOpen ? 'bg-emerald-500 text-white' : 'bg-gray-100 text-gray-600'
-                      }`}>
+                      <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center transition-colors duration-300 ease-out flex-shrink-0 ${isOpen ? 'bg-emerald-500 text-white' : 'bg-gray-100 text-gray-600'
+                        }`}>
                         <CatIcon className="w-5 h-5" />
                       </div>
                       <div className="text-left overflow-hidden flex-1">
