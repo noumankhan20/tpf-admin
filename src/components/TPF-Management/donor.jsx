@@ -147,7 +147,7 @@ export default function DonorModule() {
                       <td className="px-4 py-3 text-sm">{donation.date}</td>
                       <td className="px-4 py-3 text-sm">{donation.campaign}</td>
                       <td className="px-4 py-3 text-sm font-medium text-green-600">
-                        ₹{donation.amount.toLocaleString()}
+                        ${donation.amount.toLocaleString()}
                       </td>
                       <td className="px-4 py-3 text-sm">{donation.method}</td>
                     </tr>
@@ -168,9 +168,9 @@ export default function DonorModule() {
         <div className="mb-6">
           <button
             onClick={handleBackClick}
-            className="flex items-center text-gray-600 hover:text-gray-900 mb-4 cursor-pointer"
+            className="flex items-center text-gray-600 hover:text-gray-900 mb-4"
           >
-            <ArrowLeft className="w-5 h-5 mr-2 cursor-pointer" />
+            <ArrowLeft className="w-5 h-5 mr-2" />
             Back to TPF Management
           </button>
           <h1 className="text-3xl font-bold text-gray-900">Donor Information</h1>
@@ -243,7 +243,7 @@ export default function DonorModule() {
             {topDonors.map((donor, index) => (
               <div key={donor.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                 <div className="flex items-center">
-                  <div className="w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center font-bold mr-3">
+                  <div className="w-8 h-8 bg-emerald-500 text-white rounded-full flex items-center justify-center font-bold mr-3">
                     {index + 1}
                   </div>
                   <div>
@@ -251,7 +251,7 @@ export default function DonorModule() {
                     <p className="text-sm text-gray-600">{donor.email}</p>
                   </div>
                 </div>
-                <p className="text-lg font-bold text-green-600">₹{donor.totalDonations.toLocaleString()}</p>
+                <p className="text-lg font-bold text-blue-600">₹{donor.totalDonations.toLocaleString()}</p>
               </div>
             ))}
           </div>
@@ -296,13 +296,13 @@ export default function DonorModule() {
                     <td className="px-4 py-3 text-sm font-medium">{donor.name}</td>
                     <td className="px-4 py-3 text-sm text-gray-600">{donor.email}</td>
                     <td className="px-4 py-3 text-sm text-gray-600">{donor.phone}</td>
-                    <td className="px-4 py-3 text-sm font-medium text-green-600">
+                    <td className="px-4 py-3 text-sm font-medium text-blue-600">
                       ₹{donor.totalDonations.toLocaleString()}
                     </td>
                     <td className="px-4 py-3 text-sm">
                       <button
                         onClick={() => setSelectedDonor(donor)}
-                        className="text-blue-600 hover:text-blue-800 font-medium"
+                        className="text-red-600 hover:text-red-800 font-medium cursor-pointer"
                       >
                         View Details
                       </button>
@@ -338,6 +338,49 @@ export default function DonorModule() {
             </div>
           )}
         </div>
+
+        {/* Add Donor Modal */}
+        {showAddDonor && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-lg p-6 max-w-md w-full">
+              <h3 className="text-xl font-semibold mb-4">Add New Donor</h3>
+              <div className="space-y-4">
+                <input
+                  type="text"
+                  placeholder="Full Name"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <input
+                  type="email"
+                  placeholder="Email"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <input
+                  type="tel"
+                  placeholder="Phone Number"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <div className="flex gap-3 mt-6">
+                  <button
+                    onClick={() => setShowAddDonor(false)}
+                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => {
+                      // Add donor logic here
+                      setShowAddDonor(false);
+                    }}
+                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                  >
+                    Add Donor
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
