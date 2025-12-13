@@ -147,7 +147,7 @@ export default function DonorModule() {
                       <td className="px-4 py-3 text-sm">{donation.date}</td>
                       <td className="px-4 py-3 text-sm">{donation.campaign}</td>
                       <td className="px-4 py-3 text-sm font-medium text-green-600">
-                        ${donation.amount.toLocaleString()}
+                        ₹{donation.amount.toLocaleString()}
                       </td>
                       <td className="px-4 py-3 text-sm">{donation.method}</td>
                     </tr>
