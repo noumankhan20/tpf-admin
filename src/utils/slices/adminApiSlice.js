@@ -1,5 +1,5 @@
 import { apiSlice } from "./apiSlice";
-import { setAdminCredentials, logoutAdmin } from "./adminAuthSlice";
+import { setAdminCredentials, logoutAdmin as logoutAdminAction } from "./adminAuthSlice";
 
 export const adminApiSlice = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
@@ -9,26 +9,34 @@ export const adminApiSlice = apiSlice.injectEndpoints({
         method: "POST",
         body: data,
       }),
-      async onQueryStarted(args, { dispatch, queryFulfilled }) {
+      async onQueryStarted(_, { dispatch, queryFulfilled }) {
         try {
           const { data } = await queryFulfilled;
-          dispatch(setAdminCredentials(data.admin));  // save admin info
+          dispatch(setAdminCredentials(data.admin));
         } catch (err) {
-          console.log("Admin login error =>", err);
+          console.error("Admin login error:", err);
         }
       },
     }),
 
-    logoutAdmin: builder.mutation({
+    logoutAdminApi: builder.mutation({
       query: () => ({
         url: "/adminAuth/logout",
         method: "POST",
       }),
-      async onQueryStarted(_, { dispatch }) {
-        dispatch(logoutAdmin()); // clear local storage
+      async onQueryStarted(_, { dispatch, queryFulfilled }) {
+        try {
+          await queryFulfilled;
+        } finally {
+          // Always clear local state, even if API fails
+          dispatch(logoutAdminAction());
+        }
       },
     }),
   }),
 });
 
-export const { useLoginAdminMutation, useLogoutAdminMutation } = adminApiSlice;
+export const {
+  useLoginAdminMutation,
+  useLogoutAdminApiMutation,
+} = adminApiSlice;
