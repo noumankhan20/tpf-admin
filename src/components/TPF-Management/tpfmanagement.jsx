@@ -36,7 +36,7 @@ const ENTITIES = [
         title: "Employee",
         desc: "Attendance, salary, expenses, and login records.",
         icon: Briefcase,
-        route: "/tpf-management/employees",
+        route: "/tpf-management/employee-management",
     },
     {
         id: "organizations",

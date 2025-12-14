@@ -12,6 +12,7 @@ const donorsData = [
     phone: "+1 234 567 8900",
     totalDonations: 5000,
     donationCount: 12,
+    joinDate: "2022-03-15", // New field added here
     lastDonation: "2024-12-10",
     history: [
       { id: 1, amount: 500, campaign: "Education Fund", date: "2024-12-10", method: "Credit Card" },
@@ -26,6 +27,7 @@ const donorsData = [
     phone: "+1 234 567 8901",
     totalDonations: 8500,
     donationCount: 15,
+    joinDate: "2022-09-15", // New field added here
     lastDonation: "2024-12-12",
     history: [
       { id: 1, amount: 1000, campaign: "Emergency Relief", date: "2024-12-12", method: "Credit Card" },
@@ -39,6 +41,7 @@ const donorsData = [
     phone: "+1 234 567 8902",
     totalDonations: 3200,
     donationCount: 8,
+    joinDate: "2022-03-15", // New field added here
     lastDonation: "2024-12-08",
     history: [
       { id: 1, amount: 400, campaign: "Clean Water Project", date: "2024-12-08", method: "Bank Transfer" }
@@ -222,20 +225,6 @@ export default function DonorModule() {
           </div>
         </div>
 
-        {/* Donation Trends Chart */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-          <h2 className="text-xl font-semibold mb-4">Donation Trends</h2>
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={donationTrends}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="month" />
-              <YAxis />
-              <Tooltip formatter={(value) => `₹${value.toLocaleString()}`} />
-              <Line type="monotone" dataKey="amount" stroke="#10b981" strokeWidth={2} />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-
         {/* Top Donors Section */}
         <div className="bg-white rounded-lg shadow-md p-6 mb-6">
           <h2 className="text-xl font-semibold mb-4">Top Donors</h2>
@@ -286,6 +275,7 @@ export default function DonorModule() {
                   <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Name</th>
                   <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Email</th>
                   <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Phone</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Joined Since</th>
                   <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Total Donations</th>
                   <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Actions</th>
                 </tr>
@@ -296,6 +286,7 @@ export default function DonorModule() {
                     <td className="px-4 py-3 text-sm font-medium">{donor.name}</td>
                     <td className="px-4 py-3 text-sm text-gray-600">{donor.email}</td>
                     <td className="px-4 py-3 text-sm text-gray-600">{donor.phone}</td>
+                    <td className="px-4 py-3 text-sm">{new Date(donor.joinDate).toLocaleDateString()}</td> {/* Format joinDate */}
                     <td className="px-4 py-3 text-sm font-medium text-blue-600">
                       ₹{donor.totalDonations.toLocaleString()}
                     </td>
