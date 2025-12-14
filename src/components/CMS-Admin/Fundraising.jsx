@@ -1,419 +1,511 @@
 "use client";
-  import React, { useState,useEffect } from "react";
-  import {
-    Upload,
-    Save,
-    XCircle,
-    Image,
-    Home,
-    Trash2,
-    Search,
-    Users,
-    Edit2,
-    AlertCircle,
-    CheckCircle,
-    Shield,
-    Play,
-    Clock,
-    Menu,
-    X,
-    Heart,
-    Rss,
-    Award,
-    MessageSquare,
-    Flag,
-    FileText,
-    PlusIcon,
-  } from "lucide-react";
-  import axios from "axios";
-  import Sidebar from "../Layout/CMSSideBar";
-  export default function FundraisingCMS() {
-    const [sidebarOpen, setSidebarOpen] = useState(false);
-    const [activeSection, setActiveSection] = useState("fundraising");
-    const [viewMode, setViewMode] = useState("view");
-    const [searchQuery, setSearchQuery] = useState("");
-    const [editingCard, setEditingCard] = useState(null);
-    const API_BASE = process.env.NEXT_PUBLIC_BACKEND_API; 
-    const IMAGE_URL = process.env.NEXT_PUBLIC_BACKEND_URL; 
-    const [formData, setFormData] = useState({
-      category: "Emergency Aid",
-      isUrgent: false,
-      taxBenefits: false,
-      zakatVerified: false,
-      title: "",
-      organization: "",
-      requiredAmount: "",
-      deadline: "",
-      mediaType: "image", // New field: 'image' or 'video'
+import React, { useState, useEffect } from "react";
+import {
+  Upload,
+  Save,
+  XCircle,
+  Image,
+  Home,
+  Trash2,
+  Search,
+  Users,
+  Edit2,
+  AlertCircle,
+  CheckCircle,
+  Shield,
+  Play,
+  Clock,
+  Menu,
+  X,
+  Heart,
+  Rss,
+  Award,
+  MessageSquare,
+  Flag,
+  FileText,
+  PlusIcon,
+} from "lucide-react";
+import axios from "axios";
+import Sidebar from "../Layout/CMSSideBar";
+export default function FundraisingCMS() {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [activeSection, setActiveSection] = useState("fundraising");
+  const [viewMode, setViewMode] = useState("view");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [editingCard, setEditingCard] = useState(null);
+  const API_BASE = process.env.NEXT_PUBLIC_BACKEND_API;
+  const IMAGE_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
+  const [formData, setFormData] = useState({
+    category: "Emergency Aid",
+    isUrgent: false,
+    taxBenefits: false,
+    zakatVerified: false,
+    title: "",
+    organization: "",
+    beneficiaryName: "",
+    about: "",
+    impactGoals: [""], // array of sentences
+    requiredAmount: "",
+    deadline: "",
+    mediaType: "image",
+    image: null,
+    imagePreview: null,
+    video: null,
+    videoPreview: null,
+    currentAmount: 0,
+    totalDonors: 0,
+    isExistingImage: false,
+    isExistingVideo: false,
+    documents: [],            // new uploads (File[])
+    existingDocuments: [],    // documents from backend
+
+  });
+
+
+  const categories = [
+    "Emergency Aid",
+    "Medical Aid",
+    "Orphans",
+    "Education",
+    "Clean Water",
+  ];
+
+  const categoryColors = {
+    "Emergency Aid": "bg-red-100 text-red-800",
+    "Medical Aid": "bg-blue-100 text-blue-800",
+    Orphans: "bg-purple-100 text-purple-800",
+    Education: "bg-amber-100 text-amber-800",
+    "Clean Water": "bg-cyan-100 text-cyan-800",
+  };
+
+  const [fundraisingCards, setFundraisingCards] = useState([]);
+
+  useEffect(() => {
+    fetchFundraisers();
+  }, []);
+
+  const fetchFundraisers = async () => {
+    try {
+      const res = await axios.get(`${API_BASE}/cms/fundraiser/get`);
+      const data = await res.data;
+
+      if (data.success) {
+        setFundraisingCards(data.data);
+      }
+    } catch (err) {
+      console.error("Error fetching fundraisers:", err);
+    }
+  };
+
+  const handleMediaTypeChange = (type) => {
+    setFormData((prev) => ({
+      ...prev,
+      mediaType: type,
       image: null,
       imagePreview: null,
       video: null,
       videoPreview: null,
-      currentAmount: 0,
-      totalDonors: 0,
-      isExistingImage: false, // Track if it's an existing image from backend
-      isExistingVideo: false, // Track if it's an existing video from backend
+      isExistingImage: false,
+      isExistingVideo: false,
+    }));
+  };
+
+  const handleDocumentUpload = (e) => {
+    const files = Array.from(e.target.files);
+    if (!files.length) return;
+
+    setFormData((prev) => ({
+      ...prev,
+      documents: [...prev.documents, ...files],
+    }));
+  };
+
+  const removeNewDocument = (index) => {
+    setFormData((prev) => ({
+      ...prev,
+      documents: prev.documents.filter((_, i) => i !== index),
+    }));
+  };
+
+  const removeExistingDocument = (index) => {
+    setFormData((prev) => ({
+      ...prev,
+      existingDocuments: prev.existingDocuments.filter((_, i) => i !== index),
+    }));
+  };
+
+  const handleImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setFormData((prev) => ({
+        ...prev,
+        image: file,
+        imagePreview: reader.result,
+        isExistingImage: false, // This is a new upload
+      }));
+    };
+
+    reader.readAsDataURL(file);
+  };
+
+  const handleVideoUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setFormData((prev) => ({
+        ...prev,
+        video: file,
+        videoPreview: reader.result,
+        isExistingVideo: false, // This is a new upload
+      }));
+    };
+
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemoveImage = () => {
+    setFormData((prev) => ({
+      ...prev,
+      image: null,
+      imagePreview: null,
+      isExistingImage: false,
+    }));
+  };
+
+  const handleRemoveVideo = () => {
+    setFormData((prev) => ({
+      ...prev,
+      video: null,
+      videoPreview: null,
+      isExistingVideo: false,
+    }));
+  };
+
+  const handleEdit = (card) => {
+    setEditingCard(card);
+    setFormData({
+      category: card.category,
+      isUrgent: card.isUrgent,
+      taxBenefits: card.taxBenefits,
+      zakatVerified: card.zakatVerified,
+      title: card.title,
+      organization: card.organization,
+      beneficiaryName: card.beneficiaryName || "",
+      about: card.about || "",
+      impactGoals: card.impactGoals?.length ? card.impactGoals : [""],
+      requiredAmount: card.requiredAmount,
+      deadline: card.deadline?.split("T")[0],
+      mediaType: card.mediaType || "image",
+      image: null,
+      imagePreview: card.imageUrl,
+      video: null,
+      videoPreview: card.videoUrl,
+      currentAmount: card.currentAmount,
+      totalDonors: card.totalDonors,
+      isExistingImage: !!card.imageUrl,
+      isExistingVideo: !!card.videoUrl,
+      existingDocuments: card.documents || [],
+      documents: [],
+
     });
+    setViewMode("edit");
+  };
 
-    const categories = [
-      "Emergency Aid",
-      "Medical Aid",
-      "Orphans",
-      "Education",
-      "Clean Water",
-    ];
 
-    const categoryColors = {
-      "Emergency Aid": "bg-red-100 text-red-800",
-      "Medical Aid": "bg-blue-100 text-blue-800",
-      Orphans: "bg-purple-100 text-purple-800",
-      Education: "bg-amber-100 text-amber-800",
-      "Clean Water": "bg-cyan-100 text-cyan-800",
-    };
+  // Helper function to get the correct image URL
+  const getImageUrl = (preview, isExisting) => {
+    if (!preview) return null;
+    if (isExisting) {
+      // For existing images from backend, prepend the IMAGE_URL
+      return `${IMAGE_URL}${preview}`;
+    }
+    // For new uploads, return the base64 preview as is
+    return preview;
+  };
 
-    const [fundraisingCards, setFundraisingCards] = useState([]);
+  const handleSave = async () => {
+    try {
+      const form = new FormData();
 
-    useEffect(() => {
-      fetchFundraisers();
-    }, []);
+      form.append("title", formData.title);
+      form.append("organization", formData.organization);
+      form.append("category", formData.category);
+      form.append("requiredAmount", formData.requiredAmount);
+      form.append("deadline", formData.deadline);
+      form.append("mediaType", formData.mediaType);
 
-    const fetchFundraisers = async () => {
-      try {
-        const res = await axios.get(`${API_BASE}/cms/fundraiser/get`);
-        const data = await res.data;
-
-        if (data.success) {
-          setFundraisingCards(data.data);
-        }
-      } catch (err) {
-        console.error("Error fetching fundraisers:", err);
-      }
-    };
-
-    const handleMediaTypeChange = (type) => {
-      setFormData((prev) => ({
-        ...prev,
-        mediaType: type,
-        image: null,
-        imagePreview: null,
-        video: null,
-        videoPreview: null,
-        isExistingImage: false,
-        isExistingVideo: false,
-      }));
-    };
-
-    const handleImageUpload = (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setFormData((prev) => ({
-          ...prev,
-          image: file,
-          imagePreview: reader.result,
-          isExistingImage: false, // This is a new upload
-        }));
-      };
-
-      reader.readAsDataURL(file);
-    };
-
-    const handleVideoUpload = (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setFormData((prev) => ({
-          ...prev,
-          video: file,
-          videoPreview: reader.result,
-          isExistingVideo: false, // This is a new upload
-        }));
-      };
-
-      reader.readAsDataURL(file);
-    };
-
-    const handleRemoveImage = () => {
-      setFormData((prev) => ({
-        ...prev,
-        image: null,
-        imagePreview: null,
-        isExistingImage: false,
-      }));
-    };
-
-    const handleRemoveVideo = () => {
-      setFormData((prev) => ({
-        ...prev,
-        video: null,
-        videoPreview: null,
-        isExistingVideo: false,
-      }));
-    };
-
-    const handleEdit = (card) => {
-      setEditingCard(card);
-      setFormData({
-        category: card.category,
-        isUrgent: card.isUrgent,
-        taxBenefits: card.taxBenefits,
-        zakatVerified: card.zakatVerified,
-        title: card.title,
-        organization: card.organization,
-        requiredAmount: card.requiredAmount,
-        deadline: card.deadline,
-        mediaType: card.mediaType || "image",
-        image: null,
-        imagePreview: card.imageUrl, // Use imageUrl from backend
-        video: null,
-        videoPreview: card.videoUrl, // Use videoUrl from backend
-        currentAmount: card.currentAmount,
-        totalDonors: card.totalDonors,
-        isExistingImage: !!card.imageUrl, // Mark as existing if there's an imageUrl
-        isExistingVideo: !!card.videoUrl, // Mark as existing if there's a videoUrl
+      form.append("isUrgent", formData.isUrgent);
+      form.append("taxBenefits", formData.taxBenefits);
+      form.append("zakatVerified", formData.zakatVerified);
+      form.append("beneficiaryName", formData.beneficiaryName);
+      form.append("about", formData.about);
+      // Append documents
+      formData.documents.forEach((file) => {
+        form.append("documents", file);
       });
-      setViewMode("edit");
-    };
 
-    // Helper function to get the correct image URL
-    const getImageUrl = (preview, isExisting) => {
-      if (!preview) return null;
-      if (isExisting) {
-        // For existing images from backend, prepend the IMAGE_URL
-        return `${IMAGE_URL}${preview}`;
+      form.append("impactGoals", JSON.stringify(
+        formData.impactGoals.filter(g => g.trim() !== "")
+
+      ));
+
+
+      // Append ONLY new files (File instances)
+      if (formData.mediaType === "image" && formData.image instanceof File) {
+        form.append("image", formData.image);
       }
-      // For new uploads, return the base64 preview as is
-      return preview;
-    };
 
-const handleSave = async () => {
+      if (formData.mediaType === "video" && formData.video instanceof File) {
+        form.append("video", formData.video);
+      }
+
+      let res;
+
+      // ----------------------------------------------------
+      // 🔥 UPDATE MODE
+      // ----------------------------------------------------
+      if (editingCard) {
+        res = await axios.put(
+          `${API_BASE}/cms/fundraiser/update/${editingCard._id}`,
+          form,
+          { headers: { "Content-Type": "multipart/form-data" } }
+        );
+      }
+
+      // ----------------------------------------------------
+      // 🆕 CREATE MODE
+      // ----------------------------------------------------
+      else {
+        res = await axios.post(
+          `${API_BASE}/cms/fundraiser/add`,
+          form,
+          { headers: { "Content-Type": "multipart/form-data" } }
+        );
+      }
+
+      const data = res.data;
+
+      if (data.success) {
+        alert(editingCard ? "Updated Successfully!" : "Created Successfully!");
+        fetchFundraisers();   // refresh list
+        resetForm();
+        setEditingCard(null);
+        setViewMode("view");
+      } else {
+        alert(data.message || "Something went wrong");
+      }
+
+    } catch (error) {
+      console.error("Save Fundraiser Error:", error);
+      alert("Something went wrong while saving.");
+    }
+  };
+
+
+const resetForm = () => {
+  setFormData({
+    category: "Emergency Aid",
+    isUrgent: false,
+    taxBenefits: false,
+    zakatVerified: false,
+    title: "",
+    organization: "",
+    beneficiaryName: "",
+    about: "",
+    impactGoals: [""],          // ✅ FIX
+    requiredAmount: "",
+    deadline: "",
+    mediaType: "image",
+    image: null,
+    imagePreview: null,
+    video: null,
+    videoPreview: null,
+    currentAmount: 0,
+    totalDonors: 0,
+    isExistingImage: false,
+    isExistingVideo: false,
+    documents: [],              // ✅ FIX
+    existingDocuments: [],      // ✅ FIX
+  });
+};
+
+
+  const handleCancel = () => {
+    setViewMode("view");
+    setEditingCard(null);
+    resetForm();
+  };
+
+const handleDelete = async (id) => {
+  const confirmed = window.confirm(
+    "Are you sure you want to permanently delete this fundraising campaign?"
+  );
+
+  if (!confirmed) return;
+
   try {
-    const form = new FormData();
+    const res = await axios.delete(
+      `${process.env.NEXT_PUBLIC_BACKEND_API}/cms/fundraiser/delete/${id}`
+    );
 
-    form.append("title", formData.title);
-    form.append("organization", formData.organization);
-    form.append("category", formData.category);
-    form.append("requiredAmount", formData.requiredAmount);
-    form.append("deadline", formData.deadline);
-    form.append("mediaType", formData.mediaType);
-
-    form.append("isUrgent", formData.isUrgent);
-    form.append("taxBenefits", formData.taxBenefits);
-    form.append("zakatVerified", formData.zakatVerified);
-
-    // Append ONLY new files (File instances)
-    if (formData.mediaType === "image" && formData.image instanceof File) {
-      form.append("image", formData.image);
-    }
-
-    if (formData.mediaType === "video" && formData.video instanceof File) {
-      form.append("video", formData.video);
-    }
-
-    let res;
-
-    // ----------------------------------------------------
-    // 🔥 UPDATE MODE
-    // ----------------------------------------------------
-    if (editingCard) {
-      res = await axios.put(
-        `${API_BASE}/cms/fundraiser/update/${editingCard._id}`,
-        form,
-        { headers: { "Content-Type": "multipart/form-data" } }
+    if (res.data?.success) {
+      // Optimistically update UI
+      setFundraisingCards((prev) =>
+        prev.filter((card) => card._id !== id)
       );
-    }
-
-    // ----------------------------------------------------
-    // 🆕 CREATE MODE
-    // ----------------------------------------------------
-    else {
-      res = await axios.post(
-        `${API_BASE}/cms/fundraiser/add`,
-        form,
-        { headers: { "Content-Type": "multipart/form-data" } }
-      );
-    }
-
-    const data = res.data;
-
-    if (data.success) {
-      alert(editingCard ? "Updated Successfully!" : "Created Successfully!");
-      fetchFundraisers();   // refresh list
-      resetForm();
-      setEditingCard(null);
-      setViewMode("view");
+      alert("Campaign deleted successfully");
     } else {
-      alert(data.message || "Something went wrong");
+      alert(res.data?.message || "Failed to delete campaign");
     }
-
   } catch (error) {
-    console.error("Save Fundraiser Error:", error);
-    alert("Something went wrong while saving.");
+    console.error("Delete Fundraiser Error:", error);
+    alert("Something went wrong while deleting the campaign");
   }
 };
 
 
-    const resetForm = () => {
-      setFormData({
-        category: "Emergency Aid",
-        isUrgent: false,
-        taxBenefits: false,
-        zakatVerified: false,
-        title: "",
-        organization: "",
-        requiredAmount: "",
-        deadline: "",
-        mediaType: "image",
-        image: null,
-        imagePreview: null,
-        video: null,
-        videoPreview: null,
-        currentAmount: 0,
-        totalDonors: 0,
-        isExistingImage: false,
-        isExistingVideo: false,
-      });
-    };
+  const calculatePercentage = (current, required) => {
+    const req = Number(required) || 0;
+    const cur = Number(current) || 0;
+    if (req <= 0) return 0;
+    return Math.min(Math.round((cur / req) * 100), 100);
+  };
 
-    const handleCancel = () => {
-      setViewMode("view");
-      setEditingCard(null);
-      resetForm();
-    };
+  const formatCurrency = (amount) => {
+    const num = Number(amount) || 0;
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "INR",
+      minimumFractionDigits: 0,
+    }).format(num);
+  };
 
-    const handleDelete = (id) => {
-      if (confirm("Are you sure you want to delete this fundraising card?")) {
-        setFundraisingCards((prev) => prev.filter((card) => card.id !== id));
-      }
-    };
+  return (
+    <div className="flex h-screen bg-[#F8FAFC] overflow-hidden">
+      <Sidebar
+        sidebarOpen={sidebarOpen}
+        setSidebarOpen={setSidebarOpen}
+        activeSection={activeSection}
+        setActiveSection={setActiveSection}
+      />
 
-    const calculatePercentage = (current, required) => {
-      const req = Number(required) || 0;
-      const cur = Number(current) || 0;
-      if (req <= 0) return 0;
-      return Math.min(Math.round((cur / req) * 100), 100);
-    };
+      <div className="flex-1 flex flex-col overflow-hidden w-full md:w-auto">
+        <div className="md:hidden bg-white border-b border-gray-200 px-4 py-3 flex items-center">
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="p-2 hover:bg-gray-100 rounded-lg"
+          >
+            <Menu size={24} className="text-gray-700" />
+          </button>
+          <h1 className="ml-3 text-lg font-bold text-[#0F172A]">Fundraising</h1>
+        </div>
 
-    const formatCurrency = (amount) => {
-      const num = Number(amount) || 0;
-      return new Intl.NumberFormat("en-US", {
-        style: "currency",
-        currency: "INR",
-        minimumFractionDigits: 0,
-      }).format(num);
-    };
-
-    return (
-      <div className="flex h-screen bg-[#F8FAFC] overflow-hidden">
-        <Sidebar
-          sidebarOpen={sidebarOpen}
-          setSidebarOpen={setSidebarOpen}
-          activeSection={activeSection}
-          setActiveSection={setActiveSection}
-        />
-
-        <div className="flex-1 flex flex-col overflow-hidden w-full md:w-auto">
-          <div className="md:hidden bg-white border-b border-gray-200 px-4 py-3 flex items-center">
-            <button
-              onClick={() => setSidebarOpen(true)}
-              className="p-2 hover:bg-gray-100 rounded-lg"
-            >
-              <Menu size={24} className="text-gray-700" />
-            </button>
-            <h1 className="ml-3 text-lg font-bold text-[#0F172A]">Fundraising</h1>
-          </div>
-
-          <main className="flex-1 overflow-y-auto">
-            <div className="p-4 sm:p-6">
-              <div className="mb-6">
-                <div className="flex items-center gap-2 text-sm text-[#64748B] mb-2">
-                  <Home size={16} />
-                  <span>Home</span>
-                  <span>/</span>
-                  <span className="font-semibold text-[#0F172A]">
-                    Fundraising Now
-                  </span>
-                </div>
-
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                  <div>
-                    <h1 className="text-2xl sm:text-3xl font-bold text-[#0F172A] mb-2">
-                      Fundraising Now
-                    </h1>
-                    <p className="text-sm sm:text-base text-[#475569]">
-                      Manage active fundraising campaigns and donation cards.
-                    </p>
-                  </div>
-                  {viewMode === "view" && (
-                    <button
-                      onClick={() => setViewMode("edit")}
-                      className="bg-blue-900 text-white px-6 py-3 rounded-xl font-semibold hover:bg-blue-700 transition-colors flex items-center gap-2 justify-center sm:justify-start cursor-pointer"
-                    >
-                      <PlusIcon size={20} />
-                      Add New Campaign
-                    </button>
-                  )}
-                </div>
+        <main className="flex-1 overflow-y-auto">
+          <div className="p-4 sm:p-6">
+            <div className="mb-6">
+              <div className="flex items-center gap-2 text-sm text-[#64748B] mb-2">
+                <Home size={16} />
+                <span>Home</span>
+                <span>/</span>
+                <span className="font-semibold text-[#0F172A]">
+                  Fundraising Now
+                </span>
               </div>
 
-              {viewMode === "view" && (
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
-                  <div className="bg-white border border-[#E2E8F0] shadow-sm rounded-xl p-4 mb-4 sm:mb-6">
-                    <div className="relative">
-                      <Search
-                        className="absolute left-3 top-1/2 -translate-y-1/2 text-[#94A3B8]"
-                        size={20}
-                      />
-                      <input
-                        className="w-full pl-10 pr-4 py-2 border border-[#CBD5E1] rounded-lg focus:ring-2 focus:ring-[#2D6A4F] focus:border-transparent text-sm sm:text-base"
-                        placeholder="Search fundraising campaigns..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                      />
-                    </div>
-                  </div>
+                  <h1 className="text-2xl sm:text-3xl font-bold text-[#0F172A] mb-2">
+                    Fundraising Now
+                  </h1>
+                  <p className="text-sm sm:text-base text-[#475569]">
+                    Manage active fundraising campaigns and donation cards.
+                  </p>
+                </div>
+                {viewMode === "view" && (
+                  <button
+                    onClick={() => setViewMode("edit")}
+                    className="bg-blue-900 text-white px-6 py-3 rounded-xl font-semibold hover:bg-blue-700 transition-colors flex items-center gap-2 justify-center sm:justify-start cursor-pointer"
+                  >
+                    <PlusIcon size={20} />
+                    Add New Campaign
+                  </button>
+                )}
+              </div>
+            </div>
 
-                  {/* Cards List */}
-                  <div className="space-y-4">
-                    {fundraisingCards.map((card) => (
-                      <div key={card._id} className="bg-white rounded-xl shadow-sm border border-[#E2E8F0] p-4 flex items-center gap-4">
-
-                        <div className="w-20 h-20 rounded-lg overflow-hidden">
-                          {card.mediaType === "video" ? (
-                            <video 
-                            src={`${IMAGE_URL}${card.videoUrl}`}
-                            className="w-full h-full object-cover" />
-                          ) : (
-                            <img 
-                            src={`${IMAGE_URL}${card.imageUrl}`}
-                            className="w-full h-full object-cover" />
-                          )}
-                        </div>
-
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-bold text-[#0F172A] truncate">{card.title}</h3>
-                          <p className="text-sm text-[#64748B] truncate">{card.organization}</p>
-                          <span className={`text-xs px-2 py-1 rounded-full ${categoryColors[card.category]}`}>
-                            {card.category}
-                          </span>
-                        </div>
-
-                        <div className="flex gap-2">
-                          <button onClick={() => handleEdit(card)} className="p-2 bg-[#2D6A4F] text-white rounded-lg cursor-pointer">
-                            <Edit2 size={16} />
-                          </button>
-                        </div>
-
-                      </div>
-                    ))}
-
+            {viewMode === "view" && (
+              <div>
+                <div className="bg-white border border-[#E2E8F0] shadow-sm rounded-xl p-4 mb-4 sm:mb-6">
+                  <div className="relative">
+                    <Search
+                      className="absolute left-3 top-1/2 -translate-y-1/2 text-[#94A3B8]"
+                      size={20}
+                    />
+                    <input
+                      className="w-full pl-10 pr-4 py-2 border border-[#CBD5E1] rounded-lg focus:ring-2 focus:ring-[#2D6A4F] focus:border-transparent text-sm sm:text-base"
+                      placeholder="Search fundraising campaigns..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                    />
                   </div>
                 </div>
-              )}
+
+                {/* Cards List */}
+                <div className="space-y-4">
+                  {fundraisingCards.map((card) => (
+                    <div key={card._id} className="bg-white rounded-xl shadow-sm border border-[#E2E8F0] p-4 flex items-center gap-4">
+
+                      <div className="w-20 h-20 rounded-lg overflow-hidden">
+                        {card.mediaType === "video" ? (
+                          <video
+                            src={`${IMAGE_URL}${card.videoUrl}`}
+                            className="w-full h-full object-cover" />
+                        ) : (
+                          <img
+                            src={`${IMAGE_URL}${card.imageUrl}`}
+                            className="w-full h-full object-cover" />
+                        )}
+                      </div>
+
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-bold text-[#0F172A] truncate">{card.title}</h3>
+                        <p className="text-sm text-[#64748B] truncate">{card.organization}</p>
+                        <span className={`text-xs px-2 py-1 rounded-full ${categoryColors[card.category]}`}>
+                          {card.category}
+                        </span>
+                      </div>
+
+                     <div className="flex gap-2">
+  {/* EDIT */}
+  <button
+    onClick={() => handleEdit(card)}
+    className="p-2 bg-[#2D6A4F] text-white rounded-lg hover:bg-[#1E3D36] cursor-pointer"
+    title="Edit"
+  >
+    <Edit2 size={16} />
+  </button>
+
+  {/* DELETE */}
+  <button
+    onClick={() => handleDelete(card._id)}
+    className="p-2 bg-red-600 text-white rounded-lg hover:bg-red-700 cursor-pointer"
+    title="Delete"
+  >
+    <Trash2 size={16} />
+  </button>
+</div>
+
+                    </div>
+                  ))}
+
+                </div>
+              </div>
+            )}
 
             {/* EDIT MODE */}
             {viewMode === "edit" && (
@@ -518,6 +610,87 @@ const handleSave = async () => {
                           className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg focus:ring-2 focus:ring-[#2D6A4F] focus:border-transparent text-sm sm:text-base"
                         />
                       </div>
+                      <div>
+                        <label className="block text-sm font-semibold mb-2">
+                          Beneficiary Name
+                        </label>
+                        <input
+                          type="text"
+                          value={formData.beneficiaryName}
+                          onChange={(e) =>
+                            setFormData({ ...formData, beneficiaryName: e.target.value })
+                          }
+                          className="w-full px-4 py-3 border rounded-lg"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-semibold mb-2">
+                          About Campaign
+                        </label>
+                        <textarea
+                          rows={5}
+                          value={formData.about}
+                          onChange={(e) =>
+                            setFormData({ ...formData, about: e.target.value })
+                          }
+                          placeholder="Describe the campaign in detail..."
+                          className="w-full px-4 py-3 border rounded-lg resize-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-semibold mb-2">
+                          Campaign Impact Goals
+                        </label>
+
+                        <div className="space-y-3">
+                          {(formData.impactGoals || []).map((goal, index) => (
+
+                            <div key={index} className="flex gap-2">
+                              <input
+                                type="text"
+                                value={goal}
+                                onChange={(e) => {
+                                  const updated = [...formData.impactGoals];
+                                  updated[index] = e.target.value;
+                                  setFormData({ ...formData, impactGoals: updated });
+                                }}
+                                placeholder="e.g. 5,000+ families with clean water access"
+                                className="flex-1 px-4 py-2 border rounded-lg"
+                              />
+
+                              {formData.impactGoals.length > 1 && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const updated = formData.impactGoals.filter(
+                                      (_, i) => i !== index
+                                    );
+                                    setFormData({ ...formData, impactGoals: updated });
+                                  }}
+                                  className="text-red-600"
+                                >
+                                  <X size={18} />
+                                </button>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setFormData({
+                              ...formData,
+                              impactGoals: [...formData.impactGoals, ""],
+                            })
+                          }
+                          className="mt-3 text-sm text-blue-700 font-semibold"
+                        >
+                          + Add Impact Goal
+                        </button>
+                      </div>
+
 
                       <div>
                         <label className="block text-sm font-semibold text-[#0F172A] mb-2">
@@ -579,21 +752,21 @@ const handleSave = async () => {
                             type="button"
                             onClick={() => handleMediaTypeChange("image")}
                             className={`p-4 rounded-lg border-2 transition-all ${formData.mediaType === "image"
-                                ? "border-[#2D6A4F] bg-[#2D6A4F]/5"
-                                : "border-[#CBD5E1] hover:border-[#94A3B8]"
+                              ? "border-[#2D6A4F] bg-[#2D6A4F]/5"
+                              : "border-[#CBD5E1] hover:border-[#94A3B8]"
                               }`}
                           >
                             <Image
                               size={32}
                               className={`mx-auto mb-2 ${formData.mediaType === "image"
-                                  ? "text-[#2D6A4F]"
-                                  : "text-[#94A3B8]"
+                                ? "text-[#2D6A4F]"
+                                : "text-[#94A3B8]"
                                 }`}
                             />
                             <p
                               className={`text-sm font-semibold ${formData.mediaType === "image"
-                                  ? "text-[#2D6A4F]"
-                                  : "text-[#64748B]"
+                                ? "text-[#2D6A4F]"
+                                : "text-[#64748B]"
                                 }`}
                             >
                               Image
@@ -607,21 +780,21 @@ const handleSave = async () => {
                             type="button"
                             onClick={() => handleMediaTypeChange("video")}
                             className={`p-4 rounded-lg border-2 transition-all ${formData.mediaType === "video"
-                                ? "border-[#2D6A4F] bg-[#2D6A4F]/5"
-                                : "border-[#CBD5E1] hover:border-[#94A3B8]"
+                              ? "border-[#2D6A4F] bg-[#2D6A4F]/5"
+                              : "border-[#CBD5E1] hover:border-[#94A3B8]"
                               }`}
                           >
                             <Play
                               size={32}
                               className={`mx-auto mb-2 ${formData.mediaType === "video"
-                                  ? "text-[#2D6A4F]"
-                                  : "text-[#94A3B8]"
+                                ? "text-[#2D6A4F]"
+                                : "text-[#94A3B8]"
                                 }`}
                             />
                             <p
                               className={`text-sm font-semibold ${formData.mediaType === "video"
-                                  ? "text-[#2D6A4F]"
-                                  : "text-[#64748B]"
+                                ? "text-[#2D6A4F]"
+                                : "text-[#64748B]"
                                 }`}
                             >
                               Video
@@ -772,6 +945,79 @@ const handleSave = async () => {
                           </div>
                         </div>
                       )}
+                      {/* DOCUMENTS UPLOAD */}
+                      <div>
+                        <label className="block text-sm font-semibold text-[#0F172A] mb-2">
+                          Supporting Documents
+                        </label>
+
+                        <div className="border-2 border-dashed border-[#CBD5E1] rounded-xl p-4">
+                          <label className="flex flex-col items-center cursor-pointer">
+                            <input
+                              type="file"
+                              multiple
+                              accept=".pdf,.doc,.docx,image/*"
+                              className="hidden"
+                              onChange={handleDocumentUpload}
+                            />
+
+                            <FileText size={36} className="text-[#94A3B8] mb-2" />
+                            <p className="text-sm font-medium">
+                              Upload documents (PDF, DOC, Images)
+                            </p>
+                            <p className="text-xs text-[#94A3B8]">
+                              Multiple files allowed
+                            </p>
+                          </label>
+                        </div>
+
+                        {/* Existing Documents */}
+                        {formData.existingDocuments.length > 0 && (
+                          <div className="mt-4 space-y-2">
+                            <p className="text-xs font-semibold text-[#64748B]">Existing Documents</p>
+                            {formData.existingDocuments.map((doc, index) => (
+                              <div
+                                key={index}
+                                className="flex items-center justify-between bg-[#F8FAFC] border rounded-lg px-3 py-2"
+                              >
+                                <span className="text-sm truncate">
+                                  {doc.name}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => removeExistingDocument(index)}
+                                  className="text-red-600"
+                                >
+                                  <Trash2 size={16} />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* New Documents */}
+                        {formData.documents.length > 0 && (
+                          <div className="mt-4 space-y-2">
+                            <p className="text-xs font-semibold text-[#64748B]">New Documents</p>
+                            {formData.documents.map((file, index) => (
+                              <div
+                                key={index}
+                                className="flex items-center justify-between bg-[#F8FAFC] border rounded-lg px-3 py-2"
+                              >
+                                <span className="text-sm truncate">{file.name}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => removeNewDocument(index)}
+                                  className="text-red-600"
+                                >
+                                  <Trash2 size={16} />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
 
                       <div className="flex flex-col sm:flex-row gap-3 pt-4">
                         <button
