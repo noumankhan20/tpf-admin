@@ -1,10 +1,12 @@
 "use client";
 import { useState, useMemo } from 'react';
+import EmployeeModal from "./employeemodal";
 import {
     ArrowLeft,
     Users,
     Clock,
     DollarSign,
+    Receipt,
     Calendar,
     Search,
     Filter,
@@ -26,14 +28,14 @@ import {
     Loader2,
 } from 'lucide-react';
 
-// Sample employee data
+// Sample employee data - FIXED: All employees now have consistent salary structure
 const initialEmployeesData = [
     {
         id: 1,
         name: "John Doe",
         email: "john.doe@company.com",
-        department: "Manager",
-        position: "Senior Manager",
+        department: "Engineering",
+        position: "Senior Developer",
         joinDate: "2023-01-15",
         status: "active",
         salary: {
@@ -80,16 +82,16 @@ const initialEmployeesData = [
     },
     {
         id: 3,
-        name: "Abdul Ahad",
-        email: "abdulahad.j@company.com",
-        department: "CMS-Admin",
-        position: "Content Management Admin",
+        name: "Michael Johnson",
+        email: "michael.j@company.com",
+        department: "Sales",
+        position: "Sales Executive",
         joinDate: "2023-06-10",
         status: "active",
         salary: {
-            amount: 63500,
+            amount: 55000,
             history: [
-                { month: "Nov 2024", amount: 63500 }
+                { month: "Nov 2024", amount: 55000 }
             ]
         },
         loginRecords: [
@@ -101,16 +103,16 @@ const initialEmployeesData = [
     },
     {
         id: 4,
-        name: "Abdullah",
-        email: "abdullah.@company.com",
+        name: "Emily Davis",
+        email: "emily.davis@company.com",
         department: "HR",
         position: "HR Manager",
         joinDate: "2022-11-01",
-        status: "active",
+        status: "on-leave",
         salary: {
-            amount: 74500,
+            amount: 70000,
             history: [
-                { month: "Nov 2024", amount: 74500 }
+                { month: "Nov 2024", amount: 70000 }
             ]
         },
         loginRecords: [
@@ -122,14 +124,14 @@ const initialEmployeesData = [
         id: 5,
         name: "Robert Brown",
         email: "robert.brown@company.com",
-        department: "Social Media",
-        position: "Social Media Manager",
+        department: "Engineering",
+        position: "Backend Developer",
         joinDate: "2024-01-15",
         status: "active",
         salary: {
-            amount: 70800,
+            amount: 68000,
             history: [
-                { month: "Nov 2024", amount: 70800 }
+                { month: "Nov 2024", amount: 68000 }
             ]
         },
         loginRecords: [
@@ -163,15 +165,33 @@ export default function EmployeeManagement() {
         receipt: false
     });
 
+    const [newEmployeeForm, setNewEmployeeForm] = useState({
+        fullname: '',
+        email: '',
+        password: '',
+        department: '',
+        position: '',
+        joinDate: new Date().toISOString().split('T')[0]
+    });
+
+    const [salaryForm, setSalaryForm] = useState({
+        month: '',
+        amount: '',
+    });
+
     // Filter and search employees
     const filteredEmployees = useMemo(() => {
-        return employees.filter(emp =>
-            emp.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            emp.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            emp.department.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            emp.position.toLowerCase().includes(searchQuery.toLowerCase())
-        );
+        return employees.filter(emp => {
+            const searchLower = searchQuery.toLowerCase();
+            return (
+                emp.name.toLowerCase().includes(searchLower) ||
+                emp.email.toLowerCase().includes(searchLower) ||
+                emp.department.toLowerCase().includes(searchLower) ||
+                emp.position.toLowerCase().includes(searchLower)
+            );
+        });
     }, [employees, searchQuery]);
+
 
     // Pagination
     const totalPages = Math.ceil(filteredEmployees.length / itemsPerPage);
@@ -190,7 +210,7 @@ export default function EmployeeManagement() {
             setIsEditing(false);
             setEditedEmployee(null);
         } else {
-            alert('Navigate to /tpf-management');
+            window.location.href = '/tpf-management';
         }
     };
 
@@ -198,6 +218,16 @@ export default function EmployeeManagement() {
         setModalType(type);
         setSelectedItem(item);
         setShowModal(true);
+        if (type === 'add-employee') {
+            setNewEmployeeForm({
+                fullname: '',
+                email: '',
+                password: '',
+                department: '',
+                position: '',
+                joinDate: new Date().toISOString().split('T')[0]
+            });
+        }
 
         if (type === 'expense' && item) {
             setExpenseForm({
@@ -221,13 +251,22 @@ export default function EmployeeManagement() {
             date: new Date().toISOString().split('T')[0],
             receipt: false
         });
+        setSalaryForm({
+            month: '',
+            amount: '',
+        });
+        setNewEmployeeForm({
+            fullname: '',
+            email: '',
+            password: '',
+            department: '',
+            position: '',
+            joinDate: new Date().toISOString().split('T')[0]
+        });
     };
 
     // Statistics
     const totalEmployees = employees.length;
-    const totalExpensesPending = employees.reduce((sum, emp) =>
-        sum + emp.expenses.filter(exp => exp.status === "pending").length, 0
-    );
 
     const getStatusBadge = (status) => {
         const styles = {
@@ -246,14 +285,6 @@ export default function EmployeeManagement() {
                 {status.charAt(0).toUpperCase() + status.slice(1).replace('-', ' ')}
             </span>
         );
-    };
-
-    // Calculate hours worked
-    const calculateHours = (clockIn, clockOut) => {
-        const [inHour, inMin] = clockIn.split(':').map(Number);
-        const [outHour, outMin] = clockOut.split(':').map(Number);
-        const hours = outHour - inHour + (outMin - inMin) / 60;
-        return Math.round(hours * 100) / 100;
     };
 
     // Handle expense actions
@@ -284,6 +315,46 @@ export default function EmployeeManagement() {
         }, 800);
     };
 
+    // Handle add expense
+    const handleAddExpense = () => {
+        setIsLoading(true);
+        setTimeout(() => {
+            const newExpense = {
+                id: Date.now(),
+                type: expenseForm.type,
+                amount: parseFloat(expenseForm.amount),
+                description: expenseForm.description,
+                date: expenseForm.date,
+                status: 'pending',
+                receipt: expenseForm.receipt
+            };
+
+            const updatedEmployees = employees.map(emp => {
+                if (emp.id === selectedEmployee.id) {
+                    return {
+                        ...emp,
+                        expenses: [newExpense, ...emp.expenses]
+                    };
+                }
+                return emp;
+            });
+
+            setEmployees(updatedEmployees);
+            setSelectedEmployee({
+                ...selectedEmployee,
+                expenses: [newExpense, ...selectedEmployee.expenses]
+            });
+            setIsLoading(false);
+            closeModal();
+        }, 1000);
+    };
+
+    // Handle edit employee
+    const startEditEmployee = () => {
+        setIsEditing(true);
+        setEditedEmployee({ ...selectedEmployee });
+    };
+
     const saveEmployeeChanges = () => {
         setIsLoading(true);
         setTimeout(() => {
@@ -311,153 +382,82 @@ export default function EmployeeManagement() {
         }
     };
 
-    // Modal Component
-    const Modal = ({ type, item, onClose }) => (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50" onClick={onClose}>
-            <div className="bg-white rounded-lg p-4 sm:p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-                <div className="flex justify-between items-start mb-4">
-                    <h3 className="text-lg sm:text-xl font-semibold">
-                        {type === "payslip" && "Payslip Details"}
-                        {type === "edit-expense" && "Edit Expense"}
-                    </h3>
-                    <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
-                        <XCircle className="w-6 h-6" />
-                    </button>
-                </div>
+    // Handle add salary
+    const handleAddSalary = () => {
+        if (!salaryForm.month || !salaryForm.amount) {
+            alert('Please fill all salary fields');
+            return;
+        }
 
-                {type === "payslip" && item && (
-                    <div className="space-y-4">
-                        <div className="bg-gray-50 p-4 rounded-lg">
-                            <h4 className="font-semibold mb-2">Employee: {selectedEmployee.name}</h4>
-                            <p className="text-sm text-gray-600">Period: {item.month}</p>
-                        </div>
-                        <div className="space-y-2">
-                            <div className="flex justify-between py-3 bg-blue-50 px-4 rounded-lg mt-2">
-                                <span className="font-semibold">Salary</span>
-                                <span className="font-bold text-lg">₹{item.amount.toLocaleString()}</span>
-                            </div>
-                        </div>
-                        <button className="w-full py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center justify-center gap-2">
-                            <Download className="w-4 h-4" />
-                            Download Payslip
-                        </button>
-                    </div>
-                )}
+        setIsLoading(true);
+        setTimeout(() => {
+            const amount = parseFloat(salaryForm.amount);
 
-                {type === "expense" && item && (
-                    <div className="space-y-4">
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <p className="text-sm text-gray-600">Type</p>
-                                <p className="font-semibold">{item.type}</p>
-                            </div>
-                            <div>
-                                <p className="text-sm text-gray-600">Amount</p>
-                                <p className="font-semibold text-green-600">₹{item.amount}</p>
-                            </div>
-                            <div>
-                                <p className="text-sm text-gray-600">Date</p>
-                                <p className="font-semibold">{item.date}</p>
-                            </div>
-                            <div>
-                                <p className="text-sm text-gray-600">Status</p>
-                                {getStatusBadge(item.status)}
-                            </div>
-                        </div>
-                        <div>
-                            <p className="text-sm text-gray-600 mb-1">Description</p>
-                            <p className="font-medium">{item.description}</p>
-                        </div>
-                        {item.status === "pending" && (
-                            <div className="flex gap-3 pt-4">
-                                <button
-                                    onClick={() => handleExpenseAction('approved', item.id)}
-                                    disabled={isLoading}
-                                    className="flex-1 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 flex items-center justify-center gap-2"
-                                >
-                                    {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
-                                    Approve
-                                </button>
-                                <button
-                                    onClick={() => handleExpenseAction('rejected', item.id)}
-                                    disabled={isLoading}
-                                    className="flex-1 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 flex items-center justify-center gap-2"
-                                >
-                                    {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <XCircle className="w-4 h-4" />}
-                                    Reject
-                                </button>
-                            </div>
-                        )}
-                    </div>
-                )}
+            const newSalaryRecord = {
+                month: salaryForm.month,
+                amount: amount,
+            };
 
-                {type === "expense" && !item && (
-                    <div className="space-y-4">
-                        <div>
-                            <label className="block text-sm font-medium mb-1">Expense Type</label>
-                            <select
-                                value={expenseForm.type}
-                                onChange={(e) => setExpenseForm({ ...expenseForm, type: e.target.value })}
-                                className="w-full px-3 py-2 border rounded-lg"
-                            >
-                                <option value="Travel">Travel</option>
-                                <option value="Meals">Meals</option>
-                                <option value="Equipment">Equipment</option>
-                                <option value="Software">Software</option>
-                                <option value="Training">Training</option>
-                                <option value="Other">Other</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium mb-1">Amount (₹)</label>
-                            <input
-                                type="number"
-                                value={expenseForm.amount}
-                                onChange={(e) => setExpenseForm({ ...expenseForm, amount: e.target.value })}
-                                className="w-full px-3 py-2 border rounded-lg"
-                                placeholder="Enter amount"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium mb-1">Description</label>
-                            <textarea
-                                value={expenseForm.description}
-                                onChange={(e) => setExpenseForm({ ...expenseForm, description: e.target.value })}
-                                className="w-full px-3 py-2 border rounded-lg"
-                                rows="3"
-                                placeholder="Enter expense description"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium mb-1">Date</label>
-                            <input
-                                type="date"
-                                value={expenseForm.date}
-                                onChange={(e) => setExpenseForm({ ...expenseForm, date: e.target.value })}
-                                className="w-full px-3 py-2 border rounded-lg"
-                            />
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <input
-                                type="checkbox"
-                                checked={expenseForm.receipt}
-                                onChange={(e) => setExpenseForm({ ...expenseForm, receipt: e.target.checked })}
-                                className="w-4 h-4"
-                            />
-                            <label className="text-sm">Receipt attached</label>
-                        </div>
-                    </div>
-                )}
-            </div>
-        </div>
-    );
+            const updatedEmployees = employees.map(emp => {
+                if (emp.id === selectedEmployee.id) {
+                    return {
+                        ...emp,
+                        salary: {
+                            ...emp.salary,
+                            amount: amount,
+                            history: [newSalaryRecord, ...emp.salary.history]
+                        }
+                    };
+                }
+                return emp;
+            });
+
+            setEmployees(updatedEmployees);
+            const updatedEmployee = updatedEmployees.find(emp => emp.id === selectedEmployee.id);
+            setSelectedEmployee(updatedEmployee);
+            setIsLoading(false);
+            closeModal();
+            alert('Salary added successfully!');
+        }, 1000);
+    };
+
+    // Handle add new employee
+    const handleAddEmployee = async () => {
+        if (!newEmployeeForm.fullname || !newEmployeeForm.email || !newEmployeeForm.password ||
+            !newEmployeeForm.department || !newEmployeeForm.position || !newEmployeeForm.joinDate) {
+            alert('Please fill all fields');
+            return;
+        }
+
+        setIsLoading(true);
+        try {
+            const newEmployee = {
+                id: Date.now(),
+                name: newEmployeeForm.fullname,
+                email: newEmployeeForm.email,
+                department: newEmployeeForm.department,
+                position: newEmployeeForm.position,
+                joinDate: newEmployeeForm.joinDate,
+                status: "active",
+                salary: { amount: 0, history: [] },
+                loginRecords: [],
+                expenses: []
+            };
+
+            setEmployees(prevEmployees => [...prevEmployees, newEmployee]);
+            alert('Employee added successfully!');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
 
     // Employee Detail View
     if (selectedEmployee) {
         return (
             <>
                 <div className="min-h-screen bg-gray-50 p-4 sm:p-6">
-                    <button onClick={handleBack} className="flex items-center text-gray-600 hover:text-gray-900 mb-4 cursor-pointer">
+                    <button onClick={handleBack} className="flex items-center cursor-pointer text-gray-600 hover:text-gray-900 mb-4">
                         <ArrowLeft className="w-5 h-5 mr-2" />
                         <span className="text-sm sm:text-base">Back to Employees</span>
                     </button>
@@ -503,15 +503,27 @@ export default function EmployeeManagement() {
                                         >
                                             {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                                         </button>
+                                        <button
+                                            onClick={() => setIsEditing(false)}
+                                            className="px-3 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 text-sm"
+                                        >
+                                            <XCircle className="w-4 h-4" />
+                                        </button>
                                     </>
                                 ) : (
                                     <>
+                                        <button
+                                            onClick={startEditEmployee}
+                                            className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
+                                        >
+                                            <Edit className="w-4 h-4" />
+                                        </button>
                                         {selectedEmployee.status !== 'inactive' && (
                                             <button
                                                 onClick={deactivateEmployee}
-                                                className="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm cursor-pointer"
+                                                className="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm"
                                             >
-                                                Disable Employee
+                                                <UserX className="w-4 h-4" />
                                             </button>
                                         )}
                                     </>
@@ -586,15 +598,13 @@ export default function EmployeeManagement() {
                                             <tr>
                                                 <th className="px-3 py-2 text-left text-xs font-semibold">Date</th>
                                                 <th className="px-3 py-2 text-left text-xs font-semibold">Login</th>
-
                                             </tr>
                                         </thead>
-                                        <tbody className="divide-y divide-gray-200">
+                                        <tbody className="divide-y divide-gray-300">
                                             {selectedEmployee.loginRecords.map((record, idx) => (
                                                 <tr key={idx}>
                                                     <td className="px-3 py-2 text-xs sm:text-sm">{record.date}</td>
                                                     <td className="px-3 py-2 text-xs sm:text-sm">{record.loginTime}</td>
-
                                                 </tr>
                                             ))}
                                         </tbody>
@@ -608,11 +618,20 @@ export default function EmployeeManagement() {
                                 <div className="bg-gradient-to-r from-blue-50 to-blue-100 p-4 sm:p-6 rounded-lg mb-6">
                                     <p className="text-sm text-gray-600 mb-1">Current Salary</p>
                                     <p className="text-3xl sm:text-4xl font-bold text-blue-600">
-                                        ₹{selectedEmployee.salary.amount.toLocaleString()}
+                                        ₹{selectedEmployee.salary.amount}
                                     </p>
                                 </div>
 
-                                <h3 className="text-lg font-semibold mb-4">Salary History</h3>
+                                <div className="flex justify-between items-center mb-4">
+                                    <h3 className="text-lg font-semibold">Salary History</h3>
+                                    <button
+                                        onClick={() => openModal("salary")}
+                                        className="px-3 sm:px-4 py-2 cursor-pointer bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 flex items-center gap-2"
+                                    >
+                                        <Plus className="w-4 h-4" />
+                                        <span className="hidden sm:inline">Add </span>Salary
+                                    </button>
+                                </div>
                                 <div className="space-y-3">
                                     {selectedEmployee.salary.history.map((record, idx) => (
                                         <div key={idx} className="border border-gray-300 rounded-lg p-4 hover:bg-gray-50 transition">
@@ -623,7 +642,7 @@ export default function EmployeeManagement() {
                                                 </div>
                                                 <button
                                                     onClick={() => openModal("payslip", record)}
-                                                    className="px-3 py-1 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
+                                                    className="px-3 py-1 text-sm cursor-pointer bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
                                                 >
                                                     <Eye className="w-4 h-4" />
                                                     View
@@ -639,6 +658,13 @@ export default function EmployeeManagement() {
                             <div>
                                 <div className="flex justify-between items-center mb-4">
                                     <h3 className="text-lg font-semibold">Expenses</h3>
+                                    <button
+                                        onClick={() => openModal("expense")}
+                                        className="px-3 sm:px-4 py-2 cursor-pointer bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 flex items-center gap-2"
+                                    >
+                                        <Plus className="w-4 h-4" />
+                                        <span className="hidden sm:inline">Add </span>Expense
+                                    </button>
                                 </div>
                                 {selectedEmployee.expenses.length === 0 ? (
                                     <div className="text-center py-12 text-gray-500">
@@ -661,7 +687,7 @@ export default function EmployeeManagement() {
                                                     <span className="text-lg font-bold text-green-600">₹{expense.amount}</span>
                                                     <button
                                                         onClick={() => openModal("expense", expense)}
-                                                        className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1 cursor-pointer"
+                                                        className="text-sm cursor-pointer text-blue-600 hover:text-blue-800 flex items-center gap-1"
                                                     >
                                                         <Eye className="w-4 h-4" />
                                                         View Details
@@ -676,44 +702,66 @@ export default function EmployeeManagement() {
                     </div>
                 </div>
 
-                {showModal && <Modal type={modalType} item={selectedItem} onClose={closeModal} />}
+                {showModal && (
+                    <EmployeeModal
+                        type={modalType}
+                        item={selectedItem}
+                        onClose={closeModal}
+                        expenseForm={expenseForm}
+                        setExpenseForm={setExpenseForm}
+                        newEmployeeForm={newEmployeeForm}
+                        setNewEmployeeForm={setNewEmployeeForm}
+                        salaryForm={salaryForm}
+                        setSalaryForm={setSalaryForm}
+                        selectedEmployee={selectedEmployee}
+                        getStatusBadge={getStatusBadge}
+                        handleExpenseAction={handleExpenseAction}
+                        handleAddExpense={handleAddExpense}
+                        handleAddSalary={handleAddSalary}
+                        handleAddEmployee={handleAddEmployee}
+                        isLoading={isLoading}
+                    />
+                )}
             </>
         );
     }
 
     // Main Overview
     return (
-        <div className="min-h-screen bg-gray-50 p-4 sm:p-6 text-center">
-            <button onClick={handleBack} className="flex items-center text-gray-600 hover:text-gray-900 mb-4 cursor-pointer">
+        <div className="min-h-screen bg-gray-50 p-4 sm:p-6">
+            <button onClick={handleBack} className="flex items-center cursor-pointer text-gray-600 hover:text-gray-900 mb-4">
                 <ArrowLeft className="w-5 h-5 mr-2" />
                 <span className="text-sm sm:text-base">Back to TPF Management</span>
             </button>
 
-            <h1 className="text-2xl sm:text-3xl font-bold mb-6">Employee Management</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold mb-6 text-center">Employee Management</h1>
 
             {/* Statistics */}
-            <div className="flex justify-center gap-4 mb-6">
-        {/* Total Employees Card */}
-        <div className="bg-white rounded-lg shadow p-4 hover:shadow-md transition">
-            <div className="flex items-center justify-between">
-                <div>
-                    <p className="text-xs text-gray-600">Total Employees</p>
-                    <p className="text-2xl font-bold">{totalEmployees}</p>
-                </div>
-                <Users className="w-8 h-8 text-blue-500" />
-            </div>
-        </div>
-
-                {/* Add Employee Card */}
-                <div className="bg-white rounded-lg shadow p-4 hover:shadow-md transition cursor-pointer" onClick={() => openAddEmployeeModal()}>
+            <div className="flex justify-center items-center space-x-4 mb-6">
+                {/* First Card */}
+                <div className="bg-white rounded-lg shadow p-4 hover:shadow-md transition w-1/2">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-xs text-gray-600">Add New Employee</p>
-                            <p className="text-2xl font-bold text-green-600">+</p>
+                            <p className="text-xs text-gray-600">Total Employees</p>
+                            <p className="text-2xl font-bold">{totalEmployees}</p>
                         </div>
-                        <Plus className="w-8 h-8 text-green-500" />
+                        <Users className="w-8 h-8 text-blue-500" />
                     </div>
                 </div>
+
+                {/* Second Card */}
+                <button
+                    onClick={() => openModal("add-employee")}
+                    className="bg-emerald-500 rounded-lg shadow p-4 cursor-pointer hover:shadow-lg hover:from-emerald-600 hover:to-emerald-700 transition transform hover:scale-105 w-1/2"
+                >
+                    <div className="flex items-center justify-between h-full">
+                        <div className="text-left">
+                            <p className="text-xs text-blue-100 font-medium">Add Employee</p>
+                            <p className="text-sm text-white mt-1">Click to add new</p>
+                        </div>
+                        <Plus className="w-8 h-8 text-white" />
+                    </div>
+                </button>
             </div>
 
 
@@ -760,7 +808,7 @@ export default function EmployeeManagement() {
                                 <th className="px-4 py-3 text-center text-xs font-semibold">Action</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-200">
+                        <tbody className="divide-y divide-gray-300">
                             {currentEmployees.map(employee => (
                                 <tr key={employee.id} className="hover:bg-gray-50 transition">
                                     <td className="px-4 py-3">
@@ -780,7 +828,7 @@ export default function EmployeeManagement() {
                                     <td className="px-4 py-3">
                                         <button
                                             onClick={() => setSelectedEmployee(employee)}
-                                            className="px-4 py-2 bg-blue-600 text-white rounded-lg text-xs hover:bg-blue-700 transition cursor-pointer"
+                                            className="px-4 py-2 cursor-pointer bg-blue-600 text-white rounded-lg text-xs hover:bg-blue-700 transition"
                                         >
                                             View Details
                                         </button>
@@ -796,7 +844,7 @@ export default function EmployeeManagement() {
                     {currentEmployees.map(employee => (
                         <div key={employee.id} className="border rounded-lg p-4 hover:shadow-md transition">
                             <div className="flex items-start gap-3 mb-3">
-                                <div className="w-12 h-12 bg-emerald-500 rounded-full flex items-center justify-center text-white font-bold">
+                                <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold">
                                     {employee.name.charAt(0)}
                                 </div>
                                 <div className="flex-1">
@@ -813,7 +861,7 @@ export default function EmployeeManagement() {
                             </div>
                             <button
                                 onClick={() => setSelectedEmployee(employee)}
-                                className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 transition cursor-pointer"
+                                className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 transition"
                             >
                                 View Details
                             </button>
@@ -835,7 +883,6 @@ export default function EmployeeManagement() {
 
                         <div className="flex items-center gap-2">
                             {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => {
-                                // Show first page, last page, current page, and pages around current
                                 if (
                                     page === 1 ||
                                     page === totalPages ||
@@ -888,7 +935,27 @@ export default function EmployeeManagement() {
                         )}
                     </div>
                 )}
+                {showModal && (
+                    <EmployeeModal
+                        type={modalType}
+                        item={selectedItem}
+                        onClose={closeModal}
+                        expenseForm={expenseForm}
+                        setExpenseForm={setExpenseForm}
+                        newEmployeeForm={newEmployeeForm}
+                        setNewEmployeeForm={setNewEmployeeForm}
+                        salaryForm={salaryForm}
+                        setSalaryForm={setSalaryForm}
+                        selectedEmployee={selectedEmployee}
+                        getStatusBadge={getStatusBadge}
+                        handleExpenseAction={handleExpenseAction}
+                        handleAddExpense={handleAddExpense}
+                        handleAddSalary={handleAddSalary}
+                        handleAddEmployee={handleAddEmployee}
+                        isLoading={isLoading}
+                    />
+                )}
             </div>
-        </div >
+        </div>
     );
 }
