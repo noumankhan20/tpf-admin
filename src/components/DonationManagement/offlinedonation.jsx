@@ -51,7 +51,7 @@ const INITIAL_DONATIONS = [
     method: "NEFT",
     amount: 7500,
     remarks: "Emergency fund",
-    status: "rejected",
+    status: "approved",
     submittedOn: "2024-12-05T16:45:00",
     approvedOn: null,
     referenceNumber: "NEFT2024120501",
@@ -80,14 +80,12 @@ const StatusBadge = ({ status }) => {
   const styles = {
     pending: "bg-yellow-100 text-yellow-800 border-yellow-200",
     approved: "bg-green-100 text-green-800 border-green-200",
-    rejected: "bg-red-100 text-red-800 border-red-200",
   };
 
   return (
     <span
-      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${
-        styles[status] || styles.pending
-      }`}
+      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${styles[status] || styles.pending
+        }`}
     >
       {status.charAt(0).toUpperCase() + status.slice(1)}
     </span>
@@ -132,7 +130,7 @@ const AddOfflineDonationModal = ({ isOpen, onClose, onAdd }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    
+
     const baseData = {
       id: `OD${Date.now()}`,
       donorId: formData.donorId,
@@ -170,7 +168,7 @@ const AddOfflineDonationModal = ({ isOpen, onClose, onAdd }) => {
     }
 
     onAdd({ ...baseData, ...methodSpecificData });
-    
+
     // Reset form
     setSelectedMethod("");
     setFormData({
@@ -186,22 +184,26 @@ const AddOfflineDonationModal = ({ isOpen, onClose, onAdd }) => {
       chequeDate: "",
       branchName: "",
     });
-    
+
     onClose();
   };
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-black/20 backdrop-blur-sm  flex items-center justify-center z-50 p-4"
+     onClick={onClose}
+    >
+      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+      onClick={(e) => e.stopPropagation()}
+      >
         <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between">
           <h3 className="text-lg font-semibold text-gray-900">
             Add Offline Donation
           </h3>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className="text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -219,11 +221,10 @@ const AddOfflineDonationModal = ({ isOpen, onClose, onAdd }) => {
                   key={method}
                   type="button"
                   onClick={() => handleMethodChange(method)}
-                  className={`py-3 px-4 rounded-lg border-2 font-medium transition-all ${
-                    selectedMethod === method
-                      ? "border-blue-600 bg-blue-50 text-blue-700"
-                      : "border-gray-200 bg-white text-gray-700 hover:border-gray-300"
-                  }`}
+                  className={`py-3 px-4 rounded-lg border-2 font-medium transition-all ${selectedMethod === method
+                    ? "border-blue-600 bg-blue-50 text-blue-700"
+                    : "border-gray-200 bg-white text-gray-700 hover:border-gray-300"
+                    }`}
                 >
                   {method}
                 </button>
@@ -537,7 +538,7 @@ const AddOfflineDonationModal = ({ isOpen, onClose, onAdd }) => {
 };
 
 // ==================== DETAILS MODAL ====================
-const OfflineDonationDetailsModal = ({ isOpen, onClose, donation }) => {
+const OfflineDonationDetailsModal = ({ isOpen, onClose, donation, onApprove }) => {
   if (!isOpen || !donation) return null;
 
   const formatDate = (dateString) => {
@@ -549,7 +550,9 @@ const OfflineDonationDetailsModal = ({ isOpen, onClose, donation }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black/20 backdrop-blur-sm  flex items-center justify-center z-50 p-4"
+     onClick={onClose}
+    >
       <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between">
           <h3 className="text-lg font-semibold text-gray-900">
@@ -557,7 +560,7 @@ const OfflineDonationDetailsModal = ({ isOpen, onClose, donation }) => {
           </h3>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className="text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -710,21 +713,35 @@ const OfflineDonationDetailsModal = ({ isOpen, onClose, donation }) => {
           )}
         </div>
 
-        <div className="border-t px-6 py-4">
+        <div className="border-t px-6 py-4 flex flex-col sm:flex-row gap-3 sm:justify-end">
           <button
             onClick={onClose}
-            className="w-full px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+            className="w-full sm:w-auto px-4 py-2 cursor-pointer bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
           >
             Close
           </button>
+
+          {donation.status === "pending" && (
+            <button
+              onClick={() => {
+                onApprove(donation.id);
+                onClose();
+              }}
+              className="w-full sm:w-auto px-4 py-2 cursor-pointer bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center justify-center gap-2"
+            >
+              <CheckCircle className="w-4 h-4" />
+              Approve Donation
+            </button>
+          )}
         </div>
+
       </div>
     </div>
   );
 };
 
 // ==================== TABLE COMPONENT ====================
-const OfflineDonationTable = ({ donations, onView, onApprove, onReject }) => {
+const OfflineDonationTable = ({ donations, onView, onApprove }) => {
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString("en-IN", {
       day: "2-digit",
@@ -801,29 +818,11 @@ const OfflineDonationTable = ({ donations, onView, onApprove, onReject }) => {
                   <div className="flex items-center justify-end gap-2">
                     <button
                       onClick={() => onView(donation)}
-                      className="text-blue-600 hover:text-blue-900 transition-colors"
+                      className="text-blue-600 hover:text-blue-900 transition-colors cursor-pointer"
                       title="View Details"
                     >
                       <Eye className="w-4 h-4" />
                     </button>
-                    {donation.status === "pending" && (
-                      <>
-                        <button
-                          onClick={() => onApprove(donation.id)}
-                          className="text-green-600 hover:text-green-900 transition-colors"
-                          title="Approve"
-                        >
-                          <CheckCircle className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => onReject(donation.id)}
-                          className="text-red-600 hover:text-red-900 transition-colors"
-                          title="Reject"
-                        >
-                          <XCircle className="w-4 h-4" />
-                        </button>
-                      </>
-                    )}
                   </div>
                 </td>
               </tr>
@@ -882,28 +881,11 @@ const OfflineDonationTable = ({ donations, onView, onApprove, onReject }) => {
             <div className="flex items-center gap-2 pt-2 border-t border-gray-100">
               <button
                 onClick={() => onView(donation)}
-                className="flex-1 px-3 py-2 text-sm text-blue-600 border border-blue-600 rounded-lg hover:bg-blue-50 transition-colors flex items-center justify-center gap-1"
+                className="flex-1 px-3 py-2 text-sm text-blue-600 border border-blue-600 rounded-lg hover:bg-blue-50 transition-colors flex items-center justify-center gap-1 cursor-pointer"
               >
                 <Eye className="w-4 h-4" />
                 View
               </button>
-              {donation.status === "pending" && (
-                <>
-                  <button
-                    onClick={() => onApprove(donation.id)}
-                    className="flex-1 px-3 py-2 text-sm text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-1"
-                  >
-                    <CheckCircle className="w-4 h-4" />
-                    Approve
-                  </button>
-                  <button
-                    onClick={() => onReject(donation.id)}
-                    className="px-3 py-2 text-sm text-red-600 border border-red-600 rounded-lg hover:bg-red-50 transition-colors"
-                  >
-                    <XCircle className="w-4 h-4" />
-                  </button>
-                </>
-              )}
             </div>
           </div>
         ))}
@@ -925,7 +907,6 @@ export default function OfflineDonationPage() {
       total: donations.length,
       pending: donations.filter((d) => d.status === "pending").length,
       approved: donations.filter((d) => d.status === "approved").length,
-      rejected: donations.filter((d) => d.status === "rejected").length,
     };
   }, [donations]);
 
@@ -948,12 +929,6 @@ export default function OfflineDonationPage() {
     );
   };
 
-  const handleReject = (id) => {
-    setDonations((prev) =>
-      prev.map((d) => (d.id === id ? { ...d, status: "rejected" } : d))
-    );
-  };
-
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -961,7 +936,7 @@ export default function OfflineDonationPage() {
         <div className="mb-8">
           <button
             onClick={() => window.history.back()}
-            className="flex items-center text-gray-600 hover:text-gray-900 mb-4 transition-colors"
+            className="flex items-center cursor-pointer text-gray-600 hover:text-gray-900 mb-4 transition-colors"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back
@@ -977,7 +952,7 @@ export default function OfflineDonationPage() {
             </div>
             <button
               onClick={() => setIsAddModalOpen(true)}
-              className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
+              className="flex items-center backdrop:blur-sm px-4 py-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-700 transition-colors cursor-pointer shadow-sm"
             >
               <Plus className="w-5 h-5 mr-2" />
               Add Offline Donation
@@ -1030,20 +1005,6 @@ export default function OfflineDonationPage() {
               </div>
             </div>
           </div>
-
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Rejected</p>
-                <p className="text-2xl font-bold text-red-600 mt-1">
-                  {stats.rejected}
-                </p>
-              </div>
-              <div className="p-3 bg-red-100 rounded-lg">
-                <XCircle className="w-6 h-6 text-red-600" />
-              </div>
-            </div>
-          </div>
         </div>
 
         {/* Table */}
@@ -1059,7 +1020,6 @@ export default function OfflineDonationPage() {
                 donations={donations}
                 onView={handleViewDetails}
                 onApprove={handleApprove}
-                onReject={handleReject}
               />
             ) : (
               <div className="text-center py-12">
@@ -1088,6 +1048,7 @@ export default function OfflineDonationPage() {
         isOpen={isDetailsModalOpen}
         onClose={() => setIsDetailsModalOpen(false)}
         donation={selectedDonation}
+        onApprove={handleApprove}
       />
     </div>
   );

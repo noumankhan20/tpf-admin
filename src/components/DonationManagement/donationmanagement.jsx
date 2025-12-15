@@ -1,6 +1,6 @@
 "use client"
 import { useState, useMemo } from 'react';
-import { Search, ChevronDown, Eye, X, Filter, Menu, ArrowLeft } from 'lucide-react';
+import { Search, ChevronDown, Eye, X, Filter, Menu, ArrowRight } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import FilterModal from '../lib/filters';
 // Mock donation data
@@ -446,10 +446,14 @@ export default function DonationManagement() {
                             ₹{(mockDonations.reduce((sum, d) => sum + d.amount, 0) / 1000).toFixed(0)}k
                         </p>
                     </div>
-                    <div 
-                          onClick={() => router.push('/donation-management/offline-donation')}
-                    className="bg-white rounded-lg cursor-pointer shadow p-3 sm:p-6 col-span-2 lg:col-span-1">
+                    <div
+                        onClick={() => router.push('/donation-management/offline-donation')}
+                        className="bg-white rounded-lg cursor-pointer shadow p-3 sm:p-6 col-span-2 lg:col-span-1">
                         <p className="text-xs sm:text-sm font-medium text-gray-600">Offline Donations</p>
+                        <p className="mt-1 flex items-center gap-1 text-xs sm:text-sm font-medium text-gray-400">
+                            <span>Click here to view Offline Donations</span>
+                            <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4" />
+                        </p>
                         <p className="mt-1 sm:mt-2 text-xl sm:text-3xl font-bold text-orange-500">{mockDonations.length - 1}
                         </p>
                     </div>
