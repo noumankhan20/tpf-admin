@@ -64,11 +64,13 @@ export default function SelectPanel() {
   const role = admin?.role;
   const username = admin?.username;
 
-  useEffect(() => {
-    if (!admin) {
-      router.push("/");
-    }
-  }, [admin]);
+ useEffect(() => {
+  if (!mounted) return;     // ⬅ wait for hydration
+  if (!admin) {
+    router.push("/");
+  }
+}, [mounted, admin]);
+
 
   const allowedModuleIds = ROLE_PERMISSIONS?.[role] ?? [];
   const allowedModules = useMemo(() =>

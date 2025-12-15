@@ -1,15 +1,21 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Eye, EyeOff, User, Lock, AlertCircle } from 'lucide-react';
 import { useLoginAdminMutation } from '@/utils/slices/adminApiSlice';
 import { useRouter } from 'next/navigation';
 import { ToastContainer, toast } from 'react-toastify';
+import { useDispatch } from 'react-redux';
+import { setAdminCredentials } from '@/utils/slices/adminAuthSlice';
+import { useLazyGetAdminMeQuery } from '@/utils/slices/adminApiSlice';
+
 
 export default function AdminLogin() {
   const router = useRouter();
   const [loginAdmin, { isLoading }] = useLoginAdminMutation();
+  const [getAdminMe] = useLazyGetAdminMeQuery();
 
+  const dispatch = useDispatch();
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [formData, setFormData] = useState({
@@ -36,13 +42,15 @@ export default function AdminLogin() {
     }
 
     try {
+
       const res = await loginAdmin({
         username: formData.email,
         password: formData.password
       }).unwrap();
 
       if (res?.admin) {
-        toast.success('Login successful!');
+        dispatch(setAdminCredentials(res.admin)); // ✅ REQUIRED
+        toast.success("Salam from TPF!");
         router.push("/select-portal");
       }
 
@@ -53,11 +61,29 @@ export default function AdminLogin() {
       toast.error(errorMessage);
     }
   };
-  
+
+  useEffect(() => {
+  const checkExistingSession = async () => {
+    try {
+      const res = await getAdminMe().unwrap();
+
+      if (res?.admin) {
+        dispatch(setAdminCredentials(res.admin));
+        router.replace("/select-portal"); // ⬅ redirect if already logged in
+      }
+    } catch (err) {
+      // No valid session → stay on login page
+    }
+  };
+
+  checkExistingSession();
+}, []);
+
+
   return (
     <div className="min-h-screen w-full flex items-center justify-center p-4 bg-gradient-to-br from-gray-50 via-emerald-50/30 to-gray-50 relative overflow-hidden">
       <ToastContainer position="top-right" autoClose={3000} />
-      
+
       {/* Subtle Background Pattern */}
       <div className="absolute inset-0 opacity-40">
         <div className="absolute top-0 left-0 w-96 h-96 bg-emerald-100 rounded-full filter blur-3xl"></div>
@@ -70,14 +96,14 @@ export default function AdminLogin() {
         <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
           <defs>
             <pattern id="islamic-pattern" x="0" y="0" width="100" height="100" patternUnits="userSpaceOnUse">
-              <path d="M50 0 L75 25 L50 50 L25 25 Z M50 50 L75 75 L50 100 L25 75 Z M0 50 L25 75 L0 100 M100 50 L75 75 L100 100 M0 0 L25 25 L0 50 M100 0 L75 25 L100 50" 
-                    stroke="#10b981" 
-                    strokeWidth="1" 
-                    fill="none"/>
-              <circle cx="50" cy="50" r="15" stroke="#10b981" strokeWidth="1" fill="none"/>
+              <path d="M50 0 L75 25 L50 50 L25 25 Z M50 50 L75 75 L50 100 L25 75 Z M0 50 L25 75 L0 100 M100 50 L75 75 L100 100 M0 0 L25 25 L0 50 M100 0 L75 25 L100 50"
+                stroke="#10b981"
+                strokeWidth="1"
+                fill="none" />
+              <circle cx="50" cy="50" r="15" stroke="#10b981" strokeWidth="1" fill="none" />
             </pattern>
           </defs>
-          <rect width="100%" height="100%" fill="url(#islamic-pattern)"/>
+          <rect width="100%" height="100%" fill="url(#islamic-pattern)" />
         </svg>
       </div>
 
@@ -87,7 +113,7 @@ export default function AdminLogin() {
           {/* Logo and Header */}
           <div className="text-center mb-6">
             {/* Assalamu Alaikum Greeting */}
-            
+
             <div className="inline-flex items-center justify-center w-14 h-14 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl mb-4 shadow-lg shadow-emerald-500/30">
               <img
                 src="/TPFAid-LogoDesign-3.svg"
@@ -96,15 +122,15 @@ export default function AdminLogin() {
               />
             </div>
             <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Admin Dashboard</h1>
-            
-           
+
+
             {/* Islamic Quote */}
             <div className="max-w-sm mx-auto mb-2">
               <p className="text-xs text-gray-500 italic leading-relaxed">
                 "Indeed, with hardship comes ease"
               </p>
             </div>
-            
+
             <p className="text-gray-600 text-sm">Please sign in to continue</p>
           </div>
 

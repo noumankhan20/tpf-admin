@@ -1,7 +1,12 @@
 import { createSlice } from "@reduxjs/toolkit";
 
+const storedAdmin =
+  typeof window !== "undefined"
+    ? localStorage.getItem("adminInfo")
+    : null;
+
 const initialState = {
-  adminInfo: null,
+  adminInfo: storedAdmin ? JSON.parse(storedAdmin) : null,
 };
 
 const adminAuthSlice = createSlice({
@@ -10,22 +15,12 @@ const adminAuthSlice = createSlice({
   reducers: {
     setAdminCredentials: (state, action) => {
       state.adminInfo = action.payload;
-
       if (typeof window !== "undefined") {
         localStorage.setItem("adminInfo", JSON.stringify(action.payload));
       }
     },
-
-    hydrateAdminFromStorage: (state) => {
-      if (typeof window !== "undefined") {
-        const stored = localStorage.getItem("adminInfo");
-        state.adminInfo = stored ? JSON.parse(stored) : null;
-      }
-    },
-
     logoutAdmin: (state) => {
       state.adminInfo = null;
-
       if (typeof window !== "undefined") {
         localStorage.removeItem("adminInfo");
       }
@@ -33,10 +28,5 @@ const adminAuthSlice = createSlice({
   },
 });
 
-export const {
-  setAdminCredentials,
-  hydrateAdminFromStorage,
-  logoutAdmin,
-} = adminAuthSlice.actions;
-
+export const { setAdminCredentials, logoutAdmin } = adminAuthSlice.actions;
 export default adminAuthSlice.reducer;

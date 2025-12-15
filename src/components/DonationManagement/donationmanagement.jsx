@@ -1,7 +1,8 @@
 "use client"
 import { useState, useMemo } from 'react';
-import { Search, ChevronDown, ChevronUp, Eye, X, Filter, Menu, ArrowLeft } from 'lucide-react';
+import { Search, ChevronDown, Eye, X, Filter, Menu, ArrowRight } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import FilterModal from '../lib/filters';
 // Mock donation data
 const mockDonations = [
     {
@@ -269,6 +270,7 @@ const Pagination = ({ currentPage, totalPages, onPageChange }) => {
 const DonationDetailsModal = ({ donation, onClose }) => {
     if (!donation) return null;
 
+
     return (
         <div
             className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm"
@@ -344,6 +346,7 @@ const DonationDetailsModal = ({ donation, onClose }) => {
     );
 };
 
+
 // Main Donation Management Component
 export default function DonationManagement() {
     const [searchQuery, setSearchQuery] = useState('');
@@ -352,32 +355,52 @@ export default function DonationManagement() {
     const [sortOrder, setSortOrder] = useState('desc');
     const [selectedDonation, setSelectedDonation] = useState(null);
     const [showFilters, setShowFilters] = useState(false);
+    const [showFilterModal, setShowFilterModal] = useState(false);
+    const [filters, setFilters] = useState({
+        startDate: '',
+        endDate: '',
+        minAmount: '',
+        maxAmount: '',
+    });
     const itemsPerPage = 10;
     const router = useRouter();
     // Filter and sort donations
     const filteredAndSortedDonations = useMemo(() => {
         let filtered = mockDonations.filter(donation => {
+            // 🔍 Search
             const query = searchQuery.toLowerCase();
-            return (
+            const matchesSearch =
                 donation.fullName.toLowerCase().includes(query) ||
                 donation.email.toLowerCase().includes(query) ||
-                donation.mobile.toLowerCase().includes(query)
-            );
+                donation.mobile.toLowerCase().includes(query);
+
+            // 📅 Date filter
+            const donationDate = new Date(donation.date);
+            const startDate = filters.startDate ? new Date(filters.startDate) : null;
+            const endDate = filters.endDate ? new Date(filters.endDate) : null;
+
+            const matchesDate =
+                (!startDate || donationDate >= startDate) &&
+                (!endDate || donationDate <= endDate);
+
+            // 💰 Amount filter
+            const matchesAmount =
+                (!filters.minAmount || donation.amount >= Number(filters.minAmount)) &&
+                (!filters.maxAmount || donation.amount <= Number(filters.maxAmount));
+
+            return matchesSearch && matchesDate && matchesAmount;
         });
 
+        // 🔃 Sorting
         filtered.sort((a, b) => {
-            let aVal = sortField === 'date' ? new Date(a.date) : a.amount;
-            let bVal = sortField === 'date' ? new Date(b.date) : b.amount;
-
-            if (sortOrder === 'asc') {
-                return aVal > bVal ? 1 : -1;
-            } else {
-                return aVal < bVal ? 1 : -1;
-            }
+            const aVal = sortField === 'date' ? new Date(a.date) : a.amount;
+            const bVal = sortField === 'date' ? new Date(b.date) : b.amount;
+            return sortOrder === 'asc' ? aVal - bVal : bVal - aVal;
         });
 
         return filtered;
-    }, [searchQuery, sortField, sortOrder]);
+    }, [searchQuery, sortField, sortOrder, filters]);
+
 
     // Pagination
     const totalPages = Math.ceil(filteredAndSortedDonations.length / itemsPerPage);
@@ -386,24 +409,7 @@ export default function DonationManagement() {
         currentPage * itemsPerPage
     );
 
-    const handleSort = (field) => {
-        if (sortField === field) {
-            setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
-        } else {
-            setSortField(field);
-            setSortOrder('desc');
-        }
-        setShowFilters(false);
-    };
-
-    const SortIcon = ({ field }) => {
-        if (sortField !== field) return <Filter className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-400" />;
-        return sortOrder === 'asc' ?
-            <ChevronUp className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-600" /> :
-            <ChevronDown className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-600" />;
-    };
-
-     return (
+    return (
         <div className="min-h-screen bg-gray-50">
             <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-8">
                 {/* Header */}
@@ -440,25 +446,15 @@ export default function DonationManagement() {
                             ₹{(mockDonations.reduce((sum, d) => sum + d.amount, 0) / 1000).toFixed(0)}k
                         </p>
                     </div>
-                    <div className="bg-white rounded-lg shadow p-3 sm:p-6 col-span-2 lg:col-span-1">
-                        <p className="text-xs sm:text-sm font-medium text-gray-600">Top Purpose</p>
-                        <p className="mt-1 sm:mt-2 text-base sm:text-xl font-bold text-emerald-600 truncate">
-                            {
-                                Object.entries(
-                                    mockDonations.reduce((acc, d) => {
-                                        acc[d.purpose] = (acc[d.purpose] || 0) + d.amount;
-                                        return acc;
-                                    }, {})
-                                ).sort((a, b) => b[1] - a[1])[0][0]
-                            }
+                    <div
+                        onClick={() => router.push('/donation-management/offline-donation')}
+                        className="bg-white rounded-lg cursor-pointer shadow p-3 sm:p-6 col-span-2 lg:col-span-1">
+                        <p className="text-xs sm:text-sm font-medium text-gray-600">Offline Donations</p>
+                        <p className="mt-1 flex items-center gap-1 text-xs sm:text-sm font-medium text-gray-400">
+                            <span>Click here to view Offline Donations</span>
+                            <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4" />
                         </p>
-                    </div>
-                    <div className="bg-white rounded-lg shadow p-3 sm:p-6 col-span-2 lg:col-span-1">
-                        <p className="text-xs sm:text-sm font-medium text-gray-600">Average Donation</p>
-                        <p className="mt-1 sm:mt-2 text-xl sm:text-3xl font-bold text-orange-500">
-                            ₹{Math.round(
-                                mockDonations.reduce((sum, d) => sum + d.amount, 0) / mockDonations.length
-                            ).toLocaleString()}
+                        <p className="mt-1 sm:mt-2 text-xl sm:text-3xl font-bold text-orange-500">{mockDonations.length - 1}
                         </p>
                     </div>
                 </div>
@@ -476,55 +472,15 @@ export default function DonationManagement() {
                             >
                                 <Menu className="w-5 h-5" />
                             </button>
-                        </div>
-                        
-                        {/* Desktop Filters */}
-                        <div className="hidden sm:flex gap-2">
                             <button
-                                onClick={() => handleSort('date')}
-                                className={`px-3 sm:px-4 py-2 rounded-lg border transition-colors flex items-center gap-2 text-sm sm:text-base ${sortField === 'date'
-                                    ? 'bg-emerald-50 border-emerald-500 text-emerald-700'
-                                    : 'border-gray-300 text-gray-700 hover:bg-gray-50 cursor-pointer'
-                                    }`}
+                                onClick={() => setShowFilterModal(true)}
+                                className="px-3 py-2 rounded-lg cursor-pointer border border-gray-300 text-gray-700 hover:bg-gray-50 flex items-center gap-2"
                             >
-                                Date <SortIcon field="date" />
+                                <Filter className="w-4 h-4" />
+                                <span className="hidden sm:inline">Filters</span>
                             </button>
-                            <button
-                                onClick={() => handleSort('amount')}
-                                className={`px-3 sm:px-4 py-2 rounded-lg border transition-colors flex items-center gap-2 text-sm sm:text-base ${sortField === 'amount'
-                                    ? 'bg-emerald-50 border-emerald-500 text-emerald-700'
-                                    : 'border-gray-300 text-gray-700 hover:bg-gray-50 cursor-pointer'
-                                    }`}
-                            >
-                                Amount <SortIcon field="amount" />
-                            </button>
-                        </div>
 
-                        {/* Mobile Filters Dropdown */}
-                        {showFilters && (
-                            <div className="sm:hidden flex flex-col gap-2 border-t border-gray-200 pt-3">
-                                <button
-                                    onClick={() => handleSort('date')}
-                                    className={`px-4 py-2.5 rounded-lg border transition-colors flex items-center justify-between text-sm ${sortField === 'date'
-                                        ? 'bg-emerald-50 border-emerald-500 text-emerald-700'
-                                        : 'border-gray-300 text-gray-700 active:bg-gray-50'
-                                        }`}
-                                >
-                                    <span>Sort by Date</span>
-                                    <SortIcon field="date" />
-                                </button>
-                                <button
-                                    onClick={() => handleSort('amount')}
-                                    className={`px-4 py-2.5 rounded-lg border transition-colors flex items-center justify-between text-sm ${sortField === 'amount'
-                                        ? 'bg-emerald-50 border-emerald-500 text-emerald-700'
-                                        : 'border-gray-300 text-gray-700 active:bg-gray-50'
-                                        }`}
-                                >
-                                    <span>Sort by Amount</span>
-                                    <SortIcon field="amount" />
-                                </button>
-                            </div>
-                        )}
+                        </div>
                     </div>
                 </div>
 
@@ -679,6 +635,19 @@ export default function DonationManagement() {
                     onClose={() => setSelectedDonation(null)}
                 />
             )}
+            {/* Filter Modal */}
+            {showFilterModal && (
+                <FilterModal
+                    filters={filters}
+                    setFilters={setFilters}
+                    onApply={() => {
+                        setCurrentPage(1);
+                        setShowFilterModal(false);
+                    }}
+                    onClose={() => setShowFilterModal(false)}
+                />
+            )}
+
         </div>
     );
 }
