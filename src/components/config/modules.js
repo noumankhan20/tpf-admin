@@ -38,12 +38,20 @@ export const MODULES = [
   { id: "photography", name: "Photography", icon: Bell, route: "/photography", category: "operations", desc: "Manage photography content" },
   { id: "social-media", name: "Social Media", icon: Bell, route: "/social-media", category: "people", desc: "Manage Social-Media content" },
   { id: "management", name: "TPF Management", icon: Users, route: "/tpf-management", category: "people", desc: "Manage TPF content" },
-   { 
-    id: "financial-aid-verify", 
-    name: "Financial Aid", 
-    icon: ShieldCheck, 
-    route: "/verify", 
+  {
+    id: "financial-aid-verify",
+    name: "Financial Aid",
+    icon: ShieldCheck,
+    route: "/verify",
     category: "verify-forms",
-    desc: "Verify financial aid forms" 
+    desc: "Verify financial aid forms"
+  },
+  {
+    id: "kyc-verify",
+    name: "KYC Verification",
+    icon: ShieldCheck,
+    route: "/verify/kyc",
+    category: "verify-forms",
+    desc: "Verify user KYC documents"
   },
 ];

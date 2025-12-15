@@ -18,6 +18,7 @@ export const ROLE_PERMISSIONS = {
     "social-media",
     "financial-aid-verify",
     "management",
+    "kyc-verify",
   ],
 
   "hr-admin": ["hr", "dms", "legal"],
@@ -28,5 +29,5 @@ export const ROLE_PERMISSIONS = {
   "documentation-admin": ["dms"],
   "legal-admin": ["legal"],
   "communication-admin": ["communication"]
-   
+
 };
