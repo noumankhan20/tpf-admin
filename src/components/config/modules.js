@@ -16,7 +16,8 @@ import {
   Scale,
   Globe,
   ShieldCheck,
-  HandHeart
+  HandHeart,
+  Book,
 } from "lucide-react";
 
 export const MODULES = [
@@ -42,14 +43,14 @@ export const MODULES = [
     id: "financial-aid-verify",
     name: "Financial Aid",
     icon: ShieldCheck,
-    route: "/verify",
+    route: "/verify/financial",
     category: "verify-forms",
     desc: "Verify financial aid forms"
   },
   {
     id: "kyc-verify",
     name: "KYC Verification",
-    icon: ShieldCheck,
+    icon: Book,
     route: "/verify/kyc",
     category: "verify-forms",
     desc: "Verify user KYC documents"

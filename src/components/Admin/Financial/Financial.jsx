@@ -28,7 +28,8 @@ import {
    ChevronsRight,
    Clock,
    TrendingUp,
-   X as XIcon
+   X as XIcon,
+   Printer
 } from 'lucide-react';
 import { useGetAllFormsQuery, useUpdateFormStatusMutation } from '@/utils/slices/financialAidApiSlice';
 
@@ -160,9 +161,45 @@ export default function FinancialAidVerifyPage() {
       debouncedSearch !== '',
    ].filter(Boolean).length;
 
+   const printStyles = `
+  @media print {
+    body * {
+      visibility: hidden;
+    }
+    #printable-form, #printable-form * {
+      visibility: visible;
+    }
+    #printable-form {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: auto;
+      background: white;
+      z-index: 9999;
+      padding: 0;
+      margin: 0;
+      overflow: visible;
+    }
+    /* Hide scrollbars/overflow on parent to prevent extra blank pages */
+    html, body {
+      overflow: visible !important;
+      height: auto !important;
+    }
+    .avoid-break {
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+    .no-print {
+      display: none !important;
+    }
+  }
+`;
+
    return (
       <div className="min-h-screen bg-gray-50 font-sans flex flex-col">
          {/* Header */}
+         <style>{printStyles}</style>
          <header className="flex items-center justify-between px-6 py-4 bg-white border-b border-gray-200 shrink-0 shadow-sm">
             <div className="flex items-center space-x-4">
                <button
@@ -493,7 +530,9 @@ export default function FinancialAidVerifyPage() {
                </div>
 
                {/* RIGHT: Details Column */}
-               <div className="lg:col-span-8 bg-white rounded-xl border border-gray-200 overflow-hidden flex flex-col relative shadow-sm">
+               <div
+                  id="printable-form"
+                  className="lg:col-span-8 bg-white rounded-xl border border-gray-200 overflow-hidden flex flex-col relative shadow-sm">
                   {selectedForm ? (
                      <div className="flex flex-col h-full">
                         {/* Detail Header */}
@@ -507,10 +546,17 @@ export default function FinancialAidVerifyPage() {
                                        {selectedForm.isOrganization ? 'Organization' : 'Individual'}
                                     </span>
                                     <span className="text-gray-600">ID: {selectedForm._id}</span>
+                                    <button
+                                       onClick={() => window.print()}
+                                       className="no-print p-2 hover:bg-gray-100 rounded-full text-gray-600 transition-colors"
+                                       title="Print Form"
+                                    >
+                                       <Printer size={20} />
+                                    </button>
                                  </div>
                               </div>
                               <div className="text-right">
-                                 <p className="text-sm text-gray-600 uppercase tracking-widest mb-1 font-semibold">Current Status</p>
+                                 <p className="text-sm text-gray-600 uppercase tracking-widest mb-5 font-semibold">Current Status</p>
                                  <Badge status={selectedForm.status} size="large" />
                               </div>
                            </div>
@@ -721,7 +767,7 @@ export default function FinancialAidVerifyPage() {
 
 function DetailSection({ title, icon, children }) {
    return (
-      <div className="bg-gray-50 rounded-xl p-5 border border-gray-200">
+      <div className="bg-gray-50 rounded-xl p-5 border border-gray-200 avoid-break">
          <div className="flex items-center gap-3 mb-6 border-b border-gray-200 pb-3">
             <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center shadow-sm">
                {icon}
