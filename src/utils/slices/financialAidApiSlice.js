@@ -2,10 +2,25 @@ import { apiSlice } from "./apiSlice";
 export const financialAidApiSlice = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
     getAllForms: builder.query({
-      query: ({ status, type } = {}) => {
+      query: ({
+        status,
+        formType,  // Changed from 'type' to 'formType'
+        search,
+        sortBy,
+        sortOrder,
+        page,
+        limit,
+        dateFilter
+      } = {}) => {
         const params = new URLSearchParams();
         if (status) params.append("status", status);
-        if (type) params.append("type", type);
+        if (formType) params.append("formType", formType);
+        if (search) params.append("search", search);
+        if (sortBy) params.append("sortBy", sortBy);
+        if (sortOrder) params.append("sortOrder", sortOrder);
+        if (page) params.append("page", page);
+        if (limit) params.append("limit", limit);
+        if (dateFilter) params.append("dateFilter", dateFilter);
         return `/admin/verify/forms?${params.toString()}`;
       },
       providesTags: ["FinancialAidForms"],
