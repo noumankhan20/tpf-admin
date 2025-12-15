@@ -19,6 +19,15 @@ export const adminApiSlice = apiSlice.injectEndpoints({
       },
     }),
 
+      getAdminMe: builder.query({
+      query: () => ({
+        url: "/adminAuth/me",
+        method: "GET",
+      }),
+    }),
+
+    
+
     logoutAdminApi: builder.mutation({
       query: () => ({
         url: "/adminAuth/logout",
@@ -39,4 +48,6 @@ export const adminApiSlice = apiSlice.injectEndpoints({
 export const {
   useLoginAdminMutation,
   useLogoutAdminApiMutation,
+  useGetAdminMeQuery,
+  useLazyGetAdminMeQuery
 } = adminApiSlice;

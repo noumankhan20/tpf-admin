@@ -1,17 +1,20 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Eye, EyeOff, User, Lock, AlertCircle } from 'lucide-react';
 import { useLoginAdminMutation } from '@/utils/slices/adminApiSlice';
 import { useRouter } from 'next/navigation';
 import { ToastContainer, toast } from 'react-toastify';
 import { useDispatch } from 'react-redux';
 import { setAdminCredentials } from '@/utils/slices/adminAuthSlice';
+import { useLazyGetAdminMeQuery } from '@/utils/slices/adminApiSlice';
 
 
 export default function AdminLogin() {
   const router = useRouter();
   const [loginAdmin, { isLoading }] = useLoginAdminMutation();
+  const [getAdminMe] = useLazyGetAdminMeQuery();
+
   const dispatch = useDispatch();
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
@@ -58,6 +61,24 @@ export default function AdminLogin() {
       toast.error(errorMessage);
     }
   };
+
+  useEffect(() => {
+  const checkExistingSession = async () => {
+    try {
+      const res = await getAdminMe().unwrap();
+
+      if (res?.admin) {
+        dispatch(setAdminCredentials(res.admin));
+        router.replace("/select-portal"); // ⬅ redirect if already logged in
+      }
+    } catch (err) {
+      // No valid session → stay on login page
+    }
+  };
+
+  checkExistingSession();
+}, []);
+
 
   return (
     <div className="min-h-screen w-full flex items-center justify-center p-4 bg-gradient-to-br from-gray-50 via-emerald-50/30 to-gray-50 relative overflow-hidden">
