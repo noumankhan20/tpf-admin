@@ -1,10 +1,11 @@
-import React from 'react'
 import AuditLogs from '@/components/AddAdmin/AuditLogs'
+
+import React from 'react'
 const page = () => {
   return (
     <div>
-        <AuditLogs />
-    </div>
+      <AuditLogs />
+      </div>
   )
 }
 
