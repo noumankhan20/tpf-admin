@@ -42,14 +42,14 @@ export const adminApiSlice = apiSlice.injectEndpoints({
       },
     }),
 
-       getAllAdmins: builder.query({
+    getAllAdmins: builder.query({
       query: () => ({
         url: "/adminAuth/getall", // The GET request for /getall
         method: "GET",
       }),
     }),
 
-      addAdmin: builder.mutation({
+    addAdmin: builder.mutation({
       query: (data) => ({
         url: "/adminAuth/add", // The POST request for /add
         method: "POST",
@@ -57,6 +57,19 @@ export const adminApiSlice = apiSlice.injectEndpoints({
       }),
     }),
 
+    disableAdmin: builder.mutation({
+      query: ({ id }) => ({
+        url: `/adminAuth/disable/${id}`, // Dynamic URL path with the id parameter
+        method: "PUT",
+      }),
+    }),
+
+    enableAdmin: builder.mutation({
+      query: ({ id }) => ({
+        url: `/adminAuth/enable/${id}`, // Dynamic URL path with the id parameter
+        method: "PUT",
+      }),
+    }),
 
   }),
 });
@@ -68,4 +81,6 @@ export const {
   useLazyGetAdminMeQuery,
   useAddAdminMutation,
   useGetAllAdminsQuery,
+  useDisableAdminMutation,
+  useEnableAdminMutation,
 } = adminApiSlice;
