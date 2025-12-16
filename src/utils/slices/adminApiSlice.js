@@ -10,23 +10,22 @@ export const adminApiSlice = apiSlice.injectEndpoints({
         body: data,
       }),
       async onQueryStarted(_, { dispatch, queryFulfilled }) {
-        try {
-          const { data } = await queryFulfilled;
-          dispatch(setAdminCredentials(data.admin));
-        } catch (err) {
-          console.error("Admin login error:", err);
-        }
+        const { data } = await queryFulfilled;
+
+        // ✅ Saves to Redux + localStorage
+        dispatch(setAdminCredentials(data.admin));
       },
     }),
 
-      getAdminMe: builder.query({
+
+    getAdminMe: builder.query({
       query: () => ({
         url: "/adminAuth/me",
         method: "GET",
       }),
     }),
 
-    
+
 
     logoutAdminApi: builder.mutation({
       query: () => ({

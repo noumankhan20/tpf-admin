@@ -2,18 +2,15 @@
 
 import { useEffect, useState } from 'react';
 import { Eye, EyeOff, User, Lock, AlertCircle } from 'lucide-react';
-import { useLoginAdminMutation } from '@/utils/slices/adminApiSlice';
+import { useLazyGetAdminMeQuery, useLoginAdminMutation } from '@/utils/slices/adminApiSlice';
 import { useRouter } from 'next/navigation';
 import { ToastContainer, toast } from 'react-toastify';
 import { useDispatch } from 'react-redux';
-import { setAdminCredentials } from '@/utils/slices/adminAuthSlice';
-import { useLazyGetAdminMeQuery } from '@/utils/slices/adminApiSlice';
 
 
 export default function AdminLogin() {
   const router = useRouter();
   const [loginAdmin, { isLoading }] = useLoginAdminMutation();
-  const [getAdminMe] = useLazyGetAdminMeQuery();
 
   const dispatch = useDispatch();
   const [showPassword, setShowPassword] = useState(false);
@@ -22,6 +19,23 @@ export default function AdminLogin() {
     email: '',
     password: ''
   });
+
+   const [getAdminMe] = useLazyGetAdminMeQuery();
+
+  useEffect(() => {
+    const checkExistingSession = async () => {
+      try {
+        const res = await getAdminMe().unwrap();
+        // ✅ Cookie valid → hydrate + redirect
+        dispatch(setAdminCredentials(res.admin));
+        router.replace("/select-portal");
+      } catch (err) {
+        // ❌ 401 → stay on login (do nothing)
+      }
+    };
+
+    checkExistingSession();
+  }, []);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -44,15 +58,16 @@ export default function AdminLogin() {
     try {
 
       const res = await loginAdmin({
-        username: formData.email,
+        email: formData.email,
         password: formData.password
       }).unwrap();
 
+
       if (res?.admin) {
-        dispatch(setAdminCredentials(res.admin)); // ✅ REQUIRED
         toast.success("Salam from TPF!");
         router.push("/select-portal");
       }
+
 
     } catch (err) {
       console.log("Login failed:", err);
@@ -62,22 +77,6 @@ export default function AdminLogin() {
     }
   };
 
-  useEffect(() => {
-  const checkExistingSession = async () => {
-    try {
-      const res = await getAdminMe().unwrap();
-
-      if (res?.admin) {
-        dispatch(setAdminCredentials(res.admin));
-        router.replace("/select-portal"); // ⬅ redirect if already logged in
-      }
-    } catch (err) {
-      // No valid session → stay on login page
-    }
-  };
-
-  checkExistingSession();
-}, []);
 
 
   return (

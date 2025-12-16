@@ -3,9 +3,13 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { MODULES } from "../config/modules";
-import { ROLE_PERMISSIONS } from "../config/permissions";
 import { useSelector } from 'react-redux';
-import { useLogoutAdminApiMutation } from '@/utils/slices/adminApiSlice';
+import {
+  useLogoutAdminApiMutation,
+  useLazyGetAdminMeQuery
+} from '@/utils/slices/adminApiSlice';
+
+
 import {
   LogOut,
   Search,
@@ -49,7 +53,9 @@ export default function SelectPanel() {
   const [hasSelectedCategory, setHasSelectedCategory] = useState(false);
   const [mounted, setMounted] = useState(false);
 
+
   const [logoutAdmin] = useLogoutAdminApiMutation();
+
   const router = useRouter();
 
   useEffect(() => {
@@ -60,25 +66,35 @@ export default function SelectPanel() {
     setMounted(true);
   }, []);
 
+
+
+
+
+
+
   const admin = useSelector((state) => state.adminAuth.adminInfo);
-  const role = admin?.role;
-  const username = admin?.username;
 
- useEffect(() => {
-  if (!mounted) return;     // ⬅ wait for hydration
-  if (!admin) {
-    router.push("/");
-  }
-}, [mounted, admin]);
+  const fullName = admin?.fullName || "";
+  const adminModules = admin?.modules || [];
 
 
-  const allowedModuleIds = ROLE_PERMISSIONS?.[role] ?? [];
-  const allowedModules = useMemo(() =>
-    MODULES.filter((mod) => allowedModuleIds.includes(mod.id)),
-    [allowedModuleIds]
-  );
 
-  const useCardView = allowedModules.length <= 4 && role !== "SUPERADMIN";
+
+  useEffect(() => {
+    if (!admin) {
+      router.replace("/");
+    }
+  }, [admin]);
+
+
+  const allowedModules = useMemo(() => {
+    return MODULES.filter((mod) => adminModules.includes(mod.id));
+  }, [adminModules]);
+
+
+
+  const useCardView = allowedModules.length <= 4;
+
 
   const filteredModules = useMemo(() =>
     allowedModules.filter((m) =>
@@ -106,12 +122,13 @@ export default function SelectPanel() {
   };
 
   const handleLogout = async () => {
-  try {
-    await logoutAdmin().unwrap();
-  } catch (err) {
-    console.error("Logout failed:", err);
-  }
-};
+    try {
+      await logoutAdmin().unwrap();
+    } finally {
+      router.replace("/");
+    }
+  };
+
 
   useEffect(() => {
     if (searchQuery) {
@@ -122,16 +139,16 @@ export default function SelectPanel() {
     }
   }, [searchQuery]);
 
-  if (!admin || !role) {
+  if (!admin || !mounted) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
-        </div>
+        <p>Loading...</p>
       </div>
     );
   }
+
+
+
   if (!mounted) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
@@ -145,10 +162,15 @@ export default function SelectPanel() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header isLoaded={isLoaded} handleLogout={handleLogout} username={username} role={role} />
+      <Header
+        isLoaded={isLoaded}
+        handleLogout={handleLogout}
+        fullName={fullName}
+      />
+
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Title isLoaded={isLoaded} role={role} totalModules={filteredModules.length} />
+        <Title isLoaded={isLoaded} totalModules={filteredModules.length} />
 
         {!useCardView && (
           <SearchBar
@@ -175,32 +197,23 @@ export default function SelectPanel() {
   );
 }
 
-function Header({ isLoaded, handleLogout, username, role }) {
+function Header({ isLoaded, handleLogout, fullName }) {
+
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const getInitials = (fullName) => {
+    if (!fullName) return "AD";
 
-  const getInitials = (name) => {
-    if (!name) return 'AD';
-    const parts = name.split(' ');
-    if (parts.length >= 2) {
-      return (parts[0][0] + parts[1][0]).toUpperCase();
-    }
-    return name.substring(0, 2).toUpperCase();
-  };
-
-  const getRoleBadgeColor = (role) => {
-    switch (role) {
-      case 'SUPERADMIN':
-        return 'bg-purple-100 text-purple-700';
-      case 'HR':
-        return 'bg-blue-100 text-blue-700';
-      case 'FINANCE':
-        return 'bg-amber-100 text-amber-700';
-      default:
-        return 'bg-gray-100 text-gray-700';
+    const parts = fullName.trim().split(" ");
+    if (parts.length === 1) {
+      return parts[0].substring(0, 2).toUpperCase();
     }
 
-
+    return (parts[0][0] + parts[1][0]).toUpperCase();
   };
+
+
+
+
 
   return (
     <header className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
@@ -216,26 +229,20 @@ function Header({ isLoaded, handleLogout, username, role }) {
           </div>
 
           <div className="flex items-center space-x-4">
-            <div className="hidden lg:flex items-center space-x-3 px-4 py-2 bg-gray-50 rounded-lg">
-              <KeyRound className="w-4 h-4 text-emerald-600" />
-              <div>
-                <p className="text-xs text-gray-500">Role</p>
-                <p className="text-sm font-semibold text-gray-900">{role}</p>
-              </div>
-            </div>
+
 
             <div className="relative">
               <button
                 onClick={() => setDropdownOpen(!dropdownOpen)}
                 className="flex items-center space-x-3 px-3 py-2 hover:bg-gray-50 rounded-lg transition-colors"
               >
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center text-white font-bold text-sm shadow-sm">
-                  {getInitials(username)}
+                <div className="w-10 h-10 rounded-full bg-emerald-600 flex items-center justify-center text-white font-bold">
+                  {getInitials(fullName)}
                 </div>
+
                 <div className="hidden sm:block text-left">
-                  <p className="text-sm font-semibold text-gray-900">{username || 'Admin'}</p>
-                  <p className={`text-xs font-medium px-2 py-0.5 rounded-full inline-block ${getRoleBadgeColor(role)}`}>
-                    {role}
+                  <p className="text-sm font-semibold text-gray-900">
+                    {fullName || "Admin"}
                   </p>
                 </div>
                 <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${dropdownOpen ? 'rotate-180' : ''}`} />
@@ -249,8 +256,7 @@ function Header({ isLoaded, handleLogout, username, role }) {
                   ></div>
                   <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-xl border border-gray-200 py-1 z-20">
                     <div className="px-4 py-3 border-b border-gray-100">
-                      <p className="text-sm font-semibold text-gray-900">{username || 'Admin User'}</p>
-                      <p className="text-xs text-gray-500 mt-0.5">Signed in as {role}</p>
+                      <p className="text-xs text-gray-500 mt-0.5">Signed in as {fullName} </p>
                     </div>
 
                     <div className="py-1">
@@ -273,7 +279,7 @@ function Header({ isLoaded, handleLogout, username, role }) {
   );
 }
 
-function Title({ isLoaded, role, totalModules }) {
+function Title({ isLoaded, totalModules }) {
   return (
     <div className="text-center mb-8">
       <div className="inline-flex items-center space-x-2 px-4 py-1.5 bg-emerald-100 rounded-full mb-4">
@@ -373,8 +379,8 @@ function ListView({
                     key={category.id}
                     onClick={() => toggleCategory(category.id)}
                     className={`w-full flex items-center justify-between px-3 py-3 sm:py-3.5 rounded-lg transition-colors duration-300 ease-out ${isOpen
-                        ? 'bg-emerald-50 text-emerald-700 font-semibold'
-                        : 'text-gray-700 hover:bg-gray-50'
+                      ? 'bg-emerald-50 text-emerald-700 font-semibold'
+                      : 'text-gray-700 hover:bg-gray-50'
                       }`}
                   >
                     <div className="flex items-center space-x-3 flex-1 overflow-hidden">
