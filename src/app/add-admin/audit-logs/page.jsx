@@ -1,5 +1,5 @@
 import React from 'react'
-import AuditLogs from '@/components/AddAdmin/Auditlogs'
+import AuditLogs from '../../../components/AddAdmin/Auditlogs'
 const page = () => {
   return (
     <div>
