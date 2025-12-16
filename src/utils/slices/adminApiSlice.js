@@ -41,6 +41,23 @@ export const adminApiSlice = apiSlice.injectEndpoints({
         }
       },
     }),
+
+       getAllAdmins: builder.query({
+      query: () => ({
+        url: "/adminAuth/getall", // The GET request for /getall
+        method: "GET",
+      }),
+    }),
+
+      addAdmin: builder.mutation({
+      query: (data) => ({
+        url: "/adminAuth/add", // The POST request for /add
+        method: "POST",
+        body: data,
+      }),
+    }),
+
+
   }),
 });
 
@@ -48,5 +65,7 @@ export const {
   useLoginAdminMutation,
   useLogoutAdminApiMutation,
   useGetAdminMeQuery,
-  useLazyGetAdminMeQuery
+  useLazyGetAdminMeQuery,
+  useAddAdminMutation,
+  useGetAllAdminsQuery,
 } = adminApiSlice;
