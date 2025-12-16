@@ -187,7 +187,7 @@ const AdminManagement = () => {
                         {/* RIGHT BUTTONS */}
                         <div className="absolute right-0 top-1/2 -translate-y-1/2 flex gap-3">
                             <button
-                                onClick={() => router.push("/add-admin/audit-logs")}
+                                onClick={() => router.push("/add-admin/auditlogs")}
                                 className="bg-emerald-700 hover:bg-emerald-800 text-white px-4 py-3 rounded-xl shadow-md transition-all flex items-center gap-2 text-sm font-medium"
                             >
                                 Audit Logs
