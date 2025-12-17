@@ -290,7 +290,7 @@ const AdminManagement = () => {
                                 <div className="flex gap-2">
                                     <button
                                         onClick={() => router.push("/add-admin/auditlogs")}
-                                        className="bg-emerald-600 hover:bg-emerald-700 text-white p-2 rounded-xl shadow-md transition-all"
+                                        className="bg-emerald-500 hover:bg-emerald-700 text-white p-2 rounded-xl shadow-md transition-all"
                                         title="Audit Logs"
                                     >
                                         <Activity className="w-5 h-5" />
@@ -298,7 +298,7 @@ const AdminManagement = () => {
 
                                     <button
                                         onClick={() => setIsModalOpen(true)}
-                                        className="bg-emerald-700 hover:bg-emerald-800 text-white p-2 rounded-xl shadow-md transition-all"
+                                        className="bg-emerald-500 hover:bg-emerald-700 text-white p-2 rounded-xl shadow-md transition-all"
                                         title="Add Admin"
                                     >
                                         <Plus className="w-5 h-5" />
@@ -343,7 +343,7 @@ const AdminManagement = () => {
                             <div className="absolute right-0 top-1/2 -translate-y-1/2 flex gap-3">
                                 <button
                                     onClick={() => router.push("/add-admin/auditlogs")}
-                                    className="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-3 rounded-xl shadow-md transition-all flex items-center gap-2 text-sm font-medium"
+                                    className="bg-emerald-500 hover:bg-emerald-700 text-white px-5 py-3 rounded-xl shadow-md transition-all flex items-center gap-2 text-sm font-medium"
                                 >
                                     <Activity className="w-5 h-5" />
                                     Audit Logs
@@ -351,7 +351,7 @@ const AdminManagement = () => {
 
                                 <button
                                     onClick={() => setIsModalOpen(true)}
-                                    className="bg-emerald-700 hover:bg-emerald-800 text-white px-5 py-3 rounded-xl shadow-md transition-all flex items-center gap-2 text-sm font-medium"
+                                    className="bg-emerald-500 hover:bg-emerald-700 text-white px-5 py-3 rounded-xl shadow-md transition-all flex items-center gap-2 text-sm font-medium"
                                 >
                                     <Plus className="w-5 h-5" />
                                     Add Admin
