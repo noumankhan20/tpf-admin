@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect, useRef } from 'react';
-import { Camera, Upload, MapPin, Calendar, CheckCircle, XCircle, Bell, ArrowLeft, Eye, Download, AlertCircle, Clock, UserCheck, FileText, ImageIcon, Trash2, MessageSquare, ChevronRight, Home, Grid, Settings, User, Menu, X } from 'lucide-react';
+import { Camera, Upload, MapPin, Calendar, CheckCircle, XCircle, Bell, ArrowLeft, Eye, Download, AlertCircle, Clock, UserCheck, FileText, ImageIcon, Trash2, MessageSquare, ChevronRight, Home, Grid, Settings, Menu, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 // Mock Data
 const mockCampaigns = [
@@ -97,16 +97,36 @@ const formatDate = (dateStr) => {
     });
 };
 
+import { useGetAssignmentsQuery, useUploadPhotographyMutation, useCompleteTaskMutation } from '@/utils/slices/photographyApiSlice';
+
 // Photography Dashboard Component
-const PhotographyDashboard = ({ activeView, setActiveView, userRole, notifications }) => {
-    const [assignments, setAssignments] = useState(mockAssignments);
-    const [uploads, setUploads] = useState(mockUploads);
+const PhotographyDashboard = ({ activeView, setActiveView, userRole, assignments = [], onSelectTask }) => {
+    // We can assume assignments passed here are the ones we need
+    // For now, let's treat "assignments" as the pending notifications/tasks
+
+    // Derived state for dashboard filters
+    // Note: The original code had separate mock lists for assignments (pending visits) and uploads (reviews).
+    // The user request currently only focuses on "Fetch pending tasks" (/assignments).
+    // We will use the fetched assignments as the "Pending Assignments".
+    // For "Pending Review", "Approved", "Rejected", we don't have an API endpoint mentioned yet, 
+    // so we might have to leave them empty or use the mock uploads if we want to preserve UI structure, 
+    // but the instruction says "Fetch pending tasks".
+    // Let's assume the API returns a list of items that could be in different states, 
+    // OR we just focus on the "pending" ones for now.
+    // However, to keep the dashboard working, let's filter the passed assignments.
+
     const [activeFilter, setActiveFilter] = useState('notifications');
 
-    const pendingAssignments = assignments.filter(a => a.status === 'pending');
-    const approvedUploads = uploads.filter(u => u.status === 'approved');
-    const pendingUploads = uploads.filter(u => u.status === 'pending');
-    const rejectedUploads = uploads.filter(u => u.status === 'rejected');
+    // In a real app, you might fetch uploads separately. For this task, we focus on the pending assignments.
+    const pendingAssignments = assignments.filter(a => a.status === 'pending' || !a.status); // Default to pending if no status
+
+    // We'll keep mock data for other tabs to avoid breaking the UI completely, 
+    // or just show empty if not provided. 
+    // The user didn't provide an endpoint for "my uploads", so we'll leave those static or empty.
+    const uploads = [];
+    const approvedUploads = [];
+    const pendingUploads = [];
+    const rejectedUploads = [];
 
     return (
         <div className="space-y-6 md:space-y-8">
@@ -213,7 +233,7 @@ const PhotographyDashboard = ({ activeView, setActiveView, userRole, notificatio
 
                 <div className="p-4 md:p-6 space-y-4">
                     {/* Notifications (Pending Assignments) */}
-                    {activeFilter === 'notifications' && notifications.map((notification, index) => (
+                    {activeFilter === 'notifications' && assignments.map((notification, index) => (
                         <div key={index} className="flex flex-col md:flex-row md:items-start gap-4 p-4 bg-blue-50 rounded-lg border border-blue-100">
                             <div className="w-8 h-8 md:w-10 md:h-10 bg-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
                                 <UserCheck className="w-4 h-4 md:w-5 md:h-5 text-white" />
@@ -238,7 +258,10 @@ const PhotographyDashboard = ({ activeView, setActiveView, userRole, notificatio
                                 </div>
                             </div>
                             <button
-                                onClick={() => setActiveView('upload')}
+                                onClick={() => {
+                                    onSelectTask(notification);
+                                    setActiveView('upload');
+                                }}
                                 className="w-full md:w-auto bg-blue-600 text-white px-4 py-2 rounded-lg text-xs md:text-sm font-medium hover:bg-blue-700 transition-colors flex-shrink-0"
                             >
                                 Start Upload
@@ -347,7 +370,7 @@ const PhotographyDashboard = ({ activeView, setActiveView, userRole, notificatio
                     ))}
 
                     {/* Empty States */}
-                    {activeFilter === 'notifications' && notifications.length === 0 && (
+                    {activeFilter === 'notifications' && assignments.length === 0 && (
                         <div className="text-center py-8">
                             <Bell className="w-12 h-12 text-gray-300 mx-auto mb-3" />
                             <p className="text-gray-500">No new assignments at the moment</p>
@@ -381,27 +404,27 @@ const PhotographyDashboard = ({ activeView, setActiveView, userRole, notificatio
 };
 
 // Upload Component
-const UploadPage = ({ setActiveView }) => {
-    const [selectedCampaign, setSelectedCampaign] = useState('');
-    const [beneficiaryName, setBeneficiaryName] = useState('');
+const UploadPage = ({ setActiveView, selectedTask, assignments, onTaskSelect }) => {
+    // We derive state from selectedTask to keep everything in sync
+    const [beneficiaryName, setBeneficiaryName] = useState(selectedTask?.beneficiaryName || '');
     const [notes, setNotes] = useState('');
-    const [location, setLocation] = useState('');
+    // Use 'address' from assignment data, or fallback
+    const [location, setLocation] = useState(selectedTask?.address || '');
     const [images, setImages] = useState([]);
     const [dragOver, setDragOver] = useState(false);
-    const [uploading, setUploading] = useState(false);
-    const [uploadProgress, setUploadProgress] = useState(0);
-    const fileInputRef = useRef(null);
 
+    const fileInputRef = useRef(null);
+    const [uploadPhotography, { isLoading: uploading }] = useUploadPhotographyMutation();
+    const [completeTask, { isLoading: completing }] = useCompleteTaskMutation();
+
+    // When selectedTask changes, update the form fields
     useEffect(() => {
-        const editData = localStorage.getItem('editUpload');
-        if (editData) {
-            const parsed = JSON.parse(editData);
-            setSelectedCampaign(parsed.campaignName);
-            setBeneficiaryName(parsed.beneficiaryName);
-            setNotes(parsed.notes);
-            localStorage.removeItem('editUpload');
+        if (selectedTask) {
+            setBeneficiaryName(selectedTask.beneficiaryName || '');
+            setLocation(selectedTask.address || '');
+            // You can also reset notes/images here if desired when switching tasks
         }
-    }, []);
+    }, [selectedTask]);
 
     const handleDragOver = (e) => {
         e.preventDefault();
@@ -441,27 +464,41 @@ const UploadPage = ({ setActiveView }) => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!selectedCampaign || !beneficiaryName || images.length === 0) {
-            alert('Please fill all required fields and upload at least one image.');
+        if (!images.length) {
+            alert('Please upload at least one image.');
             return;
         }
 
-        setUploading(true);
-        setUploadProgress(0);
+        const taskId = selectedTask?.id || selectedTask?._id;
+        if (!taskId || !selectedTask?.campaignId) {
+            alert('Missing Task ID or Campaign ID.');
+            return;
+        }
 
-        // Simulate upload progress
-        const interval = setInterval(() => {
-            setUploadProgress(prev => {
-                if (prev >= 100) {
-                    clearInterval(interval);
-                    setUploading(false);
-                    alert('Images uploaded successfully! They will be reviewed by admin.');
-                    setActiveView('dashboard');
-                    return 100;
-                }
-                return prev + 10;
+        try {
+            const formData = new FormData();
+            formData.append('taskId', taskId);
+            formData.append('campaignId', selectedTask.campaignId);
+            formData.append('notes', notes);
+            if (location) formData.append('location', location);
+
+            images.forEach((img) => {
+                formData.append('images', img.file);
             });
-        }, 200);
+
+            await uploadPhotography({
+                formData,
+                campaignId: selectedTask.campaignId
+            }).unwrap();
+
+            await completeTask({ taskId }).unwrap();
+
+            alert('Images uploaded and task completed successfully!');
+            setActiveView('dashboard');
+        } catch (error) {
+            console.error('Submission failed:', error);
+            alert(error?.data?.message || 'Failed to submit. Please try again.');
+        }
     };
 
     return (
@@ -485,40 +522,20 @@ const UploadPage = ({ setActiveView }) => {
                     <h2 className="text-lg md:text-xl font-semibold text-gray-800">Upload Details</h2>
                 </div>
                 <form onSubmit={handleSubmit} className="p-4 md:p-6 space-y-6">
-                    {/* Campaign Selection */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Campaign <span className="text-red-500">*</span>
-                            </label>
-                            <select
-                                value={selectedCampaign}
-                                onChange={(e) => setSelectedCampaign(e.target.value)}
-                                className="w-full p-3 text-sm md:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                required
-                            >
-                                <option value="">Select Campaign</option>
-                                {mockCampaigns.map(campaign => (
-                                    <option key={campaign.id} value={campaign.name}>
-                                        {campaign.name} - {campaign.location}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Beneficiary Name <span className="text-red-500">*</span>
-                            </label>
-                            <input
-                                type="text"
-                                value={beneficiaryName}
-                                onChange={(e) => setBeneficiaryName(e.target.value)}
-                                className="w-full p-3 text-sm md:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                placeholder="Enter beneficiary name"
-                                required
-                            />
-                        </div>
+                    {/* Beneficiary Name */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Beneficiary Name <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                            type="text"
+                            value={beneficiaryName}
+                            onChange={(e) => setBeneficiaryName(e.target.value)}
+                            className="w-full p-3 text-sm md:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            placeholder="Enter beneficiary name"
+                            required
+                            readOnly // Optional: make readOnly if you don't want them editing API data
+                        />
                     </div>
 
                     {/* Location */}
@@ -617,22 +634,10 @@ const UploadPage = ({ setActiveView }) => {
                         />
                     </div>
 
-                    {/* Upload Progress */}
-                    {uploading && (
-                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                            <div className="flex items-center gap-3 mb-2">
-                                <Upload className="w-5 h-5 text-blue-600" />
-                                <span className="font-medium text-blue-800 text-sm md:text-base">Uploading images...</span>
-                            </div>
-                            <div className="w-full bg-blue-200 rounded-full h-2">
-                                <div
-                                    className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                                    style={{ width: `${uploadProgress}%` }}
-                                ></div>
-                            </div>
-                            <p className="text-xs md:text-sm text-blue-700 mt-1">{uploadProgress}% complete</p>
-                        </div>
-                    )}
+                    {/* Upload Progress (Simplified as RTK Query manages loading state) */}
+                    {/* If we wanted real progress, we'd need axios or similar with onUploadProgress, 
+                        but RTK Query doesn't provide progress percentage out of the box easily. 
+                        We'll stick to a loading spinner for now. */}
 
                     {/* Submit Button */}
                     <div className="flex flex-col sm:flex-row gap-3 md:gap-4 pt-4">
@@ -645,18 +650,18 @@ const UploadPage = ({ setActiveView }) => {
                         </button>
                         <button
                             type="submit"
-                            disabled={uploading}
+                            disabled={uploading || completing}
                             className="w-full sm:flex-1 bg-blue-600 text-white py-3 rounded-lg text-sm md:text-base font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                         >
-                            {uploading ? (
+                            {uploading || completing ? (
                                 <>
                                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                                    Uploading...
+                                    {uploading ? 'Processing...' : <><CheckCircle className="w-4 h-4 md:w-5 md:h-5" /> Submit</>}
                                 </>
                             ) : (
                                 <>
-                                    <Upload className="w-4 h-4 md:w-5 md:h-5" />
-                                    Submit for Review
+                                    <CheckCircle className="w-4 h-4 md:w-5 md:h-5" />
+                                    Submit
                                 </>
                             )}
                         </button>
@@ -671,148 +676,128 @@ const UploadPage = ({ setActiveView }) => {
 const PhotographyModule = () => {
     const [activeView, setActiveView] = useState('dashboard');
     const [userRole, setUserRole] = useState('photographer');
-    const [notifications] = useState(mockAssignments);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const [selectedTask, setSelectedTask] = useState(null);
+
+    // Fetch assignments from API
+    const { data: assignmentsData, isLoading, isError } = useGetAssignmentsQuery();
+
+    // Use fetched data or empty array
+    const assignments = assignmentsData?.data || [];
+
+    // Notifications count based on assignments
+    const pendingCount = assignments.length; // Assuming all returned are pending or we filter
+
     const router = useRouter();
     const navigation = [
-        { id: 'dashboard', name: 'Dashboard', icon: Home, roles: ['photographer', 'admin'] },
-        { id: 'upload', name: 'Upload', icon: Upload, roles: ['photographer'] },
+        // { id: 'dashboard', name: 'Dashboard', icon: Home, roles: ['photographer', 'admin'] },
+        // { id: 'upload', name: 'Upload', icon: Upload, roles: ['photographer'] },
     ];
 
     const visibleNavigation = navigation.filter(item => item.roles.includes(userRole));
 
     return (
         <div className="min-h-screen bg-gray-50">
-            {/* Navigation Header */}
-            <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-40">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex items-center justify-between h-16">
-                        {/* Logo */}
-                        <div className="flex items-center gap-2 md:gap-3">
-                            <div className="w-8 h-8 md:w-10 md:h-10 bg-blue-600 rounded-lg flex items-center justify-center">
-                                <Camera className="w-4 h-4 md:w-6 md:h-6 text-white" />
-                            </div>
-                            <div>
-                                <h1 className="text-base md:text-xl font-bold text-gray-800">NGO Photography</h1>
-                                <p className="text-xs text-gray-500 hidden sm:block">Impact Documentation</p>
-                            </div>
-                        </div>
+            {/* Minimalistic Navigation Header */}
+            <header className="flex items-center justify-between px-6 py-4 bg-white border-b border-gray-200 shrink-0 shadow-sm sticky top-0 z-40">
+                <div className="flex items-center gap-4">
+                    <button
+                        onClick={() => router.push('/select-portal')}
+                        className="p-2 hover:bg-gray-100 rounded-full transition"
+                    >
+                        <ArrowLeft className="w-5 h-5 text-gray-600" />
+                    </button>
+                    <h1 className="text-xl font-bold text-gray-800">Photography</h1>
+                </div>
 
-                        {/* Desktop Navigation */}
-                        {/* Desktop Navigation */}
-                        <nav className="hidden md:flex items-center space-x-1">
-                            {visibleNavigation.map(item => (
-                                <button
-                                    key={item.id}
-                                    onClick={() => setActiveView(item.id)}
-                                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeView === item.id
-                                        ? 'bg-blue-600 text-white'
-                                        : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
-                                        }`}
-                                >
-                                    <item.icon className="w-4 h-4" />
-                                    {item.name}
-                                </button>
-                            ))}
+                {/* Navigation Pills */}
+                <div className="hidden md:flex items-center bg-gray-100 rounded-lg p-1">
+                    {visibleNavigation.map((item) => (
+                        <button
+                            key={item.id}
+                            onClick={() => setActiveView(item.id)}
+                            className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all flex items-center gap-2 ${activeView === item.id
+                                ? 'bg-white text-gray-800 shadow-sm'
+                                : 'text-gray-500 hover:text-gray-700'
+                                }`}
+                        >
+                            <item.icon className="w-4 h-4" />
+                            {item.name}
+                        </button>
+                    ))}
+                </div>
+
+                <div className="flex items-center gap-4">
+                    <button className="p-2 hover:bg-gray-100 rounded-full transition relative">
+                        <Bell className="w-5 h-5 text-gray-600" />
+                        {pendingCount > 0 && (
+                            <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full"></span>
+                        )}
+                    </button>
+
+                    {/* <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
+                        <User className="w-4 h-4 text-gray-600" />
+                    </div> */}
+
+                    {/* Mobile Menu Toggle (Simplified) */}
+                    <button
+                        onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                        className="md:hidden p-2 text-gray-600 hover:text-gray-800"
+                    >
+                        {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+                    </button>
+                </div>
+            </header>
+
+            {/* Mobile Navigation Dropdown */}
+            {mobileMenuOpen && (
+                <div className="md:hidden px-4 py-3 border-b border-gray-200 bg-white sticky top-[73px] z-30 shadow-sm">
+                    <div className="flex flex-col space-y-1">
+                        {visibleNavigation.map(item => (
                             <button
-                                onClick={() => router.push("/select-portal")}
-                                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-100 transition-colors"
+                                key={item.id}
+                                onClick={() => {
+                                    setActiveView(item.id);
+                                    setMobileMenuOpen(false);
+                                }}
+                                className={`flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium transition-colors ${activeView === item.id
+                                    ? 'bg-blue-50 text-blue-600'
+                                    : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
+                                    }`}
                             >
-                                <ArrowLeft className="w-4 h-4" />
-                                Back
+                                <item.icon className="w-4 h-4" />
+                                {item.name}
                             </button>
-                        </nav>
-
-                        {/* Notifications & User Menu */}
-                        <div className="flex items-center gap-2 md:gap-3">
-                            {/* Notification Bell - Visible on all screens */}
-                            <div className="relative">
-                                <button className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors">
-                                    <Bell className="w-5 h-5" />
-                                    {notifications.length > 0 && (
-                                        <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-semibold">
-                                            {notifications.length}
-                                        </span>
-                                    )}
-                                </button>
-                            </div>
-
-                            {/* User Role + Profile - Desktop */}
-                            <div className="hidden md:flex items-center gap-2 border border-gray-300 rounded-lg px-3 py-1.5">
-                                <span className="text-sm">Photographer</span>
-                                <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
-                                    <User className="w-4 h-4 text-gray-600" />
-                                </div>
-                            </div>
-
-                            {/* User Profile Icon - Mobile */}
-                            <div className="md:hidden w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
-                                <User className="w-4 h-4 text-gray-600" />
-                            </div>
-
-                            {/* Mobile Menu Button */}
-                            <button
-                                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                                className="md:hidden p-2 text-gray-600 hover:text-gray-800"
-                            >
-                                {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-                            </button>
-                        </div>
+                        ))}
                     </div>
-                </div >
-
-                {/* Mobile Navigation */}
-                {
-                    mobileMenuOpen && (
-                        <div className="md:hidden px-4 pb-3 border-t border-gray-200 bg-white">
-                            <div className="flex flex-col space-y-1 pt-3">
-                                {visibleNavigation.map(item => (
-                                    <button
-                                        key={item.id}
-                                        onClick={() => {
-                                            setActiveView(item.id);
-                                            setMobileMenuOpen(false);
-                                        }}
-                                        className={`flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium transition-colors ${activeView === item.id
-                                            ? 'bg-blue-600 text-white'
-                                            : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
-                                            }`}
-                                    >
-                                        <item.icon className="w-4 h-4" />
-                                        {item.name}
-                                    </button>
-                                ))}
-                                <button
-                                    onClick={() => {
-                                        setMobileMenuOpen(false);
-                                        router.push("/select-portal");
-                                    }}
-                                    className="flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-100 transition-colors"
-                                >
-                                    <ArrowLeft className="w-4 h-4" />
-                                    Back
-                                </button>
-                            </div>
-                        </div>
-                    )
-                }
-            </header >
+                </div>
+            )}
 
             {/* Main Content */}
             < main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8" >
-                {activeView === 'dashboard' && (
+                {isLoading ? (
+                    <div className="flex justify-center py-20">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                    </div>
+                ) : activeView === 'dashboard' ? (
                     <PhotographyDashboard
                         activeView={activeView}
                         setActiveView={setActiveView}
                         userRole={userRole}
-                        notifications={notifications}
+                        assignments={assignments}
+                        onSelectTask={(task) => {
+                            setSelectedTask(task);
+                            setActiveView('upload');
+                        }}
                     />
-                )}
-                {
-                    activeView === 'upload' && (
-                        <UploadPage setActiveView={setActiveView} />
-                    )
-                }
+                ) : activeView === 'upload' ? (
+                    <UploadPage
+                        setActiveView={setActiveView}
+                        selectedTask={selectedTask}
+                        assignments={assignments}
+                        onTaskSelect={setSelectedTask}
+                    />
+                ) : null}
             </main >
         </div >
     );
