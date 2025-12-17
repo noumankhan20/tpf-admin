@@ -24,13 +24,14 @@ import {
 } from 'lucide-react';
 import AddAdminModal from "./AddAdminModal";
 import { ADMIN_MODULES } from '../config/adminRoles';
-import { useGetAllAdminsQuery, useAddAdminMutation, useDisableAdminMutation, useEnableAdminMutation } from '@/utils/slices/adminApiSlice';
+import { useGetAllAdminsQuery, useAddAdminMutation, useDisableAdminMutation, useEnableAdminMutation, useEditAdminMutation } from '@/utils/slices/adminApiSlice';
 
 const AdminManagement = () => {
     const {
         data,
         isLoading,
         isError,
+        refetch,
     } = useGetAllAdminsQuery();
     const adminData = data?.admins?.map((admin) => ({
         id: admin._id,
@@ -46,6 +47,8 @@ const AdminManagement = () => {
     const [addAdmin, { isLoading: isAddingAdmin }] = useAddAdminMutation();
     const [disableAdmin, { isLoading: isDisablingAdmin }] = useDisableAdminMutation();
     const [enableAdmin, { isLoading: isEnabingAdmin }] = useEnableAdminMutation();
+    const [editAdmin, { isLoading: isEditingAdmin }] = useEditAdminMutation();
+
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [roleFilter, setRoleFilter] = useState('All');
@@ -131,6 +134,7 @@ const AdminManagement = () => {
         try {
             await disableAdmin({ id: adminId }).unwrap();
             setConfirmDisableAdmin(null);
+            refetch();
             showAlert(`${admin.name} has been disabled successfully.`, 'success');
         } catch (error) {
             console.error('Error disabling admin:', error);
@@ -147,12 +151,60 @@ const AdminManagement = () => {
 
         try {
             await enableAdmin({ id: adminId }).unwrap();
+            refetch();
             showAlert(`${admin.name} has been enabled successfully.`, 'success');
         } catch (error) {
             console.error('Error enabling admin:', error);
             showAlert('Failed to enable admin. Please try again.', 'error');
         }
     };
+
+    const handleSaveChanges = async () => {
+        if (!selectedAdmin) return;
+        console.log("Selected Admin ID:", selectedAdmin?.id);
+        console.log("Data to send:", {
+            email: selectedAdmin?.email,
+            mobileNo: selectedAdmin?.mobileNo,
+            fullName: selectedAdmin?.name,
+            modules: selectedAdmin?.modules,
+            isSuperAdmin: selectedAdmin?.isSuperAdmin
+        });
+        // Create the updated data object matching backend expectations
+        const updatedAdminData = {
+            email: selectedAdmin.email,
+            mobileNo: selectedAdmin.mobileNo || '',
+            fullName: selectedAdmin.name, // Map frontend's 'name' to backend's 'fullName'
+            modules: selectedAdmin.modules || [],
+            isSuperAdmin: selectedAdmin.isSuperAdmin || false,
+        };
+
+        try {
+            // Send only the data object, adminId will be in URL
+            await editAdmin({
+                id: selectedAdmin.id, // This goes to URL params
+                data: updatedAdminData // This goes to request body
+            }).unwrap();
+            refetch();
+            showAlert('Admin updated successfully!', 'success');
+            closeEditModal();
+        } catch (error) {
+            console.error('Edit Admin Error:', error);
+            showAlert(error?.data?.message || 'Failed to update admin.', 'error');
+        }
+    };
+
+    // Handle toggle change for SuperAdmin
+  const handleSuperAdminToggle = () => {
+    setSelectedAdmin((prevState) => {
+      const newIsSuperAdmin = !prevState.isSuperAdmin;
+      return {
+        ...prevState,
+        isSuperAdmin: newIsSuperAdmin,
+        // If turned off, clear the modules array
+        modules: newIsSuperAdmin ? ADMIN_MODULES : [],
+      };
+    });
+  };
 
 
     if (isLoading) {
@@ -579,6 +631,7 @@ const AdminManagement = () => {
                         </div>
 
                         {/* Edit Modal */}
+                        {/* Edit Modal */}
                         {isEditModalOpen && selectedAdmin && (
                             <div
                                 className="fixed inset-0 bg-black/50 backdrop-blur-md flex items-center justify-center z-50 p-4 animate-in fade-in duration-200"
@@ -590,7 +643,7 @@ const AdminManagement = () => {
                                 >
                                     <div className="sticky top-0 bg-white z-10 flex items-center justify-between p-6 border-b border-gray-200">
                                         <div>
-                                            <h2 className="text-xl font-bold text-gray-900">Manage Roles</h2>
+                                            <h2 className="text-xl font-bold text-gray-900">Manage Admin</h2>
                                             <p className="text-sm text-gray-500 mt-0.5">{selectedAdmin.name}</p>
                                         </div>
                                         <button
@@ -602,6 +655,7 @@ const AdminManagement = () => {
                                     </div>
 
                                     <div className="p-6 space-y-4">
+                                        {/* Basic Information */}
                                         <div>
                                             <label className="block text-sm font-semibold text-gray-700 mb-3">Name</label>
                                             <input
@@ -626,55 +680,114 @@ const AdminManagement = () => {
                                             <label className="block text-sm font-semibold text-gray-700 mb-3">Phone Number</label>
                                             <input
                                                 type="text"
-                                                value={selectedAdmin.mobileNo || ''}  // Assuming phone number is part of the admin object
+                                                value={selectedAdmin.mobileNo || ''}
                                                 onChange={(e) => setSelectedAdmin({ ...selectedAdmin, mobileNo: e.target.value })}
                                                 className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500"
                                             />
                                         </div>
-                                        <label className="block text-sm font-semibold text-gray-700 mb-3">
-                                            Select Modules
-                                        </label>
 
-                                        <div className="grid grid-cols-1 gap-2 max-h-96 overflow-y-auto p-1">
-                                            {ADMIN_MODULES.map((role) => {
-                                                const isSelected = selectedAdmin.modules.includes(role);
-                                                return (
-                                                    <label
-                                                        key={role}
-                                                        className={`flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all ${isSelected
-                                                            ? 'border-emerald-300 bg-emerald-50'
-                                                            : 'border-gray-200 hover:border-gray-300 bg-white'
-                                                            }`}
+                                        {/* SuperAdmin Toggle */}
+                                        <div className="border-t border-gray-200 pt-4">
+                                            <div className="flex items-center justify-between mb-3">
+                                                <div>
+                                                    <label className="block text-sm font-semibold text-gray-700">Admin Type</label>
+                                                    <p className="text-xs text-gray-500 mt-0.5">
+                                                        SuperAdmins have full access to all modules
+                                                    </p>
+                                                </div>
+                                                <div className="flex items-center">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setSelectedAdmin({
+                                                            ...selectedAdmin,
+                                                            isSuperAdmin: !selectedAdmin.isSuperAdmin
+                                                        })}
+                                                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${selectedAdmin.isSuperAdmin ? 'bg-purple-600' : 'bg-gray-300'}`}
                                                     >
-                                                        <input
-                                                            type="checkbox"
-                                                            checked={isSelected}
-                                                            onChange={() => {
-                                                                if (isSelected) {
-                                                                    setSelectedAdmin({
-                                                                        ...selectedAdmin,
-                                                                        modules: selectedAdmin.modules.filter((r) => r !== role),
-                                                                    });
-                                                                } else {
-                                                                    setSelectedAdmin({
-                                                                        ...selectedAdmin,
-                                                                        modules: [...selectedAdmin.modules, role],
-                                                                    });
-                                                                }
-                                                            }}
-                                                            className="w-4 h-4 text-emerald-600 border-gray-300 rounded focus:ring-2 focus:ring-emerald-500 cursor-pointer"
+                                                        <span
+                                                            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${selectedAdmin.isSuperAdmin ? 'translate-x-6' : 'translate-x-1'}`}
                                                         />
-                                                        <span className={`text-sm flex-1 ${isSelected ? 'text-gray-900 font-medium' : 'text-gray-700'}`}>
-                                                            {role}
+                                                    </button>
+                                                </div>
+                                            </div>
+
+                                            {selectedAdmin.isSuperAdmin && (
+                                                <div className="bg-purple-50 border border-purple-200 rounded-lg p-3">
+                                                    <div className="flex items-center gap-2">
+                                                        <Shield className="w-4 h-4 text-purple-600" />
+                                                        <span className="text-sm font-medium text-purple-800">
+                                                            This admin will have full access to all system modules
                                                         </span>
-                                                    </label>
-                                                );
-                                            })}
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
 
-                                        {selectedAdmin.modules.length > 0 && (
-                                            <div className="text-sm text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg p-3">
-                                                <span className="font-semibold">{selectedAdmin.modules.length}</span> module{selectedAdmin.modules.length !== 1 ? 's' : ''} selected
+                                        {/* Modules Selection - Only show if not SuperAdmin */}
+                                        {!selectedAdmin.isSuperAdmin && (
+                                            <>
+                                                <label className="block text-sm font-semibold text-gray-700 mb-3">
+                                                    Select Modules
+                                                </label>
+
+                                                <div className="grid grid-cols-1 gap-2 max-h-96 overflow-y-auto p-1">
+                                                    {ADMIN_MODULES.map((role) => {
+                                                        const isSelected = selectedAdmin.modules.includes(role);
+                                                        return (
+                                                            <label
+                                                                key={role}
+                                                                className={`flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all ${isSelected
+                                                                    ? 'border-emerald-300 bg-emerald-50'
+                                                                    : 'border-gray-200 hover:border-gray-300 bg-white'
+                                                                    }`}
+                                                            >
+                                                                <input
+                                                                    type="checkbox"
+                                                                    checked={isSelected}
+                                                                    onChange={() => {
+                                                                        if (isSelected) {
+                                                                            setSelectedAdmin({
+                                                                                ...selectedAdmin,
+                                                                                modules: selectedAdmin.modules.filter((r) => r !== role),
+                                                                            });
+                                                                        } else {
+                                                                            setSelectedAdmin({
+                                                                                ...selectedAdmin,
+                                                                                modules: [...selectedAdmin.modules, role],
+                                                                            });
+                                                                        }
+                                                                    }}
+                                                                    className="w-4 h-4 text-emerald-600 border-gray-300 rounded focus:ring-2 focus:ring-emerald-500 cursor-pointer"
+                                                                />
+                                                                <span className={`text-sm flex-1 ${isSelected ? 'text-gray-900 font-medium' : 'text-gray-700'}`}>
+                                                                    {role}
+                                                                </span>
+                                                            </label>
+                                                        );
+                                                    })}
+                                                </div>
+
+                                                {selectedAdmin.modules.length > 0 && (
+                                                    <div className="text-sm text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg p-3">
+                                                        <span className="font-semibold">{selectedAdmin.modules.length}</span> module{selectedAdmin.modules.length !== 1 ? 's' : ''} selected
+                                                    </div>
+                                                )}
+                                            </>
+                                        )}
+
+                                        {selectedAdmin.isSuperAdmin && (
+                                            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                                                <div className="flex items-start gap-3">
+                                                    <div className="w-10 h-10 bg-gradient-to-br from-purple-600 to-purple-700 rounded-lg flex items-center justify-center shrink-0">
+                                                        <Shield className="w-5 h-5 text-white" />
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-sm font-semibold text-gray-900">SuperAdmin Access</p>
+                                                        <p className="text-xs text-gray-600 mt-1">
+                                                            When SuperAdmin is enabled, this admin will automatically have access to all modules and system functions.
+                                                        </p>
+                                                    </div>
+                                                </div>
                                             </div>
                                         )}
                                     </div>
@@ -690,10 +803,7 @@ const AdminManagement = () => {
                                             </button>
                                             <button
                                                 type="button"
-                                                onClick={() => {
-                                                    showAlert(`Roles updated for ${selectedAdmin.name}`, 'success');
-                                                    closeEditModal();
-                                                }}
+                                                onClick={handleSaveChanges}
                                                 className="flex-1 px-4 py-3 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white rounded-xl hover:from-emerald-700 hover:to-emerald-800 transition-all font-medium shadow-lg hover:shadow-xl"
                                             >
                                                 Save Changes

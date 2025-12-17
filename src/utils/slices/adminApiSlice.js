@@ -71,6 +71,14 @@ export const adminApiSlice = apiSlice.injectEndpoints({
       }),
     }),
 
+    editAdmin: builder.mutation({
+      query: ({ id,data }) => ({
+        url: `/adminAuth/edit/${id}`, // Dynamic URL path with the id parameter
+        method: "PUT",
+        body:data,
+      }),
+    }),
+
   }),
 });
 
@@ -83,4 +91,5 @@ export const {
   useGetAllAdminsQuery,
   useDisableAdminMutation,
   useEnableAdminMutation,
+  useEditAdminMutation,
 } = adminApiSlice;
