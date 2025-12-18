@@ -1,8 +1,8 @@
 "use client"
 import React, { useState } from 'react';
-import { AlertCircle, CheckCircle, FileText, MessageSquare, Users, TrendingUp, Clock, Shield, Receipt, Search, Filter, Eye, Trash2, Download, ChevronRight, ChevronDown, MoreVertical, Loader2, ArrowLeft, X, Menu, Edit, ExternalLink } from 'lucide-react';
+import { AlertCircle, CheckCircle, FileText, MessageSquare, Users, TrendingUp, Clock, Shield, Receipt, Search, Filter, Eye, Trash2, Download, ChevronRight, ChevronDown, MoreVertical, Loader2, ArrowLeft, X, Menu, Edit, ExternalLink, User } from 'lucide-react';
 import { useFetchCampaignsQuery } from '@/utils/slices/campaignSlice';
-
+import { useRouter } from 'next/navigation';
 export default function CampaignAdminDashboard() {
   const [view, setView] = useState('list');
   const [selectedCampaign, setSelectedCampaign] = useState(null);
@@ -11,7 +11,7 @@ export default function CampaignAdminDashboard() {
   const [expandedRow, setExpandedRow] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [limit] = useState(50);
-
+  const router = useRouter();
   const { data: apiResponse, isLoading, isError, error, refetch } = useFetchCampaignsQuery({
     page: currentPage,
     limit: limit
@@ -50,16 +50,16 @@ export default function CampaignAdminDashboard() {
     const beneficiaryName = campaign.beneficiaryName || '';
     const campaignId = campaign._id || '';
     const title = campaign.title || '';
-    
-    const matchesSearch = 
+
+    const matchesSearch =
       beneficiaryName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       campaignId.includes(searchQuery) ||
       title.toLowerCase().includes(searchQuery.toLowerCase());
 
     const matchesFilter = filterStatus === 'all' ? true :
       filterStatus === 'active' ? campaign.isActive :
-      filterStatus === 'urgent' ? campaign.isUrgent :
-      filterStatus === 'inactive' ? !campaign.isActive : true;
+        filterStatus === 'urgent' ? campaign.isUrgent :
+          filterStatus === 'inactive' ? !campaign.isActive : true;
 
     return matchesSearch && matchesFilter;
   });
@@ -122,7 +122,7 @@ export default function CampaignAdminDashboard() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
             <button
               onClick={() => setView('list')}
-              className="flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-emerald-600 mb-4 transition-colors group"
+              className="flex items-center cursor-pointer gap-2 text-sm font-medium text-gray-600 hover:text-emerald-600 mb-4 transition-colors group"
             >
               <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
               Back to Campaigns
@@ -363,33 +363,6 @@ export default function CampaignAdminDashboard() {
                   </div>
                 )}
               </div>
-
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5 sm:p-6 hover:shadow-md transition-shadow">
-                <h3 className="text-sm font-bold text-gray-900 mb-4">Quick Actions</h3>
-
-                <div className="space-y-3">
-                  {!campaign.isActive && (
-                    <button className="w-full py-3 px-4 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600 text-white text-sm font-semibold rounded-xl transition-all duration-200 shadow-sm hover:shadow-md transform hover:-translate-y-0.5">
-                      Activate Campaign
-                    </button>
-                  )}
-
-                  <button className="w-full py-3 px-4 bg-white hover:bg-gray-50 text-gray-700 text-sm font-semibold rounded-xl border border-gray-300 transition-all duration-200 flex items-center justify-center gap-2 group">
-                    <Edit className="w-4 h-4 group-hover:text-emerald-600 transition-colors" />
-                    Edit Campaign
-                  </button>
-
-                  <button className="w-full py-3 px-4 bg-white hover:bg-gray-50 text-gray-700 text-sm font-semibold rounded-xl border border-gray-300 transition-all duration-200 flex items-center justify-center gap-2 group">
-                    <ExternalLink className="w-4 h-4 group-hover:text-emerald-600 transition-colors" />
-                    Preview Page
-                  </button>
-
-                  <button className="w-full py-3 px-4 bg-white hover:bg-red-50 text-red-600 text-sm font-semibold rounded-xl border border-red-200 hover:border-red-300 transition-all duration-200 flex items-center justify-center gap-2 group">
-                    <Trash2 className="w-4 h-4" />
-                    Delete Campaign
-                  </button>
-                </div>
-              </div>
             </div>
           </div>
         </div>
@@ -401,19 +374,36 @@ export default function CampaignAdminDashboard() {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
       <div className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-          <div className="flex items-center justify-between flex-wrap gap-4">
-            <div>
-              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-2">Campaign Management</h1>
-              <p className="text-sm sm:text-base text-gray-500">Manage and track all donation campaigns</p>
+          <div className="relative flex items-center justify-between flex-wrap gap-4">
+            {/* Back Button (Left) */}
+            <button
+              onClick={() => router.push("/select-portal")}
+              className="flex items-center cursor-pointer gap-2 px-4 py-2 rounded-xl text-sm font-medium text-gray-600 hover:text-gray-800 hover:bg-white transition-all border border-gray-300 shadow-sm"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Back
+            </button>
+
+            {/* Center Heading */}
+            <div className="absolute left-1/2 -translate-x-1/2 text-center">
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-1">
+                Campaign Management
+              </h1>
+              <p className="text-sm sm:text-base text-gray-500">
+                Manage and track all donation campaigns
+              </p>
             </div>
+
+            {/* Refresh Button (Right) */}
             <button
               onClick={refetch}
-              className="px-4 sm:px-6 py-2.5 sm:py-3 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-xl transition-all duration-200 shadow-sm hover:shadow-md flex items-center gap-2 transform hover:-translate-y-0.5"
+              className="px-4 sm:px-6 py-2.5 sm:py-3 cursor-pointer bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-xl transition-all duration-200 shadow-sm hover:shadow-md flex items-center gap-2 transform hover:-translate-y-0.5"
             >
               <CheckCircle className="w-4 h-4" />
               <span className="hidden sm:inline">Refresh</span>
             </button>
           </div>
+
         </div>
       </div>
 
@@ -556,7 +546,7 @@ export default function CampaignAdminDashboard() {
                               setSelectedCampaign(campaign);
                               setView('detail');
                             }}
-                            className="p-2 text-gray-600 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all"
+                            className="p-2 text-gray-600 cursor-pointer hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all"
                             title="View Details"
                           >
                             <Eye className="w-4 h-4" />
