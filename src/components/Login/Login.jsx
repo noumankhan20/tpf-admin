@@ -2,15 +2,18 @@
 
 import { useEffect, useState } from 'react';
 import { Eye, EyeOff, User, Lock, AlertCircle } from 'lucide-react';
-import { useLazyGetAdminMeQuery, useLoginAdminMutation } from '@/utils/slices/adminApiSlice';
+import { useLoginAdminMutation } from '@/utils/slices/adminApiSlice';
 import { useRouter } from 'next/navigation';
 import { ToastContainer, toast } from 'react-toastify';
 import { useDispatch } from 'react-redux';
+import { useSelector } from "react-redux";
+
 
 
 export default function AdminLogin() {
   const router = useRouter();
   const [loginAdmin, { isLoading }] = useLoginAdminMutation();
+  const admin = useSelector((state) => state.adminAuth.adminInfo);
 
   const dispatch = useDispatch();
   const [showPassword, setShowPassword] = useState(false);
@@ -20,22 +23,13 @@ export default function AdminLogin() {
     password: ''
   });
 
-   const [getAdminMe] = useLazyGetAdminMeQuery();
-
   useEffect(() => {
-    const checkExistingSession = async () => {
-      try {
-        const res = await getAdminMe().unwrap();
-        // ✅ Cookie valid → hydrate + redirect
-        dispatch(setAdminCredentials(res.admin));
-        router.replace("/select-portal");
-      } catch (err) {
-        // ❌ 401 → stay on login (do nothing)
-      }
-    };
+    if (admin) {
+      router.replace("/select-portal");
+    }
+  }, [admin, router]);
 
-    checkExistingSession();
-  }, []);
+
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;

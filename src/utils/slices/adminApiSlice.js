@@ -27,20 +27,21 @@ export const adminApiSlice = apiSlice.injectEndpoints({
 
 
 
-    logoutAdminApi: builder.mutation({
-      query: () => ({
-        url: "/adminAuth/logout",
-        method: "POST",
-      }),
-      async onQueryStarted(_, { dispatch, queryFulfilled }) {
-        try {
-          await queryFulfilled;
-        } finally {
-          // Always clear local state, even if API fails
-          dispatch(logoutAdminAction());
-        }
-      },
-    }),
+ logoutAdminApi: builder.mutation({
+  query: () => ({
+    url: "/adminAuth/logout",
+    method: "POST",
+  }),
+  async onQueryStarted(_, { dispatch, queryFulfilled }) {
+    try {
+      await queryFulfilled;
+    } finally {
+      dispatch(logoutAdminAction());
+      dispatch(adminApiSlice.util.resetApiState()); // 🔥 REQUIRED
+    }
+  },
+}),
+
 
        getAllAdmins: builder.query({
       query: () => ({

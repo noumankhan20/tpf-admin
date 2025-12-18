@@ -9,11 +9,13 @@ import {
   setAdminCredentials,
   logoutAdmin,
 } from "@/utils/slices/adminAuthSlice";
+import { useRouter } from "next/navigation";
 import { adminApiSlice } from "@/utils/slices/adminApiSlice";
 
 function AdminBootstrap({ children }) {
   const dispatch = useDispatch();
   const pathname = usePathname();
+  const router = useRouter();
   const admin = useSelector(
     (state) => state.adminAuth.adminInfo
   );
@@ -30,11 +32,12 @@ function AdminBootstrap({ children }) {
     }
 
     // ❌ No localStorage → logout immediately
-    if (!admin) {
-      dispatch(logoutAdmin());
-      setReady(true);
-      return;
-    }
+  if (!admin) {
+    router.replace("/"); // ⛔ redirect to login
+    setReady(true);
+    return;
+  }
+
 
     // ✅ localStorage exists → verify cookie
     const validate = async () => {

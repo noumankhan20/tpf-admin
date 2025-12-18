@@ -66,18 +66,10 @@ export default function SelectPanel() {
     setMounted(true);
   }, []);
 
-
-
-
-
-
-
   const admin = useSelector((state) => state.adminAuth.adminInfo);
 
   const fullName = admin?.fullName || "";
   const adminModules = admin?.modules || [];
-
-
 
 
   useEffect(() => {
@@ -94,7 +86,6 @@ export default function SelectPanel() {
 
 
   const useCardView = allowedModules.length <= 4;
-
 
   const filteredModules = useMemo(() =>
     allowedModules.filter((m) =>
@@ -121,13 +112,11 @@ export default function SelectPanel() {
     });
   };
 
-  const handleLogout = async () => {
-    try {
-      await logoutAdmin().unwrap();
-    } finally {
-      router.replace("/");
-    }
-  };
+const handleLogout = async () => {
+  await logoutAdmin().unwrap();
+  window.location.href = "/";
+};
+
 
 
   useEffect(() => {
