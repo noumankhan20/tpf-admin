@@ -22,10 +22,10 @@ export const cmsApiSlice = apiSlice.injectEndpoints({
             ],
         }),
 
-        // Publish campaign (complete CMS task)
+        // Publish campaign (complete CMS task via generic task route)
         publishCampaign: builder.mutation({
             query: ({ taskId, campaignData }) => ({
-                url: `/cms/tasks/${taskId}/publish`,
+                url: `/workflow/tasks/${taskId}/complete`,
                 method: "POST",
                 body: campaignData,
             }),

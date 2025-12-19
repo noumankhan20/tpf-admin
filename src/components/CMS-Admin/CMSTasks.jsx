@@ -282,20 +282,39 @@ const PublishCampaignPage = ({ setActiveView, selectedTask }) => {
             return;
         }
 
+        try {
+            // Prepare campaign data for backend
+            const campaignData = {
+                title: formData.title,
+                organization: formData.organization,
+                about: formData.about,
+                category: formData.category,
+                targetAmount: Number(formData.targetAmount),
+                deadline: formData.deadline,
+                mediaType: formData.mediaType,
+                isUrgent: formData.isUrgent,
+                taxBenefits: formData.taxBenefits,
+                zakatVerified: formData.zakatVerified,
+                impactGoals: formData.impactGoals,
+                selectedMediaIds: selectedMedia.map(m => m.id),
+                // Using the first selected media as primary
+                imageUrl: selectedMedia[0]?.url,
+                videoUrl: selectedMedia[0]?.type === 'video' ? selectedMedia[0]?.url : null
+            };
 
-        // TODO: Implement actual API call to publish campaign
-        console.log('Publishing campaign with data:', {
-            ...formData,
-            selectedMedia,
-            taskId: selectedTask?.id || selectedTask?._id,
-            campaignId: selectedTask?.campaignId
-        });
+            const taskId = selectedTask?.id || selectedTask?._id;
 
-        // Simulate API call
-        setTimeout(() => {
+            await publishCampaign({
+                taskId,
+                campaignData
+            }).unwrap();
+
             alert('Campaign published successfully!');
             setActiveView('dashboard');
-        }, 2000);
+        } catch (error) {
+            console.error('Publish error:', error);
+            alert(error.data?.message || error.data?.error || 'Failed to publish campaign. Please try again.');
+        }
     };
 
     const downloadMedia = async (url, originalName) => {
