@@ -219,7 +219,7 @@ const PublishCampaignPage = ({ setActiveView, selectedTask }) => {
     const photographySubmissions = submissionsData?.data?.submissions?.flatMap(submission =>
         submission.files?.map((file, idx) => ({
             id: `${submission._id}-${idx}`,
-            url: process.env.NEXT_PUBLIC_BACKEND_API?.replace('/api', '') + file.url,
+            url: process.env.NEXT_PUBLIC_BACKEND_URL + file.url,
             type: file.type,
             uploadedAt: submission.uploadedAt,
             originalName: file.originalName
@@ -278,7 +278,6 @@ const PublishCampaignPage = ({ setActiveView, selectedTask }) => {
             return;
         }
 
-        setLoading(true);
 
         // TODO: Implement actual API call to publish campaign
         console.log('Publishing campaign with data:', {
@@ -291,7 +290,6 @@ const PublishCampaignPage = ({ setActiveView, selectedTask }) => {
         // Simulate API call
         setTimeout(() => {
             alert('Campaign published successfully!');
-            setLoading(false);
             setActiveView('dashboard');
         }, 2000);
     };
