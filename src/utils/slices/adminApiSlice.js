@@ -80,6 +80,22 @@ export const adminApiSlice = apiSlice.injectEndpoints({
       }),
     }),
 
+    getPermanentDonors: builder.query({
+    query: ({ planType, status } = {}) => {
+    const params = new URLSearchParams();
+
+    if (planType) params.append("planType", planType);
+    if (status) params.append("status", status);
+
+    return {
+      url: `/adminAuth/permanent-donors?${params.toString()}`,
+      method: "GET",
+    };
+  },
+}),
+
+
+
   }),
 });
 
@@ -93,4 +109,5 @@ export const {
   useDisableAdminMutation,
   useEnableAdminMutation,
   useEditAdminMutation,
+  useGetPermanentDonorsQuery,
 } = adminApiSlice;
