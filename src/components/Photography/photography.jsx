@@ -12,10 +12,10 @@ const formatDate = (dateStr) => {
     });
 };
 
-import { useGetAssignmentsQuery, useUploadPhotographyMutation, useCompleteTaskMutation } from '@/utils/slices/photographyApiSlice';
+import { useGetAssignmentsQuery, useGetCompletedAssignmentsQuery, useUploadPhotographyMutation, useCompleteTaskMutation } from '@/utils/slices/photographyApiSlice';
 
 // Photography Dashboard Component
-const PhotographyDashboard = ({ activeView, setActiveView, userRole, assignments = [], onSelectTask }) => {
+const PhotographyDashboard = ({ activeView, setActiveView, userRole, assignments = [], completedAssignments = [], onSelectTask }) => {
     // We can assume assignments passed here are the ones we need
     // For now, let's treat "assignments" as the pending notifications/tasks
 
@@ -33,8 +33,8 @@ const PhotographyDashboard = ({ activeView, setActiveView, userRole, assignments
     const [activeFilter, setActiveFilter] = useState('notifications');
 
     // In a real app, you might fetch uploads separately. For this task, we focus on the pending assignments.
-    const pendingAssignments = assignments.filter(a => a.status === 'pending' || !a.status); // Default to pending if no status
-const completedAssignments = assignments.filter(a => a.status === 'completed');
+    const pendingAssignments = assignments;
+    // completedAssignments is now passed as a prop
     // We'll keep mock data for other tabs to avoid breaking the UI completely, 
     // or just show empty if not provided. 
     // The user didn't provide an endpoint for "my uploads", so we'll leave those static or empty.
@@ -86,11 +86,11 @@ const completedAssignments = assignments.filter(a => a.status === 'completed');
                     <p className="text-xs text-gray-600 mt-1">Awaiting field visits</p>
                 </div>
 
-             
+
 
                 <div
                     onClick={() => setActiveFilter('completed')}
-                    className={`bg-white rounded-xl p-4 md:p-6 shadow-sm border-2 transition-all cursor-pointer ${activeFilter === 'approved'
+                    className={`bg-white rounded-xl p-4 md:p-6 shadow-sm border-2 transition-all cursor-pointer ${activeFilter === 'completed'
                         ? 'border-green-300 bg-green-50'
                         : 'border-gray-100 hover:border-gray-200 hover:shadow-md'
                         }`}
@@ -178,8 +178,8 @@ const completedAssignments = assignments.filter(a => a.status === 'completed');
                         </div>
                     ))}
 
-                    {/* Approved */}
-                    {activeFilter === 'completed' && completedUploads.map(upload => (
+                    {/* Completed */}
+                    {activeFilter === 'completed' && completedAssignments.map(upload => (
                         <div key={upload.id} className="p-4 border rounded-lg bg-green-50 border-green-200">
                             <div className="flex flex-col sm:flex-row sm:items-start gap-3">
                                 <div className="w-16 h-16 md:w-20 md:h-20 flex-shrink-0">
@@ -211,7 +211,7 @@ const completedAssignments = assignments.filter(a => a.status === 'completed');
                         </div>
                     ))}
 
-                
+
 
                     {/* Empty States */}
                     {activeFilter === 'notifications' && assignments.length === 0 && (
@@ -235,7 +235,7 @@ const completedAssignments = assignments.filter(a => a.status === 'completed');
                         </div>
                     )}
 
-                  
+
                 </div>
             </div>
         </div>
@@ -519,10 +519,13 @@ const PhotographyModule = () => {
     const [selectedTask, setSelectedTask] = useState(null);
 
     // Fetch assignments from API
-    const { data: assignmentsData, isLoading, isError } = useGetAssignmentsQuery();
+    const { data: assignmentsData, isLoading: assignmentsLoading } = useGetAssignmentsQuery();
+    const { data: completedData, isLoading: completedLoading } = useGetCompletedAssignmentsQuery();
 
     // Use fetched data or empty array
     const assignments = assignmentsData?.data || [];
+    const completedAssignments = completedData?.data || [];
+    const isLoading = assignmentsLoading || completedLoading;
 
     // Notifications count based on assignments
     const count = assignments.length; // Assuming all returned are pending or we filter
@@ -624,6 +627,7 @@ const PhotographyModule = () => {
                         setActiveView={setActiveView}
                         userRole={userRole}
                         assignments={assignments}
+                        completedAssignments={completedAssignments}
                         onSelectTask={(task) => {
                             setSelectedTask(task);
                             setActiveView('upload');

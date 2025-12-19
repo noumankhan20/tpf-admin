@@ -6,6 +6,10 @@ export const photographyApiSlice = apiSlice.injectEndpoints({
             query: () => '/photography/assignments',
             providesTags: ["PhotographyAssignments"],
         }),
+        getCompletedAssignments: builder.query({
+            query: () => '/photography/assignments/completed',
+            providesTags: ["PhotographyAssignments"],
+        }),
         uploadPhotography: builder.mutation({
             query: ({ formData, campaignId }) => {
                 // The user specified campaignId should be in URL Query Params
@@ -20,7 +24,7 @@ export const photographyApiSlice = apiSlice.injectEndpoints({
             },
             invalidatesTags: ["PhotographyAssignments"],
         }),
-        completeTask: builder.mutation({ 
+        completeTask: builder.mutation({
             query: ({ taskId }) => ({
                 url: `/workflow/tasks/${taskId}/complete`,
                 method: "POST",
@@ -32,6 +36,7 @@ export const photographyApiSlice = apiSlice.injectEndpoints({
 
 export const {
     useGetAssignmentsQuery,
+    useGetCompletedAssignmentsQuery,
     useUploadPhotographyMutation,
     useCompleteTaskMutation,
 } = photographyApiSlice;
