@@ -216,10 +216,14 @@ const PublishCampaignPage = ({ setActiveView, selectedTask }) => {
     const [publishCampaign, { isLoading: publishing }] = usePublishCampaignMutation();
 
     // Extract files from photography submissions
+    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL ||
+        process.env.NEXT_PUBLIC_BACKEND_API?.replace('/api', '') ||
+        'http://localhost:7000';
+
     const photographySubmissions = submissionsData?.data?.submissions?.flatMap(submission =>
         submission.files?.map((file, idx) => ({
             id: `${submission._id}-${idx}`,
-            url: process.env.NEXT_PUBLIC_BACKEND_URL + file.url,
+            url: backendUrl + file.url,
             type: file.type,
             uploadedAt: submission.uploadedAt,
             originalName: file.originalName
@@ -294,14 +298,32 @@ const PublishCampaignPage = ({ setActiveView, selectedTask }) => {
         }, 2000);
     };
 
-    const downloadMedia = (url) => {
-        // Create a temporary anchor element to trigger download
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `media-${Date.now()}.jpg`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+    const downloadMedia = async (url, originalName) => {
+        try {
+            const response = await fetch(url, { mode: 'cors' });
+            if (!response.ok) throw new Error('Network response was not ok');
+            const blob = await response.blob();
+            const blobUrl = window.URL.createObjectURL(blob);
+
+            const link = document.createElement('a');
+            link.href = blobUrl;
+            link.download = originalName || `media-${Date.now()}.jpg`;
+            document.body.appendChild(link);
+            link.click();
+
+            // Cleanup
+            document.body.removeChild(link);
+            setTimeout(() => window.URL.revokeObjectURL(blobUrl), 100);
+        } catch (error) {
+            console.error('Download failed:', error);
+            // Fallback to direct link without target="_blank"
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = originalName || `media-${Date.now()}.jpg`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
     };
 
     return (
@@ -360,7 +382,7 @@ const PublishCampaignPage = ({ setActiveView, selectedTask }) => {
                                         <button
                                             onClick={(e) => {
                                                 e.stopPropagation();
-                                                downloadMedia(media.url);
+                                                downloadMedia(media.url, media.originalName);
                                             }}
                                             className="absolute top-2 right-2 p-2 bg-white rounded-full shadow-md opacity-0 group-hover:opacity-100 transition-opacity hover:bg-gray-100"
                                             title="Download"
