@@ -2,91 +2,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Camera, Upload, MapPin, Calendar, CheckCircle, XCircle, Bell, ArrowLeft, Eye, Download, AlertCircle, Clock, UserCheck, FileText, ImageIcon, Trash2, MessageSquare, ChevronRight, Home, Grid, Settings, Menu, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-// Mock Data
-const mockCampaigns = [
-    { id: 1, name: 'Rural Education Initiative', location: 'Rajasthan, India', deadline: '2025-01-15' },
-    { id: 2, name: 'Clean Water Access', location: 'West Bengal, India', deadline: '2025-01-20' },
-    { id: 3, name: 'Healthcare Support', location: 'Odisha, India', deadline: '2025-01-25' }
-];
-
-const mockAssignments = [
-    {
-        id: 1,
-        campaignName: 'Rural Education Initiative',
-        beneficiaryName: 'Priya Sharma',
-        address: 'Village Khajuraho, District Chhatarpur, Madhya Pradesh, 471606',
-        deadline: '2025-01-15',
-        status: 'pending',
-        createdAt: '2024-12-08'
-    },
-    {
-        id: 2,
-        campaignName: 'Clean Water Access',
-        beneficiaryName: 'Rajesh Kumar',
-        address: 'Gram Panchayet Jharia, Dhanbad, Jharkhand, 828111',
-        deadline: '2025-01-20',
-        status: 'pending',
-        createdAt: '2024-12-07'
-    }
-];
-
-const mockUploads = [
-    {
-        id: 1,
-        campaignName: 'Healthcare Support',
-        beneficiaryName: 'Meera Devi',
-        images: ['https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=400', 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1f?w=400'],
-        notes: 'Successfully provided medical equipment to rural clinic. Patient showing remarkable recovery.',
-        uploadDate: '2024-12-05',
-        status: 'approved',
-        adminFeedback: 'Excellent documentation. Clear impact visible.'
-    },
-    {
-        id: 2,
-        campaignName: 'Rural Education Initiative',
-        beneficiaryName: 'Amit Singh',
-        images: ['https://images.unsplash.com/photo-1497486751825-1233686d5d80?w=400'],
-        notes: 'New computer lab setup completed. Students actively using the equipment.',
-        uploadDate: '2024-12-04',
-        status: 'pending',
-        adminFeedback: null
-    },
-    {
-        id: 3,
-        campaignName: 'District Education Initiative',
-        beneficiaryName: 'Amit Singh',
-        images: ['https://images.unsplash.com/photo-1497486751825-1233686d5d80?w=400'],
-        notes: 'New computer lab setup completed. Students actively using the equipment.',
-        uploadDate: '2024-12-04',
-        status: 'rejected',
-        adminFeedback: 'Please retake with better lighting and include more beneficiary interaction shots.'
-    }
-];
-
-const mockAdminReviews = [
-    {
-        id: 1,
-        photographerName: 'Arjun Patel',
-        campaignName: 'Rural Education Initiative',
-        beneficiaryName: 'Amit Singh',
-        images: ['https://images.unsplash.com/photo-1497486751825-1233686d5d80?w=400', 'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=400'],
-        notes: 'New computer lab setup completed. Students actively using the equipment for learning programming.',
-        uploadDate: '2024-12-04',
-        status: 'pending',
-        location: 'Village Khajuraho, MP'
-    },
-    {
-        id: 2,
-        photographerName: 'Meera Shah',
-        campaignName: 'Clean Water Access',
-        beneficiaryName: 'Sunita Kumari',
-        images: ['https://images.unsplash.com/photo-1541888946425-d81bb19240f5?w=400'],
-        notes: 'New well construction completed. Clean water now accessible to 50+ families.',
-        uploadDate: '2024-12-06',
-        status: 'pending',
-        location: 'Gram Panchayat Jharia, JH'
-    }
-];
 
 // Utility Functions
 const formatDate = (dateStr) => {
@@ -119,19 +34,19 @@ const PhotographyDashboard = ({ activeView, setActiveView, userRole, assignments
 
     // In a real app, you might fetch uploads separately. For this task, we focus on the pending assignments.
     const pendingAssignments = assignments.filter(a => a.status === 'pending' || !a.status); // Default to pending if no status
-
+const completedAssignments = assignments.filter(a => a.status === 'completed');
     // We'll keep mock data for other tabs to avoid breaking the UI completely, 
     // or just show empty if not provided. 
     // The user didn't provide an endpoint for "my uploads", so we'll leave those static or empty.
     const uploads = [];
-    const approvedUploads = [];
+    const completedUploads = [];
     const pendingUploads = [];
     const rejectedUploads = [];
 
     return (
         <div className="space-y-6 md:space-y-8">
             {/* Welcome Header */}
-            <div className="bg-gradient-to-r from-blue-600 to-blue-800 rounded-xl md:rounded-2xl p-6 md:p-8 text-white relative overflow-hidden">
+            <div className="bg-gradient-to-r from-emerald-600 to-emerald-800 rounded-xl md:rounded-2xl p-6 md:p-8 text-white relative overflow-hidden">
                 <div className="absolute inset-0 bg-black/10"></div>
                 <div className="relative z-10">
                     <div className="flex items-center gap-3 md:gap-4 mb-3 md:mb-4">
@@ -140,7 +55,7 @@ const PhotographyDashboard = ({ activeView, setActiveView, userRole, assignments
                         </div>
                         <div>
                             <h1 className="text-xl md:text-3xl font-bold">Photography Dashboard</h1>
-                            <p className="text-blue-100 text-sm md:text-lg">Documenting impact, building trust</p>
+                            <p className="text-emerald-100 text-sm md:text-lg">Documenting impact, building trust</p>
                         </div>
                     </div>
                     <div className="flex flex-wrap gap-4 md:gap-6 text-xs md:text-sm">
@@ -153,7 +68,7 @@ const PhotographyDashboard = ({ activeView, setActiveView, userRole, assignments
             </div>
 
             {/* Quick Stats - Mobile Optimized */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
+            <div className="grid grid-cols-2 lg:grid-cols-2 gap-3 md:gap-6">
                 <div
                     onClick={() => setActiveFilter('notifications')}
                     className={`bg-white rounded-xl p-4 md:p-6 shadow-sm border-2 transition-all cursor-pointer ${activeFilter === 'notifications'
@@ -171,25 +86,10 @@ const PhotographyDashboard = ({ activeView, setActiveView, userRole, assignments
                     <p className="text-xs text-gray-600 mt-1">Awaiting field visits</p>
                 </div>
 
-                <div
-                    onClick={() => setActiveFilter('pending-review')}
-                    className={`bg-white rounded-xl p-4 md:p-6 shadow-sm border-2 transition-all cursor-pointer ${activeFilter === 'pending-review'
-                        ? 'border-blue-300 bg-blue-50'
-                        : 'border-gray-100 hover:border-gray-200 hover:shadow-md'
-                        }`}
-                >
-                    <div className="flex items-center justify-between mb-3 md:mb-4">
-                        <div className="w-8 h-8 md:w-12 md:h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                            <Upload className="w-4 h-4 md:w-6 md:h-6 text-blue-600" />
-                        </div>
-                        <span className="text-lg md:text-2xl font-bold text-blue-600">{pendingUploads.length}</span>
-                    </div>
-                    <h3 className="font-semibold text-gray-800 text-xs md:text-base">Pending Review</h3>
-                    <p className="text-xs text-gray-600 mt-1">Awaiting approval</p>
-                </div>
+             
 
                 <div
-                    onClick={() => setActiveFilter('approved')}
+                    onClick={() => setActiveFilter('completed')}
                     className={`bg-white rounded-xl p-4 md:p-6 shadow-sm border-2 transition-all cursor-pointer ${activeFilter === 'approved'
                         ? 'border-green-300 bg-green-50'
                         : 'border-gray-100 hover:border-gray-200 hover:shadow-md'
@@ -199,28 +99,12 @@ const PhotographyDashboard = ({ activeView, setActiveView, userRole, assignments
                         <div className="w-8 h-8 md:w-12 md:h-12 bg-green-100 rounded-lg flex items-center justify-center">
                             <CheckCircle className="w-4 h-4 md:w-6 md:h-6 text-green-600" />
                         </div>
-                        <span className="text-lg md:text-2xl font-bold text-green-600">{approvedUploads.length}</span>
+                        <span className="text-lg md:text-2xl font-bold text-green-600">{completedAssignments.length}</span>
                     </div>
-                    <h3 className="font-semibold text-gray-800 text-xs md:text-base">Approved</h3>
-                    <p className="text-xs text-gray-600 mt-1">Successfully verified</p>
+                    <h3 className="font-semibold text-gray-800 text-xs md:text-base">Completed</h3>
+                    <p className="text-xs text-gray-600 mt-1">Successfully finished</p>
                 </div>
 
-                <div
-                    onClick={() => setActiveFilter('rejected')}
-                    className={`bg-white rounded-xl p-4 md:p-6 shadow-sm border-2 transition-all cursor-pointer ${activeFilter === 'rejected'
-                        ? 'border-red-300 bg-red-50'
-                        : 'border-gray-100 hover:border-gray-200 hover:shadow-md'
-                        }`}
-                >
-                    <div className="flex items-center justify-between mb-3 md:mb-4">
-                        <div className="w-8 h-8 md:w-12 md:h-12 bg-red-100 rounded-lg flex items-center justify-center">
-                            <XCircle className="w-4 h-4 md:w-6 md:h-6 text-red-600" />
-                        </div>
-                        <span className="text-lg md:text-2xl font-bold text-red-600">{rejectedUploads.length}</span>
-                    </div>
-                    <h3 className="font-semibold text-gray-800 text-xs md:text-base">Needs Revision</h3>
-                    <p className="text-xs text-gray-600 mt-1">Requires re-submission</p>
-                </div>
             </div>
 
             {/* Filtered Content */}
@@ -234,8 +118,8 @@ const PhotographyDashboard = ({ activeView, setActiveView, userRole, assignments
                 <div className="p-4 md:p-6 space-y-4">
                     {/* Notifications (Pending Assignments) */}
                     {activeFilter === 'notifications' && assignments.map((notification, index) => (
-                        <div key={index} className="flex flex-col md:flex-row md:items-start gap-4 p-4 bg-blue-50 rounded-lg border border-blue-100">
-                            <div className="w-8 h-8 md:w-10 md:h-10 bg-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <div key={index} className="flex flex-col md:flex-row md:items-start gap-4 p-4 bg-emerald-50 rounded-lg border border-emerald-100">
+                            <div className="w-8 h-8 md:w-10 md:h-10 bg-emerald-600 rounded-lg flex items-center justify-center flex-shrink-0">
                                 <UserCheck className="w-4 h-4 md:w-5 md:h-5 text-white" />
                             </div>
                             <div className="flex-1 min-w-0">
@@ -262,7 +146,7 @@ const PhotographyDashboard = ({ activeView, setActiveView, userRole, assignments
                                     onSelectTask(notification);
                                     setActiveView('upload');
                                 }}
-                                className="w-full md:w-auto bg-blue-600 text-white px-4 py-2 rounded-lg text-xs md:text-sm font-medium hover:bg-blue-700 transition-colors flex-shrink-0"
+                                className="w-full md:w-auto bg-emerald-600 text-white px-4 py-2 rounded-lg text-xs md:text-sm font-medium hover:bg-emerald-700 transition-colors flex-shrink-0"
                             >
                                 Start Upload
                             </button>
@@ -295,7 +179,7 @@ const PhotographyDashboard = ({ activeView, setActiveView, userRole, assignments
                     ))}
 
                     {/* Approved */}
-                    {activeFilter === 'approved' && approvedUploads.map(upload => (
+                    {activeFilter === 'completed' && completedUploads.map(upload => (
                         <div key={upload.id} className="p-4 border rounded-lg bg-green-50 border-green-200">
                             <div className="flex flex-col sm:flex-row sm:items-start gap-3">
                                 <div className="w-16 h-16 md:w-20 md:h-20 flex-shrink-0">
@@ -314,7 +198,7 @@ const PhotographyDashboard = ({ activeView, setActiveView, userRole, assignments
                                         <span>{upload.images.length} images</span>
                                         <span className="text-green-600 font-medium flex items-center gap-1">
                                             <CheckCircle className="w-3 h-3" />
-                                            Approved
+                                            Completed
                                         </span>
                                     </div>
                                     {upload.adminFeedback && (
@@ -327,47 +211,7 @@ const PhotographyDashboard = ({ activeView, setActiveView, userRole, assignments
                         </div>
                     ))}
 
-                    {/* Rejected */}
-                    {activeFilter === 'rejected' && rejectedUploads.map(upload => (
-                        <div key={upload.id} className="p-4 border rounded-lg bg-red-50 border-red-200">
-                            <div className="flex flex-col sm:flex-row sm:items-start gap-3">
-                                <div className="w-16 h-16 md:w-20 md:h-20 flex-shrink-0">
-                                    <img
-                                        src={upload.images[0]}
-                                        alt="Upload preview"
-                                        className="w-full h-full rounded-lg object-cover"
-                                    />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                    <h3 className="font-semibold text-gray-800 text-sm md:text-base">{upload.campaignName}</h3>
-                                    <p className="text-xs md:text-sm text-gray-600 mb-1">Beneficiary: {upload.beneficiaryName}</p>
-                                    <p className="text-xs md:text-sm text-gray-600 mb-2">{upload.notes}</p>
-                                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-xs text-gray-500 mb-2">
-                                        <span>{formatDate(upload.uploadDate)}</span>
-                                        <span>{upload.images.length} images</span>
-                                        <span className="text-red-600 font-medium flex items-center gap-1">
-                                            <XCircle className="w-3 h-3" />
-                                            Needs Revision
-                                        </span>
-                                    </div>
-                                    {upload.adminFeedback && (
-                                        <p className="text-xs text-red-700 mb-3 p-2 bg-red-100 rounded">
-                                            <span className="font-medium">Admin Feedback:</span> {upload.adminFeedback}
-                                        </p>
-                                    )}
-                                    <button
-                                        onClick={() => {
-                                            localStorage.setItem('editUpload', JSON.stringify(upload));
-                                            setActiveView('upload');
-                                        }}
-                                        className="bg-blue-600 text-white px-3 py-1.5 rounded text-xs hover:bg-blue-700 transition-colors"
-                                    >
-                                        Fix & Re-Upload
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    ))}
+                
 
                     {/* Empty States */}
                     {activeFilter === 'notifications' && assignments.length === 0 && (
@@ -384,19 +228,14 @@ const PhotographyDashboard = ({ activeView, setActiveView, userRole, assignments
                         </div>
                     )}
 
-                    {activeFilter === 'approved' && approvedUploads.length === 0 && (
+                    {activeFilter === 'completed' && completedUploads.length === 0 && (
                         <div className="text-center py-8">
                             <CheckCircle className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                            <p className="text-gray-500">No approved uploads yet</p>
+                            <p className="text-gray-500">No completed assignments yet</p>
                         </div>
                     )}
 
-                    {activeFilter === 'rejected' && rejectedUploads.length === 0 && (
-                        <div className="text-center py-8">
-                            <XCircle className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                            <p className="text-gray-500">No rejected uploads</p>
-                        </div>
-                    )}
+                  
                 </div>
             </div>
         </div>
@@ -504,14 +343,14 @@ const UploadPage = ({ setActiveView, selectedTask, assignments, onTaskSelect }) 
     return (
         <div className="max-w-4xl mx-auto space-y-6 md:space-y-8">
             {/* Header */}
-            <div className="bg-gradient-to-r from-blue-600 to-blue-800 rounded-xl md:rounded-2xl p-6 md:p-8 text-white">
+            <div className="bg-gradient-to-r from-emerald-600 to-emerald-800 rounded-xl md:rounded-2xl p-6 md:p-8 text-white">
                 <div className="flex items-center gap-3 md:gap-4 mb-3 md:mb-4">
                     <div className="w-12 h-12 md:w-16 md:h-16 bg-white/20 rounded-full flex items-center justify-center">
                         <Upload className="w-6 h-6 md:w-8 md:h-8" />
                     </div>
                     <div>
                         <h1 className="text-xl md:text-3xl font-bold font-serif">Upload Documentation</h1>
-                        <p className="text-blue-100 text-sm md:text-lg">Share the impact of our work</p>
+                        <p className="text-emerald-100 text-sm md:text-lg">Share the impact of our work</p>
                     </div>
                 </div>
             </div>
@@ -531,7 +370,7 @@ const UploadPage = ({ setActiveView, selectedTask, assignments, onTaskSelect }) 
                             type="text"
                             value={beneficiaryName}
                             onChange={(e) => setBeneficiaryName(e.target.value)}
-                            className="w-full p-3 text-sm md:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            className="w-full p-3 text-sm md:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                             placeholder="Enter beneficiary name"
                             required
                             readOnly // Optional: make readOnly if you don't want them editing API data
@@ -547,7 +386,7 @@ const UploadPage = ({ setActiveView, selectedTask, assignments, onTaskSelect }) 
                             type="text"
                             value={location}
                             onChange={(e) => setLocation(e.target.value)}
-                            className="w-full p-3 text-sm md:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            className="w-full p-3 text-sm md:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                             placeholder="Specific address or landmark (optional)"
                         />
                     </div>
@@ -559,7 +398,7 @@ const UploadPage = ({ setActiveView, selectedTask, assignments, onTaskSelect }) 
                         </label>
                         <div
                             className={`border-2 border-dashed rounded-lg p-6 md:p-8 text-center transition-colors ${dragOver
-                                ? 'border-blue-400 bg-blue-50'
+                                ? 'border-blue-400 bg-emerald-50'
                                 : 'border-gray-300 hover:border-gray-400'
                                 }`}
                             onDragOver={handleDragOver}
@@ -567,8 +406,8 @@ const UploadPage = ({ setActiveView, selectedTask, assignments, onTaskSelect }) 
                             onDrop={handleDrop}
                         >
                             <div className="flex flex-col items-center gap-3 md:gap-4">
-                                <div className="w-12 h-12 md:w-16 md:h-16 bg-blue-100 rounded-full flex items-center justify-center">
-                                    <ImageIcon className="w-6 h-6 md:w-8 md:h-8 text-blue-600" />
+                                <div className="w-12 h-12 md:w-16 md:h-16 bg-emerald-100 rounded-full flex items-center justify-center">
+                                    <ImageIcon className="w-6 h-6 md:w-8 md:h-8 text-emerald-600" />
                                 </div>
                                 <div>
                                     <p className="text-base md:text-lg font-medium text-gray-800 mb-1">
@@ -581,7 +420,7 @@ const UploadPage = ({ setActiveView, selectedTask, assignments, onTaskSelect }) 
                                 <button
                                     type="button"
                                     onClick={() => fileInputRef.current?.click()}
-                                    className="bg-blue-600 text-white px-4 md:px-6 py-2 rounded-lg text-sm md:text-base font-medium hover:bg-blue-700 transition-colors"
+                                    className="bg-emerald-600 text-white px-4 md:px-6 py-2 rounded-lg text-sm md:text-base font-medium hover:bg-emerald-700 transition-colors"
                                 >
                                     Choose Files
                                 </button>
@@ -628,7 +467,7 @@ const UploadPage = ({ setActiveView, selectedTask, assignments, onTaskSelect }) 
                             value={notes}
                             onChange={(e) => setNotes(e.target.value)}
                             rows={4}
-                            className="w-full p-3 text-sm md:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                            className="w-full p-3 text-sm md:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent resize-none"
                             placeholder="Describe the impact, activities, or situation documented in these images..."
                             required
                         />
@@ -651,7 +490,7 @@ const UploadPage = ({ setActiveView, selectedTask, assignments, onTaskSelect }) 
                         <button
                             type="submit"
                             disabled={uploading || completing}
-                            className="w-full sm:flex-1 bg-blue-600 text-white py-3 rounded-lg text-sm md:text-base font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                            className="w-full sm:flex-1 bg-emerald-600 text-white py-3 rounded-lg text-sm md:text-base font-medium hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                         >
                             {uploading || completing ? (
                                 <>
@@ -686,7 +525,7 @@ const PhotographyModule = () => {
     const assignments = assignmentsData?.data || [];
 
     // Notifications count based on assignments
-    const pendingCount = assignments.length; // Assuming all returned are pending or we filter
+    const count = assignments.length; // Assuming all returned are pending or we filter
 
     const router = useRouter();
     const navigation = [
@@ -730,7 +569,7 @@ const PhotographyModule = () => {
                 <div className="flex items-center gap-4">
                     <button className="p-2 hover:bg-gray-100 rounded-full transition relative">
                         <Bell className="w-5 h-5 text-gray-600" />
-                        {pendingCount > 0 && (
+                        {count > 0 && (
                             <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full"></span>
                         )}
                     </button>
@@ -761,7 +600,7 @@ const PhotographyModule = () => {
                                     setMobileMenuOpen(false);
                                 }}
                                 className={`flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium transition-colors ${activeView === item.id
-                                    ? 'bg-blue-50 text-blue-600'
+                                    ? 'bg-emerald-50 text-emerald-600'
                                     : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
                                     }`}
                             >
@@ -777,7 +616,7 @@ const PhotographyModule = () => {
             < main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8" >
                 {isLoading ? (
                     <div className="flex justify-center py-20">
-                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600"></div>
                     </div>
                 ) : activeView === 'dashboard' ? (
                     <PhotographyDashboard

@@ -7,15 +7,16 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 const menuItems = [
-  { id: 'hero', label: 'Hero Section', icon: Home ,path:'/cms-admin'},
-  { id: 'stories', label: 'Impact Stories', icon: Heart,path:'/cms-admin/impact-stories' },
-  { id: 'fundraising', label: 'Fundraising Now', icon: IndianRupee ,path:'/cms-admin/fundraiser' },
-  { id: 'feed', label: 'Tailored Feed', icon: Rss ,path:'/cms-admin/tailored-feed' },
-  { id: 'giving', label: 'Start Giving Daily', icon: Calendar ,path:'/cms-admin/start-giving'},
-  { id: 'communities', label: 'Communities', icon: Users ,path:'/cms-admin/communities'},
-  { id: 'trusted', label: 'Trusted By', icon: Award,path:'/cms-admin/trusted-by' },
-  { id: 'influencer', label: 'Influencer Section', icon: MessageSquare ,path:'/cms-admin/influencer'},
-  { id: 'footer', label: 'Before Footer', icon: Flag ,path:'/cms-admin/before-footer' },
+  { id: 'hero', label: 'Hero Section', icon: Home, path: '/cms-admin' },
+  { id: 'tasks', label: 'Tasks', icon: FileText, path: '/cms-admin/tasks' },
+  { id: 'stories', label: 'Impact Stories', icon: Heart, path: '/cms-admin/impact-stories' },
+  { id: 'fundraising', label: 'Fundraising Now', icon: IndianRupee, path: '/cms-admin/fundraiser' },
+  { id: 'feed', label: 'Tailored Feed', icon: Rss, path: '/cms-admin/tailored-feed' },
+  { id: 'giving', label: 'Start Giving Daily', icon: Calendar, path: '/cms-admin/start-giving' },
+  { id: 'communities', label: 'Communities', icon: Users, path: '/cms-admin/communities' },
+  { id: 'trusted', label: 'Trusted By', icon: Award, path: '/cms-admin/trusted-by' },
+  { id: 'influencer', label: 'Influencer Section', icon: MessageSquare, path: '/cms-admin/influencer' },
+  { id: 'footer', label: 'Before Footer', icon: Flag, path: '/cms-admin/before-footer' },
 ];
 
 export default function Sidebar({
@@ -24,11 +25,11 @@ export default function Sidebar({
   activeSection,
   setActiveSection
 }) {
-  
+
   const router = useRouter();
   const handleMenuClick = (item) => {
     setActiveSection(item.id);
-      router.push(item.path);  
+    router.push(item.path);
     // Auto-close sidebar on mobile after selecting an item
     if (typeof window !== 'undefined' && window.innerWidth < 768) {
       setSidebarOpen(false);
@@ -61,20 +62,18 @@ export default function Sidebar({
 
           {/* HEADER SECTION */}
           <div className="flex items-center justify-between mb-6 md:mb-8 flex-shrink-0">
-            
+
             {/* Logo Area */}
-            <div className={`flex items-center gap-3 transition-all duration-300 ${
-              !sidebarOpen && 'md:justify-center md:w-full'
-            }`}>
+            <div className={`flex items-center gap-3 transition-all duration-300 ${!sidebarOpen && 'md:justify-center md:w-full'
+              }`}>
               <div className="w-8 h-8 bg-[#3B82F6] rounded-lg flex items-center justify-center flex-shrink-0 shadow-lg">
                 <span className="text-white font-bold text-lg">C</span>
               </div>
-              
+
               {/* Title - Hidden when collapsed on desktop, visible on mobile when open */}
-              <span className={`font-bold text-lg text-[#F1F5F9] whitespace-nowrap transition-opacity duration-300 ${
-                sidebarOpen ? 'opacity-100' : 'opacity-0 md:opacity-100'
-              }`}>
-                CMS Admin Panel 
+              <span className={`font-bold text-lg text-[#F1F5F9] whitespace-nowrap transition-opacity duration-300 ${sidebarOpen ? 'opacity-100' : 'opacity-0 md:opacity-100'
+                }`}>
+                CMS Admin Panel
               </span>
             </div>
 
@@ -90,7 +89,7 @@ export default function Sidebar({
 
           {/* Desktop Collapse/Expand Toggle - Only visible on desktop */}
           {/* Removed the toggle for simplicity as sidebar will always be expanded on desktop */}
-          
+
           {/* Section Label - Only visible when sidebar is open */}
           {sidebarOpen && (
             <p className="text-[#94A3B8] text-xs uppercase tracking-wider mb-4 px-2 flex-shrink-0">
@@ -99,7 +98,7 @@ export default function Sidebar({
           )}
 
           {/* Navigation Menu */}
-          <nav 
+          <nav
             className="space-y-1 flex-1 overflow-y-auto overflow-x-hidden hide-scrollbar"
             aria-label="Main navigation"
           >
@@ -127,17 +126,16 @@ export default function Sidebar({
                   {isActive && (
                     <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-[#3B82F6] rounded-r" />
                   )}
-                  
+
                   {/* Icon */}
-                  <Icon 
-                    size={20} 
-                    className={`flex-shrink-0 transition-colors duration-200 ${
-                      isActive 
-                        ? "text-[#60A5FA]" 
+                  <Icon
+                    size={20}
+                    className={`flex-shrink-0 transition-colors duration-200 ${isActive
+                        ? "text-[#60A5FA]"
                         : "text-[#94A3B8] group-hover:text-[#F1F5F9]"
-                    }`} 
+                      }`}
                   />
-                  
+
                   {/* Label Text - Always visible on desktop */}
                   <span className="text-sm whitespace-nowrap overflow-hidden text-ellipsis">
                     {item.label}
