@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
     ArrowLeft,
     Bell,
@@ -34,6 +35,8 @@ export default function KYCVerificationPage() {
     const [selectedUser, setSelectedUser] = useState(null);
     const [rejectReason, setRejectReason] = useState('');
     const [isRejecting, setIsRejecting] = useState(false);
+    const [showSuccessMessage, setShowSuccessMessage] = useState(false);
+    const [showErrorMessage, setShowErrorMessage] = useState(false);
 
     // Filter & Search State
     const [searchQuery, setSearchQuery] = useState('');
@@ -55,6 +58,26 @@ export default function KYCVerificationPage() {
         return () => clearTimeout(timer);
     }, [searchQuery]);
 
+    // Auto-hide success message
+    React.useEffect(() => {
+        if (showSuccessMessage) {
+            const timer = setTimeout(() => {
+                setShowSuccessMessage(false);
+            }, 3000);
+            return () => clearTimeout(timer);
+        }
+    }, [showSuccessMessage]);
+
+    // Auto-hide error message
+    React.useEffect(() => {
+        if (showErrorMessage) {
+            const timer = setTimeout(() => {
+                setShowErrorMessage(false);
+            }, 3000);
+            return () => clearTimeout(timer);
+        }
+    }, [showErrorMessage]);
+
     // Query Hook
     const { data: kycData, isLoading, isFetching } = useGetKycRequestsQuery({
         page: currentPage,
@@ -72,22 +95,27 @@ export default function KYCVerificationPage() {
         try {
             await updateStatus({ id, status: 'verified' }).unwrap();
             setSelectedUser(null);
+            setShowSuccessMessage(true);
         } catch (err) {
             console.error("KYC Approve Error:", err);
-            alert("Failed to approve KYC");
+            setShowErrorMessage(true);
         }
     };
 
     const handleReject = async (id) => {
-        if (!rejectReason.trim()) return alert("Enter rejection reason");
+        if (!rejectReason.trim()) {
+            setShowErrorMessage(true);
+            return;
+        }
         try {
             await updateStatus({ id, status: 'rejected', remarks: rejectReason }).unwrap();
             setIsRejecting(false);
             setRejectReason('');
             setSelectedUser(null);
+            setShowSuccessMessage(true);
         } catch (err) {
             console.error("KYC Reject Error:", err);
-            alert("Failed to reject KYC");
+            setShowErrorMessage(true);
         }
     };
 
@@ -150,241 +178,285 @@ export default function KYCVerificationPage() {
 `;
 
     return (
-
-        <div className="min-h-screen bg-gray-50 font-sans flex flex-col">
-            {/* Header */}
-            <style>{printStyles}</style>
-            <header className="flex items-center justify-between px-6 py-4 bg-white border-b border-gray-200 shrink-0 shadow-sm">
-                <div className="flex items-center space-x-4">
-                    <button
-                        onClick={() => router.push('/select-portal')}
-                        className="p-2 hover:bg-gray-100 rounded-full transition"
+        <>
+            <AnimatePresence>
+                {showSuccessMessage && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -50 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="fixed top-4 left-1/2 -translate-x-1/2 z-50 
+               bg-gradient-to-r from-emerald-600 to-emerald-400 text-white px-6 py-4 rounded-lg shadow-2xl 
+               flex items-center gap-3 max-w-md w-[90%] sm:w-auto"
                     >
-                        <ArrowLeft className="w-5 h-5 text-gray-600" />
-                    </button>
-                    <h1 className="text-xl font-bold text-gray-800">KYC Verification</h1>
-                </div>
-                <div className="flex items-center gap-4">
-                    {isFetching && <RefreshCw className="w-4 h-4 text-blue-500 animate-spin" />}
-                    <button className="p-2 hover:bg-gray-100 rounded-full transition relative">
-                        <Bell className="w-5 h-5 text-gray-600" />
-                        <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full"></span>
-                    </button>
-                </div>
-            </header>
-
-            <main className="flex-1 p-6 max-w-[1600px] mx-auto w-full overflow-hidden flex flex-col">
-
-                {/* Stats Overview */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-                    <StatCard icon={<FileText className="text-blue-600" />} count={totalCount} label="Total Requests" />
-                    <StatCard icon={<Clock className="text-orange-600" />} count={stats.pending} label="Pending" />
-                    <StatCard icon={<CheckCircle className="text-green-600" />} count={stats.verified} label="Verified" />
-                    <StatCard icon={<XCircle className="text-red-600" />} count={stats.rejected} label="Rejected" />
-                </div>
-
-                {/* Filter Bar */}
-                <div className="bg-white rounded-xl border border-gray-200 p-4 mb-4 shadow-sm">
-                    <div className="flex flex-wrap gap-3 items-center">
-                        <div className="relative flex-1 min-w-[200px]">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                            <input
-                                type="text"
-                                placeholder="Search Name, PAN, Mobile..."
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                className="w-full bg-white border border-gray-300 rounded-lg py-2 pl-9 pr-4 text-sm text-gray-800 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500 transition-all"
-                            />
+                        <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
                         </div>
+                        <div>
+                            <p className="font-semibold">Form Approved Successfully!</p>
+                        </div>
+                    </motion.div>
 
-                        <select
-                            value={statusFilter}
-                            onChange={(e) => setStatusFilter(e.target.value)}
-                            className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
-                        >
-                            <option value="all">All Status</option>
-                            <option value="pending">Pending</option>
-                            <option value="verified">Verified</option>
-                            <option value="rejected">Rejected</option>
-                        </select>
+                )}
 
+                {showErrorMessage && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -50 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="fixed top-4 left-1/2 -translate-x-1/2 z-50 
+         bg-gradient-to-r from-red-600 to-red-400 text-white px-6 py-4 rounded-lg shadow-2xl 
+         flex items-center gap-3 max-w-md w-[90%] sm:w-auto"
+                    >
+                        <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </div>
+                        <div>
+                            <p className="font-semibold">Submission Failed!</p>
+                            <p className="text-sm text-red-100">Please try again later</p>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            <div className="min-h-screen bg-gray-50 font-sans flex flex-col">
+                {/* Header */}
+                <style>{printStyles}</style>
+                <header className="flex items-center justify-between px-6 py-4 bg-white border-b border-gray-200 shrink-0 shadow-sm">
+                    <div className="flex items-center space-x-4">
                         <button
-                            onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
-                            className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white hover:bg-gray-50 transition-colors"
+                            onClick={() => router.push('/select-portal')}
+                            className="p-2 hover:bg-gray-100 rounded-full transition"
                         >
-                            {sortOrder === 'asc' ? <SortAsc className="w-4 h-4" /> : <SortDesc className="w-4 h-4" />}
-                            {sortOrder === 'asc' ? 'Oldest First' : 'Newest First'}
+                            <ArrowLeft className="w-5 h-5 text-gray-600" />
                         </button>
-
-                        {activeFilterCount > 0 && (
-                            <button onClick={clearFilters} className="flex items-center gap-2 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm hover:bg-gray-200 transition-colors">
-                                <XIcon className="w-4 h-4" /> Clear
-                            </button>
-                        )}
+                        <h1 className="text-xl font-bold text-gray-800">KYC Verification</h1>
                     </div>
-                </div>
+                    <div className="flex items-center gap-4">
+                        {isFetching && <RefreshCw className="w-4 h-4 text-blue-500 animate-spin" />}
+                        <button className="p-2 hover:bg-gray-100 rounded-full transition relative">
+                            <Bell className="w-5 h-5 text-gray-600" />
+                            <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full"></span>
+                        </button>
+                    </div>
+                </header>
 
-                {/* Content Split */}
-                <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 min-h-0">
+                <main className="flex-1 p-6 max-w-[1600px] mx-auto w-full overflow-hidden flex flex-col">
 
-                    {/* List View */}
-                    <div className="lg:col-span-4 bg-white rounded-xl border border-gray-200 overflow-hidden flex flex-col shadow-sm">
-                        <div className="p-4 border-b border-gray-200 bg-gray-50 flex justify-between items-center">
-                            <h2 className="text-lg font-semibold text-gray-800">Requests</h2>
-                            <span className="text-xs text-gray-500">{startIndex}-{endIndex} of {totalCount}</span>
+                    {/* Stats Overview */}
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                        <StatCard icon={<FileText className="text-blue-600" />} count={totalCount} label="Total Requests" />
+                        <StatCard icon={<Clock className="text-orange-600" />} count={stats.pending} label="Pending" />
+                        <StatCard icon={<CheckCircle className="text-green-600" />} count={stats.verified} label="Verified" />
+                        <StatCard icon={<XCircle className="text-red-600" />} count={stats.rejected} label="Rejected" />
+                    </div>
+
+                    {/* Filter Bar */}
+                    <div className="bg-white rounded-xl border border-gray-200 p-4 mb-4 shadow-sm">
+                        <div className="flex flex-wrap gap-3 items-center">
+                            <div className="relative flex-1 min-w-[200px]">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                <input
+                                    type="text"
+                                    placeholder="Search Name, PAN, Mobile..."
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    className="w-full bg-white border border-gray-300 rounded-lg py-2 pl-9 pr-4 text-sm text-gray-800 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500 transition-all"
+                                />
+                            </div>
+
+                            <select
+                                value={statusFilter}
+                                onChange={(e) => setStatusFilter(e.target.value)}
+                                className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+                            >
+                                <option value="all">All Status</option>
+                                <option value="pending">Pending</option>
+                                <option value="verified">Verified</option>
+                                <option value="rejected">Rejected</option>
+                            </select>
+
+                            <button
+                                onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
+                                className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white hover:bg-gray-50 transition-colors"
+                            >
+                                {sortOrder === 'asc' ? <SortAsc className="w-4 h-4" /> : <SortDesc className="w-4 h-4" />}
+                                {sortOrder === 'asc' ? 'Oldest First' : 'Newest First'}
+                            </button>
+
+                            {activeFilterCount > 0 && (
+                                <button onClick={clearFilters} className="flex items-center gap-2 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm hover:bg-gray-200 transition-colors">
+                                    <XIcon className="w-4 h-4" /> Clear
+                                </button>
+                            )}
                         </div>
+                    </div>
 
-                        <div className="overflow-y-auto flex-1 p-3 space-y-2 custom-scrollbar">
-                            {isLoading ? (
-                                <p className="text-center text-gray-500 p-8">Loading...</p>
-                            ) : users.length === 0 ? (
-                                <div className="text-center text-gray-500 p-8">
-                                    <FileText className="w-10 h-10 mx-auto mb-2 opacity-30" />
-                                    <p>No records found</p>
-                                </div>
-                            ) : (
-                                users.map((user) => (
-                                    <div
-                                        key={user._id}
-                                        onClick={() => { setSelectedUser(user); setIsRejecting(false); }}
-                                        className={`p-4 rounded-xl border cursor-pointer transition-all ${selectedUser?._id === user._id
-                                            ? 'bg-blue-50 border-blue-500 shadow-md'
-                                            : 'bg-white border-gray-200 hover:bg-gray-50'
-                                            }`}
-                                    >
-                                        <div className="flex justify-between items-start mb-2">
-                                            <h3 className={`font-semibold text-base truncate ${selectedUser?._id === user._id ? 'text-blue-700' : 'text-gray-800'
-                                                }`}>
-                                                {user.kycDetails?.fullLegalName || user.fullName}
-                                            </h3>
-                                            <Badge status={user.kycDetails?.status} />
-                                        </div>
-                                        <div className="text-xs text-gray-500 mt-1 space-y-1">
-                                            <p className="flex items-center gap-2"><CreditCard size={12} /> {user.kycDetails?.panNumber}</p>
-                                            <p className="flex items-center gap-2"><Phone size={12} /> {user.mobileNo}</p>
-                                            <p className="flex items-center gap-2">
-                                                <Clock size={12} />
-                                                {user.kycDetails?.submittedAt ? new Date(user.kycDetails.submittedAt).toLocaleDateString() : 'N/A'}
-                                            </p>
-                                        </div>
+                    {/* Content Split */}
+                    <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 min-h-0">
+
+                        {/* List View */}
+                        <div className="lg:col-span-4 bg-white rounded-xl border border-gray-200 overflow-hidden flex flex-col shadow-sm">
+                            <div className="p-4 border-b border-gray-200 bg-gray-50 flex justify-between items-center">
+                                <h2 className="text-lg font-semibold text-gray-800">Requests</h2>
+                                <span className="text-xs text-gray-500">{startIndex}-{endIndex} of {totalCount}</span>
+                            </div>
+
+                            <div className="overflow-y-auto flex-1 p-3 space-y-2 custom-scrollbar">
+                                {isLoading ? (
+                                    <p className="text-center text-gray-500 p-8">Loading...</p>
+                                ) : users.length === 0 ? (
+                                    <div className="text-center text-gray-500 p-8">
+                                        <FileText className="w-10 h-10 mx-auto mb-2 opacity-30" />
+                                        <p>No records found</p>
                                     </div>
-                                ))
+                                ) : (
+                                    users.map((user) => (
+                                        <div
+                                            key={user._id}
+                                            onClick={() => { setSelectedUser(user); setIsRejecting(false); }}
+                                            className={`p-4 rounded-xl border cursor-pointer transition-all ${selectedUser?._id === user._id
+                                                ? 'bg-blue-50 border-blue-500 shadow-md'
+                                                : 'bg-white border-gray-200 hover:bg-gray-50'
+                                                }`}
+                                        >
+                                            <div className="flex justify-between items-start mb-2">
+                                                <h3 className={`font-semibold text-base truncate ${selectedUser?._id === user._id ? 'text-blue-700' : 'text-gray-800'
+                                                    }`}>
+                                                    {user.kycDetails?.fullLegalName || user.fullName}
+                                                </h3>
+                                                <Badge status={user.kycDetails?.status} />
+                                            </div>
+                                            <div className="text-xs text-gray-500 mt-1 space-y-1">
+                                                <p className="flex items-center gap-2"><CreditCard size={12} /> {user.kycDetails?.panNumber}</p>
+                                                <p className="flex items-center gap-2"><Phone size={12} /> {user.mobileNo}</p>
+                                                <p className="flex items-center gap-2">
+                                                    <Clock size={12} />
+                                                    {user.kycDetails?.submittedAt ? new Date(user.kycDetails.submittedAt).toLocaleDateString() : 'N/A'}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+
+                            {/* Pagination */}
+                            {totalPages > 1 && (
+                                <div className="border-t border-gray-200 p-3 bg-gray-50 flex justify-center gap-2">
+                                    <PageBtn onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))} disabled={currentPage === 1} icon={<ChevronLeft size={16} />} />
+                                    <span className="text-sm font-medium flex items-center px-2">Page {currentPage} of {totalPages}</span>
+                                    <PageBtn onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))} disabled={currentPage === totalPages} icon={<ChevronRight size={16} />} />
+                                </div>
                             )}
                         </div>
 
-                        {/* Pagination */}
-                        {totalPages > 1 && (
-                            <div className="border-t border-gray-200 p-3 bg-gray-50 flex justify-center gap-2">
-                                <PageBtn onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))} disabled={currentPage === 1} icon={<ChevronLeft size={16} />} />
-                                <span className="text-sm font-medium flex items-center px-2">Page {currentPage} of {totalPages}</span>
-                                <PageBtn onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))} disabled={currentPage === totalPages} icon={<ChevronRight size={16} />} />
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Detail View */}
-                    <div
-                        id="printable-form"
-                        className="lg:col-span-8 bg-white rounded-xl border border-gray-200 overflow-hidden flex flex-col shadow-sm relative">
-                        {selectedUser ? (
-                            <div className="flex flex-col h-full">
-                                <div className="p-6 border-b border-gray-200 bg-white sticky top-0 z-10">
-                                    <div className="flex justify-between items-start">
-                                        <div>
-                                            <h2 className="text-2xl font-bold text-gray-800 mb-1">{selectedUser.kycDetails?.fullLegalName}</h2>
-                                            <div className="flex items-center gap-3 text-sm text-gray-500">
-                                                <span>ID: {selectedUser._id}</span>
-                                                <span>•</span>
-                                                <span>Registered: {new Date(selectedUser.createdAt).toLocaleDateString()}</span>
-                                                <button
-                                                    onClick={() => window.print()}
-                                                    className="no-print p-2 hover:bg-gray-100 rounded-full text-gray-600 transition-colors"
-                                                    title="Print Form"
-                                                >
-                                                    <Printer size={20} />
-                                                </button>
-                                            </div>
-
-                                        </div>
-
-                                        <Badge status={selectedUser.kycDetails?.status} size="large" />
-                                    </div>
-                                </div>
-
-                                <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar pb-24">
-                                    <DetailSection title="KYC Information" icon={<CreditCard className="text-blue-600" />}>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                            <Field label="Full Legal Name" value={selectedUser.kycDetails?.fullLegalName} />
-                                            <Field label="PAN Number" value={selectedUser.kycDetails?.panNumber} copyable />
-                                            <Field label="PAN Verified" value={selectedUser.kycDetails?.panVerified ? "Yes" : "No"} />
-                                            <Field label="Submission Date" value={selectedUser.kycDetails?.submittedAt ? new Date(selectedUser.kycDetails.submittedAt).toLocaleString() : 'N/A'} />
-                                        </div>
-                                    </DetailSection>
-
-                                    <DetailSection title="Contact & Address" icon={<MapPin className="text-blue-600" />}>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                            <Field label="Mobile Number" value={selectedUser.mobileNo} icon={<Phone size={14} />} />
-                                            <Field label="Email" value={selectedUser.email} icon={<Mail size={14} />} />
-                                            <div className="col-span-full">
-                                                <Field label="Address" value={selectedUser.kycDetails?.address} />
-                                            </div>
-                                            <Field label="City" value={selectedUser.kycDetails?.city} />
-                                            <Field label="State" value={selectedUser.kycDetails?.state} />
-                                            <Field label="Pincode" value={selectedUser.kycDetails?.pincode} />
-                                        </div>
-                                    </DetailSection>
-
-                                    {selectedUser.kycDetails?.remarks && (
-                                        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                                            <h4 className="text-sm font-bold text-yellow-800 mb-1">Admin Remarks</h4>
-                                            <p className="text-gray-700 text-sm">{selectedUser.kycDetails.remarks}</p>
-                                        </div>
-                                    )}
-                                </div>
-
-                                {/* Actions */}
-                                {selectedUser.kycDetails?.status === 'pending' && (
-                                    <div className="border-t border-gray-200 p-6 bg-white absolute bottom-0 w-full z-20">
-                                        {isRejecting ? (
-                                            <div className="bg-red-50 border border-red-200 p-4 rounded-lg animate-in fade-in slide-in-from-bottom-2">
-                                                <h4 className="font-semibold text-red-700 mb-2">Reject Application</h4>
-                                                <textarea
-                                                    className="w-full border border-red-300 rounded p-2 text-sm focus:outline-none focus:border-red-500 mb-3"
-                                                    placeholder="Reason for rejection..."
-                                                    value={rejectReason}
-                                                    onChange={(e) => setRejectReason(e.target.value)}
-                                                />
-                                                <div className="flex justify-end gap-3">
-                                                    <button onClick={() => setIsRejecting(false)} className="text-sm text-gray-600 hover:text-gray-800">Cancel</button>
-                                                    <button onClick={() => handleReject(selectedUser._id)} disabled={isUpdating} className="px-4 py-2 bg-red-600 text-white rounded text-sm hover:bg-red-700 transition">Confirm Reject</button>
+                        {/* Detail View */}
+                        <div
+                            id="printable-form"
+                            className="lg:col-span-8 bg-white rounded-xl border border-gray-200 overflow-hidden flex flex-col shadow-sm relative">
+                            {selectedUser ? (
+                                <div className="flex flex-col h-full">
+                                    <div className="p-6 border-b border-gray-200 bg-white sticky top-0 z-10">
+                                        <div className="flex justify-between items-start">
+                                            <div>
+                                                <h2 className="text-2xl font-bold text-gray-800 mb-1">{selectedUser.kycDetails?.fullLegalName}</h2>
+                                                <div className="flex items-center gap-3 text-sm text-gray-500">
+                                                    <span>ID: {selectedUser._id}</span>
+                                                    <span>•</span>
+                                                    <span>Registered: {new Date(selectedUser.createdAt).toLocaleDateString()}</span>
+                                                    <button
+                                                        onClick={() => window.print()}
+                                                        className="no-print p-2 hover:bg-gray-100 rounded-full text-gray-600 transition-colors"
+                                                        title="Print Form"
+                                                    >
+                                                        <Printer size={20} />
+                                                    </button>
                                                 </div>
+
                                             </div>
-                                        ) : (
-                                            <div className="flex justify-end gap-4">
-                                                <button onClick={() => setIsRejecting(true)} className="flex items-center gap-2 px-5 py-2.5 border border-red-200 text-red-600 rounded-lg hover:bg-red-50 transition font-medium">
-                                                    <XCircle size={18} /> Reject
-                                                </button>
-                                                <button onClick={() => handleApprove(selectedUser._id)} disabled={isUpdating} className="flex items-center gap-2 px-6 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium shadow-sm">
-                                                    <CheckCircle size={18} /> Approve Verified
-                                                </button>
+
+                                            <Badge status={selectedUser.kycDetails?.status} size="large" />
+                                        </div>
+                                    </div>
+
+                                    <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar pb-24">
+                                        <DetailSection title="KYC Information" icon={<CreditCard className="text-blue-600" />}>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                <Field label="Full Legal Name" value={selectedUser.kycDetails?.fullLegalName} />
+                                                <Field label="PAN Number" value={selectedUser.kycDetails?.panNumber} copyable />
+                                                <Field label="PAN Verified" value={selectedUser.kycDetails?.panVerified ? "Yes" : "No"} />
+                                                <Field label="Submission Date" value={selectedUser.kycDetails?.submittedAt ? new Date(selectedUser.kycDetails.submittedAt).toLocaleString() : 'N/A'} />
+                                            </div>
+                                        </DetailSection>
+
+                                        <DetailSection title="Contact & Address" icon={<MapPin className="text-blue-600" />}>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                <Field label="Mobile Number" value={selectedUser.mobileNo} icon={<Phone size={14} />} />
+                                                <Field label="Email" value={selectedUser.email} icon={<Mail size={14} />} />
+                                                <div className="col-span-full">
+                                                    <Field label="Address" value={selectedUser.kycDetails?.address} />
+                                                </div>
+                                                <Field label="City" value={selectedUser.kycDetails?.city} />
+                                                <Field label="State" value={selectedUser.kycDetails?.state} />
+                                                <Field label="Pincode" value={selectedUser.kycDetails?.pincode} />
+                                            </div>
+                                        </DetailSection>
+
+                                        {selectedUser.kycDetails?.remarks && (
+                                            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                                                <h4 className="text-sm font-bold text-yellow-800 mb-1">Admin Remarks</h4>
+                                                <p className="text-gray-700 text-sm">{selectedUser.kycDetails.remarks}</p>
                                             </div>
                                         )}
                                     </div>
-                                )}
-                            </div>
-                        ) : (
-                            <div className="flex flex-col items-center justify-center h-full text-gray-400">
-                                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                                    <FileText size={32} className="opacity-40" />
+
+                                    {/* Actions */}
+                                    {selectedUser.kycDetails?.status === 'pending' && (
+                                        <div className="border-t border-gray-200 p-6 bg-white absolute bottom-0 w-full z-20">
+                                            {isRejecting ? (
+                                                <div className="bg-red-50 border border-red-200 p-4 rounded-lg animate-in fade-in slide-in-from-bottom-2">
+                                                    <h4 className="font-semibold text-red-700 mb-2">Reject Application</h4>
+                                                    <textarea
+                                                        className="w-full border border-red-300 rounded p-2 text-sm focus:outline-none focus:border-red-500 mb-3"
+                                                        placeholder="Reason for rejection..."
+                                                        value={rejectReason}
+                                                        onChange={(e) => setRejectReason(e.target.value)}
+                                                    />
+                                                    <div className="flex justify-end gap-3">
+                                                        <button onClick={() => setIsRejecting(false)} className="text-sm text-gray-600 hover:text-gray-800">Cancel</button>
+                                                        <button onClick={() => handleReject(selectedUser._id)} disabled={isUpdating} className="px-4 py-2 bg-red-600 text-white rounded text-sm hover:bg-red-700 transition">Confirm Reject</button>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div className="flex justify-end gap-4">
+                                                    <button onClick={() => setIsRejecting(true)} className="flex items-center gap-2 px-5 py-2.5 border border-red-200 text-red-600 rounded-lg hover:bg-red-50 transition font-medium">
+                                                        <XCircle size={18} /> Reject
+                                                    </button>
+                                                    <button onClick={() => handleApprove(selectedUser._id)} disabled={isUpdating} className="flex items-center gap-2 px-6 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium shadow-sm">
+                                                        <CheckCircle size={18} /> Approve
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
-                                <p>Select a user to view details</p>
-                            </div>
-                        )}
+                            ) : (
+                                <div className="flex flex-col items-center justify-center h-full text-gray-400">
+                                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                                        <FileText size={32} className="opacity-40" />
+                                    </div>
+                                    <p>Select a user to view details</p>
+                                </div>
+                            )}
+                        </div>
                     </div>
-                </div>
-            </main>
-        </div>
+                </main>
+            </div>
+        </>
     );
+
 }
 
 // Helpers
