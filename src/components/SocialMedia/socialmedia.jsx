@@ -140,7 +140,7 @@ const SocialMediaDashboard = () => {
                             onClick={() => console.log('Back to portal')}
                             className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-100 transition-colors"
                         >
-                            <ArrowLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                            <ArrowLeft className="w-3.5 h-3.5 sm:w-4 cursor-pointer sm:h-4" />
                             <span className="hidden xs:inline">Back</span>
                         </button>
 
