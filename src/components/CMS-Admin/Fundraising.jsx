@@ -33,8 +33,8 @@ export default function FundraisingCMS() {
   const [viewMode, setViewMode] = useState("view");
   const [searchQuery, setSearchQuery] = useState("");
   const [editingCard, setEditingCard] = useState(null);
-  const API_BASE = process.env.NEXT_PUBLIC_BACKEND_API;
-  const IMAGE_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
+  const API_BASE = process.env.NEXT_PUBLIC_BACKEND_API || 'http://localhost:7000/api';
+  const IMAGE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:7000';
   const [formData, setFormData] = useState({
     category: "Emergency Aid",
     isUrgent: false,
@@ -58,8 +58,14 @@ export default function FundraisingCMS() {
     isExistingVideo: false,
     documents: [],            // new uploads (File[])
     existingDocuments: [],    // documents from backend
-
+    campaignId: "",           // ✅ Linked draft campaign ID
+    selectedImageUrl: "",     // ✅ Photography team's image URL
+    selectedVideoUrl: "",     // ✅ Photography team's video URL
+    taskId: "",               // ✅ Task ID for workflow automation
   });
+
+  const [readyCampaigns, setReadyCampaigns] = useState([]); // ✅ Campaigns ready to be published
+  const [selectedCampaign, setSelectedCampaign] = useState(null); // ✅ Currently selected draft
 
 
   const categories = [
@@ -82,7 +88,19 @@ export default function FundraisingCMS() {
 
   useEffect(() => {
     fetchFundraisers();
+    fetchReadyCampaigns();
   }, []);
+
+  const fetchReadyCampaigns = async () => {
+    try {
+      const res = await axios.get(`${API_BASE}/campaigns/ready`);
+      if (res.data.success) {
+        setReadyCampaigns(res.data.data);
+      }
+    } catch (err) {
+      console.error("Error fetching ready campaigns:", err);
+    }
+  };
 
   const fetchFundraisers = async () => {
     try {
@@ -221,11 +239,54 @@ export default function FundraisingCMS() {
   const getImageUrl = (preview, isExisting) => {
     if (!preview) return null;
     if (isExisting) {
-      // For existing images from backend, prepend the IMAGE_URL
-      return `${IMAGE_URL}${preview}`;
+      if (preview.startsWith("http")) return preview;
+      // Ensure no double slashes
+      const baseUrl = IMAGE_URL.replace(/\/$/, "");
+      const path = preview.replace(/^\//, "");
+      return `${baseUrl}/${path}`;
     }
-    // For new uploads, return the base64 preview as is
     return preview;
+  };
+
+  const handleCampaignSelect = (campaignId) => {
+    const campaign = readyCampaigns.find(c => c._id === campaignId);
+    if (!campaign) {
+      setSelectedCampaign(null);
+      resetForm();
+      return;
+    }
+
+    setSelectedCampaign(campaign);
+    setFormData(prev => ({
+      ...prev,
+      campaignId: campaign._id,
+      title: campaign.title || "",
+      organization: campaign.organization || "",
+      beneficiaryName: campaign.beneficiaryName || "",
+      requiredAmount: campaign.targetAmount || "",
+      deadline: campaign.deadline ? campaign.deadline.split('T')[0] : "",
+      taskId: campaign.taskId || "",
+      // Reset media when switching campaigns
+      selectedImageUrl: "",
+      selectedVideoUrl: "",
+      imagePreview: null,
+      videoPreview: null,
+    }));
+  };
+
+  const selectPhotographyMedia = (file) => {
+    const isVideo = file.type === "video";
+    const url = file.url;
+    setFormData(prev => ({
+      ...prev,
+      mediaType: isVideo ? "video" : "image",
+      selectedImageUrl: isVideo ? "" : url,
+      selectedVideoUrl: isVideo ? url : "",
+      imagePreview: isVideo ? null : url,
+      videoPreview: isVideo ? url : null,
+      isExistingImage: !isVideo,
+      isExistingVideo: isVideo,
+    }));
   };
 
   const handleSave = async () => {
@@ -264,6 +325,11 @@ export default function FundraisingCMS() {
         form.append("video", formData.video);
       }
 
+      // 🔹 Append linking data
+      form.append("campaignId", formData.campaignId);
+      if (formData.selectedImageUrl) form.append("selectedImageUrl", formData.selectedImageUrl);
+      if (formData.selectedVideoUrl) form.append("selectedVideoUrl", formData.selectedVideoUrl);
+
       let res;
 
       // ----------------------------------------------------
@@ -291,6 +357,20 @@ export default function FundraisingCMS() {
       const data = res.data;
 
       if (data.success) {
+        // ✅ Automate workflow task completion if ataskId is present
+        if (!editingCard && formData.taskId) {
+          try {
+            await axios.post(
+              `${API_BASE}/workflow/tasks/${formData.taskId}/complete`,
+              {},
+              { withCredentials: true }
+            );
+            console.log("Workflow step completed successfully");
+          } catch (taskErr) {
+            console.error("Task completion failed (non-fatal):", taskErr);
+          }
+        }
+
         alert(editingCard ? "Updated Successfully!" : "Created Successfully!");
         fetchFundraisers();   // refresh list
         resetForm();
@@ -307,32 +387,37 @@ export default function FundraisingCMS() {
   };
 
 
-const resetForm = () => {
-  setFormData({
-    category: "Emergency Aid",
-    isUrgent: false,
-    taxBenefits: false,
-    zakatVerified: false,
-    title: "",
-    organization: "",
-    beneficiaryName: "",
-    about: "",
-    impactGoals: [""],          // ✅ FIX
-    requiredAmount: "",
-    deadline: "",
-    mediaType: "image",
-    image: null,
-    imagePreview: null,
-    video: null,
-    videoPreview: null,
-    currentAmount: 0,
-    totalDonors: 0,
-    isExistingImage: false,
-    isExistingVideo: false,
-    documents: [],              // ✅ FIX
-    existingDocuments: [],      // ✅ FIX
-  });
-};
+  const resetForm = () => {
+    setFormData({
+      category: "Emergency Aid",
+      isUrgent: false,
+      taxBenefits: false,
+      zakatVerified: false,
+      title: "",
+      organization: "",
+      beneficiaryName: "",
+      about: "",
+      impactGoals: [""],          // ✅ FIX
+      requiredAmount: "",
+      deadline: "",
+      mediaType: "image",
+      image: null,
+      imagePreview: null,
+      video: null,
+      videoPreview: null,
+      currentAmount: 0,
+      totalDonors: 0,
+      isExistingImage: false,
+      isExistingVideo: false,
+      documents: [],              // ✅ FIX
+      existingDocuments: [],      // ✅ FIX
+      campaignId: "",
+      selectedImageUrl: "",
+      selectedVideoUrl: "",
+      taskId: "",
+    });
+    setSelectedCampaign(null);
+  };
 
 
   const handleCancel = () => {
@@ -341,32 +426,32 @@ const resetForm = () => {
     resetForm();
   };
 
-const handleDelete = async (id) => {
-  const confirmed = window.confirm(
-    "Are you sure you want to permanently delete this fundraising campaign?"
-  );
-
-  if (!confirmed) return;
-
-  try {
-    const res = await axios.delete(
-      `${process.env.NEXT_PUBLIC_BACKEND_API}/cms/fundraiser/delete/${id}`
+  const handleDelete = async (id) => {
+    const confirmed = window.confirm(
+      "Are you sure you want to permanently delete this fundraising campaign?"
     );
 
-    if (res.data?.success) {
-      // Optimistically update UI
-      setFundraisingCards((prev) =>
-        prev.filter((card) => card._id !== id)
+    if (!confirmed) return;
+
+    try {
+      const res = await axios.delete(
+        `${process.env.NEXT_PUBLIC_BACKEND_API}/cms/fundraiser/delete/${id}`
       );
-      alert("Campaign deleted successfully");
-    } else {
-      alert(res.data?.message || "Failed to delete campaign");
+
+      if (res.data?.success) {
+        // Optimistically update UI
+        setFundraisingCards((prev) =>
+          prev.filter((card) => card._id !== id)
+        );
+        alert("Campaign deleted successfully");
+      } else {
+        alert(res.data?.message || "Failed to delete campaign");
+      }
+    } catch (error) {
+      console.error("Delete Fundraiser Error:", error);
+      alert("Something went wrong while deleting the campaign");
     }
-  } catch (error) {
-    console.error("Delete Fundraiser Error:", error);
-    alert("Something went wrong while deleting the campaign");
-  }
-};
+  };
 
 
   const calculatePercentage = (current, required) => {
@@ -480,25 +565,25 @@ const handleDelete = async (id) => {
                         </span>
                       </div>
 
-                     <div className="flex gap-2">
-  {/* EDIT */}
-  <button
-    onClick={() => handleEdit(card)}
-    className="p-2 bg-[#2D6A4F] text-white rounded-lg hover:bg-[#1E3D36] cursor-pointer"
-    title="Edit"
-  >
-    <Edit2 size={16} />
-  </button>
+                      <div className="flex gap-2">
+                        {/* EDIT */}
+                        <button
+                          onClick={() => handleEdit(card)}
+                          className="p-2 bg-[#2D6A4F] text-white rounded-lg hover:bg-[#1E3D36] cursor-pointer"
+                          title="Edit"
+                        >
+                          <Edit2 size={16} />
+                        </button>
 
-  {/* DELETE */}
-  <button
-    onClick={() => handleDelete(card._id)}
-    className="p-2 bg-red-600 text-white rounded-lg hover:bg-red-700 cursor-pointer"
-    title="Delete"
-  >
-    <Trash2 size={16} />
-  </button>
-</div>
+                        {/* DELETE */}
+                        <button
+                          onClick={() => handleDelete(card._id)}
+                          className="p-2 bg-red-600 text-white rounded-lg hover:bg-red-700 cursor-pointer"
+                          title="Delete"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
 
                     </div>
                   ))}
@@ -527,6 +612,29 @@ const handleDelete = async (id) => {
                     </h2>
 
                     <div className="space-y-5">
+                      {/* 🔹 CAMPAIGN SELECTOR (Only in create mode) */}
+                      {!editingCard && (
+                        <div>
+                          <label className="block text-sm font-semibold text-[#0F172A] mb-2">
+                            Select Approved Draft Campaign <span className="text-red-500">*</span>
+                          </label>
+                          <select
+                            value={formData.campaignId}
+                            onChange={(e) => handleCampaignSelect(e.target.value)}
+                            className="w-full px-4 py-3 border border-blue-200 bg-blue-50/30 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm sm:text-base font-medium"
+                          >
+                            <option value="">-- Click to select an approved draft --</option>
+                            {readyCampaigns.map((c) => (
+                              <option key={c._id} value={c._id}>
+                                {c.title} ({c.beneficiaryName})
+                              </option>
+                            ))}
+                          </select>
+                          <p className="mt-1 text-xs text-blue-600 italic">
+                            Only campaigns with uploaded photography are shown here.
+                          </p>
+                        </div>
+                      )}
                       <div>
                         <label className="block text-sm font-semibold text-[#0F172A] mb-2">
                           Category
@@ -742,6 +850,41 @@ const handleDelete = async (id) => {
                         />
                       </div>
 
+                      {/* 🔹 PHOTOGRAPHY GALLERY */}
+                      {selectedCampaign && selectedCampaign.photographySubmissions?.length > 0 && (
+                        <div className="p-4 bg-emerald-50 rounded-xl border border-emerald-100">
+                          <label className="block text-sm font-bold text-emerald-900 mb-3 flex items-center gap-2">
+                            <Image size={18} />
+                            Select Photography Submission
+                          </label>
+                          <div className="grid grid-cols-3 gap-3">
+                            {selectedCampaign.photographySubmissions.flatMap(sub => sub.files || []).map((file, i) => (
+                              <button
+                                key={i}
+                                type="button"
+                                onClick={() => selectPhotographyMedia(file)}
+                                className={`group relative aspect-square rounded-lg overflow-hidden border-2 transition-all ${(formData.selectedImageUrl === file.url || formData.selectedVideoUrl === file.url)
+                                  ? "border-emerald-500 ring-2 ring-emerald-500/20"
+                                  : "border-transparent hover:border-emerald-300"
+                                  }`}
+                              >
+                                {file.type === "video" ? (
+                                  <video src={getImageUrl(file.url, true)} className="w-full h-full object-cover" />
+                                ) : (
+                                  <img src={getImageUrl(file.url, true)} className="w-full h-full object-cover" />
+                                )}
+                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                                  <span className="text-white text-[10px] font-bold">SELECT</span>
+                                </div>
+                              </button>
+                            ))}
+                          </div>
+                          <p className="mt-2 text-[11px] text-emerald-700 italic">
+                            Tip: Select an image above to use it as the main campaign cover.
+                          </p>
+                        </div>
+                      )}
+
                       {/* MEDIA TYPE SELECTION */}
                       <div>
                         <label className="block text-sm font-semibold text-[#0F172A] mb-3">
@@ -823,7 +966,7 @@ const handleDelete = async (id) => {
                                     alt="Preview"
                                     onError={(e) => {
                                       console.error("Image load error:", e.target.src);
-                                      e.target.src = "https://via.placeholder.com/300x200?text=Image+Not+Found";
+                                      e.target.src = "https://placehold.co/300x200?text=Image+Not+Found";
                                     }}
                                   />
                                   <button
@@ -1185,7 +1328,7 @@ const handleDelete = async (id) => {
                                 className="w-full h-full object-cover"
                                 onError={(e) => {
                                   console.error("Preview image load error:", e.target.src);
-                                  e.target.src = "https://via.placeholder.com/300x200?text=Image+Preview+Error";
+                                  e.target.src = "https://placehold.co/300x200?text=Image+Preview+Error";
                                 }}
                               />
                             ) : (

@@ -8,7 +8,6 @@ import {
 import { useRouter } from "next/navigation";
 const menuItems = [
   { id: 'hero', label: 'Hero Section', icon: Home, path: '/cms-admin' },
-  { id: 'tasks', label: 'Tasks', icon: FileText, path: '/cms-admin/tasks' },
   { id: 'stories', label: 'Impact Stories', icon: Heart, path: '/cms-admin/impact-stories' },
   { id: 'fundraising', label: 'Fundraising Now', icon: IndianRupee, path: '/cms-admin/fundraiser' },
   { id: 'feed', label: 'Tailored Feed', icon: Rss, path: '/cms-admin/tailored-feed' },
@@ -131,8 +130,8 @@ export default function Sidebar({
                   <Icon
                     size={20}
                     className={`flex-shrink-0 transition-colors duration-200 ${isActive
-                        ? "text-[#60A5FA]"
-                        : "text-[#94A3B8] group-hover:text-[#F1F5F9]"
+                      ? "text-[#60A5FA]"
+                      : "text-[#94A3B8] group-hover:text-[#F1F5F9]"
                       }`}
                   />
 
