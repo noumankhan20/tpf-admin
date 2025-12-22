@@ -14,7 +14,7 @@ import {
   GripVertical,
   Image as ImageIcon,
 } from "lucide-react";
-import Sidebar from "../Layout/CMSSideBar";
+
 import axios from "axios";
 export default function PartnersCMS() {
   const [viewMode, setViewMode] = useState("overview");
@@ -191,12 +191,7 @@ const handleSavePartner = async () => {
   return (
     <div className="flex h-screen bg-[#F8FAFC] overflow-hidden">
       {/* Sidebar Integration */}
-      <Sidebar
-        sidebarOpen={sidebarOpen}
-        setSidebarOpen={setSidebarOpen}
-        activeSection={activeSection}
-        setActiveSection={setActiveSection}
-      />
+      
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col overflow-hidden">

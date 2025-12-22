@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { Save, XCircle, Home, Edit2, Trash2, Plus, Menu, ChevronUp, ChevronDown, GripVertical, Eye, Upload } from "lucide-react";
-import Sidebar from "../Layout/CMSSideBar";
+
 export default function InfluencerGalleryCMS() {
   const [viewMode, setViewMode] = useState("overview");
   const [searchQuery, setSearchQuery] = useState("");
@@ -122,12 +122,7 @@ export default function InfluencerGalleryCMS() {
 
   return (
     <div className="flex h-screen bg-gray-50 overflow-hidden">
-      <Sidebar
-        sidebarOpen={sidebarOpen}
-        setSidebarOpen={setSidebarOpen}
-        activeSection={activeSection}
-        setActiveSection={setActiveSection}
-      />
+      
       <div className="flex-1 flex flex-col overflow-hidden">
         <div className="md:hidden bg-white border-b px-4 py-3 flex items-center">
           <button onClick={() => setSidebarOpen(true)} className="p-2 hover:bg-gray-100 rounded-lg"><Menu size={24} /></button>

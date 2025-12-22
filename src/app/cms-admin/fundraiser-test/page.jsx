@@ -1,4 +1,4 @@
-import FundraisingCMS from '@/components/CMS-Admin/FundraisingNow/FundraisingMain'
+import FundraisingCMS from '@/components/CMS-Admin/Fundraising'
 import React from 'react'
 const page = () => {
   return (

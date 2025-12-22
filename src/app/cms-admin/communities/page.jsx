@@ -1,9 +1,9 @@
+import CommunitiesMain from '@/components/CMS-Admin/Communities/CommunitiesMain'
 import React from 'react'
-import CommunitiesCMS from "@/components/CMS-Admin/Communities"
 const page = () => {
   return (
     <div>
-        <CommunitiesCMS />
+        <CommunitiesMain />
         </div>
   )
 }

@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import { Save, Home, Menu, Upload, RefreshCw, Eye, EyeOff } from "lucide-react";
-import Sidebar from "../Layout/CMSSideBar";
+
 import axios from "axios";
 
 export default function StartFundraiserBannerCMS() {
@@ -157,12 +157,7 @@ export default function StartFundraiserBannerCMS() {
 
   return (
     <div className="flex h-screen bg-[#F8FAFC] overflow-hidden">
-      <Sidebar
-        sidebarOpen={sidebarOpen}
-        setSidebarOpen={setSidebarOpen}
-        activeSection={activeSection}
-        setActiveSection={setActiveSection}
-      />
+      
 
       <div className="flex-1 flex flex-col overflow-hidden">
         <div className="md:hidden bg-white border-b px-4 py-3 flex items-center justify-between">

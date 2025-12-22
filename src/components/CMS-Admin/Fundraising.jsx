@@ -26,7 +26,7 @@ import {
   PlusIcon,
 } from "lucide-react";
 import axios from "axios";
-import Sidebar from "../Layout/CMSSideBar";
+
 export default function FundraisingCMS() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeSection, setActiveSection] = useState("fundraising");
@@ -472,12 +472,7 @@ export default function FundraisingCMS() {
 
   return (
     <div className="flex h-screen bg-[#F8FAFC] overflow-hidden">
-      <Sidebar
-        sidebarOpen={sidebarOpen}
-        setSidebarOpen={setSidebarOpen}
-        activeSection={activeSection}
-        setActiveSection={setActiveSection}
-      />
+      
 
       <div className="flex-1 flex flex-col overflow-hidden w-full md:w-auto">
         <div className="md:hidden bg-white border-b border-gray-200 px-4 py-3 flex items-center">

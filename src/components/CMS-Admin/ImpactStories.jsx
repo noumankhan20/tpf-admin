@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import { Save, XCircle, Home, Menu, Upload, Edit2, Trash2, Plus, Search, Eye, EyeOff, Users, ArrowRight } from "lucide-react";
-import Sidebar from "../Layout/CMSSideBar";
+
 import axios from "axios";
 const IMAGE_URL = process.env.NEXT_PUBLIC_BACKEND_URL
 // Live Preview Component
@@ -228,12 +228,7 @@ export default function StoryCardsCMS() {
 
     return (
         <div className="flex h-screen bg-[#F8FAFC] overflow-hidden">
-            <Sidebar
-                sidebarOpen={sidebarOpen}
-                setSidebarOpen={setSidebarOpen}
-                activeSection={activeSection}
-                setActiveSection={setActiveSection}
-            />
+           
 
             <div className="flex-1 flex flex-col overflow-hidden">
                 <div className="md:hidden bg-white border-b px-4 py-3 flex items-center">

@@ -297,12 +297,7 @@ export default function TailoredFeedCMS() {
 
   return (
     <div className="flex h-screen bg-[#F8FAFC] overflow-hidden">
-      <Sidebar
-        sidebarOpen={sidebarOpen}
-        setSidebarOpen={setSidebarOpen}
-        activeSection={activeSection}
-        setActiveSection={setActiveSection}
-      />
+      
 
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Mobile Header */}
