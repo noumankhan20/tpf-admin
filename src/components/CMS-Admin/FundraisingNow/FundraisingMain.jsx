@@ -18,7 +18,7 @@ export default function FundraisingCMS() {
   const [fundraisingCards, setFundraisingCards] = useState([]);
   const [readyCampaigns, setReadyCampaigns] = useState([]);
   const [selectedCampaign, setSelectedCampaign] = useState(null);
-  
+
   const API_BASE = process.env.NEXT_PUBLIC_BACKEND_API || 'http://localhost:7000/api';
   const IMAGE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:7000';
 
@@ -74,7 +74,7 @@ export default function FundraisingCMS() {
 
   const fetchReadyCampaigns = async () => {
     try {
-      const res = await axios.get(`${API_BASE}/campaigns/ready`);
+      const res = await axios.get(`${API_BASE}/campaigns/ready`, { withCredentials: true });
       if (res.data.success) {
         setReadyCampaigns(res.data.data);
       }
@@ -85,7 +85,7 @@ export default function FundraisingCMS() {
 
   const fetchFundraisers = async () => {
     try {
-      const res = await axios.get(`${API_BASE}/cms/fundraiser/get`);
+      const res = await axios.get(`${API_BASE}/cms/fundraiser/get`, { withCredentials: true });
       const data = await res.data;
 
       if (data.success) {
@@ -133,7 +133,7 @@ export default function FundraisingCMS() {
     if (!confirmed) return;
 
     try {
-      const res = await axios.delete(`${API_BASE}/cms/fundraiser/delete/${id}`);
+      const res = await axios.delete(`${API_BASE}/cms/fundraiser/delete/${id}`, { withCredentials: true });
 
       if (res.data?.success) {
         setFundraisingCards((prev) => prev.filter((card) => card._id !== id));
@@ -189,13 +189,13 @@ export default function FundraisingCMS() {
         res = await axios.put(
           `${API_BASE}/cms/fundraiser/update/${editingCard._id}`,
           form,
-          { headers: { "Content-Type": "multipart/form-data" } }
+          { headers: { "Content-Type": "multipart/form-data" }, withCredentials: true }
         );
       } else {
         res = await axios.post(
           `${API_BASE}/cms/fundraiser/add`,
           form,
-          { headers: { "Content-Type": "multipart/form-data" } }
+          { headers: { "Content-Type": "multipart/form-data" }, withCredentials: true }
         );
       }
 
