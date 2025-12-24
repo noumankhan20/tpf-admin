@@ -144,7 +144,7 @@ export default function TailoredFeedCMS() {
       setTimeout(() => setSuccessMessage(""), 4000);
     } else {
       setError(message);
-      setTimeout(() => setError(""), 5000);
+      setTimeout(() => setError(null), 5000);
     }
   };
 
@@ -295,9 +295,18 @@ export default function TailoredFeedCMS() {
     fetchFeedItems();
   }, []);
 
+  useEffect(() => {
+    if (error) {
+      // Show error once and then clear it after a delay
+      const timer = setTimeout(() => setError(null), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [error]);
+
+
   return (
     <div className="flex h-screen bg-[#F8FAFC] overflow-hidden">
-      
+
 
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Mobile Header */}
@@ -407,7 +416,9 @@ export default function TailoredFeedCMS() {
                                   alt={item.title}
                                   className="w-full h-full object-cover"
                                   onError={(e) => {
-                                    e.target.src = "/placeholder-image.jpg";
+                                    if (!e.target.src.includes("placeholder-image.jpg")) {
+                                      e.target.src = "/images/placeholder-image.jpg";  // Set the fallback image
+                                    }
                                   }}
                                 />
                               ) : (
