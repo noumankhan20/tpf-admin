@@ -15,9 +15,12 @@ import {
   AlertCircle,
   CheckCircle,
   X,
+  ArrowLeft,
+  Sparkles,
+  Grid3x3,
+  LayoutGrid,
 } from "lucide-react";
-import Sidebar from "@/components/Layout/CMSSideBar";
-
+import { useRouter } from "next/navigation";
 // API Configuration
 const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_API || "http://localhost:7000/api";
 const IMAGE_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
@@ -34,7 +37,7 @@ export default function TailoredFeedCMS() {
   const [selectedItem, setSelectedItem] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeSection, setActiveSection] = useState("feed");
-
+  const router = useRouter();
   const [feedItems, setFeedItems] = useState([]);
   const [itemForm, setItemForm] = useState({
     title: "",
@@ -49,28 +52,32 @@ export default function TailoredFeedCMS() {
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState("");
 
-  // Alert Component
+  // Alert Component with enhanced styling
   const Alert = ({ type, message, onDismiss }) => {
     const isSuccess = type === "success";
 
     return (
       <div className={`fixed top-4 right-4 z-50 max-w-sm w-full mx-4 sm:mx-0 ${isSuccess
-        ? "bg-green-50 border border-green-200 text-green-800"
-        : "bg-red-50 border border-red-200 text-red-800"
-        } rounded-lg p-4 shadow-lg animate-in slide-in-from-top-2 duration-300`}>
+        ? "bg-emerald-50 border-2 border-emerald-500 text-emerald-900"
+        : "bg-red-50 border-2 border-red-500 text-red-900"
+        } rounded-2xl p-4 shadow-2xl animate-in slide-in-from-top-2 duration-300`}>
         <div className="flex items-start gap-3">
           {isSuccess ? (
-            <CheckCircle size={20} className="text-green-600 flex-shrink-0 mt-0.5" />
+            <div className="bg-emerald-500 rounded-full p-1">
+              <CheckCircle size={18} className="text-white" />
+            </div>
           ) : (
-            <AlertCircle size={20} className="text-red-600 flex-shrink-0 mt-0.5" />
+            <div className="bg-red-500 rounded-full p-1">
+              <AlertCircle size={18} className="text-white" />
+            </div>
           )}
           <div className="flex-1">
-            <p className="text-sm font-medium">{message}</p>
+            <p className="text-sm font-semibold">{message}</p>
           </div>
           {onDismiss && (
             <button
               onClick={onDismiss}
-              className="flex-shrink-0 hover:opacity-70 transition-opacity"
+              className="flex-shrink-0 hover:opacity-70 transition-opacity p-1 hover:bg-gray-200 rounded-full"
             >
               <X size={16} />
             </button>
@@ -94,7 +101,6 @@ export default function TailoredFeedCMS() {
       setIsLoading(false);
     }
   };
-
 
   // Create New Feed Item
   const createFeedItem = async (formData) => {
@@ -144,7 +150,7 @@ export default function TailoredFeedCMS() {
       setTimeout(() => setSuccessMessage(""), 4000);
     } else {
       setError(message);
-      setTimeout(() => setError(""), 5000);
+      setTimeout(() => setError(null), 5000);
     }
   };
 
@@ -153,14 +159,12 @@ export default function TailoredFeedCMS() {
     const file = e.target.files[0];
     if (!file) return;
 
-    // Validate file type
     const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
     if (!allowedTypes.includes(file.type)) {
       showMessage("Please upload a valid image file (JPG, PNG, or WebP)", "error");
       return;
     }
 
-    // Validate file size (5MB limit)
     const maxSize = 5 * 1024 * 1024;
     if (file.size > maxSize) {
       showMessage("File size must be less than 5MB", "error");
@@ -207,9 +211,8 @@ export default function TailoredFeedCMS() {
     setError(null);
   };
 
-  // Handle Save Item (Create/Update)
+  // Handle Save Item
   const handleSaveItem = async () => {
-    // Validation
     if (!itemForm.title.trim()) {
       showMessage("Title is required", "error");
       return;
@@ -237,7 +240,6 @@ export default function TailoredFeedCMS() {
         await updateFeedItem(selectedItem._id, formData);
       }
 
-      // Reset form and go to overview
       setViewMode("overview");
       setSelectedItem(null);
       setItemForm({
@@ -285,40 +287,48 @@ export default function TailoredFeedCMS() {
     setError(null);
   };
 
-  // Filter Items by Title
+  // Filter Items
   const filteredItems = feedItems.filter((item) =>
     item.title?.toLowerCase().includes(searchQuery.toLowerCase().trim())
   );
 
-  // Fetch Feed Items when component mounts
   useEffect(() => {
     fetchFeedItems();
   }, []);
 
-  return (
-    <div className="flex h-screen bg-[#F8FAFC] overflow-hidden">
-      
+  useEffect(() => {
+    if (error) {
+      const timer = setTimeout(() => setError(null), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [error]);
 
+  return (
+    <div className="flex h-screen bg-gradient-to-br from-gray-50 via-white to-emerald-50/30 overflow-hidden">
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Mobile Header */}
-        <div className="md:hidden bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between sticky top-0 z-40">
-          <div className="flex items-center">
+        {/* Enhanced Mobile Header */}
+        <div className="md:hidden bg-white/80 backdrop-blur-xl border-b border-emerald-100 px-4 py-4 flex items-center justify-between sticky top-0 z-40 shadow-sm">
+          <div className="flex items-center gap-3">
             <button
-              onClick={() => setSidebarOpen(true)}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              aria-label="Open menu"
+              onClick={() => router.push("/cms-admin")}
+              className="flex cursor-pointer items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-gray-600 hover:text-gray-800 hover:bg-white transition-all border border-gray-300 shadow-sm"
             >
-              <Menu size={24} className="text-gray-700" />
+              <ArrowLeft className="w-4 h-4" />
             </button>
-            <h1 className="ml-3 text-lg font-bold text-[#0F172A]">
-              {viewMode === "overview" ? "Feed Items" :
-                viewMode === "add-item" ? "Add Item" : "Edit Item"}
-            </h1>
+            <div>
+              <h1 className="text-lg font-bold text-gray-900">
+                {viewMode === "overview" ? "Feed Items" :
+                  viewMode === "add-item" ? "Add Item" : "Edit Item"}
+              </h1>
+              {viewMode === "overview" && (
+                <p className="text-xs text-emerald-600 font-medium">{feedItems.length} items</p>
+              )}
+            </div>
           </div>
           {viewMode === "overview" && (
             <button
               onClick={handleAddItem}
-              className="bg-blue-600 text-white p-2 rounded-lg hover:bg-blue-700 transition-colors"
+              className="bg-gradient-to-r from-emerald-500 to-emerald-600 text-white p-2.5 rounded-xl hover:shadow-lg hover:scale-105 transition-all duration-200"
               aria-label="Add item"
             >
               <Plus size={20} />
@@ -348,32 +358,43 @@ export default function TailoredFeedCMS() {
             {/* Overview Section */}
             {viewMode === "overview" && (
               <div className="space-y-6">
-                <div className="bg-white rounded-xl shadow-sm border border-[#E2E8F0] p-4 sm:p-6">
-                  {/* Desktop Header */}
-                  <div className="hidden md:flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                <div className="bg-white/70 backdrop-blur-xl rounded-3xl shadow-xl border border-emerald-100/50 p-6 sm:p-8">
+                  {/* Enhanced Desktop Header */}
+                  <div className="hidden md:flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
                     <div>
-                      <h2 className="text-xl sm:text-2xl font-bold text-[#0F172A] mb-1">
-                        Feed Items
-                      </h2>
-                      <p className="text-sm text-[#64748B]">
-                        {feedItems.length} items in carousel
+                      <div className="flex items-center gap-3 mb-2">
+                        <button
+                          onClick={() => router.push("/cms-admin")}
+                          className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-gray-600 hover:text-gray-800 hover:bg-white transition-all border border-gray-300 shadow-sm"
+                        >
+                          <ArrowLeft className="w-4 h-4" />
+                        </button>
+                        <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 p-2 rounded-xl">
+                          <LayoutGrid size={24} className="text-white" />
+                        </div>
+                        <h2 className="text-3xl font-bold text-gray-900">
+                          Feed Items
+                        </h2>
+                      </div>
+                      <p className="text-sm text-gray-600 ml-14">
+                        Manage your carousel items • <span className="font-semibold text-emerald-600">{feedItems.length} total items</span>
                       </p>
                     </div>
                     <button
                       onClick={handleAddItem}
                       disabled={isLoading}
-                      className="flex items-center gap-2 bg-blue-600 text-white px-6 py-2.5 rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="group cursor-pointer flex items-center gap-2 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white px-6 py-3 rounded-xl hover:shadow-lg hover:scale-105 transition-all duration-200 font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      <Plus size={18} />
-                      <span>Add Item</span>
+                      <Plus size={20} className="group-hover:rotate-90 transition-transform duration-200" />
+                      <span>Add New Item</span>
                     </button>
                   </div>
 
-                  {/* Search Bar */}
-                  <div className="relative mb-6">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#94A3B8] pointer-events-none" size={20} />
+                  {/* Enhanced Search Bar */}
+                  <div className="relative mb-8">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-emerald-500" size={20} />
                     <input
-                      className="w-full pl-10 pr-4 py-3 border border-[#CBD5E1] rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                      className="w-full pl-12 pr-4 py-4 border-2 border-emerald-100 bg-white rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all text-gray-900 placeholder-gray-400"
                       placeholder="Search items by title..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
@@ -383,50 +404,56 @@ export default function TailoredFeedCMS() {
 
                   {/* Loading State */}
                   {isLoading && (
-                    <div className="flex items-center justify-center py-16">
-                      <div className="flex flex-col items-center gap-3">
-                        <Loader2 size={32} className="animate-spin text-blue-600" />
-                        <span className="text-gray-600 text-sm">Loading items...</span>
+                    <div className="flex items-center justify-center py-20">
+                      <div className="flex flex-col items-center gap-4">
+                        <div className="relative">
+                          <div className="w-16 h-16 border-4 border-emerald-100 rounded-full"></div>
+                          <div className="w-16 h-16 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin absolute top-0"></div>
+                        </div>
+                        <span className="text-gray-600 font-medium">Loading items...</span>
                       </div>
                     </div>
                   )}
 
-                  {/* Items Grid */}
+                  {/* Enhanced Items Grid */}
                   {!isLoading && (
                     <>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 lg:gap-6">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
                         {filteredItems.map((item) => (
                           <div
                             key={item._id}
-                            className="border border-[#E2E8F0] rounded-xl overflow-hidden hover:shadow-lg transition-all duration-200 bg-white"
+                            className="group bg-white border-2 border-emerald-100 rounded-2xl overflow-hidden hover:shadow-2xl hover:border-emerald-300 hover:-translate-y-1 transition-all duration-300"
                           >
-                            <div className="relative h-48 bg-gray-100">
+                            <div className="relative h-52 bg-gradient-to-br from-gray-100 to-emerald-50 overflow-hidden">
                               {item.image ? (
                                 <img
                                   src={`${IMAGE_BASE_URL}${item.image}`}
                                   alt={item.title}
-                                  className="w-full h-full object-cover"
+                                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                                   onError={(e) => {
-                                    e.target.src = "/placeholder-image.jpg";
+                                    if (!e.target.src.includes("placeholder-image.jpg")) {
+                                      e.target.src = "/images/placeholder-image.jpg";
+                                    }
                                   }}
                                 />
                               ) : (
                                 <div className="w-full h-full flex items-center justify-center">
-                                  <ImageIcon size={48} className="text-gray-400" />
+                                  <ImageIcon size={56} className="text-emerald-300" />
                                 </div>
                               )}
+                              <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                             </div>
 
-                            <div className="p-4 sm:p-5">
-                              <h3 className="font-bold text-[#0F172A] text-lg mb-3 line-clamp-2 leading-tight">
+                            <div className="p-5">
+                              <h3 className="font-bold text-gray-900 text-lg mb-4 line-clamp-2 leading-tight group-hover:text-emerald-600 transition-colors">
                                 {item.title}
                               </h3>
 
-                              <div className="flex flex-col sm:flex-row gap-2">
+                              <div className="flex gap-2">
                                 <button
                                   onClick={() => handleEditItem(item)}
                                   disabled={isLoading}
-                                  className="flex items-center justify-center gap-2 flex-1 py-2.5 bg-[#3B82F6] text-white rounded-lg hover:bg-[#2563EB] transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                                  className="flex cursor-pointer items-center justify-center gap-2 flex-1 py-2.5 bg-emerald-500 text-white rounded-xl hover:bg-emerald-600 hover:shadow-lg transition-all duration-200 font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                   <Edit2 size={16} />
                                   <span>Edit</span>
@@ -435,7 +462,7 @@ export default function TailoredFeedCMS() {
                                 <button
                                   onClick={() => handleDeleteItem(item)}
                                   disabled={isLoading}
-                                  className="flex items-center justify-center gap-2 flex-1 py-2.5 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                                  className="flex cursor-pointer items-center justify-center gap-2 flex-1 py-2.5 bg-red-500 text-white rounded-xl hover:bg-red-600 hover:shadow-lg transition-all duration-200 font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                   <Trash2 size={16} />
                                   <span>Delete</span>
@@ -446,16 +473,20 @@ export default function TailoredFeedCMS() {
                         ))}
                       </div>
 
-                      {/* Empty State */}
+                      {/* Enhanced Empty State */}
                       {filteredItems.length === 0 && (
-                        <div className="text-center py-16">
-                          <div className="w-16 h-16 bg-gray-100 rounded-full mx-auto mb-4 flex items-center justify-center">
-                            <Search size={28} className="text-gray-400" />
+                        <div className="text-center py-20">
+                          <div className="w-20 h-20 bg-gradient-to-br from-emerald-100 to-emerald-200 rounded-full mx-auto mb-6 flex items-center justify-center">
+                            {feedItems.length === 0 ? (
+                              <Sparkles size={36} className="text-emerald-600" />
+                            ) : (
+                              <Search size={36} className="text-emerald-600" />
+                            )}
                           </div>
-                          <p className="text-gray-500 text-lg font-medium mb-2">
+                          <p className="text-gray-700 text-xl font-bold mb-2">
                             {feedItems.length === 0 ? "No items yet" : "No items found"}
                           </p>
-                          <p className="text-gray-400 text-sm mb-6">
+                          <p className="text-gray-500 mb-8">
                             {feedItems.length === 0
                               ? "Get started by adding your first feed item"
                               : "Try adjusting your search query"
@@ -464,7 +495,7 @@ export default function TailoredFeedCMS() {
                           {feedItems.length === 0 && (
                             <button
                               onClick={handleAddItem}
-                              className="bg-blue-600 text-white px-6 py-2.5 rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                              className="bg-gradient-to-r from-emerald-500 to-emerald-600 text-white px-8 py-3 rounded-xl hover:shadow-lg hover:scale-105 transition-all duration-200 font-semibold"
                             >
                               Add First Item
                             </button>
@@ -477,34 +508,44 @@ export default function TailoredFeedCMS() {
               </div>
             )}
 
-            {/* Add/Edit Item Section */}
+            {/* Enhanced Add/Edit Item Section */}
             {(viewMode === "add-item" || viewMode === "edit-item") && (
               <div className="space-y-6">
-                {/* Desktop Back Button */}
+                {/* Enhanced Desktop Back Button */}
                 <div className="hidden md:flex items-center gap-3 mb-2">
                   <button
                     onClick={handleCancel}
                     disabled={isSubmitting}
-                    className="text-gray-600 hover:text-gray-900 transition-colors disabled:opacity-50"
+                    className="flex cursor-pointer items-center gap-2 text-gray-600 hover:text-emerald-600 transition-colors disabled:opacity-50 font-medium group"
                   >
-                    ← Back to Items
+                    <ArrowLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
+                    <span>Back to Items</span>
                   </button>
                 </div>
 
                 <div className="grid lg:grid-cols-2 gap-6">
-                  {/* Form */}
-                  <div className="bg-white rounded-xl shadow-sm border border-[#E2E8F0] p-4 sm:p-6">
-                    <h2 className="text-xl sm:text-2xl font-bold mb-6 text-[#0F172A]">
-                      {viewMode === "add-item" ? "Add New Item" : "Edit Item"}
-                    </h2>
+                  {/* Enhanced Form */}
+                  <div className="bg-white/70 backdrop-blur-xl rounded-3xl shadow-xl border border-emerald-100/50 p-6 sm:p-8">
+                    <div className="flex items-center gap-3 mb-8">
+                      <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 p-2 rounded-xl">
+                        {viewMode === "add-item" ? (
+                          <Plus size={24} className="text-white" />
+                        ) : (
+                          <Edit2 size={24} className="text-white" />
+                        )}
+                      </div>
+                      <h2 className="text-2xl font-bold text-gray-900">
+                        {viewMode === "add-item" ? "Add New Item" : "Edit Item"}
+                      </h2>
+                    </div>
 
-                    {/* Image Upload */}
+                    {/* Enhanced Image Upload */}
                     <div className="mb-6">
-                      <label className="block text-sm font-semibold mb-3 text-[#0F172A]">
+                      <label className="block text-sm font-bold mb-3 text-gray-900">
                         Image Upload {viewMode === "add-item" && <span className="text-red-500">*</span>}
                       </label>
 
-                      <label className="border-2 border-dashed border-[#CBD5E1] rounded-xl p-6 sm:p-8 block text-center cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition-all">
+                      <label className="group border-3 border-dashed border-emerald-200 rounded-2xl p-8 block text-center cursor-pointer hover:border-emerald-500 hover:bg-emerald-50/50 transition-all duration-300">
                         <input
                           type="file"
                           accept="image/*"
@@ -514,24 +555,31 @@ export default function TailoredFeedCMS() {
                         />
 
                         {itemForm.mediaPreview ? (
-                          <div className="space-y-3">
-                            <img
-                              src={itemForm.mediaPreview}
-                              alt="Preview"
-                              className="max-h-40 sm:max-h-48 mx-auto rounded-lg shadow-sm"
-                            />
-                            <p className="text-sm text-blue-600 font-medium">
+                          <div className="space-y-4">
+                            <div className="relative inline-block">
+                              <img
+                                src={itemForm.mediaPreview}
+                                alt="Preview"
+                                className="max-h-48 mx-auto rounded-2xl shadow-lg ring-4 ring-emerald-100"
+                              />
+                              <div className="absolute inset-0 bg-emerald-500/10 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                <Upload size={32} className="text-emerald-600" />
+                              </div>
+                            </div>
+                            <p className="text-sm text-emerald-600 font-semibold">
                               Click to change image
                             </p>
                           </div>
                         ) : (
-                          <div className="space-y-3">
-                            <ImageIcon size={40} className="mx-auto text-gray-400" />
+                          <div className="space-y-4">
+                            <div className="w-16 h-16 bg-emerald-100 rounded-2xl mx-auto flex items-center justify-center group-hover:bg-emerald-200 transition-colors">
+                              <Upload size={32} className="text-emerald-600" />
+                            </div>
                             <div>
-                              <p className="text-sm font-medium text-gray-700">
+                              <p className="text-base font-semibold text-gray-900 mb-1">
                                 Click or drag to upload
                               </p>
-                              <p className="text-xs text-gray-500 mt-1">
+                              <p className="text-sm text-gray-500">
                                 JPG, PNG or WebP (Max 5MB)
                               </p>
                             </div>
@@ -540,45 +588,50 @@ export default function TailoredFeedCMS() {
                       </label>
                     </div>
 
-                    {/* Title */}
+                    {/* Enhanced Title Input */}
                     <div className="mb-6">
-                      <label className="block text-sm font-semibold mb-2 text-[#0F172A]">
+                      <label className="block text-sm font-bold mb-3 text-gray-900">
                         Item Title <span className="text-red-500">*</span>
                       </label>
                       <input
-                        className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                        className="w-full px-4 py-4 border-2 border-emerald-100 bg-white rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all text-gray-900 placeholder-gray-400"
                         placeholder="Enter item title..."
                         value={itemForm.title}
                         onChange={(e) => setItemForm((prev) => ({ ...prev, title: e.target.value }))}
                         disabled={isSubmitting}
                         maxLength={100}
                       />
-                      <p className="text-xs text-gray-500 mt-1">
-                        {itemForm.title.length}/100 characters
+                      <p className="text-xs text-gray-500 mt-2 flex items-center justify-between">
+                        <span>Choose a descriptive title</span>
+                        <span className={itemForm.title.length > 80 ? "text-red-500 font-semibold" : ""}>{itemForm.title.length}/100</span>
                       </p>
                     </div>
 
-                    {/* ✅ ROUTE FIELD */}
-                    <div className="mb-5">
-                      <label className="block text-sm font-semibold text-[#0F172A] mb-2">
+                    {/* Enhanced Route Input */}
+                    <div className="mb-8">
+                      <label className="block text-sm font-bold text-gray-900 mb-3">
                         Route (Frontend Path)
                       </label>
                       <input
-                        className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg"
+                        className="w-full px-4 py-4 border-2 border-emerald-100 bg-white rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all text-gray-900 placeholder-gray-400"
                         placeholder="/services/web-development"
                         value={itemForm.route}
                         onChange={(e) =>
                           setItemForm((prev) => ({ ...prev, route: e.target.value }))
                         }
+                        disabled={isSubmitting}
                       />
+                      <p className="text-xs text-gray-500 mt-2">
+                        Optional: Add a route path for navigation
+                      </p>
                     </div>
 
-                    {/* Action Buttons */}
+                    {/* Enhanced Action Buttons */}
                     <div className="flex flex-col-reverse sm:flex-row gap-3">
                       <button
                         onClick={handleCancel}
                         disabled={isSubmitting}
-                        className="w-full sm:w-auto px-6 py-3 border-2 border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-medium flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-full sm:w-auto px-6 py-3 border-2 border-gray-300 rounded-xl hover:bg-gray-50 hover:border-gray-400 transition-all font-semibold flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed text-gray-700"
                       >
                         <XCircle size={18} />
                         <span>Cancel</span>
@@ -587,7 +640,7 @@ export default function TailoredFeedCMS() {
                       <button
                         onClick={handleSaveItem}
                         disabled={isSubmitting || !itemForm.title.trim()}
-                        className="w-full sm:flex-1 bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-full sm:flex-1 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white py-3 px-6 rounded-xl hover:shadow-lg hover:scale-105 transition-all duration-200 font-semibold flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         {isSubmitting ? (
                           <>
@@ -604,15 +657,19 @@ export default function TailoredFeedCMS() {
                     </div>
                   </div>
 
-                  {/* Preview - Hidden on mobile for add mode, always visible for edit */}
-                  <div className={`bg-white rounded-xl shadow-sm border border-[#E2E8F0] p-4 sm:p-6 ${viewMode === "add-item" ? "hidden lg:block" : ""
-                    }`}>
-                    <h2 className="text-xl sm:text-2xl font-bold mb-6 text-[#0F172A]">
-                      Live Preview
-                    </h2>
+                  {/* Enhanced Preview */}
+                  <div className={`bg-white/70 backdrop-blur-xl rounded-3xl shadow-xl border border-emerald-100/50 p-6 sm:p-8 ${viewMode === "add-item" ? "hidden lg:block" : ""}`}>
+                    <div className="flex items-center gap-3 mb-8">
+                      <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 p-2 rounded-xl">
+                        <Sparkles size={24} className="text-white" />
+                      </div>
+                      <h2 className="text-2xl font-bold text-gray-900">
+                        Live Preview
+                      </h2>
+                    </div>
 
-                    <div className="border border-[#E2E8F0] rounded-xl overflow-hidden shadow-sm">
-                      <div className="relative h-48 sm:h-64 bg-gray-100">
+                    <div className="border-2 border-emerald-100 rounded-2xl overflow-hidden shadow-lg bg-white">
+                      <div className="relative h-64 bg-gradient-to-br from-gray-100 to-emerald-50">
                         {itemForm.mediaPreview ? (
                           <img
                             src={itemForm.mediaPreview}
@@ -621,20 +678,26 @@ export default function TailoredFeedCMS() {
                           />
                         ) : (
                           <div className="w-full h-full flex flex-col items-center justify-center">
-                            <ImageIcon size={48} className="text-gray-300 mb-3" />
-                            <p className="text-gray-400 text-sm">No image uploaded</p>
+                            <div className="w-16 h-16 bg-emerald-100 rounded-2xl flex items-center justify-center mb-3">
+                              <ImageIcon size={32} className="text-emerald-400" />
+                            </div>
+                            <p className="text-gray-400 text-sm font-medium">No image uploaded</p>
                           </div>
                         )}
                       </div>
 
                       <div className="p-6">
-                        <h3 className="text-xl font-bold mb-3 text-[#0F172A]">
+                        <h3 className="text-xl font-bold mb-2 text-gray-900">
                           {itemForm.title || "Item Title"}
                         </h3>
-                        {!itemForm.title && (
+                        {!itemForm.title ? (
                           <p className="text-gray-400 text-sm">
                             Enter a title to see the preview
                           </p>
+                        ) : (
+                          <div className="inline-block bg-emerald-100 text-emerald-700 text-xs font-semibold px-3 py-1 rounded-full">
+                            Preview Mode
+                          </div>
                         )}
                       </div>
                     </div>

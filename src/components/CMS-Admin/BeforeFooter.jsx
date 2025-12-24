@@ -1,17 +1,17 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { Save, Home, Menu, Upload, RefreshCw, Eye, EyeOff } from "lucide-react";
+import { Save, Home, Menu,ArrowLeft, Upload, RefreshCw, Eye, EyeOff, Image as ImageIcon, AlertCircle } from "lucide-react";
 
 import axios from "axios";
-
+import { useRouter } from "next/navigation";
 export default function StartFundraiserBannerCMS() {
   const API_URL = process.env.NEXT_PUBLIC_BACKEND_API;
   const BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
-
+  const router= useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeSection, setActiveSection] = useState("influencers");
 
-  const [mode, setMode] = useState("create"); // ✅ create | edit
+  const [mode, setMode] = useState("create");
   const [bannerData, setBannerData] = useState(null);
 
   const [formData, setFormData] = useState({
@@ -24,13 +24,12 @@ export default function StartFundraiserBannerCMS() {
   const [imagePreview, setImagePreview] = useState("");
   const [hasChanges, setHasChanges] = useState(false);
   const [showPreview, setShowPreview] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
 
-  // ✅ FETCH SECTION ON LOAD
   useEffect(() => {
     fetchSection();
   }, []);
 
-  // ✅ GET EXISTING SECTION
   const fetchSection = async () => {
     try {
       const res = await axios.get(`${API_URL}/cms/before-footer/get`);
@@ -49,7 +48,6 @@ export default function StartFundraiserBannerCMS() {
 
         setImagePreview(`${BASE_URL}${section.image}`);
       } else {
-        // ✅ NO DATA → CREATE MODE
         setMode("create");
         setBannerData(null);
         setFormData({
@@ -64,7 +62,6 @@ export default function StartFundraiserBannerCMS() {
     }
   };
 
-  // ✅ IMAGE UPLOAD
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -88,19 +85,18 @@ export default function StartFundraiserBannerCMS() {
     reader.readAsDataURL(file);
   };
 
-  // ✅ FORM INPUT
   const handleInputChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
     setHasChanges(true);
   };
 
-  // ✅ CREATE OR UPDATE
   const handleSave = async () => {
     if (!formData.title.trim() || !formData.description.trim()) {
       alert("All fields required");
       return;
     }
 
+    setIsLoading(true);
     const form = new FormData();
     form.append("title", formData.title);
     form.append("description", formData.description);
@@ -110,13 +106,13 @@ export default function StartFundraiserBannerCMS() {
       const res =
         mode === "create"
           ? await axios.post(`${API_URL}/cms/before-footer/add`, form, {
-              headers: { "Content-Type": "multipart/form-data" },
-            })
+            headers: { "Content-Type": "multipart/form-data" },
+          })
           : await axios.put(
-              `${API_URL}/cms/before-footer/update/${bannerData._id}`,
-              form,
-              { headers: { "Content-Type": "multipart/form-data" } }
-            );
+            `${API_URL}/cms/before-footer/update/${bannerData._id}`,
+            form,
+            { headers: { "Content-Type": "multipart/form-data" } }
+          );
 
       if (res.data.success) {
         alert(mode === "create" ? "Created successfully!" : "Updated successfully!");
@@ -126,10 +122,11 @@ export default function StartFundraiserBannerCMS() {
     } catch (err) {
       console.error(err);
       alert("Failed to save");
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  // ✅ RESET
   const handleReset = () => {
     if (hasChanges && !confirm("Discard unsaved changes?")) return;
 
@@ -153,58 +150,97 @@ export default function StartFundraiserBannerCMS() {
     setHasChanges(false);
   };
 
-  if (!formData) return <div className="p-10">Loading...</div>;
+  if (!formData) return (
+    <div className="flex items-center justify-center h-screen bg-gradient-to-br from-emerald-50 to-white">
+      <div className="animate-pulse text-emerald-600 font-semibold">Loading...</div>
+    </div>
+  );
 
   return (
-    <div className="flex h-screen bg-[#F8FAFC] overflow-hidden">
-      
-
+    <div className="flex h-screen bg-gradient-to-br from-emerald-50 via-white to-emerald-50/30 overflow-hidden">
       <div className="flex-1 flex flex-col overflow-hidden">
-        <div className="md:hidden bg-white border-b px-4 py-3 flex items-center justify-between">
-          <button onClick={() => setSidebarOpen(true)} className="p-2">
-            <Menu size={24} />
+        {/* Mobile Header */}
+        <div className="md:hidden bg-white/80 backdrop-blur-md border-b border-emerald-100 px-4 py-3 flex items-center justify-between shadow-sm">
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="p-2 hover:bg-emerald-50 rounded-lg transition-colors"
+          >
+            <Menu size={24} className="text-emerald-700" />
           </button>
+          <h1 className="text-lg font-bold text-emerald-700">CMS Dashboard</h1>
         </div>
 
         <main className="flex-1 overflow-y-auto">
-          <div className="p-6 max-w-7xl mx-auto">
-
-            <div className="flex items-center gap-2 text-sm text-gray-600 mb-4">
-              <Home size={16} />
-              <span>Home</span>
-              <span>/</span>
-              <span className="font-semibold text-gray-900">
+          <div className="p-4 md:p-8 max-w-7xl mx-auto">
+            {/* Breadcrumb */}
+            <div className="flex items-center gap-2 text-sm text-gray-600 mb-6 bg-white/60 backdrop-blur-sm px-4 py-2 rounded-lg border border-emerald-100 w-fit">
+              <Home size={16} className="text-emerald-600" />
+              <span className="text-gray-400">/</span>
+              <span className="font-semibold text-emerald-700">
                 Start Fundraiser Banner
               </span>
             </div>
 
-            <button
-              onClick={() => setShowPreview(!showPreview)}
-              className="px-4 py-2 bg-blue-900 text-white rounded-lg flex gap-2 items-center mb-6"
-            >
-              {showPreview ? <EyeOff size={18} /> : <Eye size={18} />}
-              {showPreview ? "Hide Preview" : "Show Preview"}
-            </button>
+            {/* Header Section */}
+            <div className="mb-8">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <button
+                  onClick={() => router.push("/cms-admin")}
+                  className="flex cursor-pointer items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-gray-600 hover:text-gray-800 hover:bg-white transition-all border border-gray-300 shadow-sm"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                </button>
+                <div>
+                  <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                    {mode === "create" ? "Create" : "Edit"} Fundraiser Banner
+                  </h1>
+                  <p className="text-gray-600">
+                    Manage your fundraiser call-to-action banner displayed before the footer
+                  </p>
+                </div>
 
+                <button
+                  onClick={() => setShowPreview(!showPreview)}
+                  className="px-5 py-2.5 bg-white cursor-pointer text-emerald-700 rounded-xl flex gap-2 items-center font-medium border-2 border-emerald-200 hover:bg-emerald-50 hover:border-emerald-300 transition-all duration-200 shadow-sm hover:shadow-md w-fit"
+                >
+                  {showPreview ? <EyeOff size={18} /> : <Eye size={18} />}
+                  {showPreview ? "Hide Preview" : "Show Preview"}
+                </button>
+              </div>
+            </div>
+
+            {/* Preview Section */}
             {showPreview && (
-              <div className="bg-white rounded-xl shadow-lg border p-6 mb-6">
-                <div className="relative overflow-hidden rounded-xl">
-                  <div className="absolute inset-0 bg-black/40 z-10"></div>
+              <div className="bg-white rounded-2xl shadow-xl border-2 border-emerald-100 p-6 mb-8 transition-all duration-300">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="w-1 h-6 bg-emerald-500 rounded-full"></div>
+                  <h3 className="text-lg font-bold text-gray-900">Live Preview</h3>
+                </div>
 
-                  {imagePreview && (
+                <div className="relative overflow-hidden rounded-2xl shadow-2xl">
+                  <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/40 to-transparent z-10"></div>
+
+                  {imagePreview ? (
                     <img
                       src={imagePreview}
-                      className="h-64 md:h-96 w-full object-cover"
+                      className="h-72 md:h-96 w-full object-cover"
+                      alt="Banner preview"
                     />
+                  ) : (
+                    <div className="h-72 md:h-96 w-full bg-gradient-to-br from-emerald-100 to-emerald-200 flex items-center justify-center">
+                      <ImageIcon size={64} className="text-emerald-300" />
+                    </div>
                   )}
 
-                  <div className="absolute inset-0 p-6 flex items-center z-20">
-                    <div className="text-white max-w-xl">
-                      <h2 className="text-3xl font-bold mb-3">
-                        {formData.title}
+                  <div className="absolute inset-0 p-8 md:p-12 flex items-center z-20">
+                    <div className="text-white max-w-2xl">
+                      <h2 className="text-3xl md:text-4xl font-bold mb-4 drop-shadow-lg">
+                        {formData.title || "Your Banner Title"}
                       </h2>
-                      <p className="mb-4">{formData.description}</p>
-                      <button className="bg-emerald-600 px-6 py-3 rounded-lg">
+                      <p className="mb-6 text-lg text-white/95 drop-shadow-md leading-relaxed">
+                        {formData.description || "Your banner description will appear here"}
+                      </p>
+                      <button className="bg-emerald-500 hover:bg-emerald-600 px-8 py-3.5 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105">
                         {formData.buttonText}
                       </button>
                     </div>
@@ -213,56 +249,120 @@ export default function StartFundraiserBannerCMS() {
               </div>
             )}
 
-            <div className="bg-white p-6 rounded-xl shadow-sm border">
-              <label className="block text-sm font-semibold mb-2">Banner Image *</label>
-
-              <label className="border-2 border-dashed p-6 rounded-xl block text-center cursor-pointer">
-                <input type="file" className="hidden" onChange={handleImageUpload} />
-                {imagePreview ? (
-                  <img src={imagePreview} className="w-full h-40 object-cover rounded-lg" />
-                ) : (
-                  <Upload size={40} className="mx-auto text-gray-400" />
-                )}
-              </label>
-
-              <label className="block mt-6 mb-2 text-sm font-semibold">Title</label>
-              <input
-                type="text"
-                value={formData.title}
-                onChange={(e) => handleInputChange("title", e.target.value)}
-                className="w-full px-4 py-3 border rounded-lg"
-              />
-
-              <label className="block mt-6 mb-2 text-sm font-semibold">Description</label>
-              <textarea
-                rows={5}
-                value={formData.description}
-                onChange={(e) => handleInputChange("description", e.target.value)}
-                className="w-full px-4 py-3 border rounded-lg"
-              />
-
-              <div className="flex gap-4 mt-6">
-                <button
-                  onClick={handleSave}
-                  disabled={!hasChanges}
-                  className={`px-6 py-3 rounded-lg font-semibold flex items-center gap-2 ${
-                    hasChanges
-                      ? "bg-blue-600 text-white"
-                      : "bg-gray-200 text-gray-400 cursor-not-allowed"
-                  }`}
-                >
-                  <Save size={18} /> {mode === "create" ? "Create Banner" : "Save Changes"}
-                </button>
-
-                <button
-                  onClick={handleReset}
-                  disabled={!hasChanges}
-                  className="px-6 py-3 rounded-lg border font-semibold"
-                >
-                  <RefreshCw size={18} /> Reset
-                </button>
+            {/* Edit Form */}
+            <div className="bg-white rounded-2xl shadow-xl border-2 border-emerald-100 overflow-hidden">
+              <div className="bg-gradient-to-r from-emerald-500 to-emerald-600 px-6 py-4">
+                <h3 className="text-xl font-bold text-white">Banner Configuration</h3>
               </div>
 
+              <div className="p-6 md:p-8 space-y-6">
+                {/* Image Upload */}
+                <div>
+                  <label className="block text-sm font-bold mb-3 text-gray-900 flex items-center gap-2">
+                    <ImageIcon size={18} className="text-emerald-600" />
+                    Banner Image *
+                  </label>
+
+                  <label className="border-2 border-dashed border-emerald-200 hover:border-emerald-400 p-8 rounded-2xl block text-center cursor-pointer transition-all duration-200 bg-emerald-50/30 hover:bg-emerald-50 group">
+                    <input
+                      type="file"
+                      className="hidden"
+                      onChange={handleImageUpload}
+                      accept="image/*"
+                    />
+                    {imagePreview ? (
+                      <div className="relative">
+                        <img
+                          src={imagePreview}
+                          className="w-full h-48 object-cover rounded-xl shadow-lg"
+                          alt="Upload preview"
+                        />
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl flex items-center justify-center">
+                          <span className="text-white font-semibold">Click to change image</span>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="py-8">
+                        <Upload size={48} className="mx-auto text-emerald-400 mb-3 group-hover:scale-110 transition-transform" />
+                        <p className="text-emerald-700 font-semibold mb-1">Click to upload banner image</p>
+                        <p className="text-sm text-gray-500">JPG, PNG or WebP (max 10MB)</p>
+                      </div>
+                    )}
+                  </label>
+                </div>
+
+                {/* Title Input */}
+                <div>
+                  <label className="block mb-3 text-sm font-bold text-gray-900">
+                    Title *
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.title}
+                    onChange={(e) => handleInputChange("title", e.target.value)}
+                    placeholder="Enter an engaging banner title"
+                    className="w-full px-4 py-3.5 border-2 border-gray-200 rounded-xl focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 outline-none transition-all duration-200 font-medium"
+                  />
+                </div>
+
+                {/* Description Input */}
+                <div>
+                  <label className="block mb-3 text-sm font-bold text-gray-900">
+                    Description *
+                  </label>
+                  <textarea
+                    rows={5}
+                    value={formData.description}
+                    onChange={(e) => handleInputChange("description", e.target.value)}
+                    placeholder="Write a compelling description that encourages users to take action"
+                    className="w-full px-4 py-3.5 border-2 border-gray-200 rounded-xl focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 outline-none transition-all duration-200 resize-none font-medium"
+                  />
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t-2 border-emerald-100">
+                  <button
+                    onClick={handleSave}
+                    disabled={!hasChanges || isLoading}
+                    className={`flex-1 px-6 py-3.5 rounded-xl font-bold flex items-center justify-center gap-2 transition-all duration-200 ${hasChanges && !isLoading
+                        ? "bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg hover:shadow-xl transform hover:scale-105"
+                        : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                      }`}
+                  >
+                    {isLoading ? (
+                      <>
+                        <RefreshCw size={18} className="animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        <Save size={18} />
+                        {mode === "create" ? "Create Banner" : "Save Changes"}
+                      </>
+                    )}
+                  </button>
+
+                  <button
+                    onClick={handleReset}
+                    disabled={!hasChanges || isLoading}
+                    className={`flex-1 sm:flex-initial px-6 py-3.5 rounded-xl border-2 font-bold flex items-center justify-center gap-2 transition-all duration-200 ${hasChanges && !isLoading
+                        ? "border-emerald-300 text-emerald-700 hover:bg-emerald-50"
+                        : "border-gray-200 text-gray-400 cursor-not-allowed"
+                      }`}
+                  >
+                    <RefreshCw size={18} />
+                    Reset
+                  </button>
+                </div>
+
+                {/* Status Indicator */}
+                {hasChanges && (
+                  <div className="flex items-center gap-2 text-sm text-amber-700 bg-amber-50 px-4 py-3 rounded-xl border border-amber-200">
+                    <AlertCircle size={16} />
+                    <span className="font-medium">You have unsaved changes</span>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </main>
