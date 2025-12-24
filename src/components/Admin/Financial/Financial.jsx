@@ -36,6 +36,7 @@ import { useGetAllFormsQuery, useUpdateFormStatusMutation } from '@/utils/slices
 
 export default function FinancialAidVerifyPage() {
    const router = useRouter();
+   const BASE_URL = process.env.NEXT_PUBLIC_UPLOAD_URL || 'http://localhost:7000';
 
    // Tab and selection state
    const [activeTab, setActiveTab] = useState('myself'); // 'myself' or 'other'
@@ -228,45 +229,45 @@ export default function FinancialAidVerifyPage() {
    return (
       <>
          <AnimatePresence>
-              {showSuccessMessage && (
-  <motion.div
-    initial={{ opacity: 0, y: -50 }}
-    animate={{ opacity: 1, y: 0 }}
-    className="fixed top-4 left-1/2 -translate-x-1/2 z-50 
+            {showSuccessMessage && (
+               <motion.div
+                  initial={{ opacity: 0, y: -50 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="fixed top-4 left-1/2 -translate-x-1/2 z-50 
                bg-gradient-to-r from-emerald-600 to-emerald-400 text-white px-6 py-4 rounded-lg shadow-2xl 
                flex items-center gap-3 max-w-md w-[90%] sm:w-auto"
-  >
-    <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-      </svg>
-    </div>
-    <div>
-      <p className="font-semibold">Form Approved Successfully!</p>
-    </div>
-  </motion.div>
-  
-)}
+               >
+                  <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
+                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                     </svg>
+                  </div>
+                  <div>
+                     <p className="font-semibold">Form Approved Successfully!</p>
+                  </div>
+               </motion.div>
 
-         {showErrorMessage && (
-  <motion.div
-    initial={{ opacity: 0, y: -50 }}
-    animate={{ opacity: 1, y: 0 }}
-    className="fixed top-4 left-1/2 -translate-x-1/2 z-50 
+            )}
+
+            {showErrorMessage && (
+               <motion.div
+                  initial={{ opacity: 0, y: -50 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="fixed top-4 left-1/2 -translate-x-1/2 z-50 
          bg-gradient-to-r from-red-600 to-red-400 text-white px-6 py-4 rounded-lg shadow-2xl 
          flex items-center gap-3 max-w-md w-[90%] sm:w-auto"
-  >
-    <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-      </svg>
-    </div>
-    <div>
-      <p className="font-semibold">Submission Failed!</p>
-      <p className="text-sm text-red-100">Please try again later</p>
-    </div>
-  </motion.div>
-)}
+               >
+                  <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
+                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                     </svg>
+                  </div>
+                  <div>
+                     <p className="font-semibold">Submission Failed!</p>
+                     <p className="text-sm text-red-100">Please try again later</p>
+                  </div>
+               </motion.div>
+            )}
          </AnimatePresence>
          <div className="min-h-screen bg-gray-50 font-sans flex flex-col">
             {/* Header */}
@@ -736,18 +737,18 @@ export default function FinancialAidVerifyPage() {
                               {/* SECTION 8: Documents (Links) */}
                               <DetailSection title="Uploaded Documents" icon={<FileText className="text-blue-600" />}>
                                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                    <DocLink label="Government ID" url={selectedForm.govIdDocumentPath} />
-                                    <DocLink label="Bank Statement" url={selectedForm.bankStatementPath} />
+                                    <DocLink label="Government ID" url={selectedForm.govIdDocumentPath} backendUrl={BASE_URL} />
+                                    <DocLink label="Bank Statement" url={selectedForm.bankStatementPath} backendUrl={BASE_URL} />
 
                                     {selectedForm.isOrganization && (
                                        <>
-                                          <DocLink label="80G Certificate" url={selectedForm.certification80GPath} />
-                                          <DocLink label="PAN Card Image" url={selectedForm.panCardImagePath} />
+                                          <DocLink label="80G Certificate" url={selectedForm.certification80GPath} backendUrl={BASE_URL} />
+                                          <DocLink label="PAN Card Image" url={selectedForm.panCardImagePath} backendUrl={BASE_URL} />
                                        </>
                                     )}
 
                                     {selectedForm.supportingDocumentsPaths?.map((path, idx) => (
-                                       <DocLink key={idx} label={`Supporting Doc ${idx + 1}`} url={path} />
+                                       <DocLink key={idx} label={`Supporting Doc ${idx + 1}`} url={path} backendUrl={BASE_URL} />
                                     ))}
                                  </div>
                               </DetailSection>
@@ -885,11 +886,12 @@ function Field({ label, value, icon, isLink, copyable }) {
    );
 }
 
-function DocLink({ label, url }) {
+function DocLink({ label, url, backendUrl }) {
    if (!url) return null;
+   const fullUrl = url.startsWith('http') ? url : `${backendUrl}${url}`;
    return (
       <a
-         href={url}
+         href={fullUrl}
          target="_blank"
          rel="noopener noreferrer"
          className="flex items-center gap-3 p-4 bg-white border border-gray-200 hover:border-blue-500 rounded-lg transition-all group shadow-sm"
