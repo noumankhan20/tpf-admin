@@ -1,7 +1,7 @@
-
 "use client";
-import React, { useState } from 'react';
-import { Camera, MapPin, Calendar, Bell, ArrowLeft, Eye, Download, Clock, User, Menu, X, ExternalLink, CheckCircle, Link as LinkIcon } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { Camera, MapPin, Calendar, Bell, ArrowLeft, Eye, Download, Clock, User, Menu, X, ExternalLink, CheckCircle, Link as LinkIcon, Search, Filter } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 // Mock Campaign Data with full details
 const mockCampaigns = [
@@ -47,23 +47,123 @@ const formatDate = (dateStr) => {
     });
 };
 
+// --- Sub-Components ---
+
+const StatsCard = ({ title, count, subtitle, icon: Icon, colorClass, bgClass, onClick, active }) => (
+    <div
+      
+        className={`relative overflow-hidden rounded-xl p-4 sm:p-6 transition-all duration-300 border border-gray-300 bg-white`}
+    >
+        <div className="flex items-center justify-between z-10 relative">
+            <div>
+                <p className="text-sm font-medium text-gray-500">{title}</p>
+                <h3 className={`text-2xl sm:text-3xl font-bold mt-1 ${colorClass}`}>{count}</h3>
+                <p className="text-xs text-gray-400 mt-1">{subtitle}</p>
+            </div>
+            <div className={`p-3 rounded-xl ${bgClass}`}>
+                <Icon className={`w-6 h-6 ${colorClass}`} />
+            </div>
+        </div>
+    </div>
+);
+
+const CampaignCard = ({ campaign, onAction, actionLabel, actionIcon: ActionIcon, actionColor, onView }) => (
+    <motion.div
+        layout
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95 }}
+        className="group bg-white rounded-2xl p-4 sm:p-5 border border-gray-100 hover:border-blue-100 hover:shadow-lg transition-all duration-300 flex flex-col h-full"
+    >
+        <div className="relative mb-4 overflow-hidden rounded-xl h-48">
+            <img
+                src={campaign.images[0]}
+                alt={campaign.title}
+                className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500"
+            />
+            <div className="absolute top-3 right-3">
+                <span className={`px-3 py-1 text-[10px] font-bold uppercase tracking-wider rounded-full shadow-sm backdrop-blur-md ${campaign.status === 'pending'
+                        ? 'bg-orange-100/90 text-orange-700'
+                        : 'bg-green-100/90 text-green-700'
+                    }`}>
+                    {campaign.status}
+                </span>
+            </div>
+        </div>
+
+        <div className="flex-1 flex flex-col">
+            <div className="mb-3">
+                <h3 className="text-lg font-bold text-gray-900 line-clamp-1 group-hover:text-blue-600 transition-colors">
+                    {campaign.title}
+                </h3>
+                <p className="text-sm text-gray-500 mt-1 line-clamp-2">
+                    {campaign.description}
+                </p>
+            </div>
+
+            <div className="mt-auto space-y-3">
+                <div className="flex flex-wrap gap-y-2 text-xs text-gray-500 bg-gray-50 p-3 rounded-lg">
+                    <div className="w-full flex items-center gap-2">
+                        <User className="w-3.5 h-3.5 text-gray-400" />
+                        <span className="truncate">{campaign.beneficiaryName}</span>
+                    </div>
+                    <div className="w-full flex items-center gap-2">
+                        <Calendar className="w-3.5 h-3.5 text-gray-400" />
+                        <span>Deadline: {formatDate(campaign.deadline)}</span>
+                    </div>
+                </div>
+
+                <div className="flex items-center gap-2 pt-2">
+                    <button
+                        onClick={() => onView(campaign)}
+                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:text-gray-900 transition-colors"
+                    >
+                        <Eye className="w-4 h-4" />
+                        Details
+                    </button>
+                    <button
+                        onClick={() => onAction(campaign)}
+                        className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-white rounded-lg shadow-sm transition-all ${actionColor === 'green'
+                                ? 'bg-emerald-600 hover:bg-emerald-700 hover:shadow-emerald-200/50'
+                                : 'bg-blue-600 hover:bg-blue-700 hover:shadow-blue-200/50'
+                            }`}
+                    >
+                        <ActionIcon className="w-4 h-4" />
+                        {actionLabel}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </motion.div>
+);
+
+// --- Main Component ---
+
 const SocialMediaDashboard = () => {
     const [campaigns, setCampaigns] = useState(mockCampaigns);
+    const [activeTab, setActiveTab] = useState('pending');
+    const [searchQuery, setSearchQuery] = useState('');
     const [selectedCampaign, setSelectedCampaign] = useState(null);
     const [isViewModalOpen, setIsViewModalOpen] = useState(false);
     const [isCompleteModalOpen, setIsCompleteModalOpen] = useState(false);
     const [selectedImage, setSelectedImage] = useState(null);
+
     const [socialLinks, setSocialLinks] = useState({
-        instagram: '',
-        facebook: '',
-        youtube: '',
-        twitter: '',
-        linkedin: '',
-        other: ''
+        instagram: '', facebook: '', youtube: '', twitter: '', linkedin: '', other: ''
     });
 
-    const pendingCampaigns = campaigns.filter(c => c.status === 'pending');
-    const completedCampaigns = campaigns.filter(c => c.status === 'completed');
+    const pendingCampaigns = useMemo(() => campaigns.filter(c => c.status === 'pending'), [campaigns]);
+    const completedCampaigns = useMemo(() => campaigns.filter(c => c.status === 'completed'), [campaigns]);
+
+    const filteredList = useMemo(() => {
+        const list = activeTab === 'pending' ? pendingCampaigns : completedCampaigns;
+        if (!searchQuery.trim()) return list;
+        return list.filter(c =>
+            c.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            c.beneficiaryName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            c.campaignName.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+    }, [activeTab, pendingCampaigns, completedCampaigns, searchQuery]);
 
     const handleViewCampaign = (campaign) => {
         setSelectedCampaign(campaign);
@@ -72,14 +172,7 @@ const SocialMediaDashboard = () => {
 
     const handleMarkAsComplete = (campaign) => {
         setSelectedCampaign(campaign);
-        setSocialLinks({
-            instagram: '',
-            facebook: '',
-            youtube: '',
-            twitter: '',
-            linkedin: '',
-            other: ''
-        });
+        setSocialLinks({ instagram: '', facebook: '', youtube: '', twitter: '', linkedin: '', other: '' });
         setIsCompleteModalOpen(true);
     };
 
@@ -93,17 +186,8 @@ const SocialMediaDashboard = () => {
         document.body.removeChild(link);
     };
 
-    const handleLinkChange = (e) => {
-        const { name, value } = e.target;
-        setSocialLinks(prev => ({
-            ...prev,
-            [name]: value
-        }));
-    };
-
     const handleSubmitCompletion = () => {
         if (!selectedCampaign) return;
-
         const updatedCampaigns = campaigns.map(campaign => {
             if (campaign.id === selectedCampaign.id) {
                 return {
@@ -115,217 +199,205 @@ const SocialMediaDashboard = () => {
             }
             return campaign;
         });
-
         setCampaigns(updatedCampaigns);
         setIsCompleteModalOpen(false);
         setSelectedCampaign(null);
-        setSocialLinks({
-            instagram: '',
-            facebook: '',
-            youtube: '',
-            twitter: '',
-            linkedin: '',
-            other: ''
-        });
+        setActiveTab('completed'); // Switch to completed tab to show the change
+    };
+
+    const handleLinkChange = (e) => {
+        const { name, value } = e.target;
+        setSocialLinks(prev => ({ ...prev, [name]: value }));
     };
 
     return (
-        <div className="min-h-screen bg-gray-50">
+        <div className="min-h-screen bg-gray-50/50 font-sans">
             {/* Header */}
-            <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-40">
-                <div className="w-full px-3 sm:px-4 lg:px-6">
-                    <div className="flex items-center justify-between h-14 sm:h-16">
-                        {/* Left: Back button */}
-                        <button
-                            onClick={() => console.log('Back to portal')}
-                            className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-100 transition-colors"
-                        >
-                            <ArrowLeft className="w-3.5 h-3.5 sm:w-4 cursor-pointer sm:h-4" />
-                            <span className="hidden xs:inline">Back</span>
+            <div className="bg-white border-b border-gray-200 sticky top-0 z-30">
+                <div className="max-w-7xl mx-auto px-4 lg:px-6 h-16 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <button className="p-2 hover:bg-gray-100 rounded-lg text-gray-500 transition-colors">
+                            <ArrowLeft className="w-5 h-5" />
                         </button>
-
-                        {/* Right: Notification, Title & User */}
-                        <div className="flex items-center gap-2 sm:gap-3">
-                            {/* Notification Bell */}
-                            <div className="relative">
-                                <button className="p-1.5 sm:p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors">
-                                    <Bell className="w-4 h-4 sm:w-5 sm:h-5" />
-                                </button>
-                                {pendingCampaigns.length > 0 && (
-                                    <span className="absolute -top-1 -right-1 w-4 h-4 sm:w-5 sm:h-5 bg-red-500 text-white text-[10px] sm:text-xs rounded-full flex items-center justify-center font-semibold">
-                                        {pendingCampaigns.length}
-                                    </span>
-                                )}
-                            </div>
-
-                            {/* Title & Icon */}
-                            <div className="flex items-center gap-2">
-                                <div className="w-7 h-7 sm:w-9 sm:h-9 bg-emerald-500 rounded-lg flex items-center justify-center">
-                                    <Camera className="w-3.5 h-3.5 sm:w-5 sm:h-5 text-white" />
-                                </div>
-                                <div className="hidden sm:block">
-                                    <h1 className="text-sm sm:text-base lg:text-lg font-bold text-gray-800 leading-tight">
-                                        Social Media Manager
-                                    </h1>
-                                    <p className="text-[10px] sm:text-xs text-gray-500">
-                                        Campaign Management
-                                    </p>
-                                </div>
-                            </div>
+                        <h1 className="text-lg font-semibold text-gray-800">Social Media Portal</h1>
+                    </div>
+                    <div className="flex items-center gap-3">
+                        <div className="relative">
+                            <button className="p-2 text-gray-500 hover:bg-gray-100 rounded-lg transition-colors">
+                                <Bell className="w-5 h-5" />
+                            </button>
+                            {pendingCampaigns.length > 0 && (
+                                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full ring-2 ring-white"></span>
+                            )}
                         </div>
                     </div>
                 </div>
-            </header>
+            </div>
 
-            {/* Main Content */}
-            <main className="w-full px-3 sm:px-4 lg:px-6 xl:px-8 py-4 sm:py-6 lg:py-8 max-w-7xl mx-auto">
-                {/* Welcome Banner */}
-                <div className="bg-gradient-to-r from-emerald-500 to-emerald-800 rounded-xl p-4 sm:p-6 lg:p-8 text-white mb-4 sm:mb-6 lg:mb-8">
-                    <div className="flex items-center gap-2 sm:gap-3 lg:gap-4 mb-2 sm:mb-3">
-                        <div className="w-10 h-10 sm:w-12 sm:h-12 lg:w-16 lg:h-16 bg-white/20 rounded-full flex items-center justify-center flex-shrink-0">
-                            <Camera className="w-5 h-5 sm:w-6 sm:h-6 lg:w-8 lg:h-8" />
+            <main className="max-w-7xl mx-auto px-4 lg:px-6 py-8">
+                {/* Welcome & Stats Section */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                    {/* Welcome Banner */}
+                    <div className="lg:col-span-3 bg-gradient-to-br from-emerald-500 to-emerald-400 rounded-2xl p-6 sm:p-8 text-white relative overflow-hidden shadow-lg">
+                        <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-16 -mt-16 blur-2xl"></div>
+                        <div className="relative z-10 flex items-start gap-4">
+                            <div className="w-14 h-14 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center flex-shrink-0 border border-white/20">
+                                <Camera className="w-7 h-7 text-white" />
+                            </div>
+                            <div>
+                                <h1 className="text-2xl sm:text-3xl font-bold mb-2">Social Media Dashboard</h1>
+                                <p className="text-emerald-100 max-w-xl text-sm sm:text-base opacity-90">
+                                    Manage campaign promotions, download assets, and track social presence across all platforms effectively.
+                                </p>
+                            </div>
                         </div>
-                        <div>
-                            <h2 className="text-lg sm:text-xl lg:text-3xl font-bold">Welcome Back!</h2>
-                            <p className="text-blue-100 text-xs sm:text-sm lg:text-lg">Manage and promote campaigns</p>
-                        </div>
+                    </div>
+
+                    {/* Stats */}
+                    <div className="lg:col-span-3 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <StatsCard
+                            title="Pending Promotions"
+                            count={pendingCampaigns.length}
+                            subtitle="Campaigns waiting for update"
+                            icon={Clock}
+                            colorClass="text-orange-600"
+                            bgClass="bg-orange-50"
+                            active={activeTab === 'pending'}
+                            onClick={() => setActiveTab('pending')}
+                        />
+                        <StatsCard
+                            title="Completed Campaigns"
+                            count={completedCampaigns.length}
+                            subtitle="Successfully promoted"
+                            icon={CheckCircle}
+                            colorClass="text-emerald-600"
+                            bgClass="bg-emerald-50"
+                            active={activeTab === 'completed'}
+                            onClick={() => setActiveTab('completed')}
+                        />
                     </div>
                 </div>
 
-                {/* Stats */}
-                <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:gap-6 mb-4 sm:mb-6 lg:mb-8">
-                    <div className="bg-white rounded-xl p-3 sm:p-4 lg:p-6 shadow-sm border border-gray-100">
-                        <div className="flex items-center justify-between mb-2 sm:mb-3">
-                            <div className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 bg-orange-100 rounded-lg flex items-center justify-center">
-                                <Clock className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-orange-600" />
-                            </div>
-                            <span className="text-xl sm:text-2xl lg:text-3xl font-bold text-orange-600">{pendingCampaigns.length}</span>
-                        </div>
-                        <h3 className="font-semibold text-gray-800 text-xs sm:text-sm lg:text-base">Pending Campaigns</h3>
-                        <p className="text-[10px] sm:text-xs text-gray-600 mt-0.5 sm:mt-1">Ready to promote</p>
+                {/* Filters & Controls */}
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-6 sticky top-20 z-20 bg-gray-50/50 py-2 backdrop-blur-sm">
+                    {/* Tabs */}
+                    <div className="bg-white p-1 rounded-xl border border-gray-200 shadow-sm flex w-full sm:w-auto">
+                        {['pending', 'completed'].map((tab) => (
+                            <button
+                                key={tab}
+                                onClick={() => setActiveTab(tab)}
+                                className={`flex-1 sm:flex-none px-6 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 capitalize ${activeTab === tab
+                                        ? 'bg-emerald-500 text-white shadow-md'
+                                        : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                                    }`}
+                            >
+                                {tab}
+                            </button>
+                        ))}
                     </div>
 
-                    <div className="bg-white rounded-xl p-3 sm:p-4 lg:p-6 shadow-sm border border-gray-100">
-                        <div className="flex items-center justify-between mb-2 sm:mb-3">
-                            <div className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                                <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-green-600" />
-                            </div>
-                            <span className="text-xl sm:text-2xl lg:text-3xl font-bold text-green-600">{completedCampaigns.length}</span>
-                        </div>
-                        <h3 className="font-semibold text-gray-800 text-xs sm:text-sm lg:text-base">Completed</h3>
-                        <p className="text-[10px] sm:text-xs text-gray-600 mt-0.5 sm:mt-1">Successfully promoted</p>
+                    {/* Search */}
+                    <div className="relative w-full sm:w-96">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                        <input
+                            type="text"
+                            placeholder="Search campaigns, beneficiaries..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all outline-none"
+                        />
                     </div>
                 </div>
 
-                {/* Pending Campaigns */}
-                <div className="bg-white rounded-xl shadow-sm border border-gray-100 mb-4 sm:mb-6">
-                    <div className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 border-b border-gray-100 bg-gray-50">
-                        <h2 className="text-base sm:text-lg lg:text-xl font-semibold text-gray-800">Pending Campaigns</h2>
-                        <p className="text-[10px] sm:text-xs lg:text-sm text-gray-600 mt-0.5 sm:mt-1">New campaigns awaiting promotion</p>
-                    </div>
-
-                    <div className="p-3 sm:p-4 lg:p-6 space-y-3 sm:space-y-4">
-                        {pendingCampaigns.length === 0 ? (
-                            <div className="text-center py-8 sm:py-12">
-                                <Clock className="w-10 h-10 sm:w-12 sm:h-12 lg:w-16 lg:h-16 text-gray-300 mx-auto mb-2 sm:mb-3" />
-                                <p className="text-gray-500 text-xs sm:text-sm lg:text-base">No pending campaigns at the moment</p>
-                            </div>
-                        ) : (
-                            pendingCampaigns.map((campaign) => (
-                                <div key={campaign.id} className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-3 sm:p-4 lg:p-6 border-2 border-blue-200 hover:border-blue-300 transition-all">
-                                    <div className="flex flex-col gap-3 sm:gap-4">
-                                        {/* Campaign Image */}
-                                        <div className="w-full">
-                                            <img
-                                                src={campaign.images[0]}
-                                                alt={campaign.title}
-                                                className="w-full h-40 sm:h-48 lg:h-56 object-cover rounded-lg shadow-md"
-                                            />
-                                        </div>
-
-                                        {/* Campaign Details */}
-                                        <div className="flex-1 min-w-0">
-                                            <div className="flex items-start justify-between gap-2 mb-2 sm:mb-3">
-                                                <h3 className="text-sm sm:text-base lg:text-lg font-bold text-gray-900 flex-1">{campaign.title}</h3>
-                                                <span className="px-2 sm:px-3 py-1 bg-orange-100 text-orange-700 text-[10px] sm:text-xs font-semibold rounded-full whitespace-nowrap">
-                                                    New
-                                                </span>
-                                            </div>
-
-                                            <p className="text-xs sm:text-sm text-gray-700 mb-2 sm:mb-3 line-clamp-2">{campaign.description}</p>
-
-                                            <div className="space-y-1.5 sm:space-y-2 text-[10px] sm:text-xs lg:text-sm text-gray-600 mb-3 sm:mb-4">
-                                                <p><span className="font-semibold">Beneficiary:</span> {campaign.beneficiaryName}</p>
-                                                <p className="flex items-start gap-1">
-                                                    <MapPin className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0 mt-0.5" />
-                                                    <span className="break-words">{campaign.address}</span>
-                                                </p>
-                                                <div className="flex flex-wrap gap-2 sm:gap-3">
-                                                    <span className="flex items-center gap-1">
-                                                        <Calendar className="w-3 h-3 sm:w-4 sm:h-4" />
-                                                        Deadline: {formatDate(campaign.deadline)}
-                                                    </span>
-                                                    <span>Added by: {campaign.cmsAdminName}</span>
-                                                </div>
-                                            </div>
-
-                                            {/* Action Buttons */}
-                                            <div className="flex flex-col sm:flex-row gap-2">
-                                                <button
-                                                    onClick={() => handleViewCampaign(campaign)}
-                                                    className="w-full sm:flex-1 bg-blue-600 hover:bg-blue-700 text-white px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg text-xs sm:text-sm font-medium transition-colors flex items-center justify-center gap-1.5 sm:gap-2"
-                                                >
-                                                    <Eye className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                                                    View Details
-                                                </button>
-                                                <button
-                                                    onClick={() => handleMarkAsComplete(campaign)}
-                                                    className="w-full sm:flex-1 bg-green-600 hover:bg-green-700 text-white px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg text-xs sm:text-sm font-medium transition-colors flex items-center justify-center gap-1.5 sm:gap-2"
-                                                >
-                                                    <CheckCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                                                    Mark Complete
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
+                {/* Content Grid */}
+                <AnimatePresence mode='wait'>
+                    <motion.div
+                        key={activeTab}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        transition={{ duration: 0.2 }}
+                        className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6"
+                    >
+                        {filteredList.length > 0 ? (
+                            filteredList.map(campaign => (
+                                <CampaignCard
+                                    key={campaign.id}
+                                    campaign={campaign}
+                                    onView={handleViewCampaign}
+                                    onAction={activeTab === 'pending' ? handleMarkAsComplete : handleViewCampaign}
+                                    actionLabel={activeTab === 'pending' ? "Mark Complete" : "View"}
+                                    actionIcon={activeTab === 'pending' ? CheckCircle : Eye}
+                                    actionColor={activeTab === 'pending' ? 'green' : 'blue'}
+                                />
                             ))
+                        ) : (
+                            <div className="col-span-full py-20 text-center text-gray-400">
+                                <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                    <Search className="w-8 h-8 text-gray-300" />
+                                </div>
+                                <h3 className="text-lg font-medium text-gray-600">No campaigns found</h3>
+                                <p className="text-sm">Try adjusting your search or filters.</p>
+                            </div>
                         )}
-                    </div>
-                </div>
+                    </motion.div>
+                </AnimatePresence>
+            </main>
 
-                {/* Completed Campaigns */}
-                {completedCampaigns.length > 0 && (
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-100">
-                        <div className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 border-b border-gray-100 bg-gray-50">
-                            <h2 className="text-base sm:text-lg lg:text-xl font-semibold text-gray-800">Completed Campaigns</h2>
+            {/* View Modal */}
+            {isViewModalOpen && selectedCampaign && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-all">
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="bg-white rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl"
+                    >
+                        <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-white">
+                            <h3 className="text-xl font-bold text-gray-900">Campaign Details</h3>
+                            <button onClick={() => setIsViewModalOpen(false)} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+                                <X className="w-5 h-5 text-gray-500" />
+                            </button>
                         </div>
 
-                        <div className="p-3 sm:p-4 lg:p-6 space-y-3 sm:space-y-4">
-                            {completedCampaigns.map((campaign) => (
-                                <div key={campaign.id} className="bg-green-50 rounded-xl p-3 sm:p-4 lg:p-6 border border-green-200">
-                                    <div className="flex items-start justify-between mb-2 sm:mb-3">
-                                        <h3 className="text-sm sm:text-base lg:text-lg font-bold text-gray-900 flex-1">{campaign.title}</h3>
-                                        <span className="px-2 sm:px-3 py-1 bg-green-100 text-green-700 text-[10px] sm:text-xs font-semibold rounded-full whitespace-nowrap ml-2">
-                                            Completed
-                                        </span>
+                        <div className="overflow-y-auto p-6">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                                <div className="md:col-span-2 space-y-6">
+                                    <div>
+                                        <h4 className="text-2xl font-bold text-gray-900 mb-2">{selectedCampaign.title}</h4>
+                                        <p className="text-gray-600 leading-relaxed">{selectedCampaign.description}</p>
                                     </div>
 
-                                    {campaign.socialLinks && (
-                                        <div className="mt-3 sm:mt-4 space-y-2">
-                                            <p className="text-xs sm:text-sm font-semibold text-gray-700 mb-2">Posted on:</p>
+                                    <div>
+                                        <h5 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                                            <Camera className="w-4 h-4" />
+                                            Media Assets
+                                        </h5>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            {selectedCampaign.images.map((img, idx) => (
+                                                <div key={idx} className="group relative rounded-xl overflow-hidden aspect-video bg-gray-100">
+                                                    <img src={img} alt="" className="w-full h-full object-cover" onClick={() => setSelectedImage(img)} />
+                                                    <button
+                                                        onClick={(e) => { e.stopPropagation(); handleDownloadImage(img); }}
+                                                        className="absolute top-2 right-2 bg-white/90 p-2 rounded-lg opacity-0 group-hover:opacity-100 transition-all hover:bg-white shadow-sm"
+                                                    >
+                                                        <Download className="w-4 h-4" />
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Show Social Links if completed */}
+                                    {selectedCampaign.status === 'completed' && selectedCampaign.socialLinks && (
+                                        <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+                                            <h5 className="font-semibold text-gray-900 mb-3">Posted Links</h5>
                                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                                {Object.entries(campaign.socialLinks).map(([platform, link]) => (
+                                                {Object.entries(selectedCampaign.socialLinks).map(([platform, link]) => (
                                                     link && (
-                                                        <a
-                                                            key={platform}
-                                                            href={link}
-                                                            target="_blank"
-                                                            rel="noopener noreferrer"
-                                                            className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm text-blue-600 hover:text-blue-800 bg-white px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg border border-gray-200 hover:border-blue-300 transition-colors"
-                                                        >
-                                                            <ExternalLink className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
-                                                            <span className="truncate">{platform.charAt(0).toUpperCase() + platform.slice(1)}</span>
+                                                        <a key={platform} href={link} target="_blank" rel="noopener noreferrer"
+                                                            className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm text-blue-600 hover:border-blue-300 hover:shadow-sm transition-all">
+                                                            <ExternalLink className="w-3.5 h-3.5" />
+                                                            <span className="capitalize">{platform}</span>
                                                         </a>
                                                     )
                                                 ))}
@@ -333,230 +405,123 @@ const SocialMediaDashboard = () => {
                                         </div>
                                     )}
                                 </div>
-                            ))}
-                        </div>
-                    </div>
-                )}
-            </main>
 
-            {/* View Campaign Modal */}
-            {isViewModalOpen && selectedCampaign && (
-                <div className="fixed inset-0 bg-black/60 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
-                    <div className="bg-white rounded-t-2xl sm:rounded-2xl w-full sm:max-w-4xl max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
-                        <div className="sticky top-0 bg-white border-b border-gray-200 px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between z-10">
-                            <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900">Campaign Details</h3>
-                            <button
-                                onClick={() => setIsViewModalOpen(false)}
-                                className="text-gray-400 hover:text-gray-600 transition-colors p-1"
-                            >
-                                <X className="w-5 h-5 sm:w-6 sm:h-6" />
+                                <div className="space-y-4">
+                                    <div className="bg-gray-50 rounded-xl p-5 space-y-4 text-sm text-gray-600">
+                                        <div className="space-y-1">
+                                            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Beneficiary</p>
+                                            <p className="font-medium text-gray-900">{selectedCampaign.beneficiaryName}</p>
+                                        </div>
+                                        <div className="space-y-1">
+                                            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Location</p>
+                                            <p className="font-medium text-gray-900">{selectedCampaign.address}</p>
+                                        </div>
+                                        <div className="space-y-1">
+                                            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Campaign Name</p>
+                                            <p className="font-medium text-gray-900">{selectedCampaign.campaignName}</p>
+                                        </div>
+                                        <div className="space-y-1">
+                                            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Deadline</p>
+                                            <p className="font-medium text-gray-900">{formatDate(selectedCampaign.deadline)}</p>
+                                        </div>
+                                    </div>
+
+                                    {selectedCampaign.status === 'pending' && (
+                                        <button
+                                            onClick={() => { setIsViewModalOpen(false); handleMarkAsComplete(selectedCampaign); }}
+                                            className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white p-3 rounded-xl font-medium transition-colors shadow-lg shadow-emerald-200"
+                                        >
+                                            <CheckCircle className="w-5 h-5" />
+                                            Complete Promation
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </motion.div>
+                </div>
+            )}
+
+            {/* Complete Task Modal */}
+            {isCompleteModalOpen && selectedCampaign && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl flex flex-col"
+                    >
+                        <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between sticky top-0 bg-white z-10">
+                            <div>
+                                <h3 className="text-xl font-bold text-gray-900">Finalize Promotion</h3>
+                                <p className="text-sm text-gray-500">Submit proofs for {selectedCampaign.campaignName}</p>
+                            </div>
+                            <button onClick={() => setIsCompleteModalOpen(false)} className="p-2 hover:bg-gray-100 rounded-full">
+                                <X className="w-5 h-5 text-gray-500" />
                             </button>
                         </div>
 
-                        <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
-                            {/* Title & Description */}
-                            <div>
-                                <h4 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 mb-2 sm:mb-3">{selectedCampaign.title}</h4>
-                                <p className="text-xs sm:text-sm lg:text-base text-gray-700 leading-relaxed">{selectedCampaign.description}</p>
-                            </div>
-
-                            {/* Campaign Info */}
-                            <div className="bg-gray-50 rounded-lg p-3 sm:p-4 space-y-1.5 sm:space-y-2 text-xs sm:text-sm">
-                                <p><span className="font-semibold">Campaign Name:</span> {selectedCampaign.campaignName}</p>
-                                <p><span className="font-semibold">Beneficiary:</span> {selectedCampaign.beneficiaryName}</p>
-                                <p><span className="font-semibold">Location:</span> {selectedCampaign.address}</p>
-                                <p><span className="font-semibold">Deadline:</span> {formatDate(selectedCampaign.deadline)}</p>
-                                <p><span className="font-semibold">Added by:</span> {selectedCampaign.cmsAdminName}</p>
-                            </div>
-
-                            {/* Campaign Images */}
-                            <div>
-                                <h5 className="font-semibold text-sm sm:text-base text-gray-900 mb-2 sm:mb-3">Campaign Images</h5>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                                    {selectedCampaign.images.map((img, index) => (
-                                        <div key={index} className="group relative">
-                                            <img
-                                                src={img}
-                                                alt={`Campaign ${index + 1}`}
-                                                className="w-full h-48 sm:h-56 lg:h-64 object-cover rounded-lg shadow-md cursor-pointer hover:shadow-xl transition-shadow"
-                                                onClick={() => setSelectedImage(img)}
+                        <div className="p-6">
+                            <form onSubmit={(e) => { e.preventDefault(); handleSubmitCompletion(); }} className="space-y-6">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    {['instagram', 'facebook', 'youtube', 'twitter', 'linkedin', 'other'].map((platform) => (
+                                        <div key={platform} className="col-span-1">
+                                            <label className="flex items-center gap-2 text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">
+                                                <LinkIcon className="w-3.5 h-3.5" />
+                                                {platform}
+                                            </label>
+                                            <input
+                                                type="url"
+                                                name={platform}
+                                                value={socialLinks[platform]}
+                                                onChange={handleLinkChange}
+                                                placeholder={`Paste ${platform} link...`}
+                                                className="w-full px-4 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all outline-none"
                                             />
-                                            <button
-                                                onClick={() => handleDownloadImage(img)}
-                                                className="absolute top-2 right-2 bg-white/90 hover:bg-white text-gray-700 p-1.5 sm:p-2 rounded-lg shadow-lg transition-all opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
-                                            >
-                                                <Download className="w-4 h-4 sm:w-5 sm:h-5" />
-                                            </button>
                                         </div>
                                     ))}
                                 </div>
-                            </div>
-                        </div>
 
-                        <div className="sticky bottom-0 bg-gray-50 border-t border-gray-200 px-4 sm:px-6 py-3 sm:py-4 flex flex-col-reverse sm:flex-row justify-end gap-2 sm:gap-3">
-                            <button
-                                onClick={() => setIsViewModalOpen(false)}
-                                className="w-full sm:w-auto px-4 sm:px-5 py-2 sm:py-2.5 text-xs sm:text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-                            >
-                                Close
-                            </button>
-                            <button
-                                onClick={() => {
-                                    setIsViewModalOpen(false);
-                                    handleMarkAsComplete(selectedCampaign);
-                                }}
-                                className="w-full sm:w-auto px-4 sm:px-5 py-2 sm:py-2.5 text-xs sm:text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-1.5 sm:gap-2"
-                            >
-                                <CheckCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                                Mark as Completed
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Image Preview Modal */}
-            {selectedImage && (
-                <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4" onClick={() => setSelectedImage(null)}>
-                    <img src={selectedImage} alt="Preview" className="max-w-full max-h-full rounded-lg" />
-                    <button
-                        onClick={() => setSelectedImage(null)}
-                        className="absolute top-2 sm:top-4 right-2 sm:right-4 text-white hover:text-gray-300 p-1"
-                    >
-                        <X className="w-6 h-6 sm:w-8 sm:h-8" />
-                    </button>
-                </div>
-            )}
-
-            {/* Mark as Complete Modal */}
-            {isCompleteModalOpen && selectedCampaign && (
-                <div className="fixed inset-0 bg-black/60 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
-                    <div className="bg-white rounded-t-2xl sm:rounded-2xl w-full sm:max-w-2xl max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
-                        <div className="sticky top-0 bg-white border-b border-gray-200 px-4 sm:px-6 py-3 sm:py-4 z-10">
-                            <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900">Add Social Media Links</h3>
-                            <p className="text-xs sm:text-sm text-gray-600 mt-1">Add links to where you've posted this campaign</p>
-                        </div>
-
-                        <div className="p-4 sm:p-6">
-                            <div className="bg-blue-50 rounded-lg p-3 sm:p-4 mb-4 sm:mb-6 border border-blue-200">
-                                <h4 className="font-semibold text-sm sm:text-base text-gray-900 mb-1">{selectedCampaign.title}</h4>
-                                <p className="text-xs sm:text-sm text-gray-600">{selectedCampaign.beneficiaryName}</p>
-                            </div>
-
-                            <form onSubmit={(e) => { e.preventDefault(); handleSubmitCompletion(); }} className="space-y-3 sm:space-y-4">
-                                <div>
-                                    <label className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
-                                        <LinkIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                                        Instagram Post Link
-                                    </label>
-                                    <input
-                                        type="url"
-                                        name="instagram"
-                                        value={socialLinks.instagram}
-                                        onChange={handleLinkChange}
-                                        placeholder="https://instagram.com/p/..."
-                                        className="w-full px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                                    />
+                                <div className="bg-amber-50 border border-amber-100 rounded-xl p-4 flex items-start gap-3">
+                                    <div className="p-2 bg-amber-100 rounded-full shrink-0">
+                                        <Bell className="w-4 h-4 text-amber-700" />
+                                    </div>
+                                    <div>
+                                        <h4 className="text-sm font-semibold text-amber-900">Requirement</h4>
+                                        <p className="text-xs text-amber-700 mt-0.5">Please provide at least one valid link to mark this campaign as completed.</p>
+                                    </div>
                                 </div>
 
-                                <div>
-                                    <label className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
-                                        <LinkIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                                        Facebook Post Link
-                                    </label>
-                                    <input
-                                        type="url"
-                                        name="facebook"
-                                        value={socialLinks.facebook}
-                                        onChange={handleLinkChange}
-                                        placeholder="https://facebook.com/..."
-                                        className="w-full px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
-                                        <LinkIcon className="w-4 h-4" />
-                                        YouTube Video Link
-                                    </label>
-                                    <input
-                                        type="url"
-                                        name="youtube"
-                                        value={socialLinks.youtube}
-                                        onChange={handleLinkChange}
-                                        placeholder="https://youtube.com/watch?v=..."
-                                        className="w-full px-4 py-3 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
-                                        <LinkIcon className="w-4 h-4" />
-                                        Twitter/X Post Link
-                                    </label>
-                                    <input
-                                        type="url"
-                                        name="twitter"
-                                        value={socialLinks.twitter}
-                                        onChange={handleLinkChange}
-                                        placeholder="https://twitter.com/..."
-                                        className="w-full px-4 py-3 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
-                                        <LinkIcon className="w-4 h-4" />
-                                        LinkedIn Post Link
-                                    </label>
-                                    <input
-                                        type="url"
-                                        name="linkedin"
-                                        value={socialLinks.linkedin}
-                                        onChange={handleLinkChange}
-                                        placeholder="https://linkedin.com/..."
-                                        className="w-full px-4 py-3 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
-                                        <LinkIcon className="w-4 h-4" />
-                                        Other Platform Link
-                                    </label>
-                                    <input
-                                        type="url"
-                                        name="other"
-                                        value={socialLinks.other}
-                                        onChange={handleLinkChange}
-                                        placeholder="https://..."
-                                        className="w-full px-4 py-3 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                                    />
-                                </div>
-
-                                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-sm text-yellow-800">
-                                    <p className="font-medium">Note: Add at least one social media link to complete the campaign.</p>
-                                </div>
-
-                                <div className="flex flex-col sm:flex-row gap-3 pt-4">
+                                <div className="flex gap-3 pt-2">
                                     <button
                                         type="button"
                                         onClick={() => setIsCompleteModalOpen(false)}
-                                        className="flex-1 px-5 py-3 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                                        className="flex-1 px-5 py-3 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
                                     >
                                         Cancel
                                     </button>
                                     <button
                                         type="submit"
                                         disabled={!Object.values(socialLinks).some(link => link.trim())}
-                                        className="flex-1 px-5 py-3 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                        className="flex-1 px-5 py-3 text-sm font-medium text-white bg-emerald-600 rounded-xl hover:bg-emerald-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed shadow-lg shadow-emerald-200"
                                     >
-                                        <CheckCircle className="w-4 h-4" />
-                                        Submit & Complete
+                                        Submit Completion
                                     </button>
                                 </div>
                             </form>
                         </div>
-                    </div>
+                    </motion.div>
+                </div>
+            )}
+
+            {/* Image Preview Overlay */}
+            {selectedImage && (
+                <div className="fixed inset-0 bg-black/95 z-[60] flex items-center justify-center p-4 backdrop-blur-sm" onClick={() => setSelectedImage(null)}>
+                    <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="relative max-w-7xl max-h-screen">
+                        <img src={selectedImage} alt="Full Preview" className="max-w-full max-h-[90vh] rounded-lg shadow-2xl" />
+                        <button className="absolute -top-12 right-0 text-white/70 hover:text-white p-2">
+                            <X className="w-8 h-8" />
+                        </button>
+                    </motion.div>
                 </div>
             )}
         </div>
