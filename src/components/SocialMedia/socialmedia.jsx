@@ -400,8 +400,21 @@ const SocialMediaDashboard = () => {
                                         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                                             {(() => {
                                                 const allImages = [];
-                                                if (selectedCampaign.heroImage) allImages.push({ url: selectedCampaign.heroImage, type: 'hero' });
-                                                if (selectedCampaign.photos) allImages.push(...selectedCampaign.photos.map(p => ({ ...p, type: 'photo' })));
+                                                const processedUrls = new Set();
+
+                                                if (selectedCampaign.heroImage) {
+                                                    allImages.push({ url: selectedCampaign.heroImage, type: 'hero' });
+                                                    processedUrls.add(selectedCampaign.heroImage);
+                                                }
+
+                                                if (selectedCampaign.photos) {
+                                                    selectedCampaign.photos.forEach(p => {
+                                                        if (!processedUrls.has(p.url)) {
+                                                            allImages.push({ ...p, type: 'photo' });
+                                                            processedUrls.add(p.url);
+                                                        }
+                                                    });
+                                                }
 
                                                 if (allImages.length === 0) {
                                                     return (
