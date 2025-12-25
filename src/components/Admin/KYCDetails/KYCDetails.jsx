@@ -144,35 +144,53 @@ export default function KYCVerificationPage() {
 
     const printStyles = `
   @media print {
-    body * {
+    @page {
+      margin: 15mm;
+      size: A4;
+    }
+    
+    /* Global Reset */
+    html, body {
       visibility: hidden;
+      height: auto !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      background: white;
     }
-    #printable-form, #printable-form * {
-      visibility: visible;
-    }
+
+    /* Target the Printable Area */
     #printable-form {
+      visibility: visible;
       position: absolute;
       left: 0;
       top: 0;
-      width: 100%;
-      height: auto;
+      width: 100% !important;
+      margin: 0 !important;
+      padding: 0 !important;
       background: white;
       z-index: 9999;
-      padding: 0;
-      margin: 0;
-      overflow: visible;
     }
-    /* Hide scrollbars/overflow on parent to prevent extra blank pages */
-    html, body {
-      overflow: visible !important;
-      height: auto !important;
+
+    /* Ensure children are visible */
+    #printable-form * {
+      visibility: visible;
     }
-    .avoid-break {
-      break-inside: avoid;
-      page-break-inside: avoid;
+
+    /* Fix Text Cutoff (Crucial for Emails) */
+    .print-break-all {
+      word-break: break-all;
+      overflow-wrap: break-word;
     }
-    .no-print {
+
+    /* Hide UI elements */
+    .no-print, header, button {
       display: none !important;
+    }
+    
+    /* Layout Adjustments */
+    .avoid-break {
+        break-inside: avoid;
+        page-break-inside: avoid;
     }
   }
 `;
@@ -382,27 +400,33 @@ export default function KYCVerificationPage() {
                                     </div>
 
                                     <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar pb-24">
-                                        <DetailSection title="KYC Information" icon={<CreditCard className="text-blue-600" />}>
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                                <Field label="Full Legal Name" value={selectedUser.kycDetails?.fullLegalName} />
-                                                <Field label="PAN Number" value={selectedUser.kycDetails?.panNumber} copyable />
-                                                <Field label="PAN Verified" value={selectedUser.kycDetails?.panVerified ? "Yes" : "No"} />
-                                                <Field label="Submission Date" value={selectedUser.kycDetails?.submittedAt ? new Date(selectedUser.kycDetails.submittedAt).toLocaleString() : 'N/A'} />
-                                            </div>
-                                        </DetailSection>
-
-                                        <DetailSection title="Contact & Address" icon={<MapPin className="text-blue-600" />}>
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                                <Field label="Mobile Number" value={selectedUser.mobileNo} icon={<Phone size={14} />} />
-                                                <Field label="Email" value={selectedUser.email} icon={<Mail size={14} />} />
-                                                <div className="col-span-full">
-                                                    <Field label="Address" value={selectedUser.kycDetails?.address} />
+                                        <div className="grid grid-cols-1 gap-6 avoid-break print:grid-cols-1">
+                                            {/* Stacked sections for better vertical flow in print if needed, but inner content is now 2-col */}
+                                            <DetailSection title="KYC Information" icon={<CreditCard className="text-blue-600" />}>
+                                                <div className="grid grid-cols-2 gap-x-6 gap-y-6">
+                                                    <Field label="Full Legal Name" value={selectedUser.kycDetails?.fullLegalName} />
+                                                    <Field label="PAN Number" value={selectedUser.kycDetails?.panNumber} copyable />
+                                                    <Field label="PAN Verified" value={selectedUser.kycDetails?.panVerified ? "Yes" : "No"} />
+                                                    <Field label="Submission Date" value={selectedUser.kycDetails?.submittedAt ? new Date(selectedUser.kycDetails.submittedAt).toLocaleString() : 'N/A'} />
                                                 </div>
-                                                <Field label="City" value={selectedUser.kycDetails?.city} />
-                                                <Field label="State" value={selectedUser.kycDetails?.state} />
-                                                <Field label="Pincode" value={selectedUser.kycDetails?.pincode} />
-                                            </div>
-                                        </DetailSection>
+                                            </DetailSection>
+
+                                            <DetailSection title="Contact & Address" icon={<MapPin className="text-blue-600" />}>
+                                                <div className="grid grid-cols-2 gap-x-6 gap-y-6">
+                                                    <Field label="Mobile Number" value={selectedUser.mobileNo} icon={<Phone size={14} />} />
+                                                    <Field label="Email" value={selectedUser.email} icon={<Mail size={14} />} />
+
+                                                    {/* Address spans full width or 2 cols */}
+                                                    <div className="col-span-2">
+                                                        <Field label="Address" value={selectedUser.kycDetails?.address} />
+                                                    </div>
+
+                                                    <Field label="City" value={selectedUser.kycDetails?.city} />
+                                                    <Field label="State" value={selectedUser.kycDetails?.state} />
+                                                    <Field label="Pincode" value={selectedUser.kycDetails?.pincode} />
+                                                </div>
+                                            </DetailSection>
+                                        </div>
 
                                         {selectedUser.kycDetails?.remarks && (
                                             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
@@ -490,10 +514,10 @@ function Field({ label, value, icon, copyable }) {
             <p className="text-xs text-gray-500 uppercase font-bold mb-1 flex items-center gap-1">
                 {icon} {label}
             </p>
-            <p className="flex items-center gap-2 text-gray-800 font-medium">
+            <p className="flex items-center gap-2 text-gray-800 font-medium print-break-all">
                 {value}
                 {copyable && (
-                    <button onClick={() => navigator.clipboard.writeText(value)} className="opacity-0 group-hover:opacity-100 p-1 hover:bg-gray-200 rounded text-gray-500">
+                    <button onClick={() => navigator.clipboard.writeText(value)} className="opacity-0 group-hover:opacity-100 p-1 hover:bg-gray-200 rounded text-gray-500 no-print">
                         <FileText size={12} />
                     </button>
                 )}

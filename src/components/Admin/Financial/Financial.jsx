@@ -193,35 +193,74 @@ export default function FinancialAidVerifyPage() {
 
    const printStyles = `
   @media print {
-    body * {
+    @page {
+      margin: 15mm;
+      size: A4;
+    }
+    
+    /* Global Reset */
+    html, body {
       visibility: hidden;
+      height: auto !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      background: white;
     }
-    #printable-form, #printable-form * {
-      visibility: visible;
-    }
+
+    /* Target the Printable Area */
     #printable-form {
+      visibility: visible;
       position: absolute;
       left: 0;
       top: 0;
-      width: 100%;
-      height: auto;
+      width: 100% !important;
+      margin: 0 !important;
+      padding: 0 !important;
       background: white;
       z-index: 9999;
-      padding: 0;
-      margin: 0;
-      overflow: visible;
     }
-    /* Hide scrollbars/overflow on parent to prevent extra blank pages */
-    html, body {
-      overflow: visible !important;
-      height: auto !important;
+
+    /* Ensure children are visible */
+    #printable-form * {
+      visibility: visible;
     }
-    .avoid-break {
-      break-inside: avoid;
-      page-break-inside: avoid;
+
+    /* Fix Text Cutoff */
+    .print-break-all {
+        word-break: break-all;
+        overflow-wrap: break-word;
     }
-    .no-print {
+
+    /* Hide UI elements */
+    .no-print, header, button {
       display: none !important;
+    }
+    
+    /* Layout Adjustments */
+    .avoid-break {
+        break-inside: avoid;
+        page-break-inside: avoid;
+    }
+
+    /* Reset sticky for print */
+    .sticky {
+        position: relative !important;
+    }
+
+    /* Force block display */
+    #printable-form {
+        display: block !important;
+        height: auto !important;
+    }
+    
+    /* Force Grid */
+    .print-grid {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        gap: 1.5rem !important;
+    }
+    .print-col-span-2 {
+        grid-column: span 2 !important;
     }
   }
 `;
@@ -289,7 +328,7 @@ export default function FinancialAidVerifyPage() {
             </header>
 
             {/* Main Content */}
-            <main className="flex-1 p-6 max-w-[1600px] mx-auto w-full overflow-hidden flex flex-col">
+            <main className="flex-1 p-6 max-w-[1600px] mx-auto w-full overflow-hidden flex flex-col print:overflow-visible print:p-0">
 
                {/* Statistics Dashboard */}
                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
@@ -596,9 +635,9 @@ export default function FinancialAidVerifyPage() {
                   {/* RIGHT: Details Column */}
                   <div
                      id="printable-form"
-                     className="lg:col-span-8 bg-white rounded-xl border border-gray-200 overflow-hidden flex flex-col relative shadow-sm">
+                     className="lg:col-span-8 bg-white rounded-xl border border-gray-200 overflow-hidden flex flex-col relative shadow-sm print:overflow-visible print:h-auto">
                      {selectedForm ? (
-                        <div className="flex flex-col h-full">
+                        <div className="flex flex-col h-full print:h-auto print:overflow-visible">
                            {/* Detail Header */}
                            <div className="p-6 border-b border-gray-200 bg-white backdrop-blur-sm z-10 sticky top-0">
                               <div className="flex justify-between items-start">
@@ -627,38 +666,45 @@ export default function FinancialAidVerifyPage() {
                            </div>
 
                            {/* SCROLLABLE FORM DATA */}
-                           <div className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar pb-32">
+                           <div className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar pb-32 print:overflow-visible print:h-auto print:pb-0">
 
-                              {/* SECTION 1: Personal / Basic Info */}
-                              <DetailSection title="Basic Information" icon={<User className="text-blue-600" />}>
-                                 <Grid>
-                                    <Field label="Full Name" value={selectedForm.fullName} />
-                                    <Field label="Contact Number" value={selectedForm.contactNumber} icon={<Phone size={14} />} />
-                                    <Field label="Email Address" value={selectedForm.email} icon={<Mail size={14} />} />
-                                    {!selectedForm.isOrganization && (
-                                       <>
-                                          <Field label="Date of Birth" value={selectedForm.dateOfBirth} />
-                                          <Field label="Gender" value={selectedForm.gender} />
-                                          <Field label="Marital Status" value={selectedForm.maritalStatus} />
-                                          <Field label="Relation" value={selectedForm.relation} />
-                                          <Field label="Relation Name" value={selectedForm.relationName} />
-                                       </>
-                                    )}
-                                 </Grid>
-                              </DetailSection>
+                              {/* SECTION GROUP 1: Basic Info & Address */}
+                              <div className="grid grid-cols-1 gap-6 avoid-break print-grid">
+                                 {/* SECTION 1: Personal / Basic Info */}
+                                 <DetailSection title="Basic Information" icon={<User className="text-blue-600" />}>
+                                    <Grid>
+                                       <Field label="Full Name" value={selectedForm.fullName} />
+                                       <Field label="Contact Number" value={selectedForm.contactNumber} icon={<Phone size={14} />} />
+                                       <Field label="Email Address" value={selectedForm.email} icon={<Mail size={14} />} />
+                                       {!selectedForm.isOrganization && (
+                                          <>
+                                             <Field label="Date of Birth" value={selectedForm.dateOfBirth} />
+                                             <Field label="Gender" value={selectedForm.gender} />
+                                             <Field label="Marital Status" value={selectedForm.maritalStatus} />
+                                             <Field label="Relation" value={selectedForm.relation} />
+                                             <Field label="Relation Name" value={selectedForm.relationName} />
+                                          </>
+                                       )}
+                                    </Grid>
+                                 </DetailSection>
 
-                              {/* SECTION 2: Address */}
-                              <DetailSection title="Address Details" icon={<MapPin className="text-blue-600" />}>
-                                 <Grid cols={1}>
-                                    <Field label="Current Address" value={selectedForm.currentAddress} />
-                                    <Field label="Permanent Address" value={selectedForm.permanentAddress} />
-                                    <Field label="Address Same?" value={selectedForm.sameAddress ? 'Yes' : 'No'} />
-                                 </Grid>
-                              </DetailSection>
+                                 {/* SECTION 2: Address */}
+                                 <DetailSection title="Address Details" icon={<MapPin className="text-blue-600" />}>
+                                    <Grid cols={1}>
+                                       <Field label="Current Address" value={selectedForm.currentAddress} />
+                                       <Field label="Permanent Address" value={selectedForm.permanentAddress} />
+                                       <Field label="Address Same?" value={selectedForm.sameAddress ? 'Yes' : 'No'} />
+                                    </Grid>
+                                 </DetailSection>
+                              </div>
 
-                              {/* SECTION 3: Organization Specifics */}
+                              {/* SECTION 3: Organization Specifics (if org) */}
                               {selectedForm.isOrganization && (
-                                 <DetailSection title="Organization Details" icon={<Building className="text-blue-400" />}>
+                                 <div className="avoid-break bg-gray-50 rounded-xl p-5 border border-gray-200">
+                                    <div className="flex items-center gap-3 mb-6 border-b border-gray-200 pb-3">
+                                       <Building className="w-8 h-8 text-blue-400" />
+                                       <h3 className="text-lg font-semibold text-gray-800">Organization Details</h3>
+                                    </div>
                                     <Grid>
                                        <Field label="Organization Name" value={selectedForm.organizationName} />
                                        <Field label="Non-Profit Type" value={selectedForm.nonProfit} />
@@ -681,77 +727,85 @@ export default function FinancialAidVerifyPage() {
                                           <Field label="About NGO" value={selectedForm.aboutNGO} />
                                        </div>
                                     </Grid>
-                                 </DetailSection>
+                                 </div>
                               )}
 
-                              {/* SECTION 4: Professional & Financial (Individual) */}
-                              {!selectedForm.isOrganization && (
-                                 <DetailSection title="Professional & Financial" icon={<Briefcase className="text-blue-600" />}>
+                              {/* SECTION GROUP 2: Financial/Professional & Banking */}
+                              <div className="grid grid-cols-1 gap-6 avoid-break print-grid">
+                                 {/* SECTION 4: Professional & Financial (Individual) */}
+                                 {!selectedForm.isOrganization && (
+                                    <DetailSection title="Professional & Financial" icon={<Briefcase className="text-blue-600" />}>
+                                       <Grid>
+                                          <Field label="Occupation" value={selectedForm.occupation} />
+                                          <Field label="Monthly Income" value={selectedForm.monthlyIncome ? `₹${selectedForm.monthlyIncome}` : 'N/A'} />
+                                          <Field label="Number of Dependents" value={selectedForm.numberOfDependents} />
+                                       </Grid>
+                                    </DetailSection>
+                                 )}
+
+                                 {/* SECTION 5: Banking Details */}
+                                 <DetailSection title="Banking Information" icon={<CreditCard className="text-blue-600" />}>
                                     <Grid>
-                                       <Field label="Occupation" value={selectedForm.occupation} />
-                                       <Field label="Monthly Income" value={selectedForm.monthlyIncome ? `₹${selectedForm.monthlyIncome}` : 'N/A'} />
-                                       <Field label="Number of Dependents" value={selectedForm.numberOfDependents} />
+                                       <Field label="Bank Name & Branch" value={selectedForm.bankNameBranch} />
+                                       <Field label="Account Number" value={selectedForm.accountNumber} copyable />
+                                       <Field label="IFSC Code" value={selectedForm.ifscCode} copyable />
                                     </Grid>
                                  </DetailSection>
-                              )}
+                              </div>
 
-                              {/* SECTION 5: Banking Details */}
-                              <DetailSection title="Banking Information" icon={<CreditCard className="text-blue-600" />}>
-                                 <Grid>
-                                    <Field label="Bank Name & Branch" value={selectedForm.bankNameBranch} />
-                                    <Field label="Account Number" value={selectedForm.accountNumber} copyable />
-                                    <Field label="IFSC Code" value={selectedForm.ifscCode} copyable />
-                                 </Grid>
-                              </DetailSection>
+                              {/* SECTION GROUP 3: Identity & Request */}
+                              <div className="grid grid-cols-1 gap-6 avoid-break print-grid">
+                                 {/* SECTION 6: Identity & Certifications */}
+                                 <DetailSection title="Identity & Certifications" icon={<FileText className="text-blue-600" />}>
+                                    <Grid>
+                                       {!selectedForm.isOrganization ? (
+                                          <>
+                                             <Field label="ID Type" value={selectedForm.idType} />
+                                             <Field label="Government ID Number" value={selectedForm.govIdNumber} />
+                                          </>
+                                       ) : (
+                                          <>
+                                             <Field label="Has 80G?" value={selectedForm.has80G} />
+                                             <Field label="80G Expiry" value={selectedForm.expiryDate} />
+                                             <Field label="Has FCRA?" value={selectedForm.hasFCRA} />
+                                             <Field label="PAN Card No" value={selectedForm.panCard} />
+                                          </>
+                                       )}
+                                    </Grid>
+                                 </DetailSection>
 
-                              {/* SECTION 6: Identity & Certifications */}
-                              <DetailSection title="Identity & Certifications" icon={<FileText className="text-blue-600" />}>
-                                 <Grid>
-                                    {!selectedForm.isOrganization ? (
-                                       <>
-                                          <Field label="ID Type" value={selectedForm.idType} />
-                                          <Field label="Government ID Number" value={selectedForm.govIdNumber} />
-                                       </>
-                                    ) : (
-                                       <>
-                                          <Field label="Has 80G?" value={selectedForm.has80G} />
-                                          <Field label="80G Expiry" value={selectedForm.expiryDate} />
-                                          <Field label="Has FCRA?" value={selectedForm.hasFCRA} />
-                                          <Field label="PAN Card No" value={selectedForm.panCard} />
-                                       </>
-                                    )}
-                                 </Grid>
-                              </DetailSection>
-
-                              {/* SECTION 7: Request Details (Hardship) */}
-                              <DetailSection title="Aid Request Details" icon={<Users className="text-blue-600" />}>
-                                 <Grid cols={1}>
-                                    <Field label="Aid Type Requested" value={selectedForm.aidType} />
-                                    <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                                       <p className="text-gray-600 text-xs uppercase tracking-wider font-bold mb-2">Hardship Description</p>
-                                       <p className="text-gray-800 leading-relaxed whitespace-pre-wrap">{selectedForm.hardshipDescription || 'No description provided.'}</p>
-                                    </div>
-                                 </Grid>
-                              </DetailSection>
+                                 {/* SECTION 7: Request Details (Hardship) */}
+                                 <DetailSection title="Aid Request Details" icon={<Users className="text-blue-600" />}>
+                                    <Grid cols={1}>
+                                       <Field label="Aid Type Requested" value={selectedForm.aidType} />
+                                       <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                                          <p className="text-gray-600 text-xs uppercase tracking-wider font-bold mb-2">Hardship Description</p>
+                                          <p className="text-gray-800 leading-relaxed whitespace-pre-wrap">{selectedForm.hardshipDescription || 'No description provided.'}</p>
+                                       </div>
+                                    </Grid>
+                                 </DetailSection>
+                              </div>
 
                               {/* SECTION 8: Documents (Links) */}
-                              <DetailSection title="Uploaded Documents" icon={<FileText className="text-blue-600" />}>
-                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                    <DocLink label="Government ID" url={selectedForm.govIdDocumentPath} backendUrl={BASE_URL} />
-                                    <DocLink label="Bank Statement" url={selectedForm.bankStatementPath} backendUrl={BASE_URL} />
+                              <div className="print-col-span-2">
+                                 <DetailSection title="Uploaded Documents" icon={<FileText className="text-blue-600" />}>
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                       <DocLink label="Government ID" url={selectedForm.govIdDocumentPath} backendUrl={BASE_URL} />
+                                       <DocLink label="Bank Statement" url={selectedForm.bankStatementPath} backendUrl={BASE_URL} />
 
-                                    {selectedForm.isOrganization && (
-                                       <>
-                                          <DocLink label="80G Certificate" url={selectedForm.certification80GPath} backendUrl={BASE_URL} />
-                                          <DocLink label="PAN Card Image" url={selectedForm.panCardImagePath} backendUrl={BASE_URL} />
-                                       </>
-                                    )}
+                                       {selectedForm.isOrganization && (
+                                          <>
+                                             <DocLink label="80G Certificate" url={selectedForm.certification80GPath} backendUrl={BASE_URL} />
+                                             <DocLink label="PAN Card Image" url={selectedForm.panCardImagePath} backendUrl={BASE_URL} />
+                                          </>
+                                       )}
 
-                                    {selectedForm.supportingDocumentsPaths?.map((path, idx) => (
-                                       <DocLink key={idx} label={`Supporting Doc ${idx + 1}`} url={path} backendUrl={BASE_URL} />
-                                    ))}
-                                 </div>
-                              </DetailSection>
+                                       {selectedForm.supportingDocumentsPaths?.map((path, idx) => (
+                                          <DocLink key={idx} label={`Supporting Doc ${idx + 1}`} url={path} backendUrl={BASE_URL} />
+                                       ))}
+                                    </div>
+                                 </DetailSection>
+                              </div>
 
                            </div>
 
@@ -866,7 +920,7 @@ function Field({ label, value, icon, isLink, copyable }) {
                {value}
             </a>
          ) : (
-            <p className="text-gray-800 font-medium text-[15px] break-words flex items-center gap-2">
+            <p className="text-gray-800 font-medium text-[15px] break-words flex items-center gap-2 print-break-all">
                {value}
                {copyable && (
                   <button
@@ -874,7 +928,7 @@ function Field({ label, value, icon, isLink, copyable }) {
                         e.stopPropagation();
                         navigator.clipboard.writeText(value);
                      }}
-                     className="opacity-0 group-hover:opacity-100 p-1 hover:bg-gray-200 rounded text-gray-600 transition"
+                     className="opacity-0 group-hover:opacity-100 p-1 hover:bg-gray-200 rounded text-gray-600 transition no-print"
                      title="Copy"
                   >
                      <FileText size={12} />
@@ -901,7 +955,7 @@ function DocLink({ label, url, backendUrl }) {
          </div>
          <div className="overflow-hidden">
             <p className="text-sm font-medium text-gray-800 group-hover:text-blue-600 transition-colors truncate">{label}</p>
-            <p className="text-xs text-gray-500 truncate">Click to view document</p>
+            <p className="text-xs text-gray-500 truncate no-print">Click to view document</p>
          </div>
       </a>
    );
