@@ -20,7 +20,7 @@ export const socialMediaApiSlice = apiSlice.injectEndpoints({
                 method: 'POST',
                 body: campaignData, // Pass the social links or other data if needed
             }),
-            invalidatesTags: ["SocialMediaAssignments", "Tasks"],
+            invalidatesTags: ["SocialMediaAssignments"],
         }),
     }),
 });
