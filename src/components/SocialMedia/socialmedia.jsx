@@ -426,15 +426,7 @@ const SocialMediaDashboard = () => {
                                         </div>
                                     </div>
 
-                                    {selectedCampaign.status === 'pending' && (
-                                        <button
-                                            onClick={() => { setIsViewModalOpen(false); handleMarkAsComplete(selectedCampaign); }}
-                                            className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white p-3 rounded-xl font-medium transition-colors shadow-lg shadow-emerald-200"
-                                        >
-                                            <CheckCircle className="w-5 h-5" />
-                                            Complete Promation
-                                        </button>
-                                    )}
+                                   
                                 </div>
                             </div>
                         </div>
