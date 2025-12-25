@@ -8,6 +8,7 @@ import {
     useCompleteSocialTaskMutation
 } from '../../utils/slices/socialMediaApiSlice';
 import { toast } from 'react-toastify';
+import { useRouter } from 'next/navigation';
 
 const formatDate = (dateStr) => {
     if (!dateStr) return 'No date';
@@ -116,6 +117,7 @@ const CampaignCard = ({ campaign, onAction, actionLabel, actionIcon: ActionIcon,
 // --- Main Component ---
 
 const SocialMediaDashboard = () => {
+    const router = useRouter();
     const { data: assignmentsData, isLoading, refetch } = useGetSocialAssignmentsQuery();
     const [submitLinks, { isLoading: isSubmittingLinks }] = useSubmitSocialLinksMutation();
     const [completeTask, { isLoading: isCompletingTask }] = useCompleteSocialTaskMutation();
@@ -226,7 +228,9 @@ const SocialMediaDashboard = () => {
             <div className="bg-white border-b border-gray-200 sticky top-0 z-30">
                 <div className="max-w-7xl mx-auto px-4 lg:px-6 h-16 flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                        <button className="p-2 hover:bg-gray-100 rounded-lg text-gray-500 transition-colors">
+                        <button 
+                        onClick={() => router.back()}
+                        className="p-2 hover:bg-gray-100 rounded-lg text-gray-500 transition-colors">
                             <ArrowLeft className="w-5 h-5" />
                         </button>
                         <h1 className="text-lg font-semibold text-gray-800">Social Media Portal</h1>
