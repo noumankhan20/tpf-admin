@@ -12,6 +12,16 @@ const formatDate = (dateStr) => {
     });
 };
 
+const getImageUrl = (path) => {
+    if (!path) return '';
+    if (path.startsWith('http')) return path;
+    const baseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://api.anatech.fun';
+    // Ensure clean concatenation
+    const cleanPath = path.startsWith('/') ? path : `/${path}`;
+    const cleanBase = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
+    return `${cleanBase}${cleanPath}`;
+};
+
 import { useGetAssignmentsQuery, useGetCompletedAssignmentsQuery, useUploadPhotographyMutation, useCompleteTaskMutation } from '@/utils/slices/photographyApiSlice';
 
 // Photography Dashboard Component
@@ -159,7 +169,7 @@ const PhotographyDashboard = ({ activeView, setActiveView, userRole, assignments
                             <div className="flex flex-col sm:flex-row sm:items-start gap-3">
                                 <div className="w-16 h-16 md:w-20 md:h-20 flex-shrink-0">
                                     <img
-                                        src={upload.images[0]}
+                                        src={getImageUrl(upload.images[0])}
                                         alt="Upload preview"
                                         className="w-full h-full rounded-lg object-cover"
                                     />
@@ -184,7 +194,7 @@ const PhotographyDashboard = ({ activeView, setActiveView, userRole, assignments
                             <div className="flex flex-col sm:flex-row sm:items-start gap-3">
                                 <div className="w-16 h-16 md:w-20 md:h-20 flex-shrink-0">
                                     <img
-                                        src={upload.images[0]}
+                                        src={getImageUrl(upload.images[0])}
                                         alt="Upload preview"
                                         className="w-full h-full rounded-lg object-cover"
                                     />

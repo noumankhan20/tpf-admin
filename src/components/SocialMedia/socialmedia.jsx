@@ -19,12 +19,22 @@ const formatDate = (dateStr) => {
     });
 };
 
+const getImageUrl = (path) => {
+    if (!path) return '';
+    if (path.startsWith('http')) return path;
+    const baseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://api.anatech.fun';
+    // Ensure clean concatenation
+    const cleanPath = path.startsWith('/') ? path : `/${path}`;
+    const cleanBase = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
+    return `${cleanBase}${cleanPath}`;
+};
+
 // --- Sub-Components ---
 
 const StatsCard = ({ title, count, subtitle, icon: Icon, colorClass, bgClass, onClick, active }) => (
     <div
         onClick={onClick}
-        className={`relative overflow-hidden rounded-xl p-4 sm:p-6 transition-all duration-300 cursor-pointer border ${active ? 'ring-2 ring-emerald-500 shadow-md border-emerald-200' : 'hover:shadow-md border-gray-200'} bg-white`}
+        className={`relative overflow-hidden rounded-xl p-4 sm:p-6 transition-all duration-300 cursor-pointer border ${active ? 'ring-2 ring-emerald-500 shadow-md border-emerald-200' : 'hover:shadow-md border-gray-300'} bg-white`}
     >
         <div className="flex items-center justify-between z-10 relative">
             <div>
@@ -41,7 +51,8 @@ const StatsCard = ({ title, count, subtitle, icon: Icon, colorClass, bgClass, on
 
 const CampaignCard = ({ campaign, onAction, actionLabel, actionIcon: ActionIcon, actionColor, onView }) => {
     // Combine heroImage and photos for display
-    const displayImage = campaign.heroImage || (campaign.photos && campaign.photos[0]?.url) || 'https://via.placeholder.com/400?text=No+Image';
+    const rawImage = campaign.heroImage || (campaign.photos && campaign.photos[0]?.url);
+    const displayImage = rawImage ? getImageUrl(rawImage) : 'https://via.placeholder.com/400?text=No+Image';
 
     return (
         <motion.div
@@ -49,7 +60,7 @@ const CampaignCard = ({ campaign, onAction, actionLabel, actionIcon: ActionIcon,
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95 }}
-            className="group bg-white rounded-2xl p-4 sm:p-5 border border-gray-100 hover:border-emerald-100 hover:shadow-lg transition-all duration-300 flex flex-col h-full"
+            className="group bg-white rounded-2xl p-4 sm:p-5 border border-gray-300 hover:border-emerald-100 hover:shadow-lg transition-all duration-300 flex flex-col h-full"
         >
             <div className="relative mb-4 overflow-hidden rounded-xl h-48">
                 <img
@@ -92,7 +103,7 @@ const CampaignCard = ({ campaign, onAction, actionLabel, actionIcon: ActionIcon,
                     <div className="flex items-center gap-2 pt-2">
                         <button
                             onClick={() => onView(campaign)}
-                            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:text-gray-900 transition-colors"
+                            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:text-gray-900 transition-colors"
                         >
                             <Eye className="w-4 h-4" />
                             Details
@@ -225,12 +236,12 @@ const SocialMediaDashboard = () => {
     return (
         <div className="min-h-screen bg-gray-50/50 font-sans">
             {/* Header */}
-            <div className="bg-white border-b border-gray-200 sticky top-0 z-30">
+            <div className="bg-white border-b border-gray-300 sticky top-0 z-30">
                 <div className="max-w-7xl mx-auto px-4 lg:px-6 h-16 flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                        <button 
-                        onClick={() => router.back()}
-                        className="p-2 hover:bg-gray-100 rounded-lg text-gray-500 transition-colors">
+                        <button
+                            onClick={() => router.back()}
+                            className="p-2 hover:bg-gray-100 rounded-lg text-gray-500 transition-colors">
                             <ArrowLeft className="w-5 h-5" />
                         </button>
                         <h1 className="text-lg font-semibold text-gray-800">Social Media Portal</h1>
@@ -252,7 +263,7 @@ const SocialMediaDashboard = () => {
                 {/* Welcome & Stats Section */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
                     {/* Welcome Banner */}
-                    <div className="lg:col-span-3 bg-gradient-to-br from-emerald-500 to-emerald-400 rounded-2xl p-6 sm:p-8 text-white relative overflow-hidden shadow-lg">
+                    <div className="lg:col-span-3 bg-gradient-to-br from-emerald-500 to-emerald-400 rounded-2xl p-6 sm:p-8 text-white relative overflow-hidden shadow-lg border border-gray-300">
                         <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-16 -mt-16 blur-2xl"></div>
                         <div className="relative z-10 flex items-start gap-4">
                             <div className="w-14 h-14 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center flex-shrink-0 border border-white/20">
@@ -295,7 +306,7 @@ const SocialMediaDashboard = () => {
                 {/* Filters & Controls */}
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-6 sticky top-20 z-20 bg-gray-50/50 py-2 backdrop-blur-sm">
                     {/* Tabs */}
-                    <div className="bg-white p-1 rounded-xl border border-gray-200 shadow-sm flex w-full sm:w-auto">
+                    <div className="bg-white p-1 rounded-xl border border-gray-300 shadow-sm flex w-full sm:w-auto">
                         {['pending', 'completed'].map((tab) => (
                             <button
                                 key={tab}
@@ -318,7 +329,7 @@ const SocialMediaDashboard = () => {
                             placeholder="Search campaigns, beneficiaries..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all outline-none"
+                            className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all outline-none"
                         />
                     </div>
                 </div>
@@ -387,36 +398,37 @@ const SocialMediaDashboard = () => {
                                             Media Assets
                                         </h5>
                                         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                                            {/* Hero Image */}
-                                            {selectedCampaign.heroImage && (
-                                                <div className="group relative rounded-xl overflow-hidden aspect-square bg-gray-100 ring-2 ring-emerald-500 ring-offset-2">
-                                                    <img src={selectedCampaign.heroImage} alt="Hero" className="w-full h-full object-cover cursor-pointer" onClick={() => setSelectedImage(selectedCampaign.heroImage)} />
-                                                    <div className="absolute bottom-0 left-0 right-0 bg-emerald-500 text-white text-[10px] py-0.5 text-center font-bold">HERO IMAGE</div>
-                                                    <button
-                                                        onClick={(e) => { e.stopPropagation(); handleDownloadImage(selectedCampaign.heroImage); }}
-                                                        className="absolute top-2 right-2 bg-white/90 p-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-all hover:bg-white shadow-sm"
-                                                    >
-                                                        <Download className="w-4 h-4" />
-                                                    </button>
-                                                </div>
-                                            )}
-                                            {/* Campaign Photos */}
-                                            {selectedCampaign.photos?.map((photo, idx) => (
-                                                <div key={idx} className="group relative rounded-xl overflow-hidden aspect-square bg-gray-100">
-                                                    <img src={photo.url} alt={`Campaign ${idx}`} className="w-full h-full object-cover cursor-pointer" onClick={() => setSelectedImage(photo.url)} />
-                                                    <button
-                                                        onClick={(e) => { e.stopPropagation(); handleDownloadImage(photo.url); }}
-                                                        className="absolute top-2 right-2 bg-white/90 p-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-all hover:bg-white shadow-sm"
-                                                    >
-                                                        <Download className="w-4 h-4" />
-                                                    </button>
-                                                </div>
-                                            ))}
-                                            {(!selectedCampaign.heroImage && (!selectedCampaign.photos || selectedCampaign.photos.length === 0)) && (
-                                                <div className="col-span-full py-10 text-center text-gray-400 border-2 border-dashed border-gray-200 rounded-xl">
-                                                    No assets available
-                                                </div>
-                                            )}
+                                            {(() => {
+                                                const allImages = [];
+                                                if (selectedCampaign.heroImage) allImages.push({ url: selectedCampaign.heroImage, type: 'hero' });
+                                                if (selectedCampaign.photos) allImages.push(...selectedCampaign.photos.map(p => ({ ...p, type: 'photo' })));
+
+                                                if (allImages.length === 0) {
+                                                    return (
+                                                        <div className="col-span-full py-10 text-center text-gray-400 border-2 border-dashed border-gray-200 rounded-xl">
+                                                            No assets available
+                                                        </div>
+                                                    );
+                                                }
+
+                                                return allImages.map((img, idx) => (
+                                                    <div key={idx} className="group relative rounded-xl overflow-hidden aspect-square bg-gray-100 border border-gray-100">
+                                                        <img
+                                                            src={getImageUrl(img.url)}
+                                                            alt={`Media Asset ${idx + 1}`}
+                                                            className="w-full h-full object-cover cursor-pointer hover:opacity-95 transition-opacity"
+                                                            onClick={() => setSelectedImage(getImageUrl(img.url))}
+                                                        />
+                                                        <button
+                                                            onClick={(e) => { e.stopPropagation(); handleDownloadImage(getImageUrl(img.url)); }}
+                                                            className="absolute top-2 right-2 bg-white/90 p-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-all hover:bg-white shadow-sm"
+                                                            title="Download Image"
+                                                        >
+                                                            <Download className="w-4 h-4 text-gray-700" />
+                                                        </button>
+                                                    </div>
+                                                ));
+                                            })()}
                                         </div>
                                     </div>
                                 </div>
