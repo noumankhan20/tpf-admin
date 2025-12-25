@@ -36,7 +36,7 @@ import { useGetAllFormsQuery, useUpdateFormStatusMutation } from '@/utils/slices
 
 export default function FinancialAidVerifyPage() {
    const router = useRouter();
-   const BASE_URL = process.env.NEXT_PUBLIC_UPLOAD_URL || 'http://localhost:7000';
+   const BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:7000';
 
    // Tab and selection state
    const [activeTab, setActiveTab] = useState('myself'); // 'myself' or 'other'
