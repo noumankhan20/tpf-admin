@@ -18,6 +18,7 @@ import {
   ShieldCheck,
   HandHeart,
   Book,
+  ClipboardList,
 } from "lucide-react";
 
 export const MODULES = [
@@ -28,6 +29,14 @@ export const MODULES = [
     route: "/add-admin",
     category: "administration",
     desc: "Manage system security",
+  },
+  {
+    id: "task-management",
+    name: "Task Management",
+    icon: ClipboardList,
+    route: "/admin/task-management",
+    category: "administration",
+    desc: "Monitor and track all campaign tasks",
   },
   {
     id: "Social-Media",

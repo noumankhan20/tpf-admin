@@ -19,6 +19,7 @@ export const ROLE_PERMISSIONS = {
     "financial-aid-verify",
     "management",
     "kyc-verify",
+    "task-management",
   ],
 
   "hr-admin": ["hr", "dms", "legal"],
