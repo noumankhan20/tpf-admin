@@ -389,7 +389,7 @@ function OverviewTab({ analyticsData, isLoading }) {
                                 <p className="font-medium text-gray-800">{task.taskType}</p>
                                 <p className="text-sm text-gray-600">{task.campaignId?.title}</p>
                                 <p className="text-xs text-gray-500 mt-1">
-                                    Assigned to: {task.assignedAdmin?.fullName || 'Unassigned'}
+                                    Assigned to: {task.assignedAdminId?.fullName || 'Unassigned'}
                                 </p>
                             </div>
                             <StatusBadge status={task.status} />
@@ -450,8 +450,8 @@ function TasksTab({ tasksData, isLoading, currentPage, setCurrentPage, getModule
                                     </span>
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap">
-                                    <div className="text-sm text-gray-900">{task.assignedAdmin?.fullName || 'Unassigned'}</div>
-                                    <div className="text-xs text-gray-500">{task.assignedAdmin?.role}</div>
+                                    <div className="text-sm text-gray-900">{task.assignedAdminId?.fullName || 'Unassigned'}</div>
+                                    <div className="text-xs text-gray-500">{task.assignedAdminId?.role}</div>
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap">
                                     <StatusBadge status={task.status} />
@@ -671,7 +671,7 @@ function CampaignDetailModal({ campaign, onClose, getModuleIcon, getModuleColor 
                                                 </span>
                                             </div>
                                             <p className="text-sm text-gray-600">
-                                                Assigned to: {task.assignedAdmin?.fullName || 'Unassigned'}
+                                                Assigned to: {task.assignedAdminId?.fullName || 'Unassigned'}
                                             </p>
                                             <p className="text-xs text-gray-500 mt-1">
                                                 Created: {new Date(task.createdAt).toLocaleDateString()}
