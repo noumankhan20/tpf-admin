@@ -48,6 +48,8 @@ export default function TaskManagementPage() {
     const [sortOrder, setSortOrder] = useState('desc');
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize] = useState(20);
+    const [startDate, setStartDate] = useState('');
+    const [endDate, setEndDate] = useState('');
 
     // Debounce search
     React.useEffect(() => {
@@ -57,6 +59,11 @@ export default function TaskManagementPage() {
         }, 500);
         return () => clearTimeout(timer);
     }, [searchQuery]);
+
+    // Reset page when dates change
+    React.useEffect(() => {
+        setCurrentPage(1);
+    }, [startDate, endDate]);
 
     // Fetch analytics
     const { data: analyticsData, isLoading: analyticsLoading } = useGetTaskAnalyticsQuery();
@@ -69,7 +76,9 @@ export default function TaskManagementPage() {
         sortBy,
         sortOrder,
         page: currentPage,
-        limit: pageSize
+        limit: pageSize,
+        startDate,
+        endDate
     });
 
     // Fetch campaigns overview
@@ -89,12 +98,16 @@ export default function TaskManagementPage() {
         setSortBy('createdAt');
         setSortOrder('desc');
         setCurrentPage(1);
+        setStartDate('');
+        setEndDate('');
     };
 
     const activeFilterCount = [
         statusFilter !== 'all',
         moduleFilter !== 'all',
-        debouncedSearch !== ''
+        debouncedSearch !== '',
+        startDate !== '',
+        endDate !== ''
     ].filter(Boolean).length;
 
     const getModuleIcon = (module) => {
@@ -233,6 +246,24 @@ export default function TaskManagementPage() {
                                     <option value="FUNDRAISING_TASK">Fundraising</option>
                                 </select>
                             )}
+
+                            <div className="flex items-center gap-2">
+                                <input
+                                    type="date"
+                                    value={startDate}
+                                    onChange={(e) => setStartDate(e.target.value)}
+                                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+                                    placeholder="Start Date"
+                                />
+                                <span className="text-gray-500 text-sm">to</span>
+                                <input
+                                    type="date"
+                                    value={endDate}
+                                    onChange={(e) => setEndDate(e.target.value)}
+                                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+                                    placeholder="End Date"
+                                />
+                            </div>
 
                             <button
                                 onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}

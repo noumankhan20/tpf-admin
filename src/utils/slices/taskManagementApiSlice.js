@@ -11,10 +11,12 @@ export const taskManagementApiSlice = apiSlice.injectEndpoints({
                 sortBy = 'createdAt',
                 sortOrder = 'desc',
                 page = 1,
-                limit = 20
+                limit = 20,
+                startDate = '',
+                endDate = ''
             }) => ({
                 url: '/admin/task-management/tasks',
-                params: { search, status, module, sortBy, sortOrder, page, limit }
+                params: { search, status, module, sortBy, sortOrder, page, limit, startDate, endDate }
             }),
             providesTags: ['TaskManagement']
         }),
