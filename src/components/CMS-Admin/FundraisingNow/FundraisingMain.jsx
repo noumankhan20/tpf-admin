@@ -7,6 +7,11 @@ import {
   ArrowLeft,
 } from "lucide-react";
 import axios from "axios";
+import { useGetFundraisersQuery,
+         useCreateFundraiserMutation,
+         useUpdateFundraiserMutation,
+         useDeleteFundraiserMutation,
+ } from "@/utils/slices/cms/fundraiserApi";
 import FundraisingHeader from "./FundraisingHeader";
 import CampaignList from "./CampaignList";
 import CampaignForm from "./CampaignForm";
@@ -15,7 +20,6 @@ export default function FundraisingCMS() {
   const [viewMode, setViewMode] = useState("view");
   const [searchQuery, setSearchQuery] = useState("");
   const [editingCard, setEditingCard] = useState(null);
-  const [fundraisingCards, setFundraisingCards] = useState([]);
   const [readyCampaigns, setReadyCampaigns] = useState([]);
   const [selectedCampaign, setSelectedCampaign] = useState(null);
 
@@ -67,8 +71,22 @@ export default function FundraisingCMS() {
     taskId: "",
   });
 
+    const {
+      data: fundraisersResponse,
+      isLoading: isFundraisersLoading,
+      isError: isFundraisersError,
+    } = useGetFundraisersQuery();
+    const [createFundraiser, { isLoading: isCreating }] =
+      useCreateFundraiserMutation();
+  
+    const [updateFundraiser, { isLoading: isUpdating }] =
+      useUpdateFundraiserMutation();
+  
+    const [deleteFundraiser] = useDeleteFundraiserMutation();
+  
+    const fundraisingCards = fundraisersResponse?.data || [];
+
   useEffect(() => {
-    fetchFundraisers();
     fetchReadyCampaigns();
   }, []);
 
@@ -83,18 +101,6 @@ export default function FundraisingCMS() {
     }
   };
 
-  const fetchFundraisers = async () => {
-    try {
-      const res = await axios.get(`${API_BASE}/cms/fundraiser/get`, { withCredentials: true });
-      const data = await res.data;
-
-      if (data.success) {
-        setFundraisingCards(data.data);
-      }
-    } catch (err) {
-      console.error("Error fetching fundraisers:", err);
-    }
-  };
 
   const handleEdit = (card) => {
     setEditingCard(card);
@@ -133,17 +139,11 @@ export default function FundraisingCMS() {
     if (!confirmed) return;
 
     try {
-      const res = await axios.delete(`${API_BASE}/cms/fundraiser/delete/${id}`, { withCredentials: true });
-
-      if (res.data?.success) {
-        setFundraisingCards((prev) => prev.filter((card) => card._id !== id));
-        alert("Campaign deleted successfully");
-      } else {
-        alert(res.data?.message || "Failed to delete campaign");
-      }
-    } catch (error) {
-      console.error("Delete Fundraiser Error:", error);
-      alert("Something went wrong while deleting the campaign");
+      await deleteFundraiser(id).unwrap();
+      alert("Campaign deleted successfully");
+    } catch (err) {
+      console.error("Delete error:", err);
+      alert("Failed to delete campaign");
     }
   };
 
@@ -186,22 +186,14 @@ export default function FundraisingCMS() {
       let res;
 
       if (editingCard) {
-        res = await axios.put(
-          `${API_BASE}/cms/fundraiser/update/${editingCard._id}`,
-          form,
-          { headers: { "Content-Type": "multipart/form-data" }, withCredentials: true }
-        );
+        await updateFundraiser({
+          id: editingCard._id,
+          formData: form,
+        }).unwrap();
       } else {
-        res = await axios.post(
-          `${API_BASE}/cms/fundraiser/add`,
-          form,
-          { headers: { "Content-Type": "multipart/form-data" }, withCredentials: true }
-        );
+        await createFundraiser(form).unwrap();
       }
 
-      const data = res.data;
-
-      if (data.success) {
         if (!editingCard && formData.taskId) {
           try {
             await axios.post(
@@ -215,13 +207,9 @@ export default function FundraisingCMS() {
         }
 
         alert(editingCard ? "Updated Successfully!" : "Created Successfully!");
-        fetchFundraisers();
         resetForm();
         setEditingCard(null);
         setViewMode("view");
-      } else {
-        alert(data.message || "Something went wrong");
-      }
     } catch (error) {
       console.error("Save Fundraiser Error:", error);
       alert("Something went wrong while saving.");
@@ -270,6 +258,14 @@ export default function FundraisingCMS() {
     card.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
     card.organization.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+   if (isFundraisersLoading) {
+  return <div className="p-6">Loading fundraisers...</div>;
+}
+
+if (isFundraisersError) {
+  return <div className="p-6 text-red-600">Failed to load fundraisers</div>;
+} 
 
   return (
     <div className="min-h-screen bg-gray-50">

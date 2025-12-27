@@ -1,6 +1,11 @@
 "use client";
-import React, { useState, useEffect } from "react";
-import axios from "axios";
+import React, { useState, useEffect,useMemo } from "react";
+import {
+    useGetCommunitiesQuery,
+    useCreateCommunityMutation,
+    useUpdateCommunityMutation,
+    useDeleteCommunityMutation
+} from "@/utils/slices/cms/communitiesApi";
 import {
     Home,
     ArrowLeft,
@@ -21,25 +26,27 @@ import {
 import CommunityForm from "./CommunitiesForm";
 import CommunityPreview from "./CommunitiesPreview";
 export default function CommunitiesMain() {
+    const {
+        data,
+        isLoading,
+        error,
+    } = useGetCommunitiesQuery();
+    const [createCommunity] = useCreateCommunityMutation();
+    const [updateCommunity] = useUpdateCommunityMutation();
+    const [deleteCommunity] = useDeleteCommunityMutation();
+
     const [viewMode, setViewMode] = useState("overview");
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedCommunity, setSelectedCommunity] = useState(null);
-    const [communities, setCommunities] = useState([]);
     const [showSuccessMessage, setShowSuccessMessage] = useState(false);
     const [showErrorMessage, setShowErrorMessage] = useState(false);
     const [successText, setSuccessText] = useState("");
-    
+
     const [communityForm, setCommunityForm] = useState({
         name: "",
         image: null,
         imagePreview: null,
     });
-
-    const API_URL = process.env.NEXT_PUBLIC_BACKEND_API;
-
-    useEffect(() => {
-        fetchCommunities();
-    }, []);
 
     useEffect(() => {
         if (showSuccessMessage) {
@@ -55,25 +62,17 @@ export default function CommunitiesMain() {
         }
     }, [showErrorMessage]);
 
-    const fetchCommunities = async () => {
-        try {
-            const response = await axios.get(`${API_URL}/cms/communities/get`);
-            
-            if (response.data.success) {
-                const formatted = response.data.commmunities.map((item, index) => ({
-                    id: item._id,
-                    name: item.title,
-                    image: `${process.env.NEXT_PUBLIC_BACKEND_URL}${item.image}`,
-                    lastUpdated: new Date(item.updatedAt).toLocaleString(),
-                    order: index + 1,
-                }));
+    const communities = React.useMemo(() => {
+        if (!data?.communities) return [];
 
-                setCommunities(formatted);
-            }
-        } catch (error) {
-            console.error("Fetch error:", error);
-        }
-    };
+        return data.communities.map((item, index) => ({
+            id: item._id,
+            name: item.title,
+            image: `${process.env.NEXT_PUBLIC_BACKEND_URL}${item.image}`,
+            lastUpdated: new Date(item.updatedAt).toLocaleString(),
+            order: index + 1,
+        }));
+    }, [data]);
 
     const handleImageUpload = (e) => {
         const file = e.target.files[0];
@@ -131,23 +130,17 @@ export default function CommunitiesMain() {
         formData.append("image", communityForm.image);
 
         try {
-            const response = await axios.post(
-                `${API_URL}/cms/communities/add`,
-                formData,
-                { headers: { "Content-Type": "multipart/form-data" } }
-            );
+            await createCommunity(formData).unwrap();
 
-            if (response.data.success) {
-                setSuccessText("Community added successfully!");
-                setShowSuccessMessage(true);
-                fetchCommunities();
-                setViewMode("overview");
-            }
+            setSuccessText("Community added successfully!");
+            setShowSuccessMessage(true);
+            setViewMode("overview");
         } catch (error) {
             console.error("Upload error:", error);
             setShowErrorMessage(true);
         }
     };
+
 
     const handleUpdateCommunity = async () => {
         if (!selectedCommunity) return;
@@ -160,65 +153,34 @@ export default function CommunitiesMain() {
         }
 
         try {
-            const response = await axios.put(
-                `${API_URL}/cms/communities/update/${selectedCommunity.id}`,
+            await updateCommunity({
+                id: selectedCommunity.id,
                 formData,
-                { headers: { "Content-Type": "multipart/form-data" } }
-            );
+            }).unwrap();
 
-            if (response.data.success) {
-                setSuccessText("Community updated successfully!");
-                setShowSuccessMessage(true);
-                fetchCommunities();
-                setViewMode("overview");
-                setSelectedCommunity(null);
-            }
+            setSuccessText("Community updated successfully!");
+            setShowSuccessMessage(true);
+            setViewMode("overview");
+            setSelectedCommunity(null);
         } catch (error) {
             console.error("Update error:", error);
             setShowErrorMessage(true);
         }
     };
 
+
     const handleDeleteCommunity = async (id) => {
         const confirmDelete = confirm("Are you sure you want to delete this community?");
         if (!confirmDelete) return;
 
         try {
-            const response = await axios.delete(`${API_URL}/cms/communities/delete/${id}`);
-
-            if (response.data.success) {
-                setSuccessText("Community deleted successfully!");
-                setShowSuccessMessage(true);
-                fetchCommunities();
-            }
+            await deleteCommunity(id).unwrap();
+            setSuccessText("Community deleted successfully!");
+            setShowSuccessMessage(true);
         } catch (error) {
             console.error("Delete error:", error);
             setShowErrorMessage(true);
         }
-    };
-
-    const handleMoveUp = (index) => {
-        if (index === 0) return;
-        const newCommunities = [...communities];
-        [newCommunities[index], newCommunities[index - 1]] = [newCommunities[index - 1], newCommunities[index]];
-        
-        newCommunities.forEach((comm, idx) => {
-            comm.order = idx + 1;
-        });
-        
-        setCommunities(newCommunities);
-    };
-
-    const handleMoveDown = (index) => {
-        if (index === communities.length - 1) return;
-        const newCommunities = [...communities];
-        [newCommunities[index], newCommunities[index + 1]] = [newCommunities[index + 1], newCommunities[index]];
-        
-        newCommunities.forEach((comm, idx) => {
-            comm.order = idx + 1;
-        });
-        
-        setCommunities(newCommunities);
     };
 
     const handleCancel = () => {
@@ -229,6 +191,19 @@ export default function CommunitiesMain() {
     const filteredCommunities = communities.filter((community) =>
         community.name.toLowerCase().includes(searchQuery.toLowerCase().trim())
     );
+
+    if (isLoading) {
+        return <div className="p-10 text-center">Loading communities...</div>;
+    }
+
+    if (error) {
+        return (
+            <div className="p-10 text-center text-red-500">
+                Failed to load communities
+            </div>
+        );
+    }
+
 
     return (
         <>
@@ -382,27 +357,6 @@ export default function CommunitiesMain() {
                                                             className="w-full h-full object-cover"
                                                         />
                                                         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent"></div>
-                                                        
-                                                        {/* Reorder Controls */}
-                                                        <div className="absolute top-2 left-2 flex gap-1 bg-white/90 rounded-lg p-1">
-                                                            <button
-                                                                onClick={() => handleMoveUp(index)}
-                                                                disabled={index === 0}
-                                                                className={`p-1.5 rounded ${index === 0 ? 'opacity-30 cursor-not-allowed' : 'hover:bg-gray-100'}`}
-                                                                title="Move up"
-                                                            >
-                                                                <ChevronUp size={16} className="text-gray-700" />
-                                                            </button>
-                                                            <GripVertical size={16} className="text-gray-400 self-center" />
-                                                            <button
-                                                                onClick={() => handleMoveDown(index)}
-                                                                disabled={index === filteredCommunities.length - 1}
-                                                                className={`p-1.5 rounded ${index === filteredCommunities.length - 1 ? 'opacity-30 cursor-not-allowed' : 'hover:bg-gray-100'}`}
-                                                                title="Move down"
-                                                            >
-                                                                <ChevronDown size={16} className="text-gray-700" />
-                                                            </button>
-                                                        </div>
                                                     </div>
 
                                                     {/* Content */}

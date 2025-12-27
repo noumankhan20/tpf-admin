@@ -1,15 +1,16 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { Save, Home, Menu,ArrowLeft, Upload, RefreshCw, Eye, EyeOff, Image as ImageIcon, AlertCircle } from "lucide-react";
+import { Save, Home, Menu, ArrowLeft, Upload, RefreshCw, Eye, EyeOff, Image as ImageIcon, AlertCircle } from "lucide-react";
 
-import axios from "axios";
+import {
+  useGetBeforeFooterQuery,
+  useCreateBeforeFooterMutation,
+  useUpdateBeforeFooterMutation,
+} from "@/utils/slices/cms/beforefooterApi";
 import { useRouter } from "next/navigation";
 export default function StartFundraiserBannerCMS() {
-  const API_URL = process.env.NEXT_PUBLIC_BACKEND_API;
   const BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
-  const router= useRouter();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [activeSection, setActiveSection] = useState("influencers");
+  const router = useRouter();
 
   const [mode, setMode] = useState("create");
   const [bannerData, setBannerData] = useState(null);
@@ -24,43 +25,14 @@ export default function StartFundraiserBannerCMS() {
   const [imagePreview, setImagePreview] = useState("");
   const [hasChanges, setHasChanges] = useState(false);
   const [showPreview, setShowPreview] = useState(true);
-  const [isLoading, setIsLoading] = useState(false);
+  const { data, isLoading, error } = useGetBeforeFooterQuery();
 
-  useEffect(() => {
-    fetchSection();
-  }, []);
+  const [createBeforeFooter] = useCreateBeforeFooterMutation();
+  const [updateBeforeFooter] = useUpdateBeforeFooterMutation();
 
-  const fetchSection = async () => {
-    try {
-      const res = await axios.get(`${API_URL}/cms/before-footer/get`);
+  const section = data?.data?.[0] || null;
 
-      if (res.data.success && res.data.data.length > 0) {
-        const section = res.data.data[0];
 
-        setMode("edit");
-        setBannerData(section);
-
-        setFormData({
-          title: section.title,
-          description: section.description,
-          buttonText: "Create Fundraiser Now",
-        });
-
-        setImagePreview(`${BASE_URL}${section.image}`);
-      } else {
-        setMode("create");
-        setBannerData(null);
-        setFormData({
-          title: "",
-          description: "",
-          buttonText: "Create Fundraiser Now",
-        });
-        setImagePreview("");
-      }
-    } catch (err) {
-      console.error("Fetch Before-Footer Error:", err);
-    }
-  };
 
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
@@ -91,41 +63,34 @@ export default function StartFundraiserBannerCMS() {
   };
 
   const handleSave = async () => {
-    if (!formData.title.trim() || !formData.description.trim()) {
-      alert("All fields required");
-      return;
+  if (!formData.title.trim() || !formData.description.trim()) {
+    alert("All fields required");
+    return;
+  }
+
+  const form = new FormData();
+  form.append("title", formData.title);
+  form.append("description", formData.description);
+  if (imageFile) form.append("image", imageFile);
+
+  try {
+    if (mode === "create") {
+      await createBeforeFooter(form).unwrap();
+      alert("Created successfully!");
+    } else {
+      await updateBeforeFooter({
+        id: bannerData._id,
+        formData: form,
+      }).unwrap();
+      alert("Updated successfully!");
     }
 
-    setIsLoading(true);
-    const form = new FormData();
-    form.append("title", formData.title);
-    form.append("description", formData.description);
-    if (imageFile) form.append("image", imageFile);
+    setHasChanges(false);
+  } catch (err) {
+    alert(err?.data?.message || "Failed to save");
+  }
+};
 
-    try {
-      const res =
-        mode === "create"
-          ? await axios.post(`${API_URL}/cms/before-footer/add`, form, {
-            headers: { "Content-Type": "multipart/form-data" },
-          })
-          : await axios.put(
-            `${API_URL}/cms/before-footer/update/${bannerData._id}`,
-            form,
-            { headers: { "Content-Type": "multipart/form-data" } }
-          );
-
-      if (res.data.success) {
-        alert(mode === "create" ? "Created successfully!" : "Updated successfully!");
-        fetchSection();
-        setHasChanges(false);
-      }
-    } catch (err) {
-      console.error(err);
-      alert("Failed to save");
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const handleReset = () => {
     if (hasChanges && !confirm("Discard unsaved changes?")) return;
@@ -325,8 +290,8 @@ export default function StartFundraiserBannerCMS() {
                     onClick={handleSave}
                     disabled={!hasChanges || isLoading}
                     className={`flex-1 px-6 py-3.5 rounded-xl font-bold flex items-center justify-center gap-2 transition-all duration-200 ${hasChanges && !isLoading
-                        ? "bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg hover:shadow-xl transform hover:scale-105"
-                        : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                      ? "bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg hover:shadow-xl transform hover:scale-105"
+                      : "bg-gray-200 text-gray-400 cursor-not-allowed"
                       }`}
                   >
                     {isLoading ? (
@@ -346,8 +311,8 @@ export default function StartFundraiserBannerCMS() {
                     onClick={handleReset}
                     disabled={!hasChanges || isLoading}
                     className={`flex-1 sm:flex-initial px-6 py-3.5 rounded-xl border-2 font-bold flex items-center justify-center gap-2 transition-all duration-200 ${hasChanges && !isLoading
-                        ? "border-emerald-300 text-emerald-700 hover:bg-emerald-50"
-                        : "border-gray-200 text-gray-400 cursor-not-allowed"
+                      ? "border-emerald-300 text-emerald-700 hover:bg-emerald-50"
+                      : "border-gray-200 text-gray-400 cursor-not-allowed"
                       }`}
                   >
                     <RefreshCw size={18} />
