@@ -469,14 +469,14 @@ function ActionModal({ task, onClose, refetch }) {
                                     {task.proofs?.map((proof, idx) => (
                                         <a
                                             key={idx}
-                                            href={`${process.env.NEXT_PUBLIC_BACKEND_API?.replace('/api', '') || 'http://localhost:7000'}${proof.fileUrl}`}
+                                            href={`${(process.env.NEXT_PUBLIC_BACKEND_API || 'http://localhost:7000/api').replace(/\/api\/?$/, '')}${proof.fileUrl}`}
                                             target="_blank"
                                             rel="noopener noreferrer"
                                             className="group relative aspect-square bg-gray-100 rounded-xl overflow-hidden border border-gray-200 hover:border-blue-500 transition-all shadow-sm flex flex-col items-center justify-center"
                                         >
                                             {proof.fileType?.startsWith('image') ? (
                                                 <img
-                                                    src={`${process.env.NEXT_PUBLIC_BACKEND_API?.replace('/api', '') || 'http://localhost:7000'}${proof.fileUrl}`}
+                                                    src={`${(process.env.NEXT_PUBLIC_BACKEND_API || 'http://localhost:7000/api').replace(/\/api\/?$/, '')}${proof.fileUrl}`}
                                                     className="w-full h-full object-cover group-hover:scale-110 transition-transform"
                                                     alt="Proof"
                                                 />

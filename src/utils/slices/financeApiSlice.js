@@ -26,7 +26,7 @@ export const financeApiSlice = apiSlice.injectEndpoints({
                 }
 
                 return {
-                    url: '/finance/submit-finance-proofs',
+                    url: `/finance/submit-finance-proofs?campaignId=${data.campaignId}`,
                     method: 'POST',
                     body: formData,
                 };
