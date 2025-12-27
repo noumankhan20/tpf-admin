@@ -5,7 +5,7 @@ import {
     useCreateCommunityMutation,
     useUpdateCommunityMutation,
     useDeleteCommunityMutation
-} from "@/utils/slices/cms";
+} from "@/utils/slices/cms/communitiesApi";
 import {
     Home,
     ArrowLeft,
