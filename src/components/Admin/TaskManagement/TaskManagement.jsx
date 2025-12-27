@@ -192,18 +192,18 @@ export default function TaskManagementPage() {
                         label="Overview"
                     />
                     <TabButton
-                        active={activeTab === 'tasks'}
-                        onClick={() => setActiveTab('tasks')}
-                        icon={<FileText className="w-4 h-4" />}
-                        label="All Tasks"
-                        count={tasksData?.pagination?.total}
-                    />
-                    <TabButton
                         active={activeTab === 'campaigns'}
                         onClick={() => setActiveTab('campaigns')}
                         icon={<Users className="w-4 h-4" />}
                         label="Campaigns"
                         count={campaignsData?.pagination?.total}
+                    />
+                      <TabButton
+                        active={activeTab === 'tasks'}
+                        onClick={() => setActiveTab('tasks')}
+                        icon={<FileText className="w-4 h-4" />}
+                        label="All Tasks"
+                        count={tasksData?.pagination?.total}
                     />
                 </div>
 
