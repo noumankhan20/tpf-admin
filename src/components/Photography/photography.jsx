@@ -133,11 +133,14 @@ const PhotographyDashboard = ({ activeView, setActiveView, userRole, assignments
                                 <UserCheck className="w-4 h-4 md:w-5 md:h-5 text-white" />
                             </div>
                             <div className="flex-1 min-w-0">
-                                <h3 className="font-semibold text-gray-800 mb-1 text-sm md:text-base">
-                                    New Assignment: {notification.campaignName}
+                                <h3 className="font-semibold text-gray-800 mb-1 text-sm md:text-base flex items-center gap-2">
+                                    <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold text-white ${notification.taskType === 'UPLOAD_POST_CAMPAIGN_PHOTOS' ? 'bg-blue-500' : 'bg-emerald-500'}`}>
+                                        {notification.taskType === 'UPLOAD_POST_CAMPAIGN_PHOTOS' ? 'Post-Campaign' : 'Pre-Campaign'}
+                                    </span>
+                                    {notification.campaignName}
                                 </h3>
-                                <p className="text-xs md:text-sm text-gray-600 mb-2">
-                                    <span className="font-medium">Beneficiary:</span> {notification.beneficiaryName}
+                                <p className="text-xs md:text-sm text-gray-600 mb-2 font-sans italic">
+                                    <span className="font-bold underline">Beneficiary:</span> {notification.beneficiaryName}
                                 </p>
                                 <p className="text-xs md:text-sm text-gray-600 mb-2 break-words">
                                     <MapPin className="w-3 h-3 md:w-4 md:h-4 inline mr-1" />

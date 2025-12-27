@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { Save, XCircle, Home, Menu, Upload, Edit2, ArrowLeft, Trash2, Plus, Search, Eye, EyeOff, Users, ArrowRight, Sparkles, Image as ImageIcon, CheckCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
+import axios from "axios";
 import {
     useGetImpactStoriesQuery,
     useCreateImpactStoryMutation,
@@ -85,7 +86,46 @@ export default function StoryCardsCMS() {
     const [selectedCard, setSelectedCard] = useState(null);
     const [showPreview, setShowPreview] = useState(false);
     const [previewDarkMode, setPreviewDarkMode] = useState(false);
+    const [readyCampaigns, setReadyCampaigns] = useState([]);
+    const [selectedCampaign, setSelectedCampaign] = useState(null);
     const router = useRouter();
+
+    const API_BASE = (process.env.NEXT_PUBLIC_BACKEND_API || 'http://localhost:7000/api');
+
+    useEffect(() => {
+        fetchReadyCampaigns();
+    }, []);
+
+    const fetchReadyCampaigns = async () => {
+        try {
+            const res = await axios.get(`${API_BASE}/campaigns/ready?taskType=PUBLISH_SUCCESS_STORY`, {
+                withCredentials: true
+            });
+            if (res.data.success) {
+                setReadyCampaigns(res.data.data);
+            }
+        } catch (err) {
+            console.error("Error fetching ready campaigns:", err);
+        }
+    };
+
+    const handleCampaignSelect = (e) => {
+        const campaignId = e.target.value;
+        const campaign = readyCampaigns.find(c => c._id === campaignId);
+        setSelectedCampaign(campaign);
+
+        if (campaign) {
+            setCardForm(prev => ({
+                ...prev,
+                title: campaign.title || "",
+                excerpt: campaign.about?.substring(0, 150) || "",
+                story: campaign.about || "",
+                imagePreview: campaign.imageUrl ? `${IMAGE_URL}${campaign.imageUrl}` : null,
+                image: campaign.imageUrl || "",
+                taskId: campaign.taskId || ""
+            }));
+        }
+    };
 
     const [cardForm, setCardForm] = useState({
         title: "",
@@ -95,6 +135,7 @@ export default function StoryCardsCMS() {
         image: "",
         imageFile: null,
         imagePreview: null,
+        taskId: ""
     });
 
     const handleImageUpload = (e) => {
@@ -174,9 +215,26 @@ export default function StoryCardsCMS() {
                 alert("Story updated successfully!");
             } else {
                 res = await createImpactStory(formData).unwrap();
+
+                // If it's a workflow task, complete it
+                if (cardForm.taskId) {
+                    try {
+                        await axios.post(
+                            `${API_BASE}/workflow/tasks/${cardForm.taskId}/complete`,
+                            {},
+                            { withCredentials: true }
+                        );
+                        // Refresh ready campaigns
+                        fetchReadyCampaigns();
+                    } catch (taskErr) {
+                        console.error("Task completion failed:", taskErr);
+                    }
+                }
+
                 alert("Story added successfully!");
                 setViewMode("overview");
                 setSelectedCard(null);
+                setSelectedCampaign(null);
             }
         } catch (err) {
             console.error("Error saving story:", err);
@@ -264,7 +322,28 @@ export default function StoryCardsCMS() {
                                                 <p className="text-sm text-emerald-600 font-medium">{storyCards.length} active {storyCards.length === 1 ? 'card' : 'cards'}</p>
                                             </div>
                                         </div>
-                                        <div className="flex flex-wrap gap-3">
+                                        <div className="flex flex-wrap items-center gap-3">
+                                            {/* Top-level Workflow Selector */}
+                                            {readyCampaigns.length > 0 && (
+                                                <div className="flex items-center gap-2 bg-emerald-50 border-2 border-emerald-100 p-1 rounded-xl">
+                                                    <select
+                                                        className="bg-transparent border-none text-sm font-bold text-emerald-700 focus:ring-0 cursor-pointer pr-10"
+                                                        value=""
+                                                        onChange={(e) => {
+                                                            handleCampaignSelect(e);
+                                                            if (e.target.value) setViewMode("add-card");
+                                                        }}
+                                                    >
+                                                        <option value="">✨ Post Success Story...</option>
+                                                        {readyCampaigns.map(camp => (
+                                                            <option key={camp._id} value={camp._id}>
+                                                                {camp.title}
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+                                            )}
+
                                             <button
                                                 onClick={() => setShowPreview(!showPreview)}
                                                 className={`px-5 py-2.5 rounded-xl font-semibold flex items-center gap-2 transition-all duration-300 ${showPreview
@@ -395,6 +474,30 @@ export default function StoryCardsCMS() {
 
                                         {/* Image Upload */}
                                         <div className="mb-6">
+                                            {/* Workflow Selector */}
+                                            {viewMode === "add-card" && readyCampaigns.length > 0 && (
+                                                <div className="mb-8 p-4 bg-emerald-50 rounded-2xl border-2 border-emerald-100">
+                                                    <label className="block text-sm font-bold text-emerald-900 mb-2">
+                                                        ✨ Post Success Story from Workflow
+                                                    </label>
+                                                    <select
+                                                        className="w-full px-4 py-3 bg-white border-2 border-emerald-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 text-emerald-900 transition-all cursor-pointer"
+                                                        value={selectedCampaign?._id || ""}
+                                                        onChange={handleCampaignSelect}
+                                                    >
+                                                        <option value="">Select a Campaign...</option>
+                                                        {readyCampaigns.map(camp => (
+                                                            <option key={camp._id} value={camp._id}>
+                                                                {camp.title} ({camp.beneficiaryName})
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                    <p className="text-xs text-emerald-600 mt-2 font-medium italic underline">
+                                                        Campaigns with pending Success Story tasks are listed here.
+                                                    </p>
+                                                </div>
+                                            )}
+
                                             <label className="block text-sm font-bold text-emerald-900 mb-2">
                                                 Story Image *
                                             </label>

@@ -41,12 +41,19 @@ export default function CampaignForm({
       organization: campaign.organization || "",
       beneficiaryName: campaign.beneficiaryName || "",
       requiredAmount: campaign.targetAmount || "",
+      category: campaign.category || prev.category,
+      about: campaign.about || "",
+      impactGoals: campaign.impactGoals?.length ? campaign.impactGoals : [""],
+      isUrgent: !!campaign.isUrgent,
+      taxBenefits: !!campaign.taxBenefits,
+      zakatVerified: !!campaign.zakatVerified,
       deadline: campaign.deadline ? campaign.deadline.split('T')[0] : "",
       taskId: campaign.taskId || "",
-      selectedImageUrl: "",
-      selectedVideoUrl: "",
-      imagePreview: null,
-      videoPreview: null,
+      selectedImageUrl: campaign.imageUrl || "",
+      selectedVideoUrl: campaign.videoUrl || "",
+      imagePreview: campaign.imageUrl || null,
+      videoPreview: campaign.videoUrl || null,
+      mediaType: campaign.mediaType || "image",
     }));
   };
 
@@ -72,7 +79,7 @@ export default function CampaignForm({
 
     const isVideo = file.type.startsWith('video/');
     const reader = new FileReader();
-    
+
     reader.onloadend = () => {
       setFormData((prev) => ({
         ...prev,
@@ -83,7 +90,7 @@ export default function CampaignForm({
       }));
       setShowMediaModal(false);
     };
-    
+
     reader.readAsDataURL(file);
   };
 
@@ -139,12 +146,12 @@ export default function CampaignForm({
               {!editingCard && (
                 <div>
                   <label className="block text-sm font-semibold text-gray-900 mb-2">
-                    Select Draft Campaign <span className="text-red-500">*</span>
+                    Select Campaign for Publication <span className="text-red-500">*</span>
                   </label>
                   <select
                     value={formData.campaignId}
                     onChange={(e) => handleCampaignSelect(e.target.value)}
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 outline-none transition-all"
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 outline-none transition-all font-sans"
                   >
                     <option value="">Select a campaign...</option>
                     {readyCampaigns.map((c) => (
@@ -154,7 +161,7 @@ export default function CampaignForm({
                     ))}
                   </select>
                   <p className="mt-2 text-xs text-gray-600">
-                    Only approved campaigns with photography are shown
+                    Campaigns with pending Create tasks are listed here
                   </p>
                 </div>
               )}
@@ -164,7 +171,7 @@ export default function CampaignForm({
                 <label className="block text-sm font-semibold text-gray-900 mb-2">
                   Campaign Media <span className="text-red-500">*</span>
                 </label>
-                
+
                 {formData.imagePreview || formData.videoPreview ? (
                   <div className="relative rounded-lg overflow-hidden border-2 border-gray-200">
                     {formData.mediaType === "video" ? (

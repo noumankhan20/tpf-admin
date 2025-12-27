@@ -7,11 +7,12 @@ import {
   ArrowLeft,
 } from "lucide-react";
 import axios from "axios";
-import { useGetFundraisersQuery,
-         useCreateFundraiserMutation,
-         useUpdateFundraiserMutation,
-         useDeleteFundraiserMutation,
- } from "@/utils/slices/cms/fundraiserApi";
+import {
+  useGetFundraisersQuery,
+  useCreateFundraiserMutation,
+  useUpdateFundraiserMutation,
+  useDeleteFundraiserMutation,
+} from "@/utils/slices/cms/fundraiserApi";
 import FundraisingHeader from "./FundraisingHeader";
 import CampaignList from "./CampaignList";
 import CampaignForm from "./CampaignForm";
@@ -71,20 +72,20 @@ export default function FundraisingCMS() {
     taskId: "",
   });
 
-    const {
-      data: fundraisersResponse,
-      isLoading: isFundraisersLoading,
-      isError: isFundraisersError,
-    } = useGetFundraisersQuery();
-    const [createFundraiser, { isLoading: isCreating }] =
-      useCreateFundraiserMutation();
-  
-    const [updateFundraiser, { isLoading: isUpdating }] =
-      useUpdateFundraiserMutation();
-  
-    const [deleteFundraiser] = useDeleteFundraiserMutation();
-  
-    const fundraisingCards = fundraisersResponse?.data || [];
+  const {
+    data: fundraisersResponse,
+    isLoading: isFundraisersLoading,
+    isError: isFundraisersError,
+  } = useGetFundraisersQuery();
+  const [createFundraiser, { isLoading: isCreating }] =
+    useCreateFundraiserMutation();
+
+  const [updateFundraiser, { isLoading: isUpdating }] =
+    useUpdateFundraiserMutation();
+
+  const [deleteFundraiser] = useDeleteFundraiserMutation();
+
+  const fundraisingCards = fundraisersResponse?.data || [];
 
   useEffect(() => {
     fetchReadyCampaigns();
@@ -92,7 +93,7 @@ export default function FundraisingCMS() {
 
   const fetchReadyCampaigns = async () => {
     try {
-      const res = await axios.get(`${API_BASE}/campaigns/ready`, { withCredentials: true });
+      const res = await axios.get(`${API_BASE}/campaigns/ready?taskType=CREATE_CAMPAIGN`, { withCredentials: true });
       if (res.data.success) {
         setReadyCampaigns(res.data.data);
       }
@@ -194,22 +195,22 @@ export default function FundraisingCMS() {
         await createFundraiser(form).unwrap();
       }
 
-        if (!editingCard && formData.taskId) {
-          try {
-            await axios.post(
-              `${API_BASE}/workflow/tasks/${formData.taskId}/complete`,
-              {},
-              { withCredentials: true }
-            );
-          } catch (taskErr) {
-            console.error("Task completion failed (non-fatal):", taskErr);
-          }
+      if (!editingCard && formData.taskId) {
+        try {
+          await axios.post(
+            `${API_BASE}/workflow/tasks/${formData.taskId}/complete`,
+            {},
+            { withCredentials: true }
+          );
+        } catch (taskErr) {
+          console.error("Task completion failed (non-fatal):", taskErr);
         }
+      }
 
-        alert(editingCard ? "Updated Successfully!" : "Created Successfully!");
-        resetForm();
-        setEditingCard(null);
-        setViewMode("view");
+      alert(editingCard ? "Updated Successfully!" : "Created Successfully!");
+      resetForm();
+      setEditingCard(null);
+      setViewMode("view");
     } catch (error) {
       console.error("Save Fundraiser Error:", error);
       alert("Something went wrong while saving.");
@@ -259,13 +260,13 @@ export default function FundraisingCMS() {
     card.organization.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-   if (isFundraisersLoading) {
-  return <div className="p-6">Loading fundraisers...</div>;
-}
+  if (isFundraisersLoading) {
+    return <div className="p-6">Loading fundraisers...</div>;
+  }
 
-if (isFundraisersError) {
-  return <div className="p-6 text-red-600">Failed to load fundraisers</div>;
-} 
+  if (isFundraisersError) {
+    return <div className="p-6 text-red-600">Failed to load fundraisers</div>;
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">

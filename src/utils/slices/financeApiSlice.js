@@ -31,7 +31,7 @@ export const financeApiSlice = apiSlice.injectEndpoints({
                     body: formData,
                 };
             },
-            invalidatesTags: ['FinanceAssignments', 'TaskManagement', 'Campaigns'],
+            invalidatesTags: ['FinanceAssignments', 'TaskManagement', 'Campaigns', 'PhotographyAssignments'],
         }),
         completeFinanceTask: builder.mutation({
             query: (taskId) => ({
