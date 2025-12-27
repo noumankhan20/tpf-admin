@@ -17,45 +17,38 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import axios from "axios";
+import { useGetTrustedByQuery,
+         useCreateTrustedByMutation,
+         useUpdateTrustedByMutation,
+         useDeleteTrustedByMutation
+ } from "@/utils/slices/cms/trustedbyApi";
 
 export default function PartnersCMS() {
   const [viewMode, setViewMode] = useState("overview");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedPartner, setSelectedPartner] = useState(null);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [activeSection, setActiveSection] = useState("trusted");
-  const [partners, setPartners] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const API_URL = process.env.NEXT_PUBLIC_BACKEND_API;
   const BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
 
-  useEffect(() => {
-    fetchPartners();
-  }, []);
+ const {
+  data,
+  isLoading,
+  error,
+} = useGetTrustedByQuery();
 
-  const fetchPartners = async () => {
-    setIsLoading(true);
-    try {
-      const res = await axios.get(`${API_URL}/cms/trusted-by/get`);
-      if (res.data.success) {
-        const formatted = res.data.trustedby.map((item, index) => ({
-          id: item._id,
-          name: item.title,
-          image: `${BASE_URL}${item.image}`,
-          lastUpdated: new Date(item.updatedAt).toLocaleString(),
-          order: index + 1
-        }));
+const [createTrustedBy] = useCreateTrustedByMutation();
+const [updateTrustedBy] = useUpdateTrustedByMutation();
+const [deleteTrustedBy] = useDeleteTrustedByMutation();
 
-        setPartners(formatted);
-      }
-    } catch (err) {
-      console.error("Fetch trusted-by error:", err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+const partners = (data?.trustedby ?? []).map((item, index) => ({
+  id: item._id,
+  name: item.title,
+  image: `${BASE_URL}${item.image}`,
+  lastUpdated: new Date(item.updatedAt).toLocaleString(),
+  order: index + 1,
+}));
+
 
   const [partnerForm, setPartnerForm] = useState({
     name: "",
@@ -101,89 +94,46 @@ export default function PartnersCMS() {
   };
 
   const handleSavePartner = async () => {
-    if (!partnerForm.name.trim()) return alert("Name required");
+  if (!partnerForm.name.trim()) return alert("Name required");
 
-    if (viewMode === "edit-partner") {
-      return handleUpdatePartner();
-    }
+  const formData = new FormData();
+  formData.append("title", partnerForm.name);
 
-    if (!partnerForm.image) return alert("Image required");
-
-    const formData = new FormData();
-    formData.append("title", partnerForm.name);
+  if (partnerForm.image) {
     formData.append("image", partnerForm.image);
+  }
 
-    setIsLoading(true);
-    try {
-      const res = await axios.post(
-        `${API_URL}/cms/trusted-by/add`,
+  try {
+    if (viewMode === "edit-partner") {
+      await updateTrustedBy({
+        id: selectedPartner.id,
         formData,
-        { headers: { "Content-Type": "multipart/form-data" } }
-      );
-
-      if (res.data.success) {
-        alert("Partner added successfully");
-        fetchPartners();
-        setViewMode("overview");
-      }
-    } catch (err) {
-      console.error(err);
-      alert("Failed to add partner");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleUpdatePartner = async () => {
-    if (!selectedPartner) return;
-
-    const formData = new FormData();
-    formData.append("title", partnerForm.name);
-
-    if (partnerForm.image) {
-      formData.append("image", partnerForm.image);
+      }).unwrap();
+      alert("Partner updated successfully");
+    } else {
+      await createTrustedBy(formData).unwrap();
+      alert("Partner added successfully");
     }
 
-    setIsLoading(true);
-    try {
-      const res = await axios.put(
-        `${API_URL}/cms/trusted-by/update/${selectedPartner.id}`,
-        formData,
-        { headers: { "Content-Type": "multipart/form-data" } }
-      );
+    setViewMode("overview");
+    setSelectedPartner(null);
+  } catch (err) {
+    alert(err?.data?.message || "Operation failed");
+  }
+};
 
-      if (res.data.success) {
-        alert("Partner updated successfully");
-        fetchPartners();
-        setViewMode("overview");
-        setSelectedPartner(null);
-      }
-    } catch (err) {
-      console.error("Update failed:", err);
-      alert("Failed to update partner");
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const handleDeletePartner = async (id) => {
-    if (!confirm("Delete this partner?")) return;
+  if (!confirm("Delete this partner?")) return;
 
-    setIsLoading(true);
-    try {
-      const res = await axios.delete(`${API_URL}/cms/trusted-by/delete/${id}`);
+  try {
+    await deleteTrustedBy(id).unwrap();
+    alert("Partner deleted");
+  } catch {
+    alert("Failed to delete partner");
+  }
+};
 
-      if (res.data.success) {
-        alert("Partner deleted");
-        fetchPartners();
-      }
-    } catch (err) {
-      console.error("Delete error:", err);
-      alert("Failed to delete partner");
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const handleCancel = () => {
     setViewMode("overview");
@@ -193,6 +143,15 @@ export default function PartnersCMS() {
   const filteredPartners = partners.filter((partner) =>
     partner.name.toLowerCase().includes(searchQuery.toLowerCase().trim())
   );
+
+  if (error) {
+  return (
+    <div className="p-10 text-center text-red-500">
+      Failed to load trusted partners
+    </div>
+  );
+}
+
 
   return (
     <div className="flex h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-50 overflow-hidden">

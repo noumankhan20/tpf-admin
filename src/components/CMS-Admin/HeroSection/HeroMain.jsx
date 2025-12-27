@@ -10,12 +10,19 @@ import {
     CheckCircle,
     XCircle,
 } from "lucide-react";
-import axios from "axios";
+import {
+    useGetHeroQuery,
+    useCreateHeroMutation,
+    useUpdateHeroMutation
+} from "@/utils/slices/cms/heroApi";
 import HeroForm from "./HeroForm";
 import HeroPreview from "./HeroPreview";
 
 export default function HeroSection() {
     // State Management
+    const [createHero] = useCreateHeroMutation();
+    const [updateHero] = useUpdateHeroMutation();
+    const { data, isLoading, error } = useGetHeroQuery();
     const [activeSection, setActiveSection] = useState("hero");
     const [viewMode, setViewMode] = useState("list");
     const [heroForm, setHeroForm] = useState({
@@ -35,45 +42,37 @@ export default function HeroSection() {
     const heroExists = existingHeros.length > 0;
 
     // Fetch existing heroes from backend
-    const fetchHeroes = async () => {
-        try {
-            const res = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_API}/cms/hero/get`);
-            const heroes = res.data.hero || [];
+    useEffect(() => {
+        if (data?.hero?.length > 0) {
+            const hero = data.hero[0];
 
-            const heroesWithUrls = heroes.map(hero => ({
+            const heroWithUrl = {
                 ...hero,
                 id: hero._id,
-                image: `${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:7000'}${hero.image}`,
-                lastUpdated: new Date(hero.updatedAt).toLocaleDateString()
-            }));
+                image: hero.image
+                    ? `${process.env.NEXT_PUBLIC_BACKEND_URL}${hero.image}`
+                    : null,
+                lastUpdated: new Date(hero.updatedAt).toLocaleDateString(),
+            };
 
-            setExistingHeros(heroesWithUrls);
-        } catch (error) {
-            console.error("Failed to fetch heroes:", error);
-        }
-    };
-
-    useEffect(() => {
-        fetchHeroes();
-    }, []);
-
-    useEffect(() => {
-        if (existingHeros.length > 0) {
-            const hero = existingHeros[0];
-            setSelectedHero(hero);
+            setExistingHeros([heroWithUrl]);
+            setSelectedHero(heroWithUrl);
             setHeroForm({
                 image: null,
-                imagePreview: hero.image || null,
-                title: hero.title || "",
-                description: hero.description || "",
-                buttonText: hero.buttonText || "",
-                buttonLink: hero.buttonLink || "",
+                imagePreview: heroWithUrl.image,
+                title: heroWithUrl.title || "",
+                description: heroWithUrl.description || "",
+                buttonText: heroWithUrl.buttonText || "",
+                buttonLink: heroWithUrl.buttonLink || "",
             });
+
             setViewMode("edit");
         } else {
+            setExistingHeros([]);
+            setSelectedHero(null);
             setViewMode("list");
         }
-    }, [existingHeros]);
+    }, [data]);
 
     // Auto-hide messages
     useEffect(() => {
@@ -106,41 +105,34 @@ export default function HeroSection() {
     };
 
     const handleSave = async () => {
-        const formData = new FormData();
-        formData.append("title", heroForm.title);
-        formData.append("description", heroForm.description);
-        if (heroForm.image) {
-            formData.append("image", heroForm.image);
-        }
-
         try {
-            if (selectedHero) {
-                await axios.put(
-                    `${process.env.NEXT_PUBLIC_BACKEND_API}/cms/hero/update/${selectedHero.id}`,
-                    formData,
-                    { headers: { "Content-Type": "multipart/form-data" } }
-                );
-                setSuccessText("Hero banner updated successfully!");
-                setShowSuccessMessage(true);
-            } else {
-                if (existingHeros.length > 0) {
-                    setShowErrorMessage(true);
-                    return;
-                }
-                await axios.post(
-                    `${process.env.NEXT_PUBLIC_BACKEND_API}/cms/hero/add`,
-                    formData,
-                    { headers: { "Content-Type": "multipart/form-data" } }
-                );
-                setSuccessText("Hero banner created successfully!");
-                setShowSuccessMessage(true);
+            const formData = new FormData();
+            formData.append("title", heroForm.title);
+            formData.append("description", heroForm.description);
+
+            if (heroForm.image) {
+                formData.append("image", heroForm.image);
             }
-            fetchHeroes();
-        } catch (error) {
-            console.error("Error while saving hero:", error);
+
+            if (selectedHero) {
+                await updateHero({
+                    id: selectedHero.id,
+                    formData,
+                }).unwrap();
+
+                setSuccessText("Hero banner updated successfully!");
+            } else {
+                await createHero(formData).unwrap();
+                setSuccessText("Hero banner created successfully!");
+            }
+
+            setShowSuccessMessage(true);
+        } catch (err) {
+            console.error("Hero save failed:", err);
             setShowErrorMessage(true);
         }
     };
+
 
     return (
         <>

@@ -1,42 +1,41 @@
 "use client"
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import { useGetInfluencersQuery,
+         useCreateInfluencerMutation,
+         useUpdateInfluencerMutation,
+         useDeleteInfluencerMutation,
+ } from "@/utils/slices/cms/influencerApi";
 import { Save, XCircle, Home, Edit2,ArrowLeft, Trash2, Plus,ChevronUp, ChevronDown, GripVertical, Eye, Upload, Sparkles, Users, Image as ImageIcon, CheckCircle, EyeOff } from "lucide-react";
 import { useRouter } from "next/navigation";
 export default function InfluencerGalleryCMS() {
   const [viewMode, setViewMode] = useState("overview");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedImage, setSelectedImage] = useState(null);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [previewMode, setPreviewMode] = useState(false);
-  const [activeSection, setActiveSection] = useState("influencers");
-  const [influencerImages, setInfluencerImages] = useState([]);
   const [imageForm, setImageForm] = useState({ imageFile: null, imagePreview: null, imageUrl: "" });
   const API_URL = process.env.NEXT_PUBLIC_BACKEND_API;
   const BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
   const router= useRouter();
-  useEffect(() => {
-    fetchInfluencers();
-  }, []);
 
-  const fetchInfluencers = async () => {
-    try {
-      const res = await axios.get(`${API_URL}/cms/influencer/get`);
-      if (res.data.success) {
-        const formatted = res.data.influencers.map((item, index) => ({
-          id: item._id,
-          imageUrl: `${BASE_URL}${item.image}`,
-          imagePreview: `${BASE_URL}${item.image}`,
-          lastUpdated: new Date(item.updatedAt).toLocaleString(),
-          order: index + 1
-        }));
+  const {
+  data,
+  isLoading,
+  error,
+} = useGetInfluencersQuery();
 
-        setInfluencerImages(formatted);
-      }
-    } catch (err) {
-      console.error("fetch error:", err);
-    }
-  };
+const [createInfluencer] = useCreateInfluencerMutation();
+const [updateInfluencer] = useUpdateInfluencerMutation();
+const [deleteInfluencer] = useDeleteInfluencerMutation();
+
+const influencerImages =
+  data?.influencers?.map((item, index) => ({
+    id: item._id,
+    imageUrl: `${BASE_URL}${item.image}`,
+    imagePreview: `${BASE_URL}${item.image}`,
+    lastUpdated: new Date(item.updatedAt).toLocaleString(),
+    order: index + 1,
+  })) ?? [];
+
 
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
@@ -48,54 +47,40 @@ export default function InfluencerGalleryCMS() {
   };
 
   const handleSaveImage = async () => {
-    if (!imageForm.imageFile) return alert("Please upload an image");
+  if (!imageForm.imageFile) return alert("Please upload an image");
 
-    const formData = new FormData();
-    formData.append("image", imageForm.imageFile);
+  const formData = new FormData();
+  formData.append("image", imageForm.imageFile);
 
-    try {
-      let res;
-
-      if (viewMode === "add-image") {
-        res = await axios.post(
-          `${API_URL}/cms/influencer/add`,
-          formData,
-          { headers: { "Content-Type": "multipart/form-data" } }
-        );
-      } else {
-        res = await axios.put(
-          `${API_URL}/cms/influencer/update/${selectedImage.id}`,
-          formData,
-          { headers: { "Content-Type": "multipart/form-data" } }
-        );
-      }
-
-      if (res.data.success) {
-        alert("Saved successfully");
-        fetchInfluencers();
-        setViewMode("overview");
-      }
-    } catch (err) {
-      console.error(err);
-      alert("Failed to save image");
+  try {
+    if (viewMode === "add-image") {
+      await createInfluencer(formData).unwrap();
+    } else {
+      await updateInfluencer({
+        id: selectedImage.id,
+        formData,
+      }).unwrap();
     }
-  };
+
+    alert("Saved successfully");
+    setViewMode("overview");
+  } catch (err) {
+    console.error(err);
+    alert("Failed to save image");
+  }
+};
 
   const handleDeleteImage = async (id) => {
-    if (!confirm("Delete this image?")) return;
+  if (!confirm("Delete this image?")) return;
 
-    try {
-      const res = await axios.delete(`${API_URL}/cms/influencer/delete/${id}`);
-
-      if (res.data.success) {
-        alert("Deleted successfully");
-        fetchInfluencers();
-      }
-    } catch (err) {
-      console.error(err);
-      alert("Delete failed");
-    }
-  };
+  try {
+    await deleteInfluencer(id).unwrap();
+    alert("Deleted successfully");
+  } catch (err) {
+    console.error(err);
+    alert("Delete failed");
+  }
+};
 
   const handleEditImage = (img) => {
     setSelectedImage(img);
@@ -105,20 +90,6 @@ export default function InfluencerGalleryCMS() {
       imageUrl: img.imageUrl
     });
     setViewMode("edit-image");
-  };
-
-  const handleMoveUp = (idx) => {
-    if (idx === 0) return;
-    const newImages = [...influencerImages];
-    [newImages[idx], newImages[idx - 1]] = [newImages[idx - 1], newImages[idx]];
-    setInfluencerImages(newImages);
-  };
-
-  const handleMoveDown = (idx) => {
-    if (idx === influencerImages.length - 1) return;
-    const newImages = [...influencerImages];
-    [newImages[idx], newImages[idx + 1]] = [newImages[idx + 1], newImages[idx]];
-    setInfluencerImages(newImages);
   };
 
   const filteredImages = influencerImages.filter(img =>

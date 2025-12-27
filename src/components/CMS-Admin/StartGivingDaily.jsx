@@ -1,18 +1,18 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { Save, Home, Menu, Upload, RefreshCw, Eye, EyeOff,ArrowLeft, AlertCircle, CheckCircle2, Image, Sparkles } from "lucide-react";
+import { Save, Home, Menu, Upload, RefreshCw, Eye, EyeOff, ArrowLeft, AlertCircle, CheckCircle2, Image, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
-import axios from "axios";
+import {
+  useGetStartGivingQuery,
+  useCreateStartGivingMutation,
+  useUpdateStartGivingMutation
+} from "@/utils/slices/cms/startgivingApi";
 
 export default function StartGivingDaily() {
-  const API_URL = process.env.NEXT_PUBLIC_BACKEND_API;
   const BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
-  const router= useRouter();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [activeSection, setActiveSection] = useState("start-giving-daily");
+  const router = useRouter();
   const [showPreview, setShowPreview] = useState(true);
   const [hasChanges, setHasChanges] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
 
   const [mode, setMode] = useState("create");
   const [bannerData, setBannerData] = useState(null);
@@ -26,44 +26,34 @@ export default function StartGivingDaily() {
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState("");
 
+  const {
+    data,
+    isLoading,
+    error,
+  } = useGetStartGivingQuery();
+
+  const [createStartGiving] = useCreateStartGivingMutation();
+  const [updateStartGiving] = useUpdateStartGivingMutation();
+
+  const section = data?.data?.[0] || null;
+
   useEffect(() => {
-    fetchSection();
-  }, []);
+    if (section) {
+      setMode("edit");
+      setBannerData(section);
 
-  const fetchSection = async () => {
-    setIsLoading(true);
-    try {
-      const res = await axios.get(`${API_URL}/cms/start-giving/get`);
+      setFormData({
+        title: section.title,
+        description: section.description,
+        buttonText: "Start Giving Daily",
+      });
 
-      if (res.data.success && res.data.data.length > 0) {
-        const section = res.data.data[0];
-
-        setMode("edit");
-        setBannerData(section);
-
-        setFormData({
-          title: section.title,
-          description: section.description,
-          buttonText: "Start Giving Daily",
-        });
-
-        setImagePreview(`${BASE_URL}${section.image}`);
-      } else {
-        setMode("create");
-        setBannerData(null);
-        setFormData({
-          title: "",
-          description: "",
-          buttonText: "Start Giving Daily",
-        });
-        setImagePreview("");
-      }
-    } catch (err) {
-      console.error("Fetch Start-Giving Error:", err);
-    } finally {
-      setIsLoading(false);
+      setImagePreview(`${BASE_URL}${section.image}`);
+    } else {
+      setMode("create");
+      setBannerData(null);
     }
-  };
+  }, [section]);
 
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
@@ -94,24 +84,12 @@ export default function StartGivingDaily() {
     form.append("description", formData.description);
     if (imageFile) form.append("image", imageFile);
 
-    setIsLoading(true);
     try {
-      const res = await axios.post(
-        `${API_URL}/cms/start-giving/add`,
-        form,
-        { headers: { "Content-Type": "multipart/form-data" } }
-      );
-
-      if (res.data.success) {
-        alert("Created successfully!");
-        fetchSection();
-        setHasChanges(false);
-      }
+      await createStartGiving(form).unwrap();
+      alert("Created successfully!");
+      setHasChanges(false);
     } catch (err) {
-      console.error(err);
-      alert("Failed to create");
-    } finally {
-      setIsLoading(false);
+      alert(err?.data?.message || "Failed to create");
     }
   };
 
@@ -130,24 +108,16 @@ export default function StartGivingDaily() {
     form.append("description", formData.description);
     if (imageFile) form.append("image", imageFile);
 
-    setIsLoading(true);
     try {
-      const res = await axios.put(
-        `${API_URL}/cms/start-giving/update/${bannerData._id}`,
-        form,
-        { headers: { "Content-Type": "multipart/form-data" } }
-      );
+      await updateStartGiving({
+        id: bannerData._id,
+        formData: form,
+      }).unwrap();
 
-      if (res.data.success) {
-        alert("Updated successfully!");
-        fetchSection();
-        setHasChanges(false);
-      }
+      alert("Updated successfully!");
+      setHasChanges(false);
     } catch (err) {
-      console.error(err);
-      alert("Failed to update");
-    } finally {
-      setIsLoading(false);
+      alert(err?.data?.message || "Failed to update");
     }
   };
 
@@ -175,6 +145,15 @@ export default function StartGivingDaily() {
 
     setHasChanges(false);
   };
+
+  if (error) {
+  return (
+    <div className="p-10 text-center text-red-500">
+      Failed to load Start Giving section
+    </div>
+  );
+}
+
 
   return (
     <div className="flex h-screen bg-gradient-to-br from-slate-50 via-emerald-50/30 to-slate-50 overflow-hidden">
@@ -436,8 +415,8 @@ export default function StartGivingDaily() {
                       onClick={handleSave}
                       disabled={!hasChanges || isLoading}
                       className={`flex-1 py-3.5 rounded-xl font-semibold flex items-center justify-center gap-2 transition-all duration-200 ${hasChanges && !isLoading
-                          ? "bg-gradient-to-r from-emerald-600 to-emerald-700 text-white hover:from-emerald-700 hover:to-emerald-800 hover:shadow-lg"
-                          : "bg-slate-200 text-slate-400 cursor-not-allowed"
+                        ? "bg-gradient-to-r from-emerald-600 to-emerald-700 text-white hover:from-emerald-700 hover:to-emerald-800 hover:shadow-lg"
+                        : "bg-slate-200 text-slate-400 cursor-not-allowed"
                         }`}
                     >
                       {isLoading ? (
@@ -457,8 +436,8 @@ export default function StartGivingDaily() {
                       onClick={handleReset}
                       disabled={!hasChanges || isLoading}
                       className={`sm:w-auto px-8 py-3.5 rounded-xl font-semibold flex items-center justify-center gap-2 transition-all duration-200 ${hasChanges && !isLoading
-                          ? "bg-slate-100 text-slate-700 border-2 border-slate-200 hover:bg-slate-200 hover:border-slate-300"
-                          : "bg-slate-100 text-slate-400 border-2 border-slate-200 cursor-not-allowed"
+                        ? "bg-slate-100 text-slate-700 border-2 border-slate-200 hover:bg-slate-200 hover:border-slate-300"
+                        : "bg-slate-100 text-slate-400 border-2 border-slate-200 cursor-not-allowed"
                         }`}
                     >
                       <RefreshCw size={18} />

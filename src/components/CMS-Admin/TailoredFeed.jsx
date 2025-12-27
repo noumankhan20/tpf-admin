@@ -1,6 +1,11 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import {
+  useGetTailoredQuery,
+  useCreateTailoredMutation,
+  useUpdateTailoredMutation,
+  useDeleteTailoredMutation,
+} from "@/utils/slices/cms/tailoredApi";
 import {
   Loader2,
   Upload,
@@ -10,35 +15,38 @@ import {
   Trash2,
   Search,
   Plus,
-  Menu,
   Image as ImageIcon,
   AlertCircle,
   CheckCircle,
   X,
   ArrowLeft,
   Sparkles,
-  Grid3x3,
   LayoutGrid,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-// API Configuration
-const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_API || "http://localhost:7000/api";
 const IMAGE_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
-const TAILORED_ENDPOINTS = {
-  create: `${API_BASE_URL}/cms/tailored/add`,
-  getAll: `${API_BASE_URL}/cms/tailored/get`,
-  update: (id) => `${API_BASE_URL}/cms/tailored/update/${id}`,
-  delete: (id) => `${API_BASE_URL}/cms/tailored/delete/${id}`,
-};
 
 export default function TailoredFeedCMS() {
+  const {
+    data,
+    isLoading,
+    error,
+  } = useGetTailoredQuery();
+
+  const feedItems = data?.tailored ?? [];
+  const [createTailored, { isLoading: isCreating }] =
+    useCreateTailoredMutation();
+
+  const [updateTailored, { isLoading: isUpdating }] =
+    useUpdateTailoredMutation();
+
+  const [deleteTailored, { isLoading: isDeleting }] =
+    useDeleteTailoredMutation();
+
   const [viewMode, setViewMode] = useState("overview");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedItem, setSelectedItem] = useState(null);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [activeSection, setActiveSection] = useState("feed");
   const router = useRouter();
-  const [feedItems, setFeedItems] = useState([]);
   const [itemForm, setItemForm] = useState({
     title: "",
     route: "",
@@ -47,9 +55,7 @@ export default function TailoredFeedCMS() {
     mediaUrl: "",
   });
 
-  const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState("");
 
   // Alert Component with enhanced styling
@@ -86,71 +92,13 @@ export default function TailoredFeedCMS() {
       </div>
     );
   };
-
-  // Fetch Tailored Items
-  const fetchFeedItems = async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const response = await axios.get(TAILORED_ENDPOINTS.getAll);
-      setFeedItems(response.data.tailored || []);
-    } catch (error) {
-      setError("Failed to fetch feed items. Please try again.");
-      console.error("Fetch error:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Create New Feed Item
-  const createFeedItem = async (formData) => {
-    try {
-      await axios.post(TAILORED_ENDPOINTS.create, formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      });
-      showMessage("Item added successfully!");
-      fetchFeedItems();
-    } catch (error) {
-      throw new Error(error.response?.data?.message || "Failed to add item.");
-    }
-  };
-
-  // Update Feed Item
-  const updateFeedItem = async (id, formData) => {
-    try {
-      await axios.put(TAILORED_ENDPOINTS.update(id), formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      });
-      showMessage("Item updated successfully!");
-      fetchFeedItems();
-    } catch (error) {
-      throw new Error(error.response?.data?.message || "Failed to update item.");
-    }
-  };
-
-  // Delete Feed Item
-  const deleteFeedItem = async (id) => {
-    try {
-      await axios.delete(TAILORED_ENDPOINTS.delete(id));
-      showMessage("Item deleted successfully!");
-      fetchFeedItems();
-    } catch (error) {
-      throw new Error(error.response?.data?.message || "Failed to delete item.");
-    }
-  };
-
   // Show success or error message
   const showMessage = (message, type = "success") => {
     if (type === "success") {
       setSuccessMessage(message);
       setTimeout(() => setSuccessMessage(""), 4000);
     } else {
-      setError(message);
-      setTimeout(() => setError(null), 5000);
+      setTimeout(() => 5000);
     }
   };
 
@@ -194,7 +142,6 @@ export default function TailoredFeedCMS() {
     });
     setSelectedItem(null);
     setViewMode("add-item");
-    setError(null);
   };
 
   // Handle Edit Item
@@ -208,7 +155,6 @@ export default function TailoredFeedCMS() {
       mediaUrl: item.image ? `${IMAGE_BASE_URL}${item.image}` : "",
     });
     setViewMode("edit-item");
-    setError(null);
   };
 
   // Handle Save Item
@@ -224,20 +170,25 @@ export default function TailoredFeedCMS() {
     }
 
     setIsSubmitting(true);
-    setError(null);
 
     const formData = new FormData();
     formData.append("title", itemForm.title.trim());
     formData.append("route", itemForm.route.trim());
+
     if (itemForm.mediaFile) {
       formData.append("image", itemForm.mediaFile);
     }
 
     try {
       if (viewMode === "add-item") {
-        await createFeedItem(formData);
-      } else if (viewMode === "edit-item" && selectedItem) {
-        await updateFeedItem(selectedItem._id, formData);
+        await createTailored(formData).unwrap();
+        showMessage("Item added successfully!");
+      } else {
+        await updateTailored({
+          id: selectedItem._id,
+          formData,
+        }).unwrap();
+        showMessage("Item updated successfully!");
       }
 
       setViewMode("overview");
@@ -249,12 +200,13 @@ export default function TailoredFeedCMS() {
         mediaPreview: null,
         mediaUrl: "",
       });
-    } catch (error) {
-      showMessage(error.message, "error");
+    } catch (err) {
+      showMessage(err?.data?.message || "Something went wrong", "error");
     } finally {
       setIsSubmitting(false);
     }
   };
+
 
   // Handle Delete Item
   const handleDeleteItem = async (item) => {
@@ -263,13 +215,12 @@ export default function TailoredFeedCMS() {
     );
     if (!confirmDelete) return;
 
-    setIsLoading(true);
     try {
-      await deleteFeedItem(item._id);
+      await deleteTailored(item._id).unwrap();
+      showMessage("Item deleted successfully!");
     } catch (error) {
       showMessage(error.message, "error");
     } finally {
-      setIsLoading(false);
     }
   };
 
@@ -284,7 +235,6 @@ export default function TailoredFeedCMS() {
       mediaPreview: null,
       mediaUrl: "",
     });
-    setError(null);
   };
 
   // Filter Items
@@ -292,16 +242,17 @@ export default function TailoredFeedCMS() {
     item.title?.toLowerCase().includes(searchQuery.toLowerCase().trim())
   );
 
-  useEffect(() => {
-    fetchFeedItems();
-  }, []);
+  if (isLoading) {
+    return <div className="p-10 text-center">Loading feed items...</div>;
+  }
 
-  useEffect(() => {
-    if (error) {
-      const timer = setTimeout(() => setError(null), 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [error]);
+  if (error) {
+    return (
+      <div className="p-10 text-center text-red-500">
+        Failed to load feed items
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-screen bg-gradient-to-br from-gray-50 via-white to-emerald-50/30 overflow-hidden">
@@ -610,7 +561,7 @@ export default function TailoredFeedCMS() {
                     {/* Enhanced Route Input */}
                     <div className="mb-8">
                       <label className="block text-sm font-bold text-gray-900 mb-3">
-                        Route (Frontend Path)
+                        Route (Frontend Path)  <span className="text-red-500">*</span>
                       </label>
                       <input
                         className="w-full px-4 py-4 border-2 border-emerald-100 bg-white rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all text-gray-900 placeholder-gray-400"

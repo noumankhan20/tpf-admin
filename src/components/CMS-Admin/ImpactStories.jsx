@@ -1,8 +1,13 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { Save, XCircle, Home, Menu, Upload, Edit2,ArrowLeft, Trash2, Plus, Search, Eye, EyeOff, Users, ArrowRight, Sparkles, Image as ImageIcon, CheckCircle } from "lucide-react";
+import { Save, XCircle, Home, Menu, Upload, Edit2, ArrowLeft, Trash2, Plus, Search, Eye, EyeOff, Users, ArrowRight, Sparkles, Image as ImageIcon, CheckCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
-import axios from "axios";
+import {
+    useGetImpactStoriesQuery,
+    useCreateImpactStoryMutation,
+    useUpdateImpactStoryMutation,
+    useDeleteImpactStoryMutation,
+} from "@/utils/slices/cms/impactApi";
 const IMAGE_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
 
 // Live Preview Component
@@ -63,30 +68,24 @@ const StoryCardPreview = ({ story, darkMode = false }) => {
 };
 
 export default function StoryCardsCMS() {
-    const [sidebarOpen, setSidebarOpen] = useState(false);
+    const {
+        data,
+        isLoading,
+        error,
+    } = useGetImpactStoriesQuery();
+
+    const [createImpactStory] = useCreateImpactStoryMutation();
+    const [updateImpactStory] = useUpdateImpactStoryMutation();
+    const [deleteImpactStory] = useDeleteImpactStoryMutation();
+
+    const storyCards = data?.data ?? [];
+
     const [viewMode, setViewMode] = useState("overview");
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedCard, setSelectedCard] = useState(null);
     const [showPreview, setShowPreview] = useState(false);
     const [previewDarkMode, setPreviewDarkMode] = useState(false);
-    const [activeSection, setActiveSection] = useState("story-cards");
-    const [storyCards, setStoryCards] = useState([]);
-    const router= useRouter();
-    useEffect(() => {
-        fetchStories();
-    }, []);
-
-    const fetchStories = async () => {
-        try {
-            const res = await axios.get(
-                `${process.env.NEXT_PUBLIC_BACKEND_API}/cms/impact-stories/get`
-            );
-            setStoryCards(res.data.data);
-        } catch (err) {
-            console.error("Error loading impact stories:", err);
-            alert("Failed to load stories");
-        }
-    };
+    const router = useRouter();
 
     const [cardForm, setCardForm] = useState({
         title: "",
@@ -170,23 +169,15 @@ export default function StoryCardsCMS() {
             let res;
 
             if (viewMode === "edit-card" && selectedCard) {
-                res = await axios.put(
-                    `${process.env.NEXT_PUBLIC_BACKEND_API}/cms/impact-stories/update/${selectedCard._id}`,
-                    formData,
-                    { headers: { "Content-Type": "multipart/form-data" } }
-                );
+                res = await updateImpactStory({ id: selectedCard._id, formData }).unwrap();
+
                 alert("Story updated successfully!");
             } else {
-                res = await axios.post(
-                    `${process.env.NEXT_PUBLIC_BACKEND_API}/cms/impact-stories/add`,
-                    formData,
-                    { headers: { "Content-Type": "multipart/form-data" } }
-                );
+                res = await createImpactStory(formData).unwrap();
                 alert("Story added successfully!");
+                setViewMode("overview");
+                setSelectedCard(null);
             }
-
-            fetchStories();
-            setViewMode("overview");
         } catch (err) {
             console.error("Error saving story:", err);
             alert(err.response?.data?.message || "Failed to save story");
@@ -197,21 +188,31 @@ export default function StoryCardsCMS() {
         if (!confirm("Are you sure you want to delete this story?")) return;
 
         try {
-            await axios.delete(
-                `${process.env.NEXT_PUBLIC_BACKEND_API}/cms/impact-stories/delete/${id}`
-            );
+            await deleteImpactStory(id).unwrap();
             alert("Story deleted successfully!");
-            fetchStories();
         } catch (err) {
             console.error("Error deleting story:", err);
             alert("Failed to delete story");
         }
     };
 
+
     const filteredCards = storyCards.filter(card =>
         card.title.toLowerCase().includes(searchQuery.toLowerCase().trim())
     );
 
+
+    if (isLoading) {
+        return <div className="p-10 text-center">Loading impact stories...</div>;
+    }
+
+    if (error) {
+        return (
+            <div className="p-10 text-center text-red-500">
+                Failed to load impact stories
+            </div>
+        );
+    }
     return (
         <div className="flex h-screen bg-gradient-to-br from-emerald-50/30 via-white to-emerald-50/20 overflow-hidden">
             <div className="flex-1 flex flex-col overflow-hidden">
@@ -267,8 +268,8 @@ export default function StoryCardsCMS() {
                                             <button
                                                 onClick={() => setShowPreview(!showPreview)}
                                                 className={`px-5 py-2.5 rounded-xl font-semibold flex items-center gap-2 transition-all duration-300 ${showPreview
-                                                        ? 'bg-emerald-100 text-emerald-700 border-2 border-emerald-300'
-                                                        : 'bg-white text-emerald-600 border-2 border-emerald-200 hover:border-emerald-300 hover:bg-emerald-50'
+                                                    ? 'bg-emerald-100 text-emerald-700 border-2 border-emerald-300'
+                                                    : 'bg-white text-emerald-600 border-2 border-emerald-200 hover:border-emerald-300 hover:bg-emerald-50'
                                                     }`}
                                             >
                                                 {showPreview ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -465,7 +466,7 @@ export default function StoryCardsCMS() {
                                         {/* Full Story */}
                                         <div className="mb-6">
                                             <label className="block text-sm font-bold text-emerald-900 mb-2">
-                                                Full Story Content
+                                                Full Story Content *
                                             </label>
                                             <textarea
                                                 rows={5}
