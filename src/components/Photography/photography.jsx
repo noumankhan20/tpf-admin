@@ -2,6 +2,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Camera, Upload, MapPin, Calendar, CheckCircle, XCircle, Bell, ArrowLeft, Eye, Download, AlertCircle, Clock, UserCheck, FileText, ImageIcon, Trash2, MessageSquare, ChevronRight, Home, Grid, Settings, Menu, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { io } from 'socket.io-client';
+import { toast } from 'react-toastify';
 
 // Utility Functions
 const formatDate = (dateStr) => {
@@ -530,15 +532,62 @@ const PhotographyModule = () => {
     const [userRole, setUserRole] = useState('photographer');
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [selectedTask, setSelectedTask] = useState(null);
+    const socket = useRef(null);
 
     // Fetch assignments from API
-    const { data: assignmentsData, isLoading: assignmentsLoading } = useGetAssignmentsQuery();
-    const { data: completedData, isLoading: completedLoading } = useGetCompletedAssignmentsQuery();
+    const {
+        data: assignmentsData,
+        isLoading: assignmentsLoading,
+        refetch: refetchAssignments
+    } = useGetAssignmentsQuery();
+
+    const {
+        data: completedData,
+        isLoading: completedLoading,
+        refetch: refetchCompleted
+    } = useGetCompletedAssignmentsQuery();
 
     // Use fetched data or empty array
     const assignments = assignmentsData?.data || [];
     const completedAssignments = completedData?.data || [];
     const isLoading = assignmentsLoading || completedLoading;
+
+    // WebSocket for real-time notifications
+    useEffect(() => {
+        const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
+        socket.current = io(backendUrl, {
+            withCredentials: true,
+            transports: ['websocket', 'polling']
+        });
+
+        socket.current.on('connect', () => {
+            console.log('Connected to WebSocket server');
+        });
+
+        socket.current.on('taskAssigned', (data) => {
+            console.log('Task assignment notification:', data);
+
+            // If it's a photography task, refresh the lists
+            if (data.module === 'PHOTO_TASK') {
+                refetchAssignments();
+                toast.success(`New Task Assigned: ${data.taskType.replace(/_/g, ' ')}`, {
+                    position: "top-right",
+                    autoClose: 5000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                });
+            }
+        });
+
+        return () => {
+            if (socket.current) {
+                socket.current.disconnect();
+                console.log('Disconnected from WebSocket server');
+            }
+        };
+    }, [refetchAssignments]);
 
     // Notifications count based on assignments
     const count = assignments.length; // Assuming all returned are pending or we filter
@@ -585,9 +634,12 @@ const PhotographyModule = () => {
                 <div className="flex items-center gap-4">
                     <button className="p-2 hover:bg-gray-100 rounded-full transition relative">
                         <Bell className="w-5 h-5 text-gray-600" />
-                        {count > 0 && (
-                            <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full"></span>
-                        )}
+                        {count > 0 ? (
+                            <span className="absolute top-2 right-2 flex h-2 w-2">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                            </span>
+                        ) : null}
                     </button>
 
                     {/* <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
