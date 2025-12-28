@@ -134,5 +134,13 @@ export const MODULES = [
     category: "verify-forms",
     desc: "Verify user KYC documents",
   },
+  {
+    id: "Tickets-Queries",
+    name: "Tickets & Queries",
+    icon: Book,
+    route: "/ticket-queries",
+    category: "people",
+    desc: "Respond to the Tickets and Queries of the Users",
+  },
 
 ];
