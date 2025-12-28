@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import NotificationBell from '../../Common/NotificationBell';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     ArrowLeft,
@@ -67,10 +68,7 @@ export default function FinancePage() {
                     </div>
                 </div>
                 <div className="flex items-center space-x-3">
-                    <button className="p-2 hover:bg-gray-100 rounded-full transition relative">
-                        <Bell className="w-5 h-5 text-gray-600" />
-                        <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full"></span>
-                    </button>
+                    <NotificationBell moduleFilter="FINANCE_TASK" />
                 </div>
             </header>
 

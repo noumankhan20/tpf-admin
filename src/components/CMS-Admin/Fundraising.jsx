@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
+import NotificationBell from '../Common/NotificationBell';
 import {
   Upload,
   Save,
@@ -472,7 +473,7 @@ export default function FundraisingCMS() {
 
   return (
     <div className="flex h-screen bg-[#F8FAFC] overflow-hidden">
-      
+
 
       <div className="flex-1 flex flex-col overflow-hidden w-full md:w-auto">
         <div className="md:hidden bg-white border-b border-gray-200 px-4 py-3 flex items-center">
@@ -498,13 +499,18 @@ export default function FundraisingCMS() {
               </div>
 
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div>
-                  <h1 className="text-2xl sm:text-3xl font-bold text-[#0F172A] mb-2">
-                    Fundraising Now
-                  </h1>
-                  <p className="text-sm sm:text-base text-[#475569]">
-                    Manage active fundraising campaigns and donation cards.
-                  </p>
+                <div className="flex-1">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h1 className="text-2xl sm:text-3xl font-bold text-[#0F172A] mb-2">
+                        Fundraising Now
+                      </h1>
+                      <p className="text-sm sm:text-base text-[#475569]">
+                        Manage active fundraising campaigns and donation cards.
+                      </p>
+                    </div>
+                    <NotificationBell moduleFilter="CMS_TASK" />
+                  </div>
                 </div>
                 {viewMode === "view" && (
                   <button

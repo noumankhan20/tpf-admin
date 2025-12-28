@@ -36,6 +36,7 @@ import {
   KeyRound,
   Layers,
 } from 'lucide-react';
+import LoginNotificationModal from '../Common/LoginNotificationModal';
 
 const CATEGORIES = [
   { id: 'administration', name: 'Administration', icon: Settings },
@@ -112,10 +113,10 @@ export default function SelectPanel() {
     });
   };
 
-const handleLogout = async () => {
-  await logoutAdmin().unwrap();
-  window.location.href = "/";
-};
+  const handleLogout = async () => {
+    await logoutAdmin().unwrap();
+    window.location.href = "/";
+  };
 
 
 
@@ -151,6 +152,7 @@ const handleLogout = async () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <LoginNotificationModal />
       <Header
         isLoaded={isLoaded}
         handleLogout={handleLogout}

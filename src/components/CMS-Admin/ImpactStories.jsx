@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { Save, XCircle, Home, Menu, Upload, Edit2, ArrowLeft, Trash2, Plus, Search, Eye, EyeOff, Users, ArrowRight, Sparkles, Image as ImageIcon, CheckCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
+import NotificationBell from '../Common/NotificationBell';
 import axios from "axios";
 import {
     useGetImpactStoriesQuery,
@@ -300,19 +301,22 @@ export default function StoryCardsCMS() {
                                 <span className="text-emerald-300">/</span>
                                 <span className="font-semibold text-emerald-900">Story Cards</span>
                             </div>
-                            <div className="flex items-center gap-3 mb-2">
-                                <button
-                                    onClick={() => router.push("/cms-admin")}
-                                    className="flex cursor-pointer items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-gray-600 hover:text-gray-800 hover:bg-white transition-all border border-gray-300 shadow-sm"
-                                >
-                                    <ArrowLeft className="w-4 h-4" />
-                                </button>
-                                <div className="p-2 bg-emerald-100 rounded-xl">
-                                    <Sparkles className="w-6 h-6 text-emerald-600" />
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-2">
+                                <div className="flex items-center gap-3">
+                                    <button
+                                        onClick={() => router.push("/cms-admin")}
+                                        className="flex cursor-pointer items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-gray-600 hover:text-gray-800 hover:bg-white transition-all border border-gray-300 shadow-sm"
+                                    >
+                                        <ArrowLeft className="w-4 h-4" />
+                                    </button>
+                                    <div className="p-2 bg-emerald-100 rounded-xl">
+                                        <Sparkles className="w-6 h-6 text-emerald-600" />
+                                    </div>
+                                    <h1 className="text-3xl sm:text-4xl font-bold text-emerald-900">
+                                        Story Cards Management
+                                    </h1>
                                 </div>
-                                <h1 className="text-3xl sm:text-4xl font-bold text-emerald-900">
-                                    Story Cards Management
-                                </h1>
+                                <NotificationBell moduleFilter="CMS_TASK" />
                             </div>
                             <p className="text-emerald-700">
                                 Create and manage impactful story cards with beautiful visuals
