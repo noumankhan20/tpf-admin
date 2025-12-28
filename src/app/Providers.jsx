@@ -32,11 +32,11 @@ function AdminBootstrap({ children }) {
     }
 
     // ❌ No localStorage → logout immediately
-  if (!admin) {
-    router.replace("/"); // ⛔ redirect to login
-    setReady(true);
-    return;
-  }
+    if (!admin) {
+      router.replace("/"); // ⛔ redirect to login
+      setReady(true);
+      return;
+    }
 
 
     // ✅ localStorage exists → verify cookie
@@ -70,10 +70,17 @@ function AdminBootstrap({ children }) {
   return children;
 }
 
+
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+
 export default function Providers({ children }) {
   return (
     <ReduxProvider store={store}>
-      <AdminBootstrap>{children}</AdminBootstrap>
+      <AdminBootstrap>
+        {children}
+        <ToastContainer />
+      </AdminBootstrap>
     </ReduxProvider>
   );
 }
