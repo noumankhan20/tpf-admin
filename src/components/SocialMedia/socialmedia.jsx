@@ -9,6 +9,7 @@ import {
 } from '../../utils/slices/socialMediaApiSlice';
 import { toast } from 'react-toastify';
 import { useRouter } from 'next/navigation';
+import NotificationBell from '../Common/NotificationBell';
 
 const formatDate = (dateStr) => {
     if (!dateStr) return 'No date';
@@ -247,14 +248,7 @@ const SocialMediaDashboard = () => {
                         <h1 className="text-lg font-semibold text-gray-800">Social Media Portal</h1>
                     </div>
                     <div className="flex items-center gap-3">
-                        <div className="relative">
-                            <button className="p-2 text-gray-500 hover:bg-gray-100 rounded-lg transition-colors">
-                                <Bell className="w-5 h-5" />
-                            </button>
-                            {pendingCampaigns.length > 0 && (
-                                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full ring-2 ring-white"></span>
-                            )}
-                        </div>
+                        <NotificationBell moduleFilter="SOCIAL_TASK" />
                     </div>
                 </div>
             </div>
