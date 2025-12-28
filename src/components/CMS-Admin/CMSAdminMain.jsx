@@ -22,7 +22,7 @@ import {
   ArrowBigLeft,
   ArrowLeft,
 } from 'lucide-react';
-
+import { useLogoutAdminApiMutation } from '@/utils/slices/adminApiSlice';
 // CMS Modules Configuration
 const CMS_MODULES = [
   {
@@ -111,7 +111,7 @@ export default function CMSAdminPanel() {
   const [openCategories, setOpenCategories] = useState([]);
   const [hasSelectedCategory, setHasSelectedCategory] = useState(false);
   const [mounted, setMounted] = useState(false);
-
+  const [logoutAdmin] = useLogoutAdminApiMutation();
   const router = useRouter();
 
   useEffect(() => {
@@ -164,6 +164,15 @@ export default function CMSAdminPanel() {
     }
   }, [searchQuery]);
 
+  const handleLogout = async () => {
+  try {
+    await logoutAdmin().unwrap();
+    window.location.href = "/";
+  } catch (err) {
+    console.error("Logout failed", err);
+  }
+};
+
   if (!admin || !mounted) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
@@ -177,7 +186,7 @@ export default function CMSAdminPanel() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header isLoaded={isLoaded} fullName={fullName} />
+      <Header isLoaded={isLoaded} fullName={fullName} handleLogout={handleLogout} />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Title isLoaded={isLoaded} totalModules={filteredModules.length} />
@@ -207,7 +216,7 @@ export default function CMSAdminPanel() {
   );
 }
 
-function Header({ isLoaded, fullName }) {
+function Header({ isLoaded, fullName, handleLogout }) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const router = useRouter();
 
@@ -220,11 +229,7 @@ function Header({ isLoaded, fullName }) {
     return (parts[0][0] + parts[1][0]).toUpperCase();
   };
 
-  const handleLogout = () => {
-    // Add your logout logic here
-    window.location.href = "/";
-  };
-
+  
   return (
     <header className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -238,7 +243,7 @@ function Header({ isLoaded, fullName }) {
             </div>
           </div>
 
-           
+
 
           <div className="flex items-center space-x-4">
             <div className="relative">
@@ -284,7 +289,7 @@ function Header({ isLoaded, fullName }) {
         </div>
       </div>
     </header>
-    
+
   );
 }
 
@@ -329,7 +334,7 @@ function SearchBar({ isLoaded, searchQuery, setSearchQuery }) {
   return (
     <div className="max-w-2xl mx-auto mb-10">
       <div className="relative">
-        
+
         <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
         <input
           type="text"
@@ -412,16 +417,14 @@ function ListView({
                   <button
                     key={category.id}
                     onClick={() => toggleCategory(category.id)}
-                    className={`w-full flex items-center justify-between px-3 py-3 sm:py-3.5 rounded-lg transition-colors duration-300 ease-out ${
-                      isOpen
+                    className={`w-full flex items-center justify-between px-3 py-3 sm:py-3.5 rounded-lg transition-colors duration-300 ease-out ${isOpen
                         ? 'bg-emerald-50 text-emerald-700 font-semibold'
                         : 'text-gray-700 hover:bg-gray-50'
-                    }`}
+                      }`}
                   >
                     <div className="flex items-center space-x-3 flex-1 overflow-hidden">
-                      <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center transition-colors duration-300 ease-out flex-shrink-0 ${
-                        isOpen ? 'bg-emerald-500 text-white' : 'bg-gray-100 text-gray-600'
-                      }`}>
+                      <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center transition-colors duration-300 ease-out flex-shrink-0 ${isOpen ? 'bg-emerald-500 text-white' : 'bg-gray-100 text-gray-600'
+                        }`}>
                         <CatIcon className="w-5 h-5" />
                       </div>
                       <div className="text-left overflow-hidden flex-1">
