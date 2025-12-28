@@ -122,8 +122,12 @@ export default function StoryCardsCMS() {
                 story: campaign.about || "",
                 imagePreview: campaign.imageUrl ? `${IMAGE_URL}${campaign.imageUrl}` : null,
                 image: campaign.imageUrl || "",
-                taskId: campaign.taskId || ""
+                taskId: campaign.taskId || "",
+                campaignId: campaign._id,
+                imageFile: null, // ✅ ADD
             }));
+
+
         }
     };
 
@@ -135,8 +139,11 @@ export default function StoryCardsCMS() {
         image: "",
         imageFile: null,
         imagePreview: null,
-        taskId: ""
+        taskId: "",
+        campaignId: null, // ✅ ADD THIS
     });
+
+
 
     const handleImageUpload = (e) => {
         const file = e.target.files[0];
@@ -208,6 +215,10 @@ export default function StoryCardsCMS() {
             cardForm.mediaLinks.forEach(link => formData.append("mediaLinks", link));
 
             let res;
+            if (cardForm.campaignId) {
+                formData.append("campaignId", cardForm.campaignId);
+            }
+
 
             if (viewMode === "edit-card" && selectedCard) {
                 res = await updateImpactStory({ id: selectedCard._id, formData }).unwrap();
