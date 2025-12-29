@@ -9,7 +9,7 @@ import {
     Search,
     X,
     Calendar,
-    DollarSign,
+    IndianRupee,
     Package,
     Trash2,
     FileText,
@@ -68,6 +68,7 @@ export default function PurchaseManagement() {
     const [formData, setFormData] = useState({
         vendorName: '',
         purchaseDate: new Date().toISOString().split('T')[0],
+        paymentStatus: 'Pending',
         lineItems: []
     });
 
@@ -124,12 +125,13 @@ export default function PurchaseManagement() {
             date: formData.purchaseDate,
             totalAmount: total,
             items: readableItems,
-            status: 'Completed'
+            items: readableItems,
+            status: formData.paymentStatus === 'Paid' ? 'Completed' : 'Pending Payment'
         };
 
         setPurchases(prev => [newPurchase, ...prev]);
         setShowAddModal(false);
-        setFormData({ vendorName: '', purchaseDate: new Date().toISOString().split('T')[0], lineItems: [] });
+        setFormData({ vendorName: '', purchaseDate: new Date().toISOString().split('T')[0], paymentStatus: 'Pending', lineItems: [] });
     };
 
     if (!isMounted) return null;
@@ -153,7 +155,7 @@ export default function PurchaseManagement() {
                     </div>
                     <button
                         onClick={() => {
-                            setFormData({ vendorName: '', purchaseDate: new Date().toISOString().split('T')[0], lineItems: [] });
+                            setFormData({ vendorName: '', purchaseDate: new Date().toISOString().split('T')[0], paymentStatus: 'Pending', lineItems: [] });
                             setShowAddModal(true);
                         }}
                         className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl font-bold text-sm flex items-center gap-2 transition-all shadow-md active:scale-95"
@@ -268,7 +270,7 @@ export default function PurchaseManagement() {
                             <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
                                 <div className="p-8 space-y-6 overflow-y-auto flex-1">
                                     {/* Vendor & Date */}
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                         <div>
                                             <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">Select Vendor</label>
                                             <div className="relative">
@@ -299,7 +301,35 @@ export default function PurchaseManagement() {
                                                 />
                                             </div>
                                         </div>
+                                        <div>
+                                            <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">Payment Status</label>
+                                            <div className="relative">
+                                                <IndianRupee className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                                                <select
+                                                    required
+                                                    value={formData.paymentStatus}
+                                                    onChange={(e) => setFormData(p => ({ ...p, paymentStatus: e.target.value }))}
+                                                    className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all appearance-none"
+                                                >
+                                                    <option value="Pending">Pending</option>
+                                                    <option value="Paid">Paid</option>
+                                                    <option value="Partial">Partial</option>
+                                                </select>
+                                            </div>
+                                        </div>
                                     </div>
+
+                                    {/* Proof Upload (Conditional) */}
+                                    {(formData.paymentStatus === 'Paid' || formData.paymentStatus === 'Partial') && (
+                                        <div className="bg-emerald-50/50 p-4 rounded-xl border border-emerald-100 border-dashed">
+                                            <label className="text-xs font-bold text-emerald-600 uppercase tracking-widest mb-2 block">Upload Payment Proof</label>
+                                            <input
+                                                type="file"
+                                                accept="image/*,.pdf"
+                                                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-emerald-100 file:text-emerald-700 hover:file:bg-emerald-200 transition-all"
+                                            />
+                                        </div>
+                                    )}
 
                                     {/* Line Items */}
                                     <div>
