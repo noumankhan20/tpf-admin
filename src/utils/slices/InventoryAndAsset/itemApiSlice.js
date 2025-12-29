@@ -6,31 +6,31 @@ export const itemApiSlice = apiSlice.injectEndpoints({
     -------------------------------- */
     getItems: builder.query({
       query: (params = {}) => {
-  // Remove undefined / null / empty values
-  const cleanedParams = Object.fromEntries(
-    Object.entries(params).filter(
-      ([_, value]) =>
-        value !== undefined &&
-        value !== null &&
-        value !== "" &&
-        value !== "undefined"
-    )
-  );
+        // Remove undefined / null / empty values
+        const cleanedParams = Object.fromEntries(
+          Object.entries(params).filter(
+            ([_, value]) =>
+              value !== undefined &&
+              value !== null &&
+              value !== "" &&
+              value !== "undefined"
+          )
+        );
 
-  const queryParams = new URLSearchParams(cleanedParams).toString();
+        const queryParams = new URLSearchParams(cleanedParams).toString();
 
-  return `/items${queryParams ? `?${queryParams}` : ""}`;
-},
+        return `/inventory/items${queryParams ? `?${queryParams}` : ""}`;
+      },
 
       providesTags: (result) =>
         result?.data
           ? [
-              ...result.data.map(({ _id }) => ({
-                type: "Items",
-                id: _id,
-              })),
-              { type: "Items", id: "LIST" },
-            ]
+            ...result.data.map(({ _id }) => ({
+              type: "Items",
+              id: _id,
+            })),
+            { type: "Items", id: "LIST" },
+          ]
           : [{ type: "Items", id: "LIST" }],
     }),
 
@@ -38,7 +38,7 @@ export const itemApiSlice = apiSlice.injectEndpoints({
        GET SINGLE ITEM
     -------------------------------- */
     getItemById: builder.query({
-      query: (itemId) => `/items/${itemId}`,
+      query: (itemId) => `/inventory/items/${itemId}`,
       providesTags: (result, error, itemId) => [
         { type: "Items", id: itemId },
       ],
@@ -49,7 +49,7 @@ export const itemApiSlice = apiSlice.injectEndpoints({
     -------------------------------- */
     createItem: builder.mutation({
       query: (data) => ({
-        url: "/items",
+        url: "/inventory/items",
         method: "POST",
         body: data,
       }),
@@ -61,7 +61,7 @@ export const itemApiSlice = apiSlice.injectEndpoints({
     -------------------------------- */
     updateItem: builder.mutation({
       query: ({ itemId, data }) => ({
-        url: `/items/${itemId}`,
+        url: `/inventory/items/${itemId}`,
         method: "PUT",
         body: data,
       }),
@@ -76,7 +76,7 @@ export const itemApiSlice = apiSlice.injectEndpoints({
     -------------------------------- */
     deleteItem: builder.mutation({
       query: (itemId) => ({
-        url: `/items/${itemId}`,
+        url: `/inventory/items/${itemId}`,
         method: "DELETE",
       }),
       invalidatesTags: [{ type: "Items", id: "LIST" }],

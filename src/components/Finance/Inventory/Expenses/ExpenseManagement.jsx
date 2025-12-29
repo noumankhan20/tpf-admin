@@ -11,9 +11,14 @@ import {
     Calendar,
     FileText,
     Building2,
-    HardDrive
+    HardDrive,
+    Loader2,
+    AlertCircle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useGetExpensesQuery, useCreateExpenseMutation } from '../../../../utils/slices/InventoryAndAsset/expenseApiSlice';
+import { useGetVendorsQuery } from '../../../../utils/slices/InventoryAndAsset/vendorApiSlice';
+import { useGetItemsQuery } from '../../../../utils/slices/InventoryAndAsset/itemApiSlice';
 
 export default function ExpenseManagement() {
     const router = useRouter();
@@ -21,19 +26,23 @@ export default function ExpenseManagement() {
     const [searchQuery, setSearchQuery] = useState('');
     const [showAddModal, setShowAddModal] = useState(false);
 
-    // Mock Data
-    const [expenses, setExpenses] = useState([
-        { id: 1, desc: 'Office Lease Rent - Jan', amount: 45000, date: '2024-01-05', vendor: 'Regus Spaces', type: 'Operational' },
-        { id: 2, desc: 'MacBook repair service', amount: 5200, date: '2024-01-12', asset: 'MacBook Pro M3 (14")', type: 'Maintenance' },
-        { id: 3, desc: 'Internet Bill', amount: 1200, date: '2024-01-20', vendor: 'Jio Fiber', type: 'Utility' }
-    ]);
+    // API Hooks
+    const { data: expensesResponse, isLoading, isError } = useGetExpensesQuery(searchQuery);
+    const { data: vendorsResponse } = useGetVendorsQuery();
+    const { data: assetsResponse } = useGetItemsQuery({ itemType: 'ASSET' });
+
+    const [createExpense, { isLoading: isCreating }] = useCreateExpenseMutation();
+
+    const expenses = expensesResponse?.data || [];
+    const vendors = vendorsResponse?.data || [];
+    const assets = assetsResponse?.data || [];
 
     // Form State
     const [formData, setFormData] = useState({
         amount: '',
         desc: '',
-        vendor: '',
-        asset: '',
+        vendorId: '',
+        assetId: '',
         date: new Date().toISOString().split('T')[0]
     });
 
@@ -41,26 +50,33 @@ export default function ExpenseManagement() {
         setIsMounted(true);
     }, []);
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        const newExpense = {
-            id: Date.now(),
-            amount: Number(formData.amount),
-            desc: formData.desc,
-            date: formData.date,
-            vendor: formData.vendor || null,
-            asset: formData.asset || null,
-            type: 'General'
-        };
-        setExpenses(prev => [newExpense, ...prev]);
-        setShowAddModal(false);
-        setFormData({ amount: '', desc: '', vendor: '', asset: '', date: new Date().toISOString().split('T')[0] });
+
+        try {
+            await createExpense({
+                amount: Number(formData.amount),
+                description: formData.desc,
+                vendorId: formData.vendorId,
+                assetId: formData.assetId,
+            }).unwrap();
+
+            setShowAddModal(false);
+            setFormData({
+                amount: '',
+                desc: '',
+                vendorId: '',
+                assetId: '',
+                date: new Date().toISOString().split('T')[0]
+            });
+        } catch (err) {
+            console.error('Failed to create expense:', err);
+            alert(err?.data?.message || 'Failed to create expense');
+        }
     };
 
-    const filteredExpenses = expenses.filter(e =>
-        e.desc.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (e.vendor && e.vendor.toLowerCase().includes(searchQuery.toLowerCase()))
-    );
+    // Backend handles search, but we can access the result directly
+    const filteredExpenses = expenses;
 
     if (!isMounted) return null;
 
@@ -104,37 +120,67 @@ export default function ExpenseManagement() {
                     />
                 </div>
 
+                {/* Loading State */}
+                {isLoading && (
+                    <div className="text-center py-20">
+                        <Loader2 className="animate-spin text-emerald-600 mx-auto mb-4" size={48} />
+                        <p className="text-gray-500">Loading expenses...</p>
+                    </div>
+                )}
+
+                {/* Error State */}
+                {isError && (
+                    <div className="text-center py-20 bg-white rounded-3xl border border-red-200">
+                        <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <AlertCircle className="text-red-500" size={32} />
+                        </div>
+                        <h3 className="text-lg font-bold text-gray-900">Error Loading Expenses</h3>
+                        <p className="text-gray-500">Failed to fetch expense records.</p>
+                    </div>
+                )}
+
                 {/* Expenses List */}
-                <div className="space-y-4">
-                    <AnimatePresence>
-                        {filteredExpenses.map((expense) => (
-                            <motion.div
-                                key={expense.id}
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm hover:shadow-md transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4"
-                            >
-                                <div className="flex items-start gap-4">
-                                    <div className="w-12 h-12 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
-                                        <IndianRupee size={20} />
+                {!isLoading && !isError && (
+                    <div className="space-y-4">
+                        <AnimatePresence>
+                            {filteredExpenses.length === 0 ? (
+                                <div className="text-center py-20 bg-white rounded-3xl border border-dashed border-gray-200">
+                                    <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-300">
+                                        <IndianRupee size={32} />
                                     </div>
-                                    <div>
-                                        <h3 className="text-lg font-bold text-gray-900">{expense.desc}</h3>
-                                        <div className="flex flex-wrap gap-3 mt-1 text-xs text-gray-500 font-medium">
-                                            <span className="flex items-center gap-1"><Calendar size={12} /> {expense.date}</span>
-                                            {expense.vendor && <span className="flex items-center gap-1 text-blue-600"><Building2 size={12} /> {expense.vendor}</span>}
-                                            {expense.asset && <span className="flex items-center gap-1 text-purple-600"><HardDrive size={12} /> {expense.asset}</span>}
+                                    <h3 className="text-lg font-bold text-gray-900">No expenses recorded</h3>
+                                    <p className="text-gray-500">Add an expense to start tracking.</p>
+                                </div>
+                            ) : (
+                                filteredExpenses.map((expense) => (
+                                    <motion.div
+                                        key={expense._id}
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm hover:shadow-md transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                                    >
+                                        <div className="flex items-start gap-4">
+                                            <div className="w-12 h-12 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
+                                                <IndianRupee size={20} />
+                                            </div>
+                                            <div>
+                                                <h3 className="text-lg font-bold text-gray-900">{expense.description}</h3>
+                                                <div className="flex flex-wrap gap-3 mt-1 text-xs text-gray-500 font-medium">
+                                                    <span className="flex items-center gap-1"><Calendar size={12} /> {new Date(expense.date).toLocaleDateString()}</span>
+                                                    {expense.vendor && <span className="flex items-center gap-1 text-blue-600"><Building2 size={12} /> {expense.vendor.fullName}</span>}
+                                                    {expense.asset && <span className="flex items-center gap-1 text-purple-600"><HardDrive size={12} /> {expense.asset.name}</span>}
+                                                </div>
+                                            </div>
                                         </div>
-                                    </div>
-                                </div>
-                                <div className="text-right pl-16 sm:pl-0">
-                                    <p className="text-xl font-bold text-gray-900">₹{expense.amount.toLocaleString()}</p>
-                                    {/* <p className="text-xs text-gray-400 uppercase tracking-wider">{expense.type}</p> */}
-                                </div>
-                            </motion.div>
-                        ))}
-                    </AnimatePresence>
-                </div>
+                                        <div className="text-right pl-16 sm:pl-0">
+                                            <p className="text-xl font-bold text-gray-900">₹{expense.amount.toLocaleString()}</p>
+                                        </div>
+                                    </motion.div>
+                                ))
+                            )}
+                        </AnimatePresence>
+                    </div>
+                )}
             </main>
 
             {/* Add Expense Modal */}
@@ -187,37 +233,45 @@ export default function ExpenseManagement() {
 
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
-                                        <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">Link Vendor (Opt)</label>
+                                        <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">Link Vendor *</label>
                                         <select
-                                            value={formData.vendor}
-                                            onChange={(e) => setFormData(p => ({ ...p, vendor: e.target.value }))}
+                                            required
+                                            value={formData.vendorId}
+                                            onChange={(e) => setFormData(p => ({ ...p, vendorId: e.target.value }))}
                                             className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:border-emerald-500 outline-none text-sm"
                                         >
-                                            <option value="">None</option>
-                                            <option value="Regus Spaces">Regus Spaces</option>
-                                            <option value="Jio Fiber">Jio Fiber</option>
-                                            <option value="MedPlus">MedPlus</option>
+                                            <option value="">Select Vendor</option>
+                                            {vendors.map(vendor => (
+                                                <option key={vendor._id} value={vendor._id}>
+                                                    {vendor.fullName}
+                                                </option>
+                                            ))}
                                         </select>
                                     </div>
                                     <div>
-                                        <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">Link Asset (Opt)</label>
+                                        <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">Link Asset *</label>
                                         <select
-                                            value={formData.asset}
-                                            onChange={(e) => setFormData(p => ({ ...p, asset: e.target.value }))}
+                                            required
+                                            value={formData.assetId}
+                                            onChange={(e) => setFormData(p => ({ ...p, assetId: e.target.value }))}
                                             className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:border-emerald-500 outline-none text-sm"
                                         >
-                                            <option value="">None</option>
-                                            <option value="MacBook Pro">MacBook Pro</option>
-                                            <option value="Printer HP">Printer HP</option>
+                                            <option value="">Select Asset</option>
+                                            {assets.map(asset => (
+                                                <option key={asset._id} value={asset._id}>
+                                                    {asset.name}
+                                                </option>
+                                            ))}
                                         </select>
                                     </div>
                                 </div>
 
                                 <button
                                     type="submit"
-                                    className="w-full py-4 bg-gray-900 text-white rounded-2xl font-bold hover:bg-black transition-all shadow-lg active:scale-[0.98] mt-2"
+                                    disabled={isCreating}
+                                    className="w-full py-4 bg-gray-900 text-white rounded-2xl font-bold hover:bg-black transition-all shadow-lg active:scale-[0.98] mt-2 flex items-center justify-center gap-2"
                                 >
-                                    Record Expense
+                                    {isCreating ? <Loader2 className="animate-spin" size={20} /> : 'Record Expense'}
                                 </button>
                             </form>
                         </motion.div>

@@ -15,9 +15,14 @@ import {
     FileText,
     User,
     CheckCircle2,
-    ArrowRight
+    ArrowRight,
+    Loader2,
+    AlertCircle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useGetPurchasesQuery, useCreatePurchaseMutation } from '../../../../utils/slices/InventoryAndAsset/purchaseApiSlice';
+import { useGetVendorsQuery } from '../../../../utils/slices/InventoryAndAsset/vendorApiSlice';
+import { useGetItemsQuery } from '../../../../utils/slices/InventoryAndAsset/itemApiSlice';
 
 export default function PurchaseManagement() {
     const router = useRouter();
@@ -25,50 +30,25 @@ export default function PurchaseManagement() {
     const [searchQuery, setSearchQuery] = useState('');
     const [showAddModal, setShowAddModal] = useState(false);
 
-    // Mock Data
-    const VENDORS = [
-        { id: 1, name: 'MedPlus Essentials' },
-        { id: 2, name: 'Reliance Retail Ltd' },
-        { id: 3, name: 'Tata Croma Supplies' }
-    ];
+    // API Hooks
+    const { data: purchasesResponse, isLoading, isError } = useGetPurchasesQuery(searchQuery);
+    const { data: vendorsResponse } = useGetVendorsQuery();
+    const { data: itemsResponse } = useGetItemsQuery({}); // Fetch all items (Inventory + Asset)
 
-    const ITEMS = [
-        { id: 1, name: 'MacBook Pro M3', type: 'Asset', unit: 'Nos' },
-        { id: 2, name: 'Basmati Rice', type: 'Inventory', unit: 'Kg' },
-        { id: 3, name: 'iPhone 15', type: 'Asset', unit: 'Nos' },
-        { id: 4, name: 'Wheat Flour', type: 'Inventory', unit: 'Kg' },
-    ];
+    const [createPurchase, { isLoading: isCreating }] = useCreatePurchaseMutation();
 
-    const [purchases, setPurchases] = useState([
-        {
-            id: 'PO-2024-001',
-            vendor: 'Tata Croma Supplies',
-            date: '2024-12-28',
-            totalAmount: 450000,
-            items: [
-                { name: 'MacBook Pro M3', qty: 2, price: 200000, type: 'Asset' },
-                { name: 'iPhone 15', qty: 1, price: 50000, type: 'Asset' }
-            ],
-            status: 'Completed'
-        },
-        {
-            id: 'PO-2024-002',
-            vendor: 'Reliance Retail Ltd',
-            date: '2024-12-25',
-            totalAmount: 12000,
-            items: [
-                { name: 'Basmati Rice', qty: 100, price: 80, type: 'Inventory' },
-                { name: 'Wheat Flour', qty: 50, price: 40, type: 'Inventory' }
-            ],
-            status: 'Completed'
-        }
-    ]);
+    const purchases = purchasesResponse?.data || [];
+    const vendors = vendorsResponse?.data || [];
+    const items = itemsResponse?.data || [];
+
+    // console.log("Items fetched:", items);
 
     // Form State
     const [formData, setFormData] = useState({
-        vendorName: '',
+        vendorId: '',
         purchaseDate: new Date().toISOString().split('T')[0],
         paymentStatus: 'Pending',
+        proofFile: null,
         lineItems: []
     });
 
@@ -77,15 +57,15 @@ export default function PurchaseManagement() {
     }, []);
 
     const handleVendorChange = (e) => {
-        setFormData(prev => ({ ...prev, vendorName: e.target.value }));
+        setFormData(prev => ({ ...prev, vendorId: e.target.value }));
     };
 
-    const addLineItem = () => {
-        setFormData(prev => ({
-            ...prev,
-            lineItems: [...prev.lineItems, { itemId: '', qty: 1, price: 0 }]
-        }));
-    };
+const addLineItem = () => {
+    setFormData(prev => ({
+        ...prev,
+        lineItems: [...prev.lineItems, { itemId: '', qty: '', price: '', unit: '' }]
+    }));
+};
 
     const removeLineItem = (index) => {
         setFormData(prev => ({
@@ -94,45 +74,85 @@ export default function PurchaseManagement() {
         }));
     };
 
-    const updateLineItem = (index, field, value) => {
-        setFormData(prev => {
-            const updatedLines = [...prev.lineItems];
-            updatedLines[index] = { ...updatedLines[index], [field]: value };
-            return { ...prev, lineItems: updatedLines };
-        });
-    };
-
-    const handleSubmit = (e) => {
-        e.preventDefault();
-
-        // Calculate total
-        const total = formData.lineItems.reduce((sum, item) => sum + (Number(item.qty) * Number(item.price)), 0);
-
-        // Map items to readable format
-        const readableItems = formData.lineItems.map(line => {
-            const itemDef = ITEMS.find(i => i.id.toString() === line.itemId.toString());
-            return {
-                name: itemDef?.name || 'Unknown Item',
-                qty: Number(line.qty),
-                price: Number(line.price),
-                type: itemDef?.type
+const updateLineItem = (index, field, value) => {
+    setFormData(prev => {
+        const updatedLines = [...prev.lineItems];
+        
+        // If itemId is being updated, also store the unit
+        if (field === 'itemId') {
+            const selectedItem = items.find(item => item._id === value);
+            updatedLines[index] = { 
+                ...updatedLines[index], 
+                itemId: value,
+                unit: selectedItem?.unit || '' // Store the unit
             };
-        });
+        } else {
+            updatedLines[index] = { ...updatedLines[index], [field]: value };
+        }
+        
+        return { ...prev, lineItems: updatedLines };
+    });
+};
 
-        const newPurchase = {
-            id: `PO-2024-${String(purchases.length + 1).padStart(3, '0')}`,
-            vendor: formData.vendorName,
-            date: formData.purchaseDate,
-            totalAmount: total,
-            items: readableItems,
-            items: readableItems,
-            status: formData.paymentStatus === 'Paid' ? 'Completed' : 'Pending Payment'
-        };
+    const handleSubmit = async (e) => {
+    e.preventDefault();
 
-        setPurchases(prev => [newPurchase, ...prev]);
+    // Basic validation
+    if (formData.lineItems.length === 0) {
+        alert("Please add at least one item.");
+        return;
+    }
+
+    // Validate all line items have valid values
+    for (const item of formData.lineItems) {
+        if (!item.itemId) {
+            alert("Please select an item for all line items.");
+            return;
+        }
+        if (!item.qty || Number(item.qty) <= 0) {
+            alert("Please enter a valid quantity for all items.");
+            return;
+        }
+        if (!item.price || Number(item.price) < 0) {
+            alert("Please enter a valid price for all items.");
+            return;
+        }
+    }
+
+    const formDataToSend = new FormData();
+    formDataToSend.append('vendorId', formData.vendorId);
+    formDataToSend.append('purchaseDate', formData.purchaseDate);
+    formDataToSend.append('paymentStatus', formData.paymentStatus);
+
+    // Correctly structure items for backend with proper number conversion
+    const itemsPayload = formData.lineItems.map(item => ({
+        itemId: item.itemId,
+        quantity: Number(item.qty),
+        price: Number(item.price) // Backend expects 'price', not 'unitPrice'
+    }));
+
+    formDataToSend.append('items', JSON.stringify(itemsPayload));
+
+    if (formData.proofFile) {
+        formDataToSend.append('proof', formData.proofFile);
+    }
+
+    try {
+        await createPurchase(formDataToSend).unwrap();
+
         setShowAddModal(false);
-        setFormData({ vendorName: '', purchaseDate: new Date().toISOString().split('T')[0], paymentStatus: 'Pending', lineItems: [] });
-    };
+        setFormData({
+            vendorId: '',
+            purchaseDate: new Date().toISOString().split('T')[0],
+            paymentStatus: 'Pending',
+            proofFile: null,
+            lineItems: []
+        });
+    } catch (err) {
+        console.error('Failed to create purchase:', err);
+        alert(err?.data?.message || 'Failed to record purchase');
+    }
+};
 
     if (!isMounted) return null;
 
@@ -155,7 +175,7 @@ export default function PurchaseManagement() {
                     </div>
                     <button
                         onClick={() => {
-                            setFormData({ vendorName: '', purchaseDate: new Date().toISOString().split('T')[0], paymentStatus: 'Pending', lineItems: [] });
+                            setFormData({ vendorId: '', purchaseDate: new Date().toISOString().split('T')[0], paymentStatus: 'Pending', proofFile: null, lineItems: [] });
                             setShowAddModal(true);
                         }}
                         className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl font-bold text-sm flex items-center gap-2 transition-all shadow-md active:scale-95"
@@ -179,62 +199,96 @@ export default function PurchaseManagement() {
                     />
                 </div>
 
-                {/* Purchase History */}
-                <div className="space-y-4">
-                    <h2 className="text-lg font-bold text-gray-800 mb-4">Recent Purchases</h2>
-                    <AnimatePresence>
-                        {purchases.map((po) => (
-                            <motion.div
-                                key={po.id}
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow"
-                            >
-                                <div className="flex flex-col md:flex-row justify-between md:items-center mb-6">
-                                    <div className="flex items-center gap-4 mb-4 md:mb-0">
-                                        <div className="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center">
-                                            <FileText size={20} />
-                                        </div>
-                                        <div>
-                                            <h3 className="text-lg font-bold text-gray-900">{po.vendor}</h3>
-                                            <p className="text-xs font-medium text-gray-500 flex items-center gap-2">
-                                                {po.id} <span className="w-1 h-1 rounded-full bg-gray-300"></span> {po.date}
-                                            </p>
-                                        </div>
-                                    </div>
-                                    <div className="text-right">
-                                        <p className="text-2xl font-bold text-gray-900">₹{po.totalAmount.toLocaleString()}</p>
-                                        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-green-50 text-green-700 rounded-lg text-xs font-bold mt-1">
-                                            <CheckCircle2 size={12} />
-                                            {po.status}
-                                        </div>
-                                    </div>
-                                </div>
+                {/* Loading State */}
+                {isLoading && (
+                    <div className="text-center py-20">
+                        <Loader2 className="animate-spin text-emerald-600 mx-auto mb-4" size={48} />
+                        <p className="text-gray-500">Loading purchases...</p>
+                    </div>
+                )}
 
-                                <div className="bg-gray-50 rounded-xl p-4">
-                                    <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Items Purchased</p>
-                                    <div className="grid gap-3">
-                                        {po.items.map((item, idx) => (
-                                            <div key={idx} className="flex justify-between items-center text-sm">
-                                                <div className="flex items-center gap-2">
-                                                    <span className={`w-2 h-2 rounded-full ${item.type === 'Asset' ? 'bg-blue-400' : 'bg-orange-400'}`}></span>
-                                                    <span className="font-medium text-gray-700">{item.name}</span>
-                                                    <span className="text-gray-400">x {item.qty}</span>
-                                                </div>
-                                                <span className="font-bold text-gray-600">₹{item.price.toLocaleString()}</span>
-                                            </div>
-                                        ))}
+                {/* Error State */}
+                {isError && (
+                    <div className="text-center py-20 bg-white rounded-3xl border border-red-200">
+                        <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <AlertCircle className="text-red-500" size={32} />
+                        </div>
+                        <h3 className="text-lg font-bold text-gray-900">Error Loading Purchases</h3>
+                        <p className="text-gray-500">Failed to fetch purchase history.</p>
+                    </div>
+                )}
+
+                {/* Purchase History */}
+                {!isLoading && !isError && (
+                    <div className="space-y-4">
+                        <h2 className="text-lg font-bold text-gray-800 mb-4">Recent Purchases</h2>
+                        <AnimatePresence>
+                            {purchases.length === 0 ? (
+                                <div className="text-center py-20 bg-white rounded-3xl border border-dashed border-gray-200">
+                                    <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-300">
+                                        <ShoppingCart size={32} />
                                     </div>
-                                    {/* System Behavior Note */}
-                                    <div className="mt-4 pt-4 border-t border-gray-200 flex items-center gap-2 text-[11px] text-gray-400 italic">
-                                        <div className="w-4 h-4 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">i</div>
-                                        Assets automatically registered. Inventory stock updated.
-                                    </div>
+                                    <h3 className="text-lg font-bold text-gray-900">No purchases recorded</h3>
+                                    <p className="text-gray-500">Record a new purchase to start tracking.</p>
                                 </div>
-                            </motion.div>
-                        ))}
-                    </AnimatePresence>
-                </div>
+                            ) : (
+                                purchases.map((po) => (
+                                    <motion.div
+                                        key={po._id}
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow"
+                                    >
+                                        <div className="flex flex-col md:flex-row justify-between md:items-center mb-6">
+                                            <div className="flex items-center gap-4 mb-4 md:mb-0">
+                                                <div className="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center">
+                                                    <FileText size={20} />
+                                                </div>
+                                                <div>
+                                                    <h3 className="text-lg font-bold text-gray-900">{po.vendorId?.fullName || "Unknown Vendor"}</h3>
+                                                    <p className="text-xs font-medium text-gray-500 flex items-center gap-2">
+                                                        <span className='uppercase'>#{po._id.slice(-6)}</span> <span className="w-1 h-1 rounded-full bg-gray-300"></span> {new Date(po.purchaseDate).toLocaleDateString()}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <div className="text-right">
+                                                <p className="text-2xl font-bold text-gray-900">₹{po.totalAmount.toLocaleString()}</p>
+                                                <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold mt-1 
+                                                    ${po.paymentStatus === 'PAID' ? 'bg-green-50 text-green-700' :
+                                                        po.paymentStatus === 'PENDING' ? 'bg-yellow-50 text-yellow-700' : 'bg-blue-50 text-blue-700'}`}>
+                                                    <CheckCircle2 size={12} />
+                                                    {po.paymentStatus}
+                                                    {po.bill?.fileUrl && <span className="ml-1 text-[10px] underline cursor-pointer" onClick={() => window.open(process.env.NEXT_PUBLIC_BACKEND_API + po.bill.fileUrl, '_blank')}>View Proof</span>}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="bg-gray-50 rounded-xl p-4">
+                                            <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Items Purchased</p>
+                                            <div className="grid gap-3">
+                                                {po.items.map((item, idx) => (
+                                                    <div key={idx} className="flex justify-between items-center text-sm">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className={`w-2 h-2 rounded-full ${item.itemId?.itemType === 'ASSET' ? 'bg-blue-400' : 'bg-orange-400'}`}></span>
+                                                            <span className="font-medium text-gray-700">{item.itemId?.name}</span>
+                                                            <span className="text-gray-400">x {item.quantity} {item.itemId?.unit}</span>
+                                                        </div>
+                                                        <span className="font-bold text-gray-600">₹{item.totalPrice.toLocaleString()}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                            {/* System Behavior Note */}
+                                            <div className="mt-4 pt-4 border-t border-gray-200 flex items-center gap-2 text-[11px] text-gray-400 italic">
+                                                <div className="w-4 h-4 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">i</div>
+                                                Inventory stock updated automatically.
+                                            </div>
+                                        </div>
+                                    </motion.div>
+                                ))
+                            )}
+                        </AnimatePresence>
+                    </div>
+                )}
             </main>
 
             {/* Add Purchase Modal */}
@@ -277,13 +331,13 @@ export default function PurchaseManagement() {
                                                 <User className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                                                 <select
                                                     required
-                                                    value={formData.vendorName}
+                                                    value={formData.vendorId}
                                                     onChange={handleVendorChange}
                                                     className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all appearance-none"
                                                 >
                                                     <option value="">Choose Vendor</option>
-                                                    {VENDORS.map(v => (
-                                                        <option key={v.id} value={v.name}>{v.name}</option>
+                                                    {vendors.map(v => (
+                                                        <option key={v._id} value={v._id}>{v.fullName}</option>
                                                     ))}
                                                 </select>
                                             </div>
@@ -311,21 +365,22 @@ export default function PurchaseManagement() {
                                                     onChange={(e) => setFormData(p => ({ ...p, paymentStatus: e.target.value }))}
                                                     className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all appearance-none"
                                                 >
-                                                    <option value="Pending">Pending</option>
-                                                    <option value="Paid">Paid</option>
-                                                    <option value="Partial">Partial</option>
+                                                    <option value="PENDING">Pending</option>
+                                                    <option value="PAID">Paid</option>
+                                                    <option value="PARTIALLY_PAID">Partial</option>
                                                 </select>
                                             </div>
                                         </div>
                                     </div>
 
                                     {/* Proof Upload (Conditional) */}
-                                    {(formData.paymentStatus === 'Paid' || formData.paymentStatus === 'Partial') && (
+                                    {(formData.paymentStatus === 'PAID' || formData.paymentStatus === 'PARTIALLY_PAID') && (
                                         <div className="bg-emerald-50/50 p-4 rounded-xl border border-emerald-100 border-dashed">
                                             <label className="text-xs font-bold text-emerald-600 uppercase tracking-widest mb-2 block">Upload Payment Proof</label>
                                             <input
                                                 type="file"
                                                 accept="image/*,.pdf"
+                                                onChange={(e) => setFormData(p => ({ ...p, proofFile: e.target.files[0] }))}
                                                 className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-emerald-100 file:text-emerald-700 hover:file:bg-emerald-200 transition-all"
                                             />
                                         </div>
@@ -337,55 +392,64 @@ export default function PurchaseManagement() {
                                             <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Items & Quantities</label>
                                         </div>
 
-                                        <div className="space-y-3">
-                                            {formData.lineItems.map((line, idx) => (
-                                                <div key={idx} className="flex gap-3 items-start">
-                                                    <div className="flex-1">
-                                                        <select
-                                                            required
-                                                            value={line.itemId}
-                                                            onChange={(e) => updateLineItem(idx, 'itemId', e.target.value)}
-                                                            className="w-full px-4 py-2 bg-white border border-gray-200 rounded-xl focus:border-emerald-500 outline-none text-sm"
-                                                        >
-                                                            <option value="">Select Item</option>
-                                                            {ITEMS.map(item => (
-                                                                <option key={item.id} value={item.id}>{item.name} ({item.type})</option>
-                                                            ))}
-                                                        </select>
-                                                    </div>
-                                                    <div className="w-24">
-                                                        <input
-                                                            type="number"
-                                                            min="1"
-                                                            placeholder="Qty"
-                                                            required
-                                                            value={line.qty}
-                                                            onChange={(e) => updateLineItem(idx, 'qty', e.target.value)}
-                                                            className="w-full px-4 py-2 bg-white border border-gray-200 rounded-xl focus:border-emerald-500 outline-none text-sm"
-                                                        />
-                                                    </div>
-                                                    <div className="w-32 relative">
-                                                        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">₹</div>
-                                                        <input
-                                                            type="number"
-                                                            min="0"
-                                                            placeholder="Price"
-                                                            required
-                                                            value={line.price}
-                                                            onChange={(e) => updateLineItem(idx, 'price', e.target.value)}
-                                                            className="w-full pl-6 pr-4 py-2 bg-white border border-gray-200 rounded-xl focus:border-emerald-500 outline-none text-sm"
-                                                        />
-                                                    </div>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => removeLineItem(idx)}
-                                                        className="p-2 text-rose-500 hover:bg-rose-50 rounded-lg transition-colors"
-                                                    >
-                                                        <Trash2 size={16} />
-                                                    </button>
-                                                </div>
-                                            ))}
-                                        </div>
+                                      <div className="space-y-3">
+    {formData.lineItems.map((line, idx) => (
+        <div key={idx} className="flex gap-3 items-start">
+            <div className="flex-1">
+                <select
+                    required
+                    value={line.itemId}
+                    onChange={(e) => updateLineItem(idx, 'itemId', e.target.value)}
+                    className="w-full px-4 py-2 bg-white border border-gray-200 rounded-xl focus:border-emerald-500 outline-none text-sm"
+                >
+                    <option value="">Select Item</option>
+                    {items.map(item => (
+                        <option key={item._id} value={item._id}>{item.name} ({item.itemType})</option>
+                    ))}
+                </select>
+            </div>
+            <div className="w-32">
+                <div className="relative">
+                 <input
+    type="number"
+    min="1"
+    step="1"
+    placeholder="Qty"
+    required
+    value={line.qty}
+    onChange={(e) => updateLineItem(idx, 'qty', e.target.value)}
+    className="w-full px-4 py-2 pr-12 bg-white border border-gray-200 rounded-xl focus:border-emerald-500 outline-none text-sm"
+/>
+                    {line.unit && (
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium text-gray-500">
+                            {line.unit}
+                        </span>
+                    )}
+                </div>
+            </div>
+            <div className="w-32 relative">
+                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">₹</div>
+              <input
+    type="number"
+    min="0"
+    step="0.01"
+    placeholder="Price"
+    required
+    value={line.price}
+    onChange={(e) => updateLineItem(idx, 'price', e.target.value)}
+    className="w-full pl-6 pr-4 py-2 bg-white border border-gray-200 rounded-xl focus:border-emerald-500 outline-none text-sm"
+/>
+            </div>
+            <button
+                type="button"
+                onClick={() => removeLineItem(idx)}
+                className="p-2 text-rose-500 hover:bg-rose-50 rounded-lg transition-colors"
+            >
+                <Trash2 size={16} />
+            </button>
+        </div>
+    ))}
+</div>
 
                                         <button
                                             type="button"
@@ -406,9 +470,10 @@ export default function PurchaseManagement() {
                                     </div>
                                     <button
                                         type="submit"
-                                        className="w-full py-4 bg-gray-900 text-white rounded-2xl font-bold hover:bg-black transition-all shadow-lg active:scale-[0.98]"
+                                        disabled={isCreating}
+                                        className="w-full py-4 bg-gray-900 text-white rounded-2xl font-bold hover:bg-black transition-all shadow-lg active:scale-[0.98] flex items-center justify-center gap-2"
                                     >
-                                        Save Purchase Entry
+                                        {isCreating ? <Loader2 className="animate-spin" size={20} /> : 'Save Purchase Entry'}
                                     </button>
                                 </div>
                             </form>

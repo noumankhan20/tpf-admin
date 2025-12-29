@@ -49,11 +49,11 @@ export default function ItemManagement() {
     const [updateItem, { isLoading: isUpdating }] = useUpdateItemMutation();
     const [deleteItem, { isLoading: isDeleting }] = useDeleteItemMutation();
 
-    // Form State - Aligned with backend model
     const [formData, setFormData] = useState({
         name: '',
         itemType: 'ASSET',
         unit: 'PIECE',
+        quantity: '',
         vendorId: '',
         status: 'ACTIVE'
     });
@@ -110,6 +110,7 @@ export default function ItemManagement() {
                 itemType: formData.itemType,
                 unit: formData.unit,
                 status: formData.status,
+                quantity: formData.quantity ? Number(formData.quantity) : 0,
             };
 
             // Only include vendorId if it's selected
@@ -141,6 +142,7 @@ export default function ItemManagement() {
             name: '',
             itemType: 'ASSET',
             unit: 'PIECE',
+            quantity: '',
             vendorId: '',
             status: 'ACTIVE'
         });
@@ -154,6 +156,7 @@ export default function ItemManagement() {
             name: item.name,
             itemType: item.itemType,
             unit: item.unit,
+            quantity: item.currentStock || 0,
             vendorId: item.vendorId || '',
             status: item.status
         });
@@ -244,11 +247,10 @@ export default function ItemManagement() {
                             <button
                                 key={type}
                                 onClick={() => setFilterType(type)}
-                                className={`px-4 py-3 rounded-2xl text-sm font-bold transition-all border ${
-                                    filterType === type
-                                        ? 'bg-emerald-600 text-white border-emerald-600 shadow-md scale-105'
-                                        : 'bg-white text-gray-500 border-gray-200 hover:border-emerald-200'
-                                }`}
+                                className={`px-4 py-3 rounded-2xl text-sm font-bold transition-all border ${filterType === type
+                                    ? 'bg-emerald-600 text-white border-emerald-600 shadow-md scale-105'
+                                    : 'bg-white text-gray-500 border-gray-200 hover:border-emerald-200'
+                                    }`}
                             >
                                 {type.charAt(0).toUpperCase() + type.slice(1)}
                             </button>
@@ -287,20 +289,18 @@ export default function ItemManagement() {
                                         animate={{ opacity: 1, y: 0 }}
                                         exit={{ opacity: 0, scale: 0.95 }}
                                         key={item._id}
-                                        className={`bg-white rounded-3xl border p-6 relative group transition-all hover:shadow-xl hover:-translate-y-1 ${
-                                            item.status === 'INACTIVE' 
-                                                ? 'border-gray-200 opacity-60 grayscale' 
-                                                : 'border-gray-100'
-                                        }`}
+                                        className={`bg-white rounded-3xl border p-6 relative group transition-all hover:shadow-xl hover:-translate-y-1 ${item.status === 'INACTIVE'
+                                            ? 'border-gray-200 opacity-60 grayscale'
+                                            : 'border-gray-100'
+                                            }`}
                                     >
                                         <div className="flex justify-between items-start mb-6">
-                                            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-inner ${
-                                                item.itemType === 'ASSET' 
-                                                    ? 'bg-blue-50 text-blue-600' 
-                                                    : item.itemType === 'INVENTORY'
+                                            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-inner ${item.itemType === 'ASSET'
+                                                ? 'bg-blue-50 text-blue-600'
+                                                : item.itemType === 'INVENTORY'
                                                     ? 'bg-orange-50 text-orange-600'
                                                     : 'bg-purple-50 text-purple-600'
-                                            }`}>
+                                                }`}>
                                                 {item.itemType === 'ASSET' ? (
                                                     <HardDrive size={24} />
                                                 ) : (
@@ -326,13 +326,12 @@ export default function ItemManagement() {
                                         </div>
 
                                         <div className="mb-4">
-                                            <p className={`text-[10px] font-bold uppercase tracking-widest mb-1 ${
-                                                item.itemType === 'ASSET' 
-                                                    ? 'text-blue-500' 
-                                                    : item.itemType === 'INVENTORY'
+                                            <p className={`text-[10px] font-bold uppercase tracking-widest mb-1 ${item.itemType === 'ASSET'
+                                                ? 'text-blue-500'
+                                                : item.itemType === 'INVENTORY'
                                                     ? 'text-orange-500'
                                                     : 'text-purple-500'
-                                            }`}>
+                                                }`}>
                                                 {item.itemType}
                                             </p>
                                             <h3 className="text-lg font-bold text-gray-900 line-clamp-1">{item.name}</h3>
@@ -368,7 +367,7 @@ export default function ItemManagement() {
                                 >
                                     <ChevronLeft size={20} />
                                 </button>
-                                
+
                                 <div className="flex items-center gap-2">
                                     {Array.from({ length: Math.min(5, meta.totalPages) }, (_, i) => {
                                         let pageNum;
@@ -386,11 +385,10 @@ export default function ItemManagement() {
                                             <button
                                                 key={pageNum}
                                                 onClick={() => setCurrentPage(pageNum)}
-                                                className={`w-10 h-10 rounded-lg font-bold text-sm transition-all ${
-                                                    currentPage === pageNum
-                                                        ? 'bg-emerald-600 text-white shadow-md'
-                                                        : 'bg-white border border-gray-200 hover:border-emerald-200 text-gray-600'
-                                                }`}
+                                                className={`w-10 h-10 rounded-lg font-bold text-sm transition-all ${currentPage === pageNum
+                                                    ? 'bg-emerald-600 text-white shadow-md'
+                                                    : 'bg-white border border-gray-200 hover:border-emerald-200 text-gray-600'
+                                                    }`}
                                             >
                                                 {pageNum}
                                             </button>
@@ -421,8 +419,8 @@ export default function ItemManagement() {
                         </div>
                         <h3 className="text-lg font-bold text-gray-900">No items defined</h3>
                         <p className="text-gray-500">
-                            {searchQuery 
-                                ? 'No items match your search criteria.' 
+                            {searchQuery
+                                ? 'No items match your search criteria.'
                                 : 'Add some items (Assets or Inventory) to start tracking.'}
                         </p>
                     </div>
@@ -476,9 +474,8 @@ export default function ItemManagement() {
                                         onChange={handleInputChange}
                                         type="text"
                                         placeholder="e.g. MacBook Pro, Basmati Rice"
-                                        className={`w-full px-5 py-3.5 bg-gray-50 border rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-medium ${
-                                            formErrors.name ? 'border-red-300' : 'border-gray-200'
-                                        }`}
+                                        className={`w-full px-5 py-3.5 bg-gray-50 border rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-medium ${formErrors.name ? 'border-red-300' : 'border-gray-200'
+                                            }`}
                                     />
                                     {formErrors.name && (
                                         <p className="mt-1 text-xs text-red-500 flex items-center gap-1">
@@ -497,9 +494,8 @@ export default function ItemManagement() {
                                             name="itemType"
                                             value={formData.itemType}
                                             onChange={handleInputChange}
-                                            className={`w-full px-5 py-3.5 bg-gray-50 border rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-medium appearance-none ${
-                                                formErrors.itemType ? 'border-red-300' : 'border-gray-200'
-                                            }`}
+                                            className={`w-full px-5 py-3.5 bg-gray-50 border rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-medium appearance-none ${formErrors.itemType ? 'border-red-300' : 'border-gray-200'
+                                                }`}
                                         >
                                             <option value="ASSET">Asset</option>
                                             <option value="INVENTORY">Inventory</option>
@@ -517,9 +513,8 @@ export default function ItemManagement() {
                                             name="unit"
                                             value={formData.unit}
                                             onChange={handleInputChange}
-                                            className={`w-full px-5 py-3.5 bg-gray-50 border rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-medium appearance-none ${
-                                                formErrors.unit ? 'border-red-300' : 'border-gray-200'
-                                            }`}
+                                            className={`w-full px-5 py-3.5 bg-gray-50 border rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-medium appearance-none ${formErrors.unit ? 'border-red-300' : 'border-gray-200'
+                                                }`}
                                         >
                                             <option value="PIECE">Piece</option>
                                             <option value="KG">Kilogram</option>
@@ -537,6 +532,29 @@ export default function ItemManagement() {
                                         )}
                                     </div>
                                 </div>
+
+                                {/* Quantity Field - Visible for INVENTORY */}
+                                {formData.itemType === 'INVENTORY' && (
+                                    <div>
+                                        <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">
+                                            Initial Quantity/Stock
+                                        </label>
+                                        <div className="relative">
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                name="quantity"
+                                                value={formData.quantity}
+                                                onChange={handleInputChange}
+                                                placeholder="e.g. 10"
+                                                className="w-full px-5 py-3.5 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-medium"
+                                            />
+                                            <div className="absolute right-5 top-1/2 -translate-y-1/2 text-sm font-bold text-gray-400">
+                                                {formData.unit}
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
 
                                 <div>
                                     <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">
@@ -574,8 +592,8 @@ export default function ItemManagement() {
                                                 {formData.itemType === 'ASSET'
                                                     ? 'Assets are long-term items like laptops and furniture.'
                                                     : formData.itemType === 'INVENTORY'
-                                                    ? 'Inventory items are consumables like food supplies.'
-                                                    : 'Other items are miscellaneous products or services.'}
+                                                        ? 'Inventory items are consumables like food supplies.'
+                                                        : 'Other items are miscellaneous products or services.'}
                                             </p>
                                         </div>
                                     </div>

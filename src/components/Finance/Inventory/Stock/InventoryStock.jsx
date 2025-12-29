@@ -12,9 +12,14 @@ import {
     Info,
     X,
     Share2,
-    PieChart
+    PieChart,
+    Loader2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import {
+    useGetInventoryStockQuery,
+    useDistributeStockMutation
+} from '../../../../utils/slices/InventoryAndAsset/stockApiSlice';
 
 export default function InventoryStock() {
     const router = useRouter();
@@ -23,13 +28,11 @@ export default function InventoryStock() {
     const [showDistributeModal, setShowDistributeModal] = useState(false);
     const [selectedItem, setSelectedItem] = useState(null);
 
-    // Mock Data
-    const [stock, setStock] = useState([
-        { id: 1, name: 'Basmati Rice', unit: 'Kg', purchased: 500, used: 120, remaining: 380, category: 'Food' },
-        { id: 2, name: 'Wheat Flour', unit: 'Kg', purchased: 300, used: 50, remaining: 250, category: 'Food' },
-        { id: 3, name: 'Surgical Masks', unit: 'Box', purchased: 1000, used: 850, remaining: 150, category: 'Medical' },
-        { id: 4, name: 'Blankets', unit: 'Nos', purchased: 200, used: 45, remaining: 155, category: 'Relief' }
-    ]);
+    // API Hooks
+    const { data: stockData, isLoading } = useGetInventoryStockQuery(searchQuery);
+    const [distributeStock, { isLoading: isDistributing }] = useDistributeStockMutation();
+
+    const stock = stockData?.data || [];
 
     // Form State
     const [distributeData, setDistributeData] = useState({
@@ -48,27 +51,31 @@ export default function InventoryStock() {
         setShowDistributeModal(true);
     };
 
-    const handleDistribute = (e) => {
+    const handleDistribute = async (e) => {
         e.preventDefault();
         const qty = Number(distributeData.qty);
 
-        if (qty > selectedItem.remaining) {
-            alert(`Cannot distribute more than remaining stock (${selectedItem.remaining} ${selectedItem.unit})`);
+        if (qty > selectedItem.currentStock) {
+            alert(`Cannot distribute more than remaining stock (${selectedItem.currentStock} ${selectedItem.unit})`);
             return;
         }
 
-        setStock(prev => prev.map(item =>
-            item.id === selectedItem.id
-                ? { ...item, used: item.used + qty, remaining: item.remaining - qty }
-                : item
-        ));
-
-        setShowDistributeModal(false);
+        try {
+            await distributeStock({
+                itemId: selectedItem._id,
+                quantity: qty,
+                purpose: distributeData.purpose
+            }).unwrap();
+            setShowDistributeModal(false);
+        } catch (err) {
+            console.error('Failed to distribute stock:', err);
+            alert(err?.data?.message || 'Failed to distribute stock');
+        }
     };
 
-    const filteredStock = stock.filter(item =>
-        item.name.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    // Data is filtered by backend search query, but we can verify here if needed.
+    // The backend handles filtering, so 'stock' is already filtered.
+    const filteredStock = stock;
 
     if (!isMounted) return null;
 
@@ -105,75 +112,97 @@ export default function InventoryStock() {
                     />
                 </div>
 
+                {/* Loading State */}
+                {isLoading && (
+                    <div className="text-center py-20">
+                        <Loader2 className="animate-spin text-emerald-600 mx-auto mb-4" size={48} />
+                        <p className="text-gray-500">Loading stock...</p>
+                    </div>
+                )}
+
                 {/* Stock Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    <AnimatePresence>
-                        {filteredStock.map((item) => {
-                            const usagePercent = Math.min((item.used / item.purchased) * 100, 100);
-                            const isLowStock = item.remaining < (item.purchased * 0.2); // Low stock if < 20%
+                {!isLoading && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <AnimatePresence>
+                            {filteredStock.length === 0 ? (
+                                <div className="col-span-full text-center py-10 text-gray-500">
+                                    No inventory items found. Create items with type 'Inventory'.
+                                </div>
+                            ) : (
+                                filteredStock.map((item) => {
+                                    // Calculate usage percentage
+                                    const totalVolume = item.totalPurchased || 0;
+                                    // Avoid division by zero
+                                    const usagePercent = totalVolume > 0
+                                        ? Math.min((item.totalDistributed / totalVolume) * 100, 100)
+                                        : 0;
 
-                            return (
-                                <motion.div
-                                    key={item.id}
-                                    layout
-                                    initial={{ opacity: 0, scale: 0.95 }}
-                                    animate={{ opacity: 1, scale: 1 }}
-                                    className="bg-white rounded-3xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden"
-                                >
-                                    <div className="flex justify-between items-start mb-6">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-12 h-12 rounded-2xl bg-orange-50 text-orange-600 flex items-center justify-center shrink-0">
-                                                <Package size={24} />
-                                            </div>
-                                            <div>
-                                                <h3 className="text-lg font-bold text-gray-900">{item.name}</h3>
-                                                <p className="text-xs font-medium text-gray-400">{item.category}</p>
-                                            </div>
-                                        </div>
-                                        {isLowStock && (
-                                            <span className="px-2 py-1 bg-red-50 text-red-600 text-[10px] font-bold uppercase rounded-lg tracking-wider border border-red-100">
-                                                Low Stock
-                                            </span>
-                                        )}
-                                    </div>
+                                    const isLowStock = totalVolume > 0 && item.currentStock < (totalVolume * 0.2);
 
-                                    {/* Stock Bars */}
-                                    <div className="space-y-4 mb-6">
-                                        <div className="flex items-center justify-between text-sm">
-                                            <span className="text-gray-500 font-medium">Purchased</span>
-                                            <span className="font-bold text-gray-900">{item.purchased} <span className="text-xs text-gray-400">{item.unit}</span></span>
-                                        </div>
-
-                                        <div>
-                                            <div className="flex items-center justify-between text-xs mb-1.5">
-                                                <span className="font-bold text-emerald-600">Remaining: {item.remaining}</span>
-                                                <span className="font-bold text-gray-400">Used: {item.used}</span>
+                                    return (
+                                        <motion.div
+                                            key={item._id}
+                                            layout
+                                            initial={{ opacity: 0, scale: 0.95 }}
+                                            animate={{ opacity: 1, scale: 1 }}
+                                            className="bg-white rounded-3xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden"
+                                        >
+                                            <div className="flex justify-between items-start mb-6">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-12 h-12 rounded-2xl bg-orange-50 text-orange-600 flex items-center justify-center shrink-0">
+                                                        <Package size={24} />
+                                                    </div>
+                                                    <div>
+                                                        <h3 className="text-lg font-bold text-gray-900">{item.name}</h3>
+                                                        <p className="text-xs font-medium text-gray-400">Inventory Item</p>
+                                                    </div>
+                                                </div>
+                                                {isLowStock && (
+                                                    <span className="px-2 py-1 bg-red-50 text-red-600 text-[10px] font-bold uppercase rounded-lg tracking-wider border border-red-100">
+                                                        Low Stock
+                                                    </span>
+                                                )}
                                             </div>
-                                            <div className="h-3 w-full bg-gray-100 rounded-full overflow-hidden flex">
-                                                <div
-                                                    className="h-full bg-orange-200"
-                                                    style={{ width: `${usagePercent}%` }}
-                                                ></div>
-                                                <div
-                                                    className="h-full bg-emerald-500"
-                                                    style={{ width: `${100 - usagePercent}%` }}
-                                                ></div>
-                                            </div>
-                                        </div>
-                                    </div>
 
-                                    <button
-                                        onClick={() => openDistributeModal(item)}
-                                        className="w-full py-3 bg-gray-50 hover:bg-gray-900 hover:text-white rounded-xl text-gray-700 font-bold text-sm transition-all flex items-center justify-center gap-2"
-                                    >
-                                        <Share2 size={16} />
-                                        Distribute Stock
-                                    </button>
-                                </motion.div>
-                            );
-                        })}
-                    </AnimatePresence>
-                </div>
+                                            {/* Stock Bars */}
+                                            <div className="space-y-4 mb-6">
+                                                <div className="flex items-center justify-between text-sm">
+                                                    <span className="text-gray-500 font-medium">Total Managed</span>
+                                                    <span className="font-bold text-gray-900">{item.totalPurchased} <span className="text-xs text-gray-400">{item.unit}</span></span>
+                                                </div>
+
+                                                <div>
+                                                    <div className="flex items-center justify-between text-xs mb-1.5">
+                                                        <span className="font-bold text-emerald-600">Remaining: {item.currentStock}</span>
+                                                        <span className="font-bold text-gray-400">Used: {item.totalDistributed}</span>
+                                                    </div>
+                                                    <div className="h-3 w-full bg-gray-100 rounded-full overflow-hidden flex">
+                                                        <div
+                                                            className="h-full bg-orange-200"
+                                                            style={{ width: `${usagePercent}%` }}
+                                                        ></div>
+                                                        <div
+                                                            className="h-full bg-emerald-500"
+                                                            style={{ width: `${100 - usagePercent}%` }}
+                                                        ></div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <button
+                                                onClick={() => openDistributeModal(item)}
+                                                className="w-full py-3 bg-gray-50 hover:bg-gray-900 hover:text-white rounded-xl text-gray-700 font-bold text-sm transition-all flex items-center justify-center gap-2"
+                                            >
+                                                <Share2 size={16} />
+                                                Distribute Stock
+                                            </button>
+                                        </motion.div>
+                                    );
+                                })
+                            )}
+                        </AnimatePresence>
+                    </div>
+                )}
             </main>
 
             {/* Distribute Modal */}
@@ -199,7 +228,7 @@ export default function InventoryStock() {
                                 </div>
                                 <div>
                                     <h3 className="text-lg font-bold text-gray-900">Distribute Stock</h3>
-                                    <p className="text-xs text-gray-600">{selectedItem.name} ({selectedItem.remaining} {selectedItem.unit} left)</p>
+                                    <p className="text-xs text-gray-600">{selectedItem.name} ({selectedItem.currentStock} {selectedItem.unit} left)</p>
                                 </div>
                             </div>
 
@@ -210,7 +239,7 @@ export default function InventoryStock() {
                                         <input
                                             type="number"
                                             min="1"
-                                            max={selectedItem.remaining}
+                                            max={selectedItem.currentStock}
                                             required
                                             value={distributeData.qty}
                                             onChange={(e) => setDistributeData(p => ({ ...p, qty: e.target.value }))}
@@ -230,8 +259,8 @@ export default function InventoryStock() {
                                                 type="button"
                                                 onClick={() => setDistributeData(p => ({ ...p, purpose: type }))}
                                                 className={`py-2 text-xs font-bold rounded-lg border transition-all ${distributeData.purpose === type
-                                                        ? 'bg-orange-600 text-white border-orange-600'
-                                                        : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300'
+                                                    ? 'bg-orange-600 text-white border-orange-600'
+                                                    : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300'
                                                     }`}
                                             >
                                                 {type}
@@ -244,7 +273,7 @@ export default function InventoryStock() {
                                     type="submit"
                                     className="w-full py-4 bg-gray-900 text-white rounded-2xl font-bold hover:bg-black transition-all shadow-lg active:scale-[0.98]"
                                 >
-                                    Confirm Distribution
+                                    {isDistributing ? <Loader2 className="animate-spin" /> : 'Confirm Distribution'}
                                 </button>
                             </form>
                         </motion.div>

@@ -5,7 +5,7 @@ export const vendorApiSlice = apiSlice.injectEndpoints({
        GET ALL VENDORS
     -------------------------------- */
     getVendors: builder.query({
-      query: () => "/vendors",
+      query: () => "/inventory/vendors",
       providesTags: ["Vendors"],
     }),
 
@@ -13,7 +13,7 @@ export const vendorApiSlice = apiSlice.injectEndpoints({
        GET SINGLE VENDOR
     -------------------------------- */
     getVendorById: builder.query({
-      query: (vendorId) => `/vendors/${vendorId}`,
+      query: (vendorId) => `/inventory/vendors/${vendorId}`,
       providesTags: (result, error, vendorId) => [
         { type: "Vendors", id: vendorId },
       ],
@@ -24,7 +24,7 @@ export const vendorApiSlice = apiSlice.injectEndpoints({
     -------------------------------- */
     createVendor: builder.mutation({
       query: (data) => ({
-        url: "/vendors",
+        url: "/inventory/vendors",
         method: "POST",
         body: data,
       }),
@@ -36,7 +36,7 @@ export const vendorApiSlice = apiSlice.injectEndpoints({
     -------------------------------- */
     updateVendor: builder.mutation({
       query: ({ vendorId, data }) => ({
-        url: `/vendors/${vendorId}`,
+        url: `/inventory/vendors/${vendorId}`,
         method: "PUT",
         body: data,
       }),
@@ -51,7 +51,7 @@ export const vendorApiSlice = apiSlice.injectEndpoints({
     -------------------------------- */
     deleteVendor: builder.mutation({
       query: (vendorId) => ({
-        url: `/vendors/${vendorId}`,
+        url: `/inventory/vendors/${vendorId}`,
         method: "DELETE",
       }),
       invalidatesTags: ["Vendors"],
