@@ -121,44 +121,6 @@ export default function InventoryDashboard() {
                 </div>
 
                 <div className="space-y-12">
-                    {/* Section 1: Overview & Analytics */}
-                    <section>
-                        <div className="flex items-center gap-3 mb-6">
-                            <div className="p-2 bg-purple-100 rounded-lg text-purple-600">
-                                <PieChart size={20} />
-                            </div>
-                            <h2 className="text-2xl font-bold text-gray-800">Overview & Analytics</h2>
-                        </div>
-
-                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                            <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-200 p-8 shadow-sm">
-                                <h3 className="text-lg font-bold mb-6">Growth Performance</h3>
-                                <div className="h-64 flex items-end justify-between gap-2">
-                                    {[45, 60, 40, 80, 55, 90, 70].map((h, i) => (
-                                        <div key={i} className="flex-1 bg-emerald-500 rounded-t-lg transition-all hover:bg-emerald-600 cursor-pointer" style={{ height: `${h}%` }}></div>
-                                    ))}
-                                </div>
-                                <div className="flex justify-between mt-4 text-xs font-bold text-gray-400 px-1">
-                                    <span>MON</span><span>TUE</span><span>WED</span><span>THU</span><span>FRI</span><span>SAT</span><span>SUN</span>
-                                </div>
-                            </div>
-
-                            <div className="bg-white rounded-2xl border border-gray-200 p-8 shadow-sm">
-                                <h3 className="text-lg font-bold mb-6">Profit Margin</h3>
-                                <div className="relative w-48 h-48 mx-auto flex items-center justify-center">
-                                    <svg className="w-full h-full transform -rotate-90">
-                                        <circle cx="96" cy="96" r="80" stroke="currentColor" strokeWidth="12" fill="transparent" className="text-gray-100" />
-                                        <circle cx="96" cy="96" r="80" stroke="currentColor" strokeWidth="12" fill="transparent" strokeDasharray="502.4" strokeDashoffset="150" className="text-purple-500" />
-                                    </svg>
-                                    <div className="absolute text-center">
-                                        <p className="text-3xl font-bold text-gray-900">72%</p>
-                                        <p className="text-xs font-bold text-gray-400">TARGET</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </section>
-
                     {/* Section 2: Supply Chain */}
                     <section>
                         <div className="flex items-center gap-3 mb-6">
@@ -168,7 +130,7 @@ export default function InventoryDashboard() {
                             <h2 className="text-2xl font-bold text-gray-800">Supply Chain</h2>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
                                 <div className="flex items-center justify-between mb-4">
                                     <p className="font-bold text-gray-800">Pending Purchases</p>
@@ -186,15 +148,6 @@ export default function InventoryDashboard() {
                                 <p className="text-3xl font-bold text-emerald-600">142</p>
                                 <p className="text-xs text-gray-500 mt-1">Onboarded this year</p>
                             </div>
-
-                            <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-                                <div className="flex items-center justify-between mb-4">
-                                    <p className="font-bold text-gray-800">Supply Reliability</p>
-                                    <CheckCircle2 size={18} className="text-gray-400" />
-                                </div>
-                                <p className="text-3xl font-bold text-orange-600">98%</p>
-                                <p className="text-xs text-gray-500 mt-1">On-time delivery rate</p>
-                            </div>
                         </div>
                     </section>
 
@@ -207,31 +160,7 @@ export default function InventoryDashboard() {
                             <h2 className="text-2xl font-bold text-gray-800">Assets & Stock</h2>
                         </div>
 
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                            <div className="bg-white rounded-2xl border border-gray-200 p-8 shadow-sm">
-                                <h3 className="text-lg font-bold mb-6">Asset Health</h3>
-                                <div className="space-y-6">
-                                    <div>
-                                        <div className="flex justify-between text-sm mb-2">
-                                            <span className="font-medium text-gray-600">Available Units</span>
-                                            <span className="font-bold">856 / 1284</span>
-                                        </div>
-                                        <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
-                                            <div className="h-full bg-emerald-500" style={{ width: '66%' }}></div>
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <div className="flex justify-between text-sm mb-2">
-                                            <span className="font-medium text-gray-600">In Maintenance</span>
-                                            <span className="font-bold">74 / 1284</span>
-                                        </div>
-                                        <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
-                                            <div className="h-full bg-amber-500" style={{ width: '6%' }}></div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
+                        <div className="grid grid-cols-1 gap-8">
                             <div className="bg-white rounded-2xl border border-gray-200 p-8 shadow-sm">
                                 <h3 className="text-lg font-bold mb-6">Inventory Depletion</h3>
                                 <div className="space-y-4">
