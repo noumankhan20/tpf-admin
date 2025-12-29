@@ -19,7 +19,6 @@ const navLinks = [
     { icon: PieChart, label: "Dashboard", path: "/" },
     { icon: BarChart2, label: "Campaigns", path: "/campaigns" },
     { icon: Users, label: "Donors", path: "/donors" },
-    { icon: FileText, label: "Reports", path: "/reports" },
     { icon: Settings, label: "Settings", path: "/settings" },
     { icon: UserPlus, label: "Add-Admin", path: "/add-admin" },
 ];

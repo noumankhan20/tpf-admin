@@ -77,15 +77,7 @@ const INVENTORY_MODULES = [
         category: 'expenses',
         route: '/inventory/expenses',
     },
-    {
-        id: 'report-analytics',
-        name: 'Reports',
-        desc: 'Financial and inventory analytics',
-        icon: BarChart3,
-        category: 'reports',
-        route: '/inventory/reports',
-    },
-];
+ ];
 
 const CATEGORIES = [
     { id: 'dashboard', name: 'Dashboard', icon: LayoutDashboard },
@@ -95,7 +87,6 @@ const CATEGORIES = [
     { id: 'assets', name: 'Assets', icon: HardDrive },
     { id: 'inventory', name: 'Inventory', icon: ClipboardList },
     { id: 'expenses', name: 'Expenses', icon: Receipt },
-    { id: 'reports', name: 'Reports', icon: BarChart3 },
 ];
 
 export default function InventoryMain() {
