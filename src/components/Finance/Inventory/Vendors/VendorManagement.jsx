@@ -13,10 +13,18 @@ import {
     X,
     CheckCircle,
     Ban,
-    MoreVertical,
-    Briefcase
+    Phone,
+    Calendar,
+    Briefcase,
+    Loader2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import {
+    useGetVendorsQuery,
+    useCreateVendorMutation,
+    useUpdateVendorMutation,
+    useDeleteVendorMutation,
+} from '../../../../utils/slices/InventoryAndAsset/vendorApiSlice';
 
 export default function VendorManagement() {
     const router = useRouter();
@@ -25,15 +33,21 @@ export default function VendorManagement() {
     const [showAddModal, setShowAddModal] = useState(false);
     const [editingVendor, setEditingVendor] = useState(null);
 
-    // Mock Initial Vendors
-    const [vendors, setVendors] = useState([
-        { id: 1, name: 'MedPlus Essentials', gst: '27AAAAA0000A1Z5', location: 'Mumbai, Maharashtra', address: 'Plot 42, Sector 18, Vashi', status: 'active' },
-        { id: 2, name: 'Reliance Retail Ltd', gst: '27BBBBB1111B1Z2', location: 'Ahmedabad, Gujarat', address: 'Reliance House, Paldi', status: 'active' },
-        { id: 3, name: 'Tata Croma Supplies', gst: '27CCCCC2222C1Z9', location: 'Bangalore, Karnataka', address: 'Electronic City, Phase 1', status: 'disabled' },
-    ]);
+    // API Hooks
+    const { data: vendorsData, isLoading, isError, error } = useGetVendorsQuery();
+    const [createVendor, { isLoading: isCreating }] = useCreateVendorMutation();
+    const [updateVendor, { isLoading: isUpdating }] = useUpdateVendorMutation();
+    const [deleteVendor, { isLoading: isDeleting }] = useDeleteVendorMutation();
 
-    // Form State
-    const [formData, setFormData] = useState({ name: '', gst: '', location: '', address: '' });
+    // Form State - Aligned with backend model
+    const [formData, setFormData] = useState({
+        fullName: '',
+        contactNumber: '',
+        vendorGST: '',
+        location: '',
+        fullAddress: '',
+        status: 'ACTIVE'
+    });
 
     useEffect(() => {
         setIsMounted(true);
@@ -44,38 +58,93 @@ export default function VendorManagement() {
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        if (editingVendor) {
-            setVendors(prev => prev.map(v => v.id === editingVendor.id ? { ...v, ...formData } : v));
+
+        try {
+            // Validate contact number
+            if (!/^[0-9]{10}$/.test(formData.contactNumber)) {
+                alert('Contact number must be a valid 10-digit number');
+                return;
+            }
+
+            // Validate GST if provided
+            if (formData.vendorGST && !/^[0-9A-Z]{15}$/.test(formData.vendorGST)) {
+                alert('Invalid GST number format (must be 15 alphanumeric characters)');
+                return;
+            }
+
+            if (editingVendor) {
+                await updateVendor({
+                    vendorId: editingVendor._id,
+                    data: formData
+                }).unwrap();
+            } else {
+                await createVendor(formData).unwrap();
+            }
+
+            // Reset form and close modal
+            setFormData({
+                fullName: '',
+                contactNumber: '',
+                vendorGST: '',
+                location: '',
+                fullAddress: '',
+                status: 'ACTIVE'
+            });
             setEditingVendor(null);
-        } else {
-            const newVendor = {
-                id: Date.now(),
-                ...formData,
-                status: 'active'
-            };
-            setVendors(prev => [newVendor, ...prev]);
+            setShowAddModal(false);
+        } catch (err) {
+            console.error('Failed to save vendor:', err);
+            alert(err?.data?.message || 'Failed to save vendor');
         }
-        setFormData({ name: '', gst: '', location: '', address: '' });
-        setShowAddModal(false);
     };
 
     const handleEdit = (vendor) => {
         setEditingVendor(vendor);
-        setFormData({ name: vendor.name, gst: vendor.gst, location: vendor.location, address: vendor.address });
+        setFormData({
+            fullName: vendor.fullName,
+            contactNumber: vendor.contactNumber.toString(),
+            vendorGST: vendor.vendorGST || '',
+            location: vendor.location || '',
+            fullAddress: vendor.fullAddress,
+            status: vendor.status
+        });
         setShowAddModal(true);
     };
 
-    const toggleStatus = (id) => {
-        setVendors(prev => prev.map(v =>
-            v.id === id ? { ...v, status: v.status === 'active' ? 'disabled' : 'active' } : v
-        ));
+    const toggleStatus = async (vendor) => {
+        try {
+            const newStatus = vendor.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
+            await updateVendor({
+                vendorId: vendor._id,
+                data: { status: newStatus }
+            }).unwrap();
+        } catch (err) {
+            console.error('Failed to update vendor status:', err);
+            alert(err?.data?.message || 'Failed to update vendor status');
+        }
     };
 
+    const handleDelete = async (vendorId) => {
+        if (window.confirm('Are you sure you want to deactivate this vendor?')) {
+            try {
+                await deleteVendor(vendorId).unwrap();
+            } catch (err) {
+                console.error('Failed to delete vendor:', err);
+                alert(err?.data?.message || 'Failed to delete vendor');
+            }
+        }
+    };
+
+    // Get vendors from API response
+    const vendors = vendorsData?.data || [];
+
+    // Filter vendors
     const filteredVendors = vendors.filter(v =>
-        v.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        v.gst.toLowerCase().includes(searchQuery.toLowerCase())
+        v.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (v.vendorGST && v.vendorGST.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        v.contactNumber.toString().includes(searchQuery)
     );
 
     if (!isMounted) return null;
@@ -100,7 +169,14 @@ export default function VendorManagement() {
                     <button
                         onClick={() => {
                             setEditingVendor(null);
-                            setFormData({ name: '', gst: '', location: '', address: '' });
+                            setFormData({
+                                fullName: '',
+                                contactNumber: '',
+                                vendorGST: '',
+                                location: '',
+                                fullAddress: '',
+                                status: 'ACTIVE'
+                            });
                             setShowAddModal(true);
                         }}
                         className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl font-bold text-sm flex items-center gap-2 transition-all shadow-md active:scale-95"
@@ -117,77 +193,123 @@ export default function VendorManagement() {
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
                     <input
                         type="text"
-                        placeholder="Search by name or GST number..."
+                        placeholder="Search by name, GST, or contact..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         className="w-full pl-12 pr-4 py-3 bg-white border border-gray-200 rounded-2xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all shadow-sm"
                     />
                 </div>
 
+                {/* Loading State */}
+                {isLoading && (
+                    <div className="text-center py-20">
+                        <Loader2 className="animate-spin text-emerald-600 mx-auto mb-4" size={48} />
+                        <p className="text-gray-500">Loading vendors...</p>
+                    </div>
+                )}
+
+                {/* Error State */}
+                {isError && (
+                    <div className="text-center py-20 bg-white rounded-3xl border border-red-200">
+                        <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <X className="text-red-500" size={32} />
+                        </div>
+                        <h3 className="text-lg font-bold text-gray-900">Error Loading Vendors</h3>
+                        <p className="text-gray-500">{error?.data?.message || 'Something went wrong'}</p>
+                    </div>
+                )}
+
                 {/* Vendors Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    <AnimatePresence mode="popLayout">
-                        {filteredVendors.map((vendor) => (
-                            <motion.div
-                                layout
-                                initial={{ opacity: 0, scale: 0.9 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                exit={{ opacity: 0, scale: 0.9 }}
-                                key={vendor.id}
-                                className={`bg-white rounded-2xl border ${vendor.status === 'disabled' ? 'border-gray-200 grayscale-[0.6] opacity-80' : 'border-gray-100 shadow-sm'} p-6 relative group transition-all hover:shadow-md`}
-                            >
-                                <div className="flex justify-between items-start mb-4">
-                                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${vendor.status === 'disabled' ? 'bg-gray-100 text-gray-400' : 'bg-emerald-50 text-emerald-600'}`}>
-                                        <Briefcase size={24} />
+                {!isLoading && !isError && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <AnimatePresence mode="popLayout">
+                            {filteredVendors.map((vendor) => (
+                                <motion.div
+                                    layout
+                                    initial={{ opacity: 0, scale: 0.9 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    exit={{ opacity: 0, scale: 0.9 }}
+                                    key={vendor._id}
+                                    className={`bg-white rounded-2xl border ${vendor.status === 'INACTIVE' ? 'border-gray-200 grayscale-[0.6] opacity-80' : 'border-gray-100 shadow-sm'} p-6 relative group transition-all hover:shadow-md`}
+                                >
+                                    <div className="flex justify-between items-start mb-4">
+                                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${vendor.status === 'INACTIVE' ? 'bg-gray-100 text-gray-400' : 'bg-emerald-50 text-emerald-600'}`}>
+                                            <Briefcase size={24} />
+                                        </div>
+                                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <button
+                                                onClick={() => handleEdit(vendor)}
+                                                className="p-2 hover:bg-emerald-50 text-emerald-600 rounded-lg transition-colors"
+                                                title="Edit"
+                                            >
+                                                <Edit2 size={16} />
+                                            </button>
+                                            <button
+                                                onClick={() => toggleStatus(vendor)}
+                                                className={`p-2 rounded-lg transition-colors ${vendor.status === 'ACTIVE' ? 'hover:bg-rose-50 text-rose-600' : 'hover:bg-emerald-50 text-emerald-600'}`}
+                                                title={vendor.status === 'ACTIVE' ? 'Deactivate' : 'Activate'}
+                                            >
+                                                {vendor.status === 'ACTIVE' ? <Ban size={16} /> : <CheckCircle size={16} />}
+                                            </button>
+                                        </div>
                                     </div>
-                                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <button
-                                            onClick={() => handleEdit(vendor)}
-                                            className="p-2 hover:bg-emerald-50 text-emerald-600 rounded-lg transition-colors"
-                                            title="Edit"
-                                        >
-                                            <Edit2 size={16} />
-                                        </button>
-                                        <button
-                                            onClick={() => toggleStatus(vendor.id)}
-                                            className={`p-2 rounded-lg transition-colors ${vendor.status === 'active' ? 'hover:bg-rose-50 text-rose-600' : 'hover:bg-emerald-50 text-emerald-600'}`}
-                                            title={vendor.status === 'active' ? 'Disable' : 'Enable'}
-                                        >
-                                            {vendor.status === 'active' ? <Ban size={16} /> : <CheckCircle size={16} />}
-                                        </button>
+
+                                    <h3 className="text-lg font-bold text-gray-900 mb-1">{vendor.fullName}</h3>
+                                    {vendor.vendorGST && (
+                                        <p className="text-xs font-bold text-emerald-600 mb-3 tracking-wider">{vendor.vendorGST}</p>
+                                    )}
+
+                                    <div className="space-y-3">
+                                        <div className="flex items-center gap-2 text-gray-500">
+                                            <Phone size={14} className="shrink-0" />
+                                            <p className="text-sm">{vendor.contactNumber}</p>
+                                        </div>
+                                        {vendor.location && (
+                                            <div className="flex items-center gap-2 text-gray-500">
+                                                <MapPin size={14} className="shrink-0" />
+                                                <p className="text-sm truncate">{vendor.location}</p>
+                                            </div>
+                                        )}
+                                        <p className="text-xs text-gray-400 line-clamp-2 leading-relaxed">
+                                            {vendor.fullAddress}
+                                        </p>
+                                        <div className="flex items-center gap-2 text-gray-400 pt-2 border-t border-gray-100">
+                                            <Calendar size={12} className="shrink-0" />
+                                            <p className="text-xs">
+                                                Joined {new Date(vendor.joinedAt).toLocaleDateString('en-IN', {
+                                                    day: 'numeric',
+                                                    month: 'short',
+                                                    year: 'numeric'
+                                                })}
+                                            </p>
+                                        </div>
                                     </div>
-                                </div>
 
-                                <h3 className="text-lg font-bold text-gray-900 mb-1">{vendor.name}</h3>
-                                <p className="text-xs font-bold text-emerald-600 mb-4 tracking-wider">{vendor.gst}</p>
+                                    {vendor.status === 'INACTIVE' && (
+                                        <div className="absolute top-4 right-4 text-[10px] font-bold bg-gray-100 text-gray-500 px-2 py-1 rounded uppercase tracking-widest">
+                                            Inactive
+                                        </div>
+                                    )}
+                                    {vendor.status === 'SUSPENDED' && (
+                                        <div className="absolute top-4 right-4 text-[10px] font-bold bg-red-100 text-red-600 px-2 py-1 rounded uppercase tracking-widest">
+                                            Suspended
+                                        </div>
+                                    )}
+                                </motion.div>
+                            ))}
+                        </AnimatePresence>
+                    </div>
+                )}
 
-                                <div className="space-y-3">
-                                    <div className="flex items-center gap-2 text-gray-500">
-                                        <MapPin size={14} className="shrink-0" />
-                                        <p className="text-sm truncate">{vendor.location}</p>
-                                    </div>
-                                    <p className="text-xs text-gray-400 line-clamp-2 leading-relaxed">
-                                        {vendor.address}
-                                    </p>
-                                </div>
-
-                                {vendor.status === 'disabled' && (
-                                    <div className="absolute top-4 right-4 text-[10px] font-bold bg-gray-100 text-gray-500 px-2 py-1 rounded uppercase tracking-widest">
-                                        Disabled
-                                    </div>
-                                )}
-                            </motion.div>
-                        ))}
-                    </AnimatePresence>
-                </div>
-
-                {filteredVendors.length === 0 && (
+                {!isLoading && !isError && filteredVendors.length === 0 && (
                     <div className="text-center py-20 bg-white rounded-3xl border border-dashed border-gray-200">
                         <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
                             <Users className="text-gray-300" size={32} />
                         </div>
                         <h3 className="text-lg font-bold text-gray-900">No vendors found</h3>
-                        <p className="text-gray-500">Try adjusting your search to find what you're looking for.</p>
+                        <p className="text-gray-500">
+                            {searchQuery ? 'Try adjusting your search to find what you\'re looking for.' : 'Get started by adding your first vendor.'}
+                        </p>
                     </div>
                 )}
             </main>
@@ -207,11 +329,13 @@ export default function VendorManagement() {
                             initial={{ scale: 0.9, opacity: 0, y: 20 }}
                             animate={{ scale: 1, opacity: 1, y: 0 }}
                             exit={{ scale: 0.9, opacity: 0, y: 20 }}
-                            className="bg-white rounded-3xl w-full max-w-lg shadow-2xl relative overflow-hidden"
+                            className="bg-white rounded-3xl w-full max-w-lg shadow-2xl relative overflow-hidden z-10"
                         >
                             <div className="px-8 py-6 border-b border-gray-100 flex items-center justify-between">
                                 <div>
-                                    <h2 className="text-xl font-bold text-gray-900">{editingVendor ? 'Edit Vendor' : 'Add New Vendor'}</h2>
+                                    <h2 className="text-xl font-bold text-gray-900">
+                                        {editingVendor ? 'Edit Vendor' : 'Add New Vendor'}
+                                    </h2>
                                     <p className="text-sm text-gray-500">Supplier information for procurement</p>
                                 </div>
                                 <button
@@ -222,13 +346,15 @@ export default function VendorManagement() {
                                 </button>
                             </div>
 
-                            <form onSubmit={handleSubmit} className="p-8 space-y-5">
+                            <div className="p-8 space-y-5">
                                 <div>
-                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">Vendor Name</label>
+                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">
+                                        Vendor Name *
+                                    </label>
                                     <input
                                         required
-                                        name="name"
-                                        value={formData.name}
+                                        name="fullName"
+                                        value={formData.fullName}
                                         onChange={handleInputChange}
                                         type="text"
                                         placeholder="e.g. MedPlus Essentials"
@@ -238,51 +364,75 @@ export default function VendorManagement() {
 
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
-                                        <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">GST Number</label>
+                                        <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">
+                                            Contact Number *
+                                        </label>
                                         <input
                                             required
-                                            name="gst"
-                                            value={formData.gst}
+                                            name="contactNumber"
+                                            value={formData.contactNumber}
                                             onChange={handleInputChange}
-                                            type="text"
-                                            placeholder="GSTIN Number"
+                                            type="tel"
+                                            placeholder="10-digit number"
+                                            maxLength={10}
+                                            pattern="[0-9]{10}"
                                             className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all"
                                         />
                                     </div>
                                     <div>
-                                        <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">Location</label>
+                                        <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">
+                                            GST Number
+                                        </label>
                                         <input
-                                            required
-                                            name="location"
-                                            value={formData.location}
+                                            name="vendorGST"
+                                            value={formData.vendorGST}
                                             onChange={handleInputChange}
                                             type="text"
-                                            placeholder="e.g. Mumbai, MH"
-                                            className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all"
+                                            placeholder="15-char GSTIN"
+                                            maxLength={15}
+                                            className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all uppercase"
                                         />
                                     </div>
                                 </div>
 
                                 <div>
-                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">Full Address</label>
+                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">
+                                        Location
+                                    </label>
+                                    <input
+                                        name="location"
+                                        value={formData.location}
+                                        onChange={handleInputChange}
+                                        type="text"
+                                        placeholder="e.g. Mumbai, Maharashtra"
+                                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">
+                                        Full Address *
+                                    </label>
                                     <textarea
                                         required
-                                        name="address"
-                                        value={formData.address}
+                                        name="fullAddress"
+                                        value={formData.fullAddress}
                                         onChange={handleInputChange}
-                                        rows="3"
+                                        rows={3}
                                         placeholder="Enter complete office address..."
                                         className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all resize-none"
                                     ></textarea>
                                 </div>
 
                                 <button
-                                    type="submit"
-                                    className="w-full py-4 bg-gray-900 text-white rounded-2xl font-bold hover:bg-black transition-all shadow-lg active:scale-[0.98] mt-4"
+                                    onClick={handleSubmit}
+                                    disabled={isCreating || isUpdating}
+                                    className="w-full py-4 bg-gray-900 text-white rounded-2xl font-bold hover:bg-black transition-all shadow-lg active:scale-[0.98] mt-4 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                                 >
+                                    {(isCreating || isUpdating) && <Loader2 className="animate-spin" size={18} />}
                                     {editingVendor ? 'Update Vendor' : 'Save Vendor'}
                                 </button>
-                            </form>
+                            </div>
                         </motion.div>
                     </div>
                 )}

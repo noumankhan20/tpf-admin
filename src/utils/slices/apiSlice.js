@@ -17,6 +17,8 @@ export const apiSlice = createApi({
     'TrustedBy',
     'StartGiving',
     'BeforeFooter',
+    'Vendors',
+    'Items'
 
   ],
   endpoints: () => ({})

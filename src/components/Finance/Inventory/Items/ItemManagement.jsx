@@ -11,13 +11,21 @@ import {
     Search,
     X,
     HardDrive,
-    Shapes,
-    Scale,
-    Monitor,
     ShoppingBag,
-    Filter
+    Scale,
+    Loader2,
+    AlertCircle,
+    ChevronLeft,
+    ChevronRight
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import {
+    useGetItemsQuery,
+    useCreateItemMutation,
+    useUpdateItemMutation,
+    useDeleteItemMutation,
+} from '../../../../utils/slices/InventoryAndAsset/itemApiSlice';
+import { useGetVendorsQuery } from '../../../../utils/slices/InventoryAndAsset/vendorApiSlice';
 
 export default function ItemManagement() {
     const router = useRouter();
@@ -26,61 +34,164 @@ export default function ItemManagement() {
     const [showAddModal, setShowAddModal] = useState(false);
     const [editingItem, setEditingItem] = useState(null);
     const [filterType, setFilterType] = useState('all');
+    const [currentPage, setCurrentPage] = useState(1);
 
-    // Mock Initial Items
-    const [items, setItems] = useState([
-        { id: 1, name: 'MacBook Pro M3', type: 'Asset', unit: 'Nos', category: 'Electronics' },
-        { id: 2, name: 'Basmati Rice', type: 'Inventory', unit: 'Kg', category: 'Food' },
-        { id: 3, name: 'iPhone 15', type: 'Asset', unit: 'Nos', category: 'Electronics' },
-        { id: 4, name: 'Wheat Flour', type: 'Inventory', unit: 'Kg', category: 'Food' },
-        { id: 5, name: 'Office Chair', type: 'Asset', unit: 'Nos', category: 'Furniture' },
-    ]);
+    // API Hooks
+    const { data: itemsResponse, isLoading, isError, error } = useGetItemsQuery({
+        page: currentPage,
+        limit: 20,
+        search: searchQuery || undefined,
+        itemType: filterType !== 'all' ? filterType.toUpperCase() : undefined,
+    });
 
-    // Form State
-    const [formData, setFormData] = useState({ name: '', type: 'Asset', unit: 'Nos' });
+    const { data: vendorsData } = useGetVendorsQuery();
+    const [createItem, { isLoading: isCreating }] = useCreateItemMutation();
+    const [updateItem, { isLoading: isUpdating }] = useUpdateItemMutation();
+    const [deleteItem, { isLoading: isDeleting }] = useDeleteItemMutation();
+
+    // Form State - Aligned with backend model
+    const [formData, setFormData] = useState({
+        name: '',
+        itemType: 'ASSET',
+        unit: 'PIECE',
+        vendorId: '',
+        status: 'ACTIVE'
+    });
+
+    const [formErrors, setFormErrors] = useState({});
 
     useEffect(() => {
         setIsMounted(true);
     }, []);
 
+    // Reset to page 1 when filters change
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchQuery, filterType]);
+
     const handleInputChange = (e) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
+        // Clear error for this field
+        if (formErrors[name]) {
+            setFormErrors(prev => ({ ...prev, [name]: '' }));
+        }
     };
 
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        if (editingItem) {
-            setItems(prev => prev.map(v => v.id === editingItem.id ? { ...v, ...formData } : v));
-            setEditingItem(null);
-        } else {
-            const newItem = {
-                id: Date.now(),
-                ...formData
-            };
-            setItems(prev => [newItem, ...prev]);
+    const validateForm = () => {
+        const errors = {};
+
+        if (!formData.name.trim()) {
+            errors.name = 'Item name is required';
         }
-        setFormData({ name: '', type: 'Asset', unit: 'Nos' });
-        setShowAddModal(false);
+
+        if (!formData.itemType) {
+            errors.itemType = 'Item type is required';
+        }
+
+        if (!formData.unit) {
+            errors.unit = 'Unit of measure is required';
+        }
+
+        setFormErrors(errors);
+        return Object.keys(errors).length === 0;
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+
+        if (!validateForm()) {
+            return;
+        }
+
+        try {
+            const payload = {
+                name: formData.name.trim(),
+                itemType: formData.itemType,
+                unit: formData.unit,
+                status: formData.status,
+            };
+
+            // Only include vendorId if it's selected
+            if (formData.vendorId) {
+                payload.vendorId = formData.vendorId;
+            }
+
+            if (editingItem) {
+                await updateItem({
+                    itemId: editingItem._id,
+                    data: payload
+                }).unwrap();
+            } else {
+                await createItem(payload).unwrap();
+            }
+
+            // Reset form and close modal
+            resetForm();
+            setShowAddModal(false);
+        } catch (err) {
+            console.error('Failed to save item:', err);
+            const errorMessage = err?.data?.message || 'Failed to save item';
+            alert(errorMessage);
+        }
+    };
+
+    const resetForm = () => {
+        setFormData({
+            name: '',
+            itemType: 'ASSET',
+            unit: 'PIECE',
+            vendorId: '',
+            status: 'ACTIVE'
+        });
+        setFormErrors({});
+        setEditingItem(null);
     };
 
     const handleEdit = (item) => {
         setEditingItem(item);
-        setFormData({ name: item.name, type: item.type, unit: item.unit });
+        setFormData({
+            name: item.name,
+            itemType: item.itemType,
+            unit: item.unit,
+            vendorId: item.vendorId || '',
+            status: item.status
+        });
         setShowAddModal(true);
     };
 
-    const handleDelete = (id) => {
-        if (confirm('Are you sure you want to delete this item?')) {
-            setItems(prev => prev.filter(v => v.id !== id));
+    const handleDelete = async (itemId) => {
+        if (window.confirm('Are you sure you want to deactivate this item?')) {
+            try {
+                await deleteItem(itemId).unwrap();
+            } catch (err) {
+                console.error('Failed to delete item:', err);
+                alert(err?.data?.message || 'Failed to delete item');
+            }
         }
     };
 
-    const filteredItems = items.filter(v => {
-        const matchesSearch = v.name.toLowerCase().includes(searchQuery.toLowerCase());
-        const matchesFilter = filterType === 'all' || v.type === filterType;
-        return matchesSearch && matchesFilter;
-    });
+    // Get items and pagination data
+    const items = itemsResponse?.data || [];
+    const meta = itemsResponse?.meta || { total: 0, page: 1, totalPages: 1 };
+    const vendors = vendorsData?.data || [];
+
+    // Get unit display name
+    const getUnitDisplay = (unit) => {
+        const unitMap = {
+            'KG': 'Kilograms',
+            'GRAM': 'Grams',
+            'LITRE': 'Liters',
+            'ML': 'Milliliters',
+            'PIECE': 'Pieces',
+            'BOX': 'Box',
+            'METER': 'Meters',
+            'FEET': 'Feet',
+            'HOUR': 'Hours',
+            'DAY': 'Days'
+        };
+        return unitMap[unit] || unit;
+    };
 
     if (!isMounted) return null;
 
@@ -103,8 +214,7 @@ export default function ItemManagement() {
                     </div>
                     <button
                         onClick={() => {
-                            setEditingItem(null);
-                            setFormData({ name: '', type: 'Asset', unit: 'Nos' });
+                            resetForm();
                             setShowAddModal(true);
                         }}
                         className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl font-bold text-sm flex items-center gap-2 transition-all shadow-md active:scale-95"
@@ -130,14 +240,15 @@ export default function ItemManagement() {
                     </div>
 
                     <div className="flex gap-2">
-                        {['all', 'Asset', 'Inventory'].map((type) => (
+                        {['all', 'asset', 'inventory'].map((type) => (
                             <button
                                 key={type}
                                 onClick={() => setFilterType(type)}
-                                className={`px-4 py-3 rounded-2xl text-sm font-bold transition-all border ${filterType === type
+                                className={`px-4 py-3 rounded-2xl text-sm font-bold transition-all border ${
+                                    filterType === type
                                         ? 'bg-emerald-600 text-white border-emerald-600 shadow-md scale-105'
                                         : 'bg-white text-gray-500 border-gray-200 hover:border-emerald-200'
-                                    }`}
+                                }`}
                             >
                                 {type.charAt(0).toUpperCase() + type.slice(1)}
                             </button>
@@ -145,64 +256,175 @@ export default function ItemManagement() {
                     </div>
                 </div>
 
+                {/* Loading State */}
+                {isLoading && (
+                    <div className="text-center py-20">
+                        <Loader2 className="animate-spin text-emerald-600 mx-auto mb-4" size={48} />
+                        <p className="text-gray-500">Loading items...</p>
+                    </div>
+                )}
+
+                {/* Error State */}
+                {isError && (
+                    <div className="text-center py-20 bg-white rounded-3xl border border-red-200">
+                        <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <AlertCircle className="text-red-500" size={32} />
+                        </div>
+                        <h3 className="text-lg font-bold text-gray-900">Error Loading Items</h3>
+                        <p className="text-gray-500">{error?.data?.message || 'Something went wrong'}</p>
+                    </div>
+                )}
+
                 {/* Items Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                    <AnimatePresence mode="popLayout">
-                        {filteredItems.map((item) => (
-                            <motion.div
-                                layout
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, scale: 0.95 }}
-                                key={item.id}
-                                className="bg-white rounded-3xl border border-gray-100 p-6 relative group transition-all hover:shadow-xl hover:-translate-y-1"
-                            >
-                                <div className="flex justify-between items-start mb-6">
-                                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-inner ${item.type === 'Asset' ? 'bg-blue-50 text-blue-600' : 'bg-orange-50 text-orange-600'}`}>
-                                        {item.type === 'Asset' ? <HardDrive size={24} /> : <ShoppingBag size={24} />}
-                                    </div>
-                                    <div className="flex gap-1">
-                                        <button
-                                            onClick={() => handleEdit(item)}
-                                            className="p-2 hover:bg-emerald-50 text-emerald-600 rounded-lg transition-colors"
-                                        >
-                                            <Edit2 size={16} />
-                                        </button>
-                                        <button
-                                            onClick={() => handleDelete(item.id)}
-                                            className="p-2 hover:bg-rose-50 text-rose-600 rounded-lg transition-colors"
-                                        >
-                                            <Trash2 size={16} />
-                                        </button>
-                                    </div>
+                {!isLoading && !isError && (
+                    <>
+                        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                            <AnimatePresence mode="popLayout">
+                                {items.map((item) => (
+                                    <motion.div
+                                        layout
+                                        initial={{ opacity: 0, y: 20 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, scale: 0.95 }}
+                                        key={item._id}
+                                        className={`bg-white rounded-3xl border p-6 relative group transition-all hover:shadow-xl hover:-translate-y-1 ${
+                                            item.status === 'INACTIVE' 
+                                                ? 'border-gray-200 opacity-60 grayscale' 
+                                                : 'border-gray-100'
+                                        }`}
+                                    >
+                                        <div className="flex justify-between items-start mb-6">
+                                            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-inner ${
+                                                item.itemType === 'ASSET' 
+                                                    ? 'bg-blue-50 text-blue-600' 
+                                                    : item.itemType === 'INVENTORY'
+                                                    ? 'bg-orange-50 text-orange-600'
+                                                    : 'bg-purple-50 text-purple-600'
+                                            }`}>
+                                                {item.itemType === 'ASSET' ? (
+                                                    <HardDrive size={24} />
+                                                ) : (
+                                                    <ShoppingBag size={24} />
+                                                )}
+                                            </div>
+                                            <div className="flex gap-1">
+                                                <button
+                                                    onClick={() => handleEdit(item)}
+                                                    className="p-2 hover:bg-emerald-50 text-emerald-600 rounded-lg transition-colors"
+                                                    title="Edit"
+                                                >
+                                                    <Edit2 size={16} />
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDelete(item._id)}
+                                                    className="p-2 hover:bg-rose-50 text-rose-600 rounded-lg transition-colors"
+                                                    title="Delete"
+                                                >
+                                                    <Trash2 size={16} />
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <div className="mb-4">
+                                            <p className={`text-[10px] font-bold uppercase tracking-widest mb-1 ${
+                                                item.itemType === 'ASSET' 
+                                                    ? 'text-blue-500' 
+                                                    : item.itemType === 'INVENTORY'
+                                                    ? 'text-orange-500'
+                                                    : 'text-purple-500'
+                                            }`}>
+                                                {item.itemType}
+                                            </p>
+                                            <h3 className="text-lg font-bold text-gray-900 line-clamp-1">{item.name}</h3>
+                                        </div>
+
+                                        <div className="flex items-center justify-between pt-4 border-t border-gray-50">
+                                            <div className="flex items-center gap-1.5 text-gray-400">
+                                                <Scale size={14} />
+                                                <span className="text-xs font-bold uppercase tracking-tight">Unit:</span>
+                                            </div>
+                                            <span className="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-xs font-bold">
+                                                {item.unit}
+                                            </span>
+                                        </div>
+
+                                        {item.status === 'INACTIVE' && (
+                                            <div className="absolute top-4 right-4 text-[10px] font-bold bg-gray-100 text-gray-500 px-2 py-1 rounded uppercase tracking-widest">
+                                                Inactive
+                                            </div>
+                                        )}
+                                    </motion.div>
+                                ))}
+                            </AnimatePresence>
+                        </div>
+
+                        {/* Pagination */}
+                        {meta.totalPages > 1 && (
+                            <div className="mt-8 flex items-center justify-center gap-2">
+                                <button
+                                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                                    disabled={currentPage === 1}
+                                    className="p-2 rounded-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                >
+                                    <ChevronLeft size={20} />
+                                </button>
+                                
+                                <div className="flex items-center gap-2">
+                                    {Array.from({ length: Math.min(5, meta.totalPages) }, (_, i) => {
+                                        let pageNum;
+                                        if (meta.totalPages <= 5) {
+                                            pageNum = i + 1;
+                                        } else if (currentPage <= 3) {
+                                            pageNum = i + 1;
+                                        } else if (currentPage >= meta.totalPages - 2) {
+                                            pageNum = meta.totalPages - 4 + i;
+                                        } else {
+                                            pageNum = currentPage - 2 + i;
+                                        }
+
+                                        return (
+                                            <button
+                                                key={pageNum}
+                                                onClick={() => setCurrentPage(pageNum)}
+                                                className={`w-10 h-10 rounded-lg font-bold text-sm transition-all ${
+                                                    currentPage === pageNum
+                                                        ? 'bg-emerald-600 text-white shadow-md'
+                                                        : 'bg-white border border-gray-200 hover:border-emerald-200 text-gray-600'
+                                                }`}
+                                            >
+                                                {pageNum}
+                                            </button>
+                                        );
+                                    })}
                                 </div>
 
-                                <div className="mb-4">
-                                    <p className={`text-[10px] font-bold uppercase tracking-widest mb-1 ${item.type === 'Asset' ? 'text-blue-500' : 'text-orange-500'}`}>
-                                        {item.type}
-                                    </p>
-                                    <h3 className="text-lg font-bold text-gray-900 line-clamp-1">{item.name}</h3>
-                                </div>
+                                <button
+                                    onClick={() => setCurrentPage(prev => Math.min(meta.totalPages, prev + 1))}
+                                    disabled={currentPage === meta.totalPages}
+                                    className="p-2 rounded-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                >
+                                    <ChevronRight size={20} />
+                                </button>
 
-                                <div className="flex items-center justify-between pt-4 border-t border-gray-50">
-                                    <div className="flex items-center gap-1.5 text-gray-400">
-                                        <Scale size={14} />
-                                        <span className="text-xs font-bold uppercase tracking-tight">Unit:</span>
-                                    </div>
-                                    <span className="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-xs font-bold">{item.unit}</span>
-                                </div>
-                            </motion.div>
-                        ))}
-                    </AnimatePresence>
-                </div>
+                                <span className="ml-4 text-sm text-gray-500">
+                                    Page {currentPage} of {meta.totalPages} ({meta.total} items)
+                                </span>
+                            </div>
+                        )}
+                    </>
+                )}
 
-                {filteredItems.length === 0 && (
+                {!isLoading && !isError && items.length === 0 && (
                     <div className="text-center py-20 bg-white rounded-3xl border border-dashed border-gray-200">
                         <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-300">
-                            <Box size={32} />
+                            <Package size={32} />
                         </div>
                         <h3 className="text-lg font-bold text-gray-900">No items defined</h3>
-                        <p className="text-gray-500">Add some items (Assets or Inventory) to start tracking.</p>
+                        <p className="text-gray-500">
+                            {searchQuery 
+                                ? 'No items match your search criteria.' 
+                                : 'Add some items (Assets or Inventory) to start tracking.'}
+                        </p>
                     </div>
                 )}
             </main>
@@ -222,24 +444,31 @@ export default function ItemManagement() {
                             initial={{ scale: 0.9, opacity: 0, y: 20 }}
                             animate={{ scale: 1, opacity: 1, y: 0 }}
                             exit={{ scale: 0.9, opacity: 0, y: 20 }}
-                            className="bg-white rounded-3xl w-full max-w-md shadow-2xl relative overflow-hidden"
+                            className="bg-white rounded-3xl w-full max-w-md shadow-2xl relative overflow-hidden z-10"
                         >
                             <div className="px-8 py-6 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
                                 <div>
-                                    <h2 className="text-xl font-bold text-gray-900">{editingItem ? 'Edit Item' : 'New Item Master'}</h2>
+                                    <h2 className="text-xl font-bold text-gray-900">
+                                        {editingItem ? 'Edit Item' : 'New Item Master'}
+                                    </h2>
                                     <p className="text-sm text-gray-500">Define what you buy or track</p>
                                 </div>
                                 <button
-                                    onClick={() => setShowAddModal(false)}
+                                    onClick={() => {
+                                        setShowAddModal(false);
+                                        resetForm();
+                                    }}
                                     className="p-2 hover:bg-gray-200 rounded-full transition-colors"
                                 >
                                     <X size={20} className="text-gray-400" />
                                 </button>
                             </div>
 
-                            <form onSubmit={handleSubmit} className="p-8 space-y-6">
+                            <div className="p-8 space-y-6">
                                 <div>
-                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">Item Name</label>
+                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">
+                                        Item Name *
+                                    </label>
                                     <input
                                         required
                                         name="name"
@@ -247,63 +476,120 @@ export default function ItemManagement() {
                                         onChange={handleInputChange}
                                         type="text"
                                         placeholder="e.g. MacBook Pro, Basmati Rice"
-                                        className="w-full px-5 py-3.5 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-medium"
+                                        className={`w-full px-5 py-3.5 bg-gray-50 border rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-medium ${
+                                            formErrors.name ? 'border-red-300' : 'border-gray-200'
+                                        }`}
                                     />
+                                    {formErrors.name && (
+                                        <p className="mt-1 text-xs text-red-500 flex items-center gap-1">
+                                            <AlertCircle size={12} />
+                                            {formErrors.name}
+                                        </p>
+                                    )}
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
-                                        <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">Item Type</label>
+                                        <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">
+                                            Item Type *
+                                        </label>
                                         <select
-                                            name="type"
-                                            value={formData.type}
+                                            name="itemType"
+                                            value={formData.itemType}
                                             onChange={handleInputChange}
-                                            className="w-full px-5 py-3.5 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-medium appearance-none"
+                                            className={`w-full px-5 py-3.5 bg-gray-50 border rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-medium appearance-none ${
+                                                formErrors.itemType ? 'border-red-300' : 'border-gray-200'
+                                            }`}
                                         >
-                                            <option value="Asset">Asset</option>
-                                            <option value="Inventory">Inventory</option>
+                                            <option value="ASSET">Asset</option>
+                                            <option value="INVENTORY">Inventory</option>
+                                            <option value="OTHER">Other</option>
                                         </select>
+                                        {formErrors.itemType && (
+                                            <p className="mt-1 text-xs text-red-500">{formErrors.itemType}</p>
+                                        )}
                                     </div>
                                     <div>
-                                        <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">Unit of Measure</label>
+                                        <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">
+                                            Unit *
+                                        </label>
                                         <select
                                             name="unit"
                                             value={formData.unit}
                                             onChange={handleInputChange}
-                                            className="w-full px-5 py-3.5 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-medium appearance-none"
+                                            className={`w-full px-5 py-3.5 bg-gray-50 border rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-medium appearance-none ${
+                                                formErrors.unit ? 'border-red-300' : 'border-gray-200'
+                                            }`}
                                         >
-                                            <option value="Nos">Nos (Numbers)</option>
-                                            <option value="Kg">Kg (Kilograms)</option>
-                                            <option value="Ltrs">Ltrs (Liters)</option>
-                                            <option value="Mtrs">Mtrs (Meters)</option>
-                                            <option value="Box">Box</option>
+                                            <option value="PIECE">Piece</option>
+                                            <option value="KG">Kilogram</option>
+                                            <option value="GRAM">Gram</option>
+                                            <option value="LITRE">Liter</option>
+                                            <option value="ML">Milliliter</option>
+                                            <option value="BOX">Box</option>
+                                            <option value="METER">Meter</option>
+                                            <option value="FEET">Feet</option>
+                                            <option value="HOUR">Hour</option>
+                                            <option value="DAY">Day</option>
                                         </select>
+                                        {formErrors.unit && (
+                                            <p className="mt-1 text-xs text-red-500">{formErrors.unit}</p>
+                                        )}
                                     </div>
+                                </div>
+
+                                <div>
+                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">
+                                        Vendor (Optional)
+                                    </label>
+                                    <select
+                                        name="vendorId"
+                                        value={formData.vendorId}
+                                        onChange={handleInputChange}
+                                        className="w-full px-5 py-3.5 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-medium appearance-none"
+                                    >
+                                        <option value="">No vendor assigned</option>
+                                        {vendors
+                                            .filter(v => v.status === 'ACTIVE')
+                                            .map(vendor => (
+                                                <option key={vendor._id} value={vendor._id}>
+                                                    {vendor.fullName}
+                                                </option>
+                                            ))}
+                                    </select>
                                 </div>
 
                                 <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-100">
                                     <div className="flex gap-3">
                                         <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center text-emerald-600 shadow-sm shrink-0">
-                                            {formData.type === 'Asset' ? <HardDrive size={16} /> : <ShoppingBag size={16} />}
+                                            {formData.itemType === 'ASSET' ? (
+                                                <HardDrive size={16} />
+                                            ) : (
+                                                <ShoppingBag size={16} />
+                                            )}
                                         </div>
                                         <div>
                                             <p className="text-xs font-bold text-emerald-800 uppercase tracking-tight">Pro-tip</p>
                                             <p className="text-[11px] text-emerald-600 font-medium">
-                                                {formData.type === 'Asset'
-                                                    ? "Assets are long-term items like laptops."
-                                                    : "Inventory items are consumables like food supplies."}
+                                                {formData.itemType === 'ASSET'
+                                                    ? 'Assets are long-term items like laptops and furniture.'
+                                                    : formData.itemType === 'INVENTORY'
+                                                    ? 'Inventory items are consumables like food supplies.'
+                                                    : 'Other items are miscellaneous products or services.'}
                                             </p>
                                         </div>
                                     </div>
                                 </div>
 
                                 <button
-                                    type="submit"
-                                    className="w-full py-4 bg-gray-900 text-white rounded-2xl font-bold hover:bg-black transition-all shadow-xl shadow-gray-200 active:scale-[0.98] mt-2"
+                                    onClick={handleSubmit}
+                                    disabled={isCreating || isUpdating}
+                                    className="w-full py-4 bg-gray-900 text-white rounded-2xl font-bold hover:bg-black transition-all shadow-xl shadow-gray-200 active:scale-[0.98] mt-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                                 >
+                                    {(isCreating || isUpdating) && <Loader2 className="animate-spin" size={18} />}
                                     {editingItem ? 'Update Item' : 'Create Item'}
                                 </button>
-                            </form>
+                            </div>
                         </motion.div>
                     </div>
                 )}
