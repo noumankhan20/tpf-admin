@@ -28,7 +28,8 @@ const AddAdminModal = ({ isOpen, onClose, onSubmit }) => {
     "CMS-Admin",
     "Legal and Compliance",
     "Financial Aid",
-    "KYC Verification"
+    "KYC Verification",
+    "Tickets-Queries"
   ];
 
   const isFormValid =
