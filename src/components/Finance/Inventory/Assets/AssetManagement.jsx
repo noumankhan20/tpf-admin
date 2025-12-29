@@ -16,7 +16,8 @@ import {
     X,
     TrendingUp,
     MoreVertical,
-    Laptop
+    Laptop,
+    UserMinus
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -97,6 +98,16 @@ export default function AssetManagement() {
         setSelectedAsset(null);
     };
 
+    const handleUnassign = (id) => {
+        if (confirm('Are you sure you want to unassign this asset? This will make it available for others.')) {
+            setAssets(prev => prev.map(a =>
+                a.id === id
+                    ? { ...a, status: 'Available', assignedTo: '-', assignmentDate: '-' }
+                    : a
+            ));
+        }
+    };
+
     const filteredAssets = assets.filter(a =>
         a.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         a.assignedTo.toLowerCase().includes(searchQuery.toLowerCase())
@@ -169,9 +180,18 @@ export default function AssetManagement() {
 
                                 <div className="col-span-3">
                                     {asset.status === 'Assigned' ? (
-                                        <div>
-                                            <p className="text-sm font-medium text-gray-900">{asset.assignedTo}</p>
-                                            <p className="text-xs text-gray-400">Since {asset.assignmentDate}</p>
+                                        <div className="flex items-center justify-between pr-4">
+                                            <div>
+                                                <p className="text-sm font-medium text-gray-900">{asset.assignedTo}</p>
+                                                <p className="text-xs text-gray-400">Since {asset.assignmentDate}</p>
+                                            </div>
+                                            <button
+                                                onClick={() => handleUnassign(asset.id)}
+                                                className="p-2 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                                                title="Unassign / Return Asset"
+                                            >
+                                                <UserMinus size={16} />
+                                            </button>
                                         </div>
                                     ) : (
                                         <button
@@ -190,7 +210,7 @@ export default function AssetManagement() {
                                     </div>
                                     <button
                                         onClick={() => { setSelectedAsset(asset); setShowIncomeModal(true); }}
-                                        className="p-2 hover:bg-gray-100 rounded-lg text-gray-400 hover:text-emerald-600 transition-colors opacity-0 group-hover:opacity-100"
+                                        className="p-2 hover:bg-gray-100 rounded-lg text-gray-400 hover:text-emerald-600 transition-colors"
                                         title="Record Income"
                                     >
                                         <IndianRupee size={18} />
