@@ -258,7 +258,7 @@ const updateLineItem = (index, field, value) => {
                                                         po.paymentStatus === 'PENDING' ? 'bg-yellow-50 text-yellow-700' : 'bg-blue-50 text-blue-700'}`}>
                                                     <CheckCircle2 size={12} />
                                                     {po.paymentStatus}
-                                                    {po.bill?.fileUrl && <span className="ml-1 text-[10px] underline cursor-pointer" onClick={() => window.open(process.env.NEXT_PUBLIC_BACKEND_API + po.bill.fileUrl, '_blank')}>View Proof</span>}
+                                                    {po.bill?.fileUrl && <span className="ml-1 text-[10px] underline cursor-pointer" onClick={() => window.open(process.env.NEXT_PUBLIC_BACKEND_URL + po.bill.fileUrl, '_blank')}>View Proof</span>}
                                                 </div>
                                             </div>
                                         </div>
