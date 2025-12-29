@@ -27,20 +27,20 @@ export const adminApiSlice = apiSlice.injectEndpoints({
 
 
 
- logoutAdminApi: builder.mutation({
-  query: () => ({
-    url: "/adminAuth/logout",
-    method: "POST",
-  }),
-  async onQueryStarted(_, { dispatch, queryFulfilled }) {
-    try {
-      await queryFulfilled;
-    } finally {
-      dispatch(logoutAdminAction());
-      dispatch(adminApiSlice.util.resetApiState()); // 🔥 REQUIRED
-    }
-  },
-}),
+    logoutAdminApi: builder.mutation({
+      query: () => ({
+        url: "/adminAuth/logout",
+        method: "POST",
+      }),
+      async onQueryStarted(_, { dispatch, queryFulfilled }) {
+        try {
+          await queryFulfilled;
+        } finally {
+          dispatch(logoutAdminAction());
+          dispatch(adminApiSlice.util.resetApiState()); // 🔥 REQUIRED
+        }
+      },
+    }),
 
 
     getAllAdmins: builder.query({
@@ -73,29 +73,35 @@ export const adminApiSlice = apiSlice.injectEndpoints({
     }),
 
     editAdmin: builder.mutation({
-      query: ({ id,data }) => ({
+      query: ({ id, data }) => ({
         url: `/adminAuth/edit/${id}`, // Dynamic URL path with the id parameter
         method: "PUT",
-        body:data,
+        body: data,
       }),
     }),
 
     getPermanentDonors: builder.query({
-    query: ({ planType, status } = {}) => {
-    const params = new URLSearchParams();
+      query: ({ planType, status } = {}) => {
+        const params = new URLSearchParams();
 
-    if (planType) params.append("planType", planType);
-    if (status) params.append("status", status);
+        if (planType) params.append("planType", planType);
+        if (status) params.append("status", status);
 
-    return {
-      url: `/adminAuth/permanent-donors?${params.toString()}`,
-      method: "GET",
-    };
-  },
-}),
+        return {
+          url: `/adminAuth/permanent-donors?${params.toString()}`,
+          method: "GET",
+        };
+      },
+    }),
 
 
 
+    getAdminList: builder.query({
+      query: () => ({
+        url: "/admin/list",
+        method: "GET",
+      }),
+    }),
   }),
 });
 
@@ -110,4 +116,5 @@ export const {
   useEnableAdminMutation,
   useEditAdminMutation,
   useGetPermanentDonorsQuery,
+  useGetAdminListQuery,
 } = adminApiSlice;

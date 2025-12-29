@@ -17,9 +17,17 @@ import {
     TrendingUp,
     MoreVertical,
     Laptop,
-    UserMinus
+    UserMinus,
+    Loader2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import {
+    useGetAssetsQuery,
+    useAssignAssetMutation,
+    useUnassignAssetMutation,
+    useUpdateAssetIncomeMutation
+} from '../../../../utils/slices/InventoryAndAsset/assetApiSlice';
+import { useGetAdminListQuery } from '../../../../utils/slices/adminApiSlice';
 
 export default function AssetManagement() {
     const router = useRouter();
@@ -31,86 +39,65 @@ export default function AssetManagement() {
     const [showIncomeModal, setShowIncomeModal] = useState(false);
     const [selectedAsset, setSelectedAsset] = useState(null);
 
-    // Mock Data
-    const [assets, setAssets] = useState([
-        {
-            id: 'AST-001',
-            name: 'MacBook Pro M3 (14")',
-            type: 'Laptop',
-            status: 'Assigned',
-            assignedTo: 'Akshat Gupta',
-            assignmentDate: '2024-01-15',
-            monthlyIncome: 12000,
-            totalIncome: 132000 // 11 months
-        },
-        {
-            id: 'AST-002',
-            name: 'MacBook Pro M3 (16")',
-            type: 'Laptop',
-            status: 'Available',
-            assignedTo: '-',
-            assignmentDate: '-',
-            monthlyIncome: 0,
-            totalIncome: 45000 // Previous income
-        },
-        {
-            id: 'AST-003',
-            name: 'iPhone 15 Pro',
-            type: 'Mobile',
-            status: 'Assigned',
-            assignedTo: 'Sarah Jenkins',
-            assignmentDate: '2024-06-20',
-            monthlyIncome: 5000,
-            totalIncome: 30000
-        }
-    ]);
+    // API Hooks
+    const { data: assetsData, isLoading } = useGetAssetsQuery();
+    const { data: adminListData } = useGetAdminListQuery();
+    const [assignAsset, { isLoading: isAssigning }] = useAssignAssetMutation();
+    const [unassignAsset, { isLoading: isUnassigning }] = useUnassignAssetMutation();
+    const [updateIncome, { isLoading: isUpdating }] = useUpdateAssetIncomeMutation();
+
+    const assets = assetsData?.data || [];
+    const admins = adminListData?.data || [];
 
     // Form States
-    const [assigneeName, setAssigneeName] = useState('');
+    const [assigneeId, setAssigneeId] = useState('');
     const [incomeAmount, setIncomeAmount] = useState('');
 
     useEffect(() => {
         setIsMounted(true);
     }, []);
 
-    const handleAssign = (e) => {
+    const handleAssign = async (e) => {
         e.preventDefault();
-        setAssets(prev => prev.map(a =>
-            a.id === selectedAsset.id
-                ? { ...a, status: 'Assigned', assignedTo: assigneeName, assignmentDate: new Date().toISOString().split('T')[0] }
-                : a
-        ));
-        setShowAssignModal(false);
-        setAssigneeName('');
-        setSelectedAsset(null);
+        try {
+            await assignAsset({ assetId: selectedAsset._id, assignedTo: assigneeId }).unwrap();
+            setShowAssignModal(false);
+            setAssigneeId('');
+            setSelectedAsset(null);
+        } catch (err) {
+            console.error('Failed to assign asset:', err);
+            alert(err?.data?.message || 'Failed to assign asset');
+        }
     };
 
-    const handleRecordIncome = (e) => {
+    const handleRecordIncome = async (e) => {
         e.preventDefault();
-        const amount = Number(incomeAmount);
-        setAssets(prev => prev.map(a =>
-            a.id === selectedAsset.id
-                ? { ...a, monthlyIncome: amount, totalIncome: a.totalIncome + amount }
-                : a
-        ));
-        setShowIncomeModal(false);
-        setIncomeAmount('');
-        setSelectedAsset(null);
+        try {
+            const amount = Number(incomeAmount);
+            await updateIncome({ assetId: selectedAsset._id, monthlyIncome: amount }).unwrap();
+            setShowIncomeModal(false);
+            setIncomeAmount('');
+            setSelectedAsset(null);
+        } catch (err) {
+            console.error('Failed to update income:', err);
+            alert(err?.data?.message || 'Failed to update income');
+        }
     };
 
-    const handleUnassign = (id) => {
+    const handleUnassign = async (id) => {
         if (confirm('Are you sure you want to unassign this asset? This will make it available for others.')) {
-            setAssets(prev => prev.map(a =>
-                a.id === id
-                    ? { ...a, status: 'Available', assignedTo: '-', assignmentDate: '-' }
-                    : a
-            ));
+            try {
+                await unassignAsset(id).unwrap();
+            } catch (err) {
+                console.error('Failed to unassign asset:', err);
+                alert(err?.data?.message || 'Failed to unassign asset');
+            }
         }
     };
 
     const filteredAssets = assets.filter(a =>
         a.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        a.assignedTo.toLowerCase().includes(searchQuery.toLowerCase())
+        (a.assignedTo?.fullName || '').toLowerCase().includes(searchQuery.toLowerCase())
     );
 
     if (!isMounted) return null;
@@ -149,77 +136,99 @@ export default function AssetManagement() {
                 </div>
 
                 {/* Assets List */}
-                <div className="bg-white border border-gray-200 rounded-3xl overflow-hidden shadow-sm">
-                    <div className="grid grid-cols-12 gap-4 border-b border-gray-100 bg-gray-50/50 p-4 text-xs font-bold text-gray-400 uppercase tracking-wider">
-                        <div className="col-span-4">Asset Details</div>
-                        <div className="col-span-2">Status</div>
-                        <div className="col-span-3">Assigned To</div>
-                        <div className="col-span-3 text-right">Income Generated</div>
+                {/* Loading State */}
+                {isLoading && (
+                    <div className="text-center py-20">
+                        <Loader2 className="animate-spin text-emerald-600 mx-auto mb-4" size={48} />
+                        <p className="text-gray-500">Loading assets...</p>
                     </div>
+                )}
 
-                    <div className="divide-y divide-gray-100">
-                        {filteredAssets.map(asset => (
-                            <div key={asset.id} className="grid grid-cols-12 gap-4 p-4 items-center hover:bg-gray-50 transition-colors group">
-                                <div className="col-span-4 flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-                                        <Laptop size={20} />
-                                    </div>
-                                    <div>
-                                        <p className="font-bold text-gray-900">{asset.name}</p>
-                                        <p className="text-xs text-gray-400">{asset.id} • {asset.type}</p>
-                                    </div>
+                {/* Assets List */}
+                {!isLoading && (
+                    <div className="bg-white border border-gray-200 rounded-3xl overflow-hidden shadow-sm">
+                        <div className="grid grid-cols-12 gap-4 border-b border-gray-100 bg-gray-50/50 p-4 text-xs font-bold text-gray-400 uppercase tracking-wider">
+                            <div className="col-span-4">Asset Details</div>
+                            <div className="col-span-2">Status</div>
+                            <div className="col-span-3">Assigned To</div>
+                            <div className="col-span-3 text-right">Income Generated</div>
+                        </div>
+
+                        <div className="divide-y divide-gray-100">
+                            {filteredAssets.length === 0 ? (
+                                <div className="p-8 text-center text-gray-500">
+                                    No assets found. Add items with type "Asset" to see them here.
                                 </div>
-
-                                <div className="col-span-2">
-                                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold ${asset.status === 'Assigned' ? 'bg-indigo-50 text-indigo-700' : 'bg-emerald-50 text-emerald-700'
-                                        }`}>
-                                        {asset.status === 'Assigned' ? <User size={12} /> : <CheckCircle2 size={12} />}
-                                        {asset.status}
-                                    </span>
-                                </div>
-
-                                <div className="col-span-3">
-                                    {asset.status === 'Assigned' ? (
-                                        <div className="flex items-center justify-between pr-4">
+                            ) : (
+                                filteredAssets.map(asset => (
+                                    <div key={asset._id} className="grid grid-cols-12 gap-4 p-4 items-center hover:bg-gray-50 transition-colors group">
+                                        <div className="col-span-4 flex items-center gap-3">
+                                            <div className="w-10 h-10 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                                                <Laptop size={20} />
+                                            </div>
                                             <div>
-                                                <p className="text-sm font-medium text-gray-900">{asset.assignedTo}</p>
-                                                <p className="text-xs text-gray-400">Since {asset.assignmentDate}</p>
+                                                <p className="font-bold text-gray-900">{asset.name}</p>
+                                                <p className="text-xs text-gray-400">
+                                                    {asset._id.slice(-6).toUpperCase()} • {asset.itemType}
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <div className="col-span-2">
+                                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold ${asset.assetStatus === 'ASSIGNED' ? 'bg-indigo-50 text-indigo-700' : 'bg-emerald-50 text-emerald-700'
+                                                }`}>
+                                                {asset.assetStatus === 'ASSIGNED' ? <User size={12} /> : <CheckCircle2 size={12} />}
+                                                {asset.assetStatus}
+                                            </span>
+                                        </div>
+
+                                        <div className="col-span-3">
+                                            {asset.assetStatus === 'ASSIGNED' && asset.assignedTo ? (
+                                                <div className="flex items-center justify-between pr-4">
+                                                    <div>
+                                                        <p className="text-sm font-medium text-gray-900">{asset.assignedTo.fullName}</p>
+                                                        <p className="text-xs text-gray-400">
+                                                            Since {new Date(asset.assignmentDate).toLocaleDateString()}
+                                                        </p>
+                                                    </div>
+                                                    <button
+                                                        onClick={() => handleUnassign(asset._id)}
+                                                        disabled={isUnassigning}
+                                                        className="p-2 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors disabled:opacity-50"
+                                                        title="Unassign / Return Asset"
+                                                    >
+                                                        {isUnassigning ? <Loader2 className="animate-spin" size={16} /> : <UserMinus size={16} />}
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <button
+                                                    onClick={() => { setSelectedAsset(asset); setShowAssignModal(true); }}
+                                                    className="text-xs font-bold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1 w-fit"
+                                                >
+                                                    <UserPlus size={14} /> Assign Now
+                                                </button>
+                                            )}
+                                        </div>
+
+                                        <div className="col-span-3 flex items-center justify-end gap-4">
+                                            <div className="text-right">
+                                                <p className="font-bold text-gray-900">₹{(asset.totalIncome || 0).toLocaleString()}</p>
+                                                <p className="text-xs text-green-600 font-medium">+₹{(asset.monthlyIncome || 0).toLocaleString()}/mo</p>
                                             </div>
                                             <button
-                                                onClick={() => handleUnassign(asset.id)}
-                                                className="p-2 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
-                                                title="Unassign / Return Asset"
+                                                onClick={() => { setSelectedAsset(asset); setIncomeAmount(asset.monthlyIncome || ''); setShowIncomeModal(true); }}
+                                                className="p-2 hover:bg-gray-100 rounded-lg text-gray-400 hover:text-emerald-600 transition-colors"
+                                                title="Record Income"
                                             >
-                                                <UserMinus size={16} />
+                                                <IndianRupee size={18} />
                                             </button>
                                         </div>
-                                    ) : (
-                                        <button
-                                            onClick={() => { setSelectedAsset(asset); setShowAssignModal(true); }}
-                                            className="text-xs font-bold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1 w-fit"
-                                        >
-                                            <UserPlus size={14} /> Assign Now
-                                        </button>
-                                    )}
-                                </div>
-
-                                <div className="col-span-3 flex items-center justify-end gap-4">
-                                    <div className="text-right">
-                                        <p className="font-bold text-gray-900">₹{asset.totalIncome.toLocaleString()}</p>
-                                        <p className="text-xs text-green-600 font-medium">+₹{asset.monthlyIncome.toLocaleString()}/mo</p>
                                     </div>
-                                    <button
-                                        onClick={() => { setSelectedAsset(asset); setShowIncomeModal(true); }}
-                                        className="p-2 hover:bg-gray-100 rounded-lg text-gray-400 hover:text-emerald-600 transition-colors"
-                                        title="Record Income"
-                                    >
-                                        <IndianRupee size={18} />
-                                    </button>
-                                </div>
-                            </div>
-                        ))}
+                                ))
+                            )}
+                        </div>
                     </div>
-                </div>
+                )}
             </main>
 
             {/* Assign Asset Modal */}
@@ -248,15 +257,19 @@ export default function AssetManagement() {
                             </div>
                             <form onSubmit={handleAssign} className="p-6">
                                 <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">Assign To User</label>
-                                <input
-                                    autoFocus
-                                    type="text"
+                                <select
                                     required
-                                    placeholder="Enter full name..."
-                                    value={assigneeName}
-                                    onChange={(e) => setAssigneeName(e.target.value)}
+                                    value={assigneeId}
+                                    onChange={(e) => setAssigneeId(e.target.value)}
                                     className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all mb-6"
-                                />
+                                >
+                                    <option value="">Select an Admin</option>
+                                    {admins.map(admin => (
+                                        <option key={admin._id} value={admin._id}>
+                                            {admin.fullName}
+                                        </option>
+                                    ))}
+                                </select>
                                 <div className="flex gap-3">
                                     <button
                                         type="button"
