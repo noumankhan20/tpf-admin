@@ -2,29 +2,63 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Search, Filter, ChevronDown, ArrowLeft, ChevronLeft, ChevronRight, X, Eye, Calendar, Mail, User, MessageSquare, Clock, TrendingUp, AlertCircle, FileText, Inbox } from 'lucide-react';
 import { useGetAllTicketsQuery } from '@/utils/slices/ticketApiSlice';
+
 // Helper function to format date and time
-const formatDateTime = (dateString) => {
-  const date = new Date(dateString);
-  const dateOptions = { year: 'numeric', month: 'short', day: 'numeric' };
-  const timeOptions = { hour: '2-digit', minute: '2-digit' };
+const toISTDate = (dateString) => {
+  const utcDate = new Date(dateString);
 
-  const formattedDate = date.toLocaleDateString('en-US', dateOptions);
-  const formattedTime = date.toLocaleTimeString('en-US', timeOptions);
+  // IST offset = +5:30 = 330 minutes
+  const istOffsetMs = 330 * 60 * 1000;
 
-  return `${formattedDate} at ${formattedTime}`;
+  return new Date(utcDate.getTime() + istOffsetMs);
 };
+
+
+const formatDateTime = (dateString) => {
+  const date = toISTDate(dateString);
+
+  return date.toLocaleString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+    timeZone: "Asia/Kolkata",
+  });
+};
+
 
 const formatDateShort = (dateString) => {
-  const date = new Date(dateString);
-  const now = new Date();
-  const diffTime = Math.abs(now - date);
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  const date = toISTDate(dateString);
+  const now = toISTDate(new Date().toISOString());
 
-  if (diffDays === 0) return 'Today';
-  if (diffDays === 1) return 'Yesterday';
+  const startOfToday = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate()
+  );
+
+  const startOfDate = new Date(
+    date.getFullYear(),
+    date.getMonth(),
+    date.getDate()
+  );
+
+  const diffDays =
+    (startOfToday - startOfDate) / (1000 * 60 * 60 * 24);
+
+  if (diffDays === 0) return "Today";
+  if (diffDays === 1) return "Yesterday";
   if (diffDays < 7) return `${diffDays} days ago`;
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
+  return date.toLocaleDateString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
 };
+
 
 const AdminPanel = () => {
   const [selectedTicket, setSelectedTicket] = useState(null);
@@ -87,103 +121,101 @@ const AdminPanel = () => {
   }, [searchTerm, queryTypeFilter]);
 
   // Query type badge colors
-  const getQueryTypeBadge = (type) => {
-    const badges = {
-      volunteer: 'bg-blue-100 text-blue-700 border-blue-300',
-      bug: 'bg-red-100 text-red-700 border-red-300',
-      feedback: 'bg-green-100 text-green-700 border-green-300',
-      general: 'bg-gray-100 text-gray-700 border-gray-300'
-    };
-    return badges[type] || badges.general;
-  };
+  const QUERY_BADGE_CLASS = () =>
+  "bg-slate-50 text-slate-700 border border-slate-200";
 
-  const getQueryTypeIcon = (type) => {
-    const icons = {
-      volunteer: '🙋',
-      bug: '🐛',
-      feedback: '💬',
-      general: '📋'
-    };
-    return icons[type] || icons.general;
-  };
 
   // Message detail modal
   const MessageModal = ({ ticket, onClose }) => (
     <div
-      className="fixed inset-0 bg-white/30 bg-opacity-50 flex items-center justify-center z-50 p-4 animate-in fade-in duration-200"
+      className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200"
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300"
+        className="bg-white rounded-3xl w-full max-w-3xl max-h-[90vh] overflow-hidden shadow-2xl border border-slate-200 animate-in zoom-in-95 duration-300"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Modal Header */}
-        <div className="bg-gradient-to-r from-emerald-600 to-teal-600 px-4 sm:px-6 py-4 sm:py-5 flex items-center justify-between">
-          <div className="flex items-center gap-2 sm:gap-3">
-            <h2 className="text-lg sm:text-xl font-bold text-white">Message Details</h2>
+        <div className="bg-gradient-to-br from-slate-50 to-slate-100/50 px-6 py-5 flex items-center justify-between border-b border-slate-200">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
+              <MessageSquare className="w-5 h-5 text-white" />
+            </div>
+            <h2 className="text-xl font-semibold text-slate-900">Message Details</h2>
           </div>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-white hover:bg-opacity-20 rounded-lg transition-all duration-200"
+            className="p-2 hover:bg-slate-200/50 rounded-xl transition-all duration-200 group"
           >
-            <X className="w-5 h-5 text-black" />
+            <X className="w-5 h-5 text-slate-500 group-hover:text-slate-700" />
           </button>
         </div>
 
         {/* Modal Content */}
-        <div className="p-4 sm:p-6 overflow-y-auto max-h-[calc(90vh-80px)]">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-4 sm:mb-6">
+        <div className="p-6 overflow-y-auto max-h-[calc(90vh-80px)]">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
             {/* Full Name */}
-            <div className="bg-gray-50 p-3 sm:p-4 rounded-xl border border-gray-200 hover:shadow-md transition-shadow duration-200">
+            <div className="bg-slate-50/50 p-4 rounded-2xl border border-slate-200 hover:border-emerald-300 transition-all duration-200">
               <div className="flex items-center gap-2 mb-2">
-                <User className="w-4 h-4 text-emerald-600" />
-                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Full Name</label>
+                <User className="w-4 h-4 text-slate-400" />
+                <label className="text-xs font-medium text-slate-500 uppercase tracking-wider">Full Name</label>
               </div>
-              <p className="text-gray-900 font-semibold text-base sm:text-lg">{ticket.fullName}</p>
+              <p className="text-slate-900 font-medium text-base">{ticket.fullName}</p>
             </div>
 
             {/* Email */}
-            <div className="bg-gray-50 p-3 sm:p-4 rounded-xl border border-gray-200 hover:shadow-md transition-shadow duration-200">
+            <div className="bg-slate-50/50 p-4 rounded-2xl border border-slate-200 hover:border-emerald-300 transition-all duration-200">
               <div className="flex items-center gap-2 mb-2">
-                <Mail className="w-4 h-4 text-emerald-600" />
-                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Email</label>
+                <Mail className="w-4 h-4 text-slate-400" />
+                <label className="text-xs font-medium text-slate-500 uppercase tracking-wider">Email</label>
               </div>
-              <p className="text-gray-900 font-medium text-sm sm:text-base break-all">{ticket.email}</p>
+              <p className="text-slate-900 font-medium text-sm break-all">{ticket.email}</p>
             </div>
 
             {/* Query Type */}
-            <div className="bg-gray-50 p-3 sm:p-4 rounded-xl border border-gray-200 hover:shadow-md transition-shadow duration-200">
+            <div className="bg-slate-50/50 p-4 rounded-2xl border border-slate-200 hover:border-emerald-300 transition-all duration-200">
               <div className="flex items-center gap-2 mb-2">
-                <Filter className="w-4 h-4 text-emerald-600" />
-                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Query Type</label>
+                <Filter className="w-4 h-4 text-slate-400" />
+                <label className="text-xs font-medium text-slate-500 uppercase tracking-wider">Query Type</label>
               </div>
-              <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold border ${getQueryTypeBadge(ticket.queryType)}`}>
-                <span>{getQueryTypeIcon(ticket.queryType)}</span>
+              <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium border ${QUERY_BADGE_CLASS(ticket.queryType)}`}>
                 <span className="capitalize">{ticket.queryType}</span>
               </span>
             </div>
+            {ticket.queryType === 'other' && ticket.otherCategory && (
+              <div className="bg-slate-50/50 p-4 rounded-2xl border border-slate-200 hover:border-emerald-300 transition-all duration-200">
+                <div className="flex items-center gap-2 mb-2">
+                  <FileText className="w-4 h-4 text-slate-400" />
+                  <label className="text-xs font-medium text-slate-500 uppercase tracking-wider">
+                    Other Category
+                  </label>
+                </div>
+                <p className="text-slate-900 font-medium text-sm">
+                  {ticket.otherCategory}
+                </p>
+              </div>
+            )}
 
             {/* Date & Time */}
-            <div className="bg-gray-50 p-3 sm:p-4 rounded-xl border border-gray-200 hover:shadow-md transition-shadow duration-200">
+            <div className="bg-slate-50/50 p-4 rounded-2xl border border-slate-200 hover:border-emerald-300 transition-all duration-200">
               <div className="flex items-center gap-2 mb-2">
-                <Calendar className="w-4 h-4 text-emerald-600" />
-                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Date & Time</label>
+                <Calendar className="w-4 h-4 text-slate-400" />
+                <label className="text-xs font-medium text-slate-500 uppercase tracking-wider">Date & Time</label>
               </div>
-              <p className="text-gray-900 font-medium text-sm sm:text-base">{formatDateTime(ticket.createdAt)}</p>
+              <p className="text-slate-900 font-medium text-sm">{formatDateTime(ticket.createdAt)}</p>
             </div>
           </div>
 
           {/* Message Content */}
-          <div className="bg-gradient-to-br from-emerald-50 to-teal-50 p-4 sm:p-5 rounded-xl border-2 border-emerald-200">
+          <div className="bg-gradient-to-br from-emerald-50/50 to-teal-50/30 p-5 rounded-2xl border border-emerald-200">
             <div className="flex items-center gap-2 mb-3">
-              <MessageSquare className="w-5 h-5 text-emerald-600" />
-              <label className="text-sm font-bold text-emerald-900 uppercase tracking-wide">Message Content</label>
+              <MessageSquare className="w-4 h-4 text-emerald-600" />
+              <label className="text-sm font-medium text-emerald-900 uppercase tracking-wider">Message Content</label>
             </div>
-            <div className="bg-white p-3 sm:p-4 rounded-lg shadow-sm">
-              <p className="text-gray-700 whitespace-pre-wrap break-words overflow-wrap-anywhere leading-relaxed text-sm sm:text-base">
+            <div className="bg-white p-4 rounded-xl border border-emerald-100">
+              <p className="text-slate-700 whitespace-pre-wrap break-words leading-relaxed text-sm">
                 {ticket.message}
               </p>
-
             </div>
           </div>
         </div>
@@ -193,10 +225,10 @@ const AdminPanel = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-white items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50 flex items-center justify-center p-4">
         <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-16 w-16 border-4 border-emerald-200 border-t-emerald-600"></div>
-          <p className="mt-4 text-gray-700 font-semibold text-lg">Loading tickets...</p>
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-3 border-slate-200 border-t-emerald-600 mb-4"></div>
+          <p className="text-slate-600 font-medium">Loading tickets...</p>
         </div>
       </div>
     );
@@ -204,19 +236,18 @@ const AdminPanel = () => {
 
   if (isError) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 flex items-center justify-center p-4">
-        <div className="text-center bg-white p-6 sm:p-8 rounded-2xl shadow-xl max-w-md w-full">
-          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50 flex items-center justify-center p-4">
+        <div className="text-center bg-white p-8 rounded-3xl shadow-xl border border-slate-200 max-w-md w-full">
+          <div className="w-16 h-16 bg-red-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
             <AlertCircle className="w-8 h-8 text-red-500" />
           </div>
-          <p className="text-gray-900 font-bold text-xl mb-2">Something went wrong</p>
-          <p className="text-gray-600 mb-4">
+          <p className="text-slate-900 font-semibold text-xl mb-2">Something went wrong</p>
+          <p className="text-slate-600 mb-6 text-sm">
             {error?.data?.message || error?.error || "Failed to load tickets"}
           </p>
-
           <button
             onClick={() => window.location.reload()}
-            className="px-6 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-xl hover:shadow-lg transition-all duration-200 font-semibold"
+            className="px-6 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl transition-all duration-200 font-medium text-sm"
           >
             Try Again
           </button>
@@ -226,13 +257,13 @@ const AdminPanel = () => {
   }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50">
       <main className="w-full">
         {/* Back Button */}
         <div className="px-4 lg:px-8 pt-6">
           <button
             onClick={() => window.history.back()}
-            className="flex cursor-pointer items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-gray-700 hover:text-emerald-700 hover:bg-white transition-all border-2 border-gray-300 hover:border-emerald-400 shadow-sm hover:shadow-md"
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-white transition-all border border-slate-200 hover:border-slate-300 hover:shadow-sm"
           >
             <ArrowLeft className="w-4 h-4" />
             <span>Back</span>
@@ -241,37 +272,37 @@ const AdminPanel = () => {
 
         {/* Header Section */}
         <div className="px-4 lg:px-8 py-8">
-          <div className="max-w-5xl mx-auto">
+          <div className="max-w-7xl mx-auto">
             {/* Title */}
-            <div className="text-center mb-8">
-              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 bg-clip-text text-transparent mb-3">
+            <div className="mb-8 text-center">
+              <h1 className="text-3xl sm:text-4xl font-semibold text-slate-900 mb-2">
                 Ticket & Queries Management
               </h1>
-              <p className="text-base sm:text-lg text-gray-600 font-medium">Manage and respond to customer inquiries</p>
+              <p className="text-base text-slate-500">Manage and respond to customer inquiries</p>
             </div>
 
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 max-w-3xl mx-auto">
-              <div className="bg-white p-6 rounded-2xl border-2 border-blue-200 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mb-8">
+              <div className="bg-white p-6 rounded-2xl border border-slate-200 hover:border-emerald-300 hover:shadow-lg transition-all duration-300">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-bold text-blue-600 uppercase tracking-wide mb-2">Total Tickets</p>
-                    <p className="text-4xl sm:text-5xl font-bold text-blue-900">{stats.total}</p>
+                    <p className="text-sm font-medium text-slate-500 mb-1">Total Tickets</p>
+                    <p className="text-4xl font-semibold text-slate-900">{stats.total}</p>
                   </div>
-                  <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-lg">
-                    <Inbox className="w-8 h-8 text-white" />
+                  <div className="w-14 h-14 bg-gradient-to-br from-slate-100 to-slate-200 rounded-2xl flex items-center justify-center">
+                    <Inbox className="w-7 h-7 text-slate-600" />
                   </div>
                 </div>
               </div>
 
-              <div className="bg-white p-6 rounded-2xl border-2 border-emerald-200 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+              <div className="bg-white p-6 rounded-2xl border border-slate-200 hover:border-emerald-300 hover:shadow-lg transition-all duration-300">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-bold text-emerald-600 uppercase tracking-wide mb-2">Today's Tickets</p>
-                    <p className="text-4xl sm:text-5xl font-bold text-emerald-900">{stats.today}</p>
+                    <p className="text-sm font-medium text-slate-500 mb-1">Today's Tickets</p>
+                    <p className="text-4xl font-semibold text-slate-900">{stats.today}</p>
                   </div>
-                  <div className="w-16 h-16 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center shadow-lg">
-                    <Clock className="w-8 h-8 text-white" />
+                  <div className="w-14 h-14 bg-gradient-to-br from-emerald-100 to-emerald-200 rounded-2xl flex items-center justify-center">
+                    <Clock className="w-7 h-7 text-emerald-600" />
                   </div>
                 </div>
               </div>
@@ -281,42 +312,42 @@ const AdminPanel = () => {
 
         {/* Table Section */}
         <div className="px-4 lg:px-8 pb-8">
-          <div className="max-w-7xl mx-auto bg-white rounded-3xl border-2 border-gray-200 shadow-xl overflow-hidden">
+          <div className="max-w-7xl mx-auto bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
             {/* Search and Filters */}
-            <div className="p-4 sm:p-6 lg:p-8 border-b-2 border-gray-100 bg-gradient-to-r from-gray-50 to-white">
-              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+            <div className="p-6 border-b border-slate-200">
+              <div className="flex flex-col sm:flex-row gap-3">
                 <div className="relative flex-1">
-                  <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                  <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
                   <input
                     type="text"
                     placeholder="Search by name, email, or message..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-12 pr-4 py-3.5 border-2 border-gray-300 rounded-2xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all duration-200 bg-white font-medium placeholder:text-gray-400"
+                    className="w-full pl-11 pr-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all duration-200 bg-white text-sm placeholder:text-slate-400"
                   />
                 </div>
                 <button
                   onClick={() => setShowFilters(!showFilters)}
-                  className="flex items-center justify-center gap-2 px-6 py-3.5 border-2 border-gray-300 rounded-2xl hover:bg-emerald-50 hover:border-emerald-400 transition-all duration-200 font-bold"
+                  className="flex items-center justify-center gap-2 px-5 py-2.5 border border-slate-200 rounded-xl hover:bg-slate-50 hover:border-slate-300 transition-all duration-200 font-medium text-sm"
                 >
-                  <Filter className="w-5 h-5" />
+                  <Filter className="w-4 h-4" />
                   <span>Filters</span>
                   <ChevronDown className={`w-4 h-4 transition-transform duration-300 ${showFilters ? 'rotate-180' : ''}`} />
                 </button>
               </div>
 
               {showFilters && (
-                <div className="pt-5 mt-5 border-t-2 border-gray-100">
-                  <label className="block text-sm font-bold text-gray-700 mb-3 uppercase tracking-wide">Filter by Query Type</label>
+                <div className="pt-4 mt-4 border-t border-slate-200">
+                  <label className="block text-sm font-medium text-slate-700 mb-2">Filter by Query Type</label>
                   <select
                     value={queryTypeFilter}
                     onChange={(e) => setQueryTypeFilter(e.target.value)}
-                    className="w-full border-2 border-gray-300 rounded-2xl px-4 py-3.5 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all duration-200 bg-white font-semibold"
+                    className="w-full sm:w-64 border border-slate-200 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all duration-200 bg-white text-sm"
                   >
                     <option value="all">All Query Types</option>
                     {queryTypes.map(type => (
-                      <option key={type} value={type} className="capitalize font-semibold">
-                        {getQueryTypeIcon(type)} {type}
+                      <option key={type} value={type} className="capitalize">
+                        {type}
                       </option>
                     ))}
                   </select>
@@ -327,38 +358,37 @@ const AdminPanel = () => {
             {/* Desktop Table View */}
             <div className="hidden lg:block overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-gradient-to-r from-gray-100 to-gray-50 border-b-2 border-gray-200">
+                <thead className="bg-slate-50 border-b border-slate-200">
                   <tr>
-                    <th className="px-6 py-5 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Full Name</th>
-                    <th className="px-6 py-5 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Email</th>
-                    <th className="px-6 py-5 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Query Type</th>
-                    <th className="px-6 py-5 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Date</th>
-                    <th className="px-6 py-5 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Action</th>
+                    <th className="px-6 py-3.5 text-left text-xs font-medium text-slate-600 uppercase tracking-wider">Name</th>
+                    <th className="px-6 py-3.5 text-left text-xs font-medium text-slate-600 uppercase tracking-wider">Email</th>
+                    <th className="px-6 py-3.5 text-left text-xs font-medium text-slate-600 uppercase tracking-wider">Type</th>
+                    <th className="px-6 py-3.5 text-left text-xs font-medium text-slate-600 uppercase tracking-wider">Date</th>
+                    <th className="px-6 py-3.5 text-left text-xs font-medium text-slate-600 uppercase tracking-wider">Action</th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y-2 divide-gray-100">
+                <tbody className="bg-white divide-y divide-slate-100">
                   {paginatedTickets.map((ticket) => (
-                    <tr key={ticket._id} className="hover:bg-gradient-to-r hover:from-emerald-50/50 hover:to-teal-50/50 transition-all duration-200">
-                      <td className="px-6 py-5 whitespace-nowrap">
+                    <tr key={ticket._id} className="hover:bg-slate-50/50 transition-all duration-150">
+                      <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center gap-3">
-                          <div className="w-11 h-11 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center text-white font-bold shadow-md">
+                          <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center text-white font-medium text-sm">
                             {ticket.fullName.charAt(0).toUpperCase()}
                           </div>
-                          <span className="text-sm font-bold text-gray-900">{ticket.fullName}</span>
+                          <span className="text-sm font-medium text-slate-900">{ticket.fullName}</span>
                         </div>
                       </td>
-                      <td className="px-6 py-5 whitespace-nowrap text-sm text-gray-600 font-medium">{ticket.email}</td>
-                      <td className="px-6 py-5 whitespace-nowrap">
-                        <span className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold border-2 ${getQueryTypeBadge(ticket.queryType)}`}>
-                          <span>{getQueryTypeIcon(ticket.queryType)}</span>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">{ticket.email}</td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium border ${QUERY_BADGE_CLASS(ticket.queryType)}`}>
                           <span className="capitalize">{ticket.queryType}</span>
                         </span>
                       </td>
-                      <td className="px-6 py-5 whitespace-nowrap text-sm text-gray-600 font-bold">{formatDateShort(ticket.createdAt)}</td>
-                      <td className="px-6 py-5 whitespace-nowrap">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">{formatDateShort(ticket.createdAt)}</td>
+                      <td className="px-6 py-4 whitespace-nowrap">
                         <button
                           onClick={() => setSelectedTicket(ticket)}
-                          className="inline-flex cursor-pointer items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-xl hover:shadow-lg hover:scale-105 transition-all duration-200 font-bold"
+                          className="inline-flex cursor-pointer items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-800 text-white rounded-xl transition-all duration-200 font-medium text-sm"
                         >
                           <Eye className="w-4 h-4" />
                           View
@@ -371,35 +401,34 @@ const AdminPanel = () => {
             </div>
 
             {/* Mobile/Tablet Card View */}
-            <div className="lg:hidden divide-y-2 divide-gray-100">
+            <div className="lg:hidden divide-y divide-slate-100">
               {paginatedTickets.map((ticket) => (
-                <div key={ticket._id} className="p-5 hover:bg-gradient-to-r hover:from-emerald-50/50 hover:to-teal-50/50 transition-all duration-200">
+                <div key={ticket._id} className="p-5 hover:bg-slate-50/50 transition-all duration-150">
                   <div className="space-y-4">
                     <div className="flex items-start gap-3">
-                      <div className="w-14 h-14 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center text-white font-bold text-xl shadow-md flex-shrink-0">
+                      <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center text-white font-medium flex-shrink-0">
                         {ticket.fullName.charAt(0).toUpperCase()}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-lg font-bold text-gray-900 mb-1">{ticket.fullName}</p>
-                        <p className="text-sm text-gray-600 break-all font-medium">{ticket.email}</p>
+                        <p className="text-base font-medium text-slate-900 mb-1">{ticket.fullName}</p>
+                        <p className="text-sm text-slate-600 break-all">{ticket.email}</p>
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between gap-4 pt-4 border-t-2 border-gray-100">
-                      <span className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold border-2 ${getQueryTypeBadge(ticket.queryType)}`}>
-                        <span>{getQueryTypeIcon(ticket.queryType)}</span>
+                    <div className="flex items-center justify-between gap-4 pt-3 border-t border-slate-100">
+                      <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium border ${QUERY_BADGE_CLASS(ticket.queryType)}`}>
                         <span className="capitalize">{ticket.queryType}</span>
                       </span>
-                      <p className="text-sm font-bold text-gray-500">
+                      <p className="text-sm text-slate-500">
                         {formatDateShort(ticket.createdAt)}
                       </p>
                     </div>
 
                     <button
                       onClick={() => setSelectedTicket(ticket)}
-                      className="w-full flex items-center justify-center gap-2 px-5 py-3.5 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-xl hover:shadow-lg transition-all duration-200 font-bold"
+                      className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl transition-all duration-200 font-medium text-sm"
                     >
-                      <Eye className="w-5 h-5" />
+                      <Eye className="w-4 h-4" />
                       View Message
                     </button>
                   </div>
@@ -409,35 +438,35 @@ const AdminPanel = () => {
 
             {paginatedTickets.length === 0 && (
               <div className="p-16 text-center">
-                <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <MessageSquare className="w-12 h-12 text-gray-400" />
+                <div className="w-20 h-20 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <MessageSquare className="w-10 h-10 text-slate-400" />
                 </div>
-                <p className="text-gray-600 font-bold text-xl mb-2">No tickets found</p>
-                <p className="text-gray-400 font-medium">Try adjusting your search or filters</p>
+                <p className="text-slate-900 font-medium text-lg mb-1">No tickets found</p>
+                <p className="text-slate-500 text-sm">Try adjusting your search or filters</p>
               </div>
             )}
 
             {/* Pagination */}
             {filteredTickets.length > 0 && (
-              <div className="px-6 py-6 border-t-2 border-gray-100 bg-gradient-to-r from-gray-50 to-white flex flex-col sm:flex-row items-center justify-between gap-4">
-                <p className="text-sm text-gray-600 font-semibold">
-                  Showing <span className="font-bold text-gray-900">{((currentPage - 1) * itemsPerPage) + 1}</span> to <span className="font-bold text-gray-900">{Math.min(currentPage * itemsPerPage, filteredTickets.length)}</span> of <span className="font-bold text-gray-900">{filteredTickets.length}</span> results
+              <div className="px-6 py-4 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <p className="text-sm text-slate-600">
+                  Showing <span className="font-medium text-slate-900">{((currentPage - 1) * itemsPerPage) + 1}</span> to <span className="font-medium text-slate-900">{Math.min(currentPage * itemsPerPage, filteredTickets.length)}</span> of <span className="font-medium text-slate-900">{filteredTickets.length}</span> results
                 </p>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
                   <button
                     onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                     disabled={currentPage === 1}
-                    className="p-3 border-2 border-gray-300 rounded-xl hover:bg-emerald-50 hover:border-emerald-400 disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200 shadow-sm"
+                    className="p-2 border border-slate-200 rounded-lg hover:bg-slate-50 hover:border-slate-300 disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200"
                   >
                     <ChevronLeft className="w-5 h-5" />
                   </button>
-                  <span className="text-sm font-bold px-5 py-3 bg-white rounded-xl border-2 border-gray-300 shadow-sm">
-                    Page {currentPage} of {totalPages || 1}
+                  <span className="text-sm font-medium px-4 py-2 bg-slate-50 rounded-lg border border-slate-200">
+                    {currentPage} / {totalPages || 1}
                   </span>
                   <button
                     onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                     disabled={currentPage === totalPages || totalPages === 0}
-                    className="p-3 border-2 border-gray-300 rounded-xl hover:bg-emerald-50 hover:border-emerald-400 disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200 shadow-sm"
+                    className="p-2 border border-slate-200 rounded-lg hover:bg-slate-50 hover:border-slate-300 disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200"
                   >
                     <ChevronRight className="w-5 h-5" />
                   </button>
