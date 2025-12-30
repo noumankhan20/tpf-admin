@@ -47,7 +47,7 @@ export default function PurchaseManagement() {
     const [formData, setFormData] = useState({
         vendorId: '',
         purchaseDate: new Date().toISOString().split('T')[0],
-        paymentStatus: 'Pending',
+        paymentStatus: 'PENDING',
         proofFile: null,
         lineItems: []
     });
@@ -144,7 +144,7 @@ const updateLineItem = (index, field, value) => {
         setFormData({
             vendorId: '',
             purchaseDate: new Date().toISOString().split('T')[0],
-            paymentStatus: 'Pending',
+            paymentStatus: 'PENDING',
             proofFile: null,
             lineItems: []
         });
@@ -175,7 +175,7 @@ const updateLineItem = (index, field, value) => {
                     </div>
                     <button
                         onClick={() => {
-                            setFormData({ vendorId: '', purchaseDate: new Date().toISOString().split('T')[0], paymentStatus: 'Pending', proofFile: null, lineItems: [] });
+                            setFormData({ vendorId: '', purchaseDate: new Date().toISOString().split('T')[0], paymentStatus: 'PENDING', proofFile: null, lineItems: [] });
                             setShowAddModal(true);
                         }}
                         className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl font-bold text-sm flex items-center gap-2 transition-all shadow-md active:scale-95"
