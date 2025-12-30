@@ -20,6 +20,7 @@ import {
     Users
 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useGetInventoryDashboardStatsQuery } from '../../../../utils/slices/InventoryAndAsset/dashboardApiSlice';
 
 const STATS = [
     {
@@ -68,11 +69,68 @@ export default function InventoryDashboard() {
     const router = useRouter();
     const [isMounted, setIsMounted] = useState(false);
 
+    const { data: statsData, isLoading } = useGetInventoryDashboardStatsQuery();
+    const stats = statsData?.data;
+
     useEffect(() => {
         setIsMounted(true);
     }, []);
 
     if (!isMounted) return null;
+
+    if (isLoading) {
+        return (
+            <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center">
+                <div className="text-center">
+                    <div className="w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                    <p className="text-gray-500">Loading Dashboard...</p>
+                </div>
+            </div>
+        );
+    }
+
+    const dynamicStats = [
+        {
+            id: 'total-assets',
+            label: 'Total Assets',
+            value: stats?.assets?.total?.toLocaleString() || '0',
+            secondaryValue: `${stats?.assets?.assigned || 0} assigned`,
+            status: 'up', // Calculate trend if historical data available
+            trend: '+5.2%', // Placeholder trend
+            icon: HardDrive,
+            color: 'emerald'
+        },
+        {
+            id: 'total-inventory',
+            label: 'Total Inventory',
+            value: stats?.inventory?.totalStock?.toLocaleString() || '0',
+            secondaryValue: `${stats?.inventory?.lowStockCount || 0} items low`,
+            status: stats?.inventory?.lowStockCount > 0 ? 'down' : 'up',
+            trend: '-2.1%',
+            icon: Package,
+            color: 'blue'
+        },
+        {
+            id: 'monthly-income',
+            label: 'Monthly Income (Assets)',
+            value: `₹${stats?.financials?.monthlyIncome?.toLocaleString() || '0'}`,
+            secondaryValue: 'Revenue from assets',
+            status: 'up',
+            trend: '+12.5%',
+            icon: TrendingUp,
+            color: 'purple'
+        },
+        {
+            id: 'monthly-expenses',
+            label: 'Monthly Expenses',
+            value: `₹${stats?.financials?.monthlyExpenses?.toLocaleString() || '0'}`,
+            secondaryValue: 'This Month',
+            status: 'down',
+            trend: '+8.4%',
+            icon: TrendingDown,
+            color: 'orange'
+        }
+    ];
 
     return (
         <div className="min-h-screen bg-[#F8FAFC]">
@@ -97,7 +155,7 @@ export default function InventoryDashboard() {
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
                 {/* Quick Summary Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-                    {STATS.map((stat, idx) => (
+                    {dynamicStats.map((stat, idx) => (
                         <motion.div
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
@@ -109,9 +167,9 @@ export default function InventoryDashboard() {
                                 <div className={`p-3 rounded-xl bg-${stat.color}-50 text-${stat.color}-600`}>
                                     <stat.icon size={24} />
                                 </div>
-                                <div className={`flex items-center gap-1 text-xs font-bold ${stat.status === 'up' ? 'text-emerald-600' : 'text-rose-600'}`}>
+                                {/* <div className={`flex items-center gap-1 text-xs font-bold ${stat.status === 'up' ? 'text-emerald-600' : 'text-rose-600'}`}>
                                     {stat.trend}
-                                </div>
+                                </div> */}
                             </div>
                             <p className="text-sm font-medium text-gray-500 mb-1">{stat.label}</p>
                             <h3 className="text-2xl font-bold text-gray-900">{stat.value}</h3>
@@ -136,7 +194,7 @@ export default function InventoryDashboard() {
                                     <p className="font-bold text-gray-800">Pending Purchases</p>
                                     <Users size={18} className="text-gray-400" />
                                 </div>
-                                <p className="text-3xl font-bold text-blue-600">24</p>
+                                <p className="text-3xl font-bold text-blue-600">{stats?.supplyChain?.pendingPurchases || 0}</p>
                                 <p className="text-xs text-gray-500 mt-1">Orders awaiting fulfillment</p>
                             </div>
 
@@ -145,8 +203,8 @@ export default function InventoryDashboard() {
                                     <p className="font-bold text-gray-800">Active Vendors</p>
                                     <Users size={18} className="text-gray-400" />
                                 </div>
-                                <p className="text-3xl font-bold text-emerald-600">142</p>
-                                <p className="text-xs text-gray-500 mt-1">Onboarded this year</p>
+                                <p className="text-3xl font-bold text-emerald-600">{stats?.supplyChain?.activeVendors || 0}</p>
+                                <p className="text-xs text-gray-500 mt-1">{stats?.supplyChain?.newVendorsYearly || 0} Onboarded this year</p>
                             </div>
                         </div>
                     </section>
@@ -162,24 +220,26 @@ export default function InventoryDashboard() {
 
                         <div className="grid grid-cols-1 gap-8">
                             <div className="bg-white rounded-2xl border border-gray-200 p-8 shadow-sm">
-                                <h3 className="text-lg font-bold mb-6">Inventory Depletion</h3>
-                                <div className="space-y-4">
-                                    {[
-                                        { name: 'Surgical Masks', val: 85, color: 'emerald' },
-                                        { name: 'Emergency Rations', val: 32, color: 'rose' },
-                                        { name: 'Cotton Blankets', val: 54, color: 'amber' }
-                                    ].map(item => (
-                                        <div key={item.name} className="flex items-center gap-4">
-                                            <div className="flex-1">
-                                                <p className="text-sm font-bold text-gray-800">{item.name}</p>
-                                                <div className="h-1.5 w-full bg-gray-100 rounded-full mt-1.5 overflow-hidden">
-                                                    <div className={`h-full bg-${item.color}-500`} style={{ width: `${item.val}%` }}></div>
+                                <h3 className="text-lg font-bold mb-6">Critical Low Stock</h3>
+                                {stats?.inventory?.topLowStockItems?.length > 0 ? (
+                                    <div className="space-y-4">
+                                        {stats.inventory.topLowStockItems.map((item, i) => (
+                                            <div key={item._id} className="flex items-center gap-4">
+                                                <div className="flex-1">
+                                                    <div className="flex justify-between items-center mb-1">
+                                                        <p className="text-sm font-bold text-gray-800">{item.name}</p>
+                                                        <span className="text-xs font-bold text-rose-500">{item.currentStock} {item.unit} remaining</span>
+                                                    </div>
+                                                    <div className="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
+                                                        <div className="h-full bg-rose-500" style={{ width: `${Math.min((item.currentStock / 20) * 100, 100)}%` }}></div>
+                                                    </div>
                                                 </div>
                                             </div>
-                                            <span className="text-xs font-bold text-gray-500">{item.val}%</span>
-                                        </div>
-                                    ))}
-                                </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <p className="text-gray-500 italic text-sm">No items are currently low on stock.</p>
+                                )}
                             </div>
                         </div>
                     </section>
