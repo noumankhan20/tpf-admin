@@ -1,569 +1,267 @@
 'use client';
 
-import React, { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import NotificationBell from '../../Common/NotificationBell';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useSelector } from 'react-redux';
 import {
-    ArrowLeft,
-    Bell,
-    Search,
-    Filter,
-    FileText,
+    LayoutDashboard,
     CreditCard,
-    Building,
-    User,
-    CheckCircle,
-    Clock,
-    Camera,
-    Upload,
-    X as XIcon,
-    AlertCircle,
+    TrendingDown,
     ChevronRight,
-    QrCode,
-    DollarSign,
-    ExternalLink,
-    TrendingDown
+    Search,
+    ArrowLeft,
+    Layers,
+    LogOut,
+    ChevronDown,
+    Calculator,
+    PiggyBank,
+    BarChart3
 } from 'lucide-react';
-import {
-    useGetFinanceAssignmentsQuery,
-    useSubmitFinanceProofMutation,
-    useCompleteFinanceTaskMutation
-} from '@/utils/slices/financeApiSlice';
+import NotificationBell from '../../Common/NotificationBell';
+
+const FINANCE_MODULES = [
+    {
+        id: 'disbursement-tasks',
+        name: 'Disbursement Tasks',
+        desc: 'Process beneficiary payments and transaction proofs',
+        icon: CreditCard,
+        category: 'disbursements',
+        route: '/finance/disbursement',
+    },
+    {
+        id: 'expense-mgmt',
+        name: 'Expense Management',
+        desc: 'Track and manage all organizational expenses',
+        icon: TrendingDown,
+        category: 'expense',
+        route: '/finance/expenses',
+    }
+];
+
+const CATEGORIES = [
+    { id: 'disbursements', name: 'Disbursements', icon: CreditCard },
+    { id: 'expense', name: 'Expense', icon: TrendingDown },
+];
 
 export default function FinancePage() {
-    const router = useRouter();
-    const [activeTab, setActiveTab] = useState('pending'); // 'pending', 'completed'
-    const [selectedTask, setSelectedTask] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
+    const [openCategories, setOpenCategories] = useState(['disbursements']);
+    const [hasSelectedCategory, setHasSelectedCategory] = useState(true);
+    const [mounted, setMounted] = useState(false);
 
-    const { data: assignmentsData, isLoading, refetch } = useGetFinanceAssignmentsQuery();
+    const router = useRouter();
+    const admin = useSelector((state) => state.adminAuth.adminInfo);
+    const fullName = admin?.fullName || "";
 
-    const assignments = assignmentsData?.data || [];
+    useEffect(() => {
+        setMounted(true);
+    }, []);
 
-    const filteredAssignments = assignments.filter(task => {
-        const matchesTab = activeTab === 'pending' ? task.status !== 'completed' : task.status === 'completed';
-        const matchesSearch =
-            task.campaignName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            task.beneficiaryName.toLowerCase().includes(searchQuery.toLowerCase());
-        return matchesTab && matchesSearch;
-    });
+    const filteredModules = useMemo(() =>
+        FINANCE_MODULES.filter((m) =>
+            m.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            m.desc.toLowerCase().includes(searchQuery.toLowerCase())
+        ),
+        [searchQuery]
+    );
 
-    const pendingCount = assignments.filter(t => t.status !== 'completed').length;
-    const completedCount = assignments.filter(t => t.status === 'completed').length;
+    const getModulesByCategory = (catId) =>
+        filteredModules.filter((m) => m.category === catId);
+
+    const toggleCategory = (catId) => {
+        setOpenCategories((prev) => {
+            if (prev.includes(catId)) {
+                if (prev.length === 1) return prev; // Keep at least one open
+                return prev.filter(id => id !== catId);
+            }
+            return [catId]; // Only keep one open to match user's implied single-select logic or common sidebar behavior
+        });
+        setHasSelectedCategory(true);
+    };
+
+    useEffect(() => {
+        if (searchQuery) {
+            const matching = CATEGORIES.filter(
+                (cat) => getModulesByCategory(cat.id).length > 0
+            ).map((cat) => cat.id);
+            setOpenCategories(matching);
+        }
+    }, [searchQuery]);
+
+    if (!mounted) return null;
 
     return (
-        <div className="min-h-screen bg-[#F8FAFC] font-sans flex flex-col">
-            {/* Header */}
-            <header className="flex items-center justify-between px-6 py-4 bg-white border-b border-gray-200 shrink-0 shadow-sm">
-                <div className="flex items-center space-x-4">
-                    <button
-                        onClick={() => router.push('/select-portal')}
-                        className="p-2 hover:bg-gray-100 rounded-full transition"
-                    >
-                        <ArrowLeft className="w-5 h-5 text-gray-600" />
-                    </button>
-                    <div>
-                        <h1 className="text-xl font-bold text-gray-800">Finance & Accounting</h1>
-                        <p className="text-xs text-gray-500">Manage disbursement tasks and transaction proofs</p>
-                    </div>
-                </div>
-                <div className="flex items-center space-x-3">
-                    <NotificationBell moduleFilter="FINANCE_TASK" />
-                </div>
-            </header>
+        <div className="min-h-screen bg-gray-50">
+            <Header fullName={fullName} />
 
-            <main className="flex-1 p-6 max-w-7xl mx-auto w-full">
-                {/* Quick Access Modules */}
-                <div className="mb-8">
-                    <h2 className="text-lg font-bold text-gray-800 mb-4">Quick Access</h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <button
-                            onClick={() => router.push('/finance/expenses')}
-                            className="bg-white border-2 border-gray-200 hover:border-emerald-500 p-6 rounded-2xl shadow-sm hover:shadow-md transition-all duration-200 flex items-center justify-between group text-left"
-                        >
-                            <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 bg-rose-50 rounded-xl flex items-center justify-center text-rose-600">
-                                    <TrendingDown className="w-6 h-6" />
-                                </div>
-                                <div>
-                                    <h3 className="font-bold text-lg text-gray-900 group-hover:text-emerald-600 transition-colors">Expense Management</h3>
-                                    <p className="text-sm text-gray-500">Track all organizational expenses</p>
-                                </div>
-                            </div>
-                            <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-emerald-600 group-hover:translate-x-1 transition-all" />
-                        </button>
+            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <Title totalModules={filteredModules.length} />
 
-                        <button
-                            onClick={() => router.push('/finance/disbursement')}
-                            className="bg-white border-2 border-gray-200 hover:border-emerald-500 p-6 rounded-2xl shadow-sm hover:shadow-md transition-all duration-200 flex items-center justify-between group text-left"
-                        >
-                            <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600">
-                                    <CreditCard className="w-6 h-6" />
-                                </div>
-                                <div>
-                                    <h3 className="font-bold text-lg text-gray-900 group-hover:text-emerald-600 transition-colors">Disbursement Tasks</h3>
-                                    <p className="text-sm text-gray-500">Process beneficiary payments</p>
-                                </div>
-                            </div>
-                            <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-emerald-600 group-hover:translate-x-1 transition-all" />
-                        </button>
-                    </div>
-                </div>
+                <SearchBar searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
 
-                {/* Stats */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                    <StatCard
-                        icon={<CreditCard className="text-blue-600" />}
-                        label="Total Assignments"
-                        value={assignments.length}
-                        color="blue"
-                    />
-                    <StatCard
-                        icon={<Clock className="text-orange-600" />}
-                        label="Pending Tasks"
-                        value={pendingCount}
-                        color="orange"
-                    />
-                    <StatCard
-                        icon={<CheckCircle className="text-green-600" />}
-                        label="Completed Tasks"
-                        value={completedCount}
-                        color="green"
-                    />
-                </div>
-
-                {/* Filters & Content */}
-                <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-                    <div className="p-4 border-b border-gray-200 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                        <div className="flex bg-gray-100 p-1 rounded-xl w-fit">
-                            <button
-                                onClick={() => setActiveTab('pending')}
-                                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'pending' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-600 hover:text-gray-900'
-                                    }`}
-                            >
-                                Pending ({pendingCount})
-                            </button>
-                            <button
-                                onClick={() => setActiveTab('completed')}
-                                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'completed' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-600 hover:text-gray-900'
-                                    }`}
-                            >
-                                Completed ({completedCount})
-                            </button>
-                        </div>
-
-                        <div className="relative flex-1 max-w-md">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                            <input
-                                type="text"
-                                placeholder="Search campaigns or beneficiaries..."
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                className="w-full bg-gray-50 border border-gray-200 rounded-xl py-2 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
-                            />
-                        </div>
-                    </div>
-
-                    <div className="overflow-x-auto">
-                        {isLoading ? (
-                            <div className="p-12 text-center text-gray-500">Loading assignments...</div>
-                        ) : filteredAssignments.length === 0 ? (
-                            <div className="p-12 text-center text-gray-500">No {activeTab} tasks found</div>
-                        ) : (
-                            <table className="w-full text-left">
-                                <thead className="bg-gray-50 text-gray-600 text-xs uppercase font-semibold">
-                                    <tr>
-                                        <th className="px-6 py-4">Campaign & Beneficiary</th>
-                                        <th className="px-6 py-4">Disbursement Amount</th>
-                                        <th className="px-6 py-4">Deadline</th>
-                                        <th className="px-6 py-4">Status</th>
-                                        <th className="px-6 py-4 text-right">Action</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-100">
-                                    {filteredAssignments.map((task) => (
-                                        <tr key={task.taskId} className="hover:bg-gray-50 transition-colors group">
-                                            <td className="px-6 py-4">
-                                                <div className="font-semibold text-gray-900">{task.campaignName}</div>
-                                                <div className="text-sm text-gray-500 flex items-center gap-1">
-                                                    <User className="w-3 h-3" /> {task.beneficiaryName}
+                <div className={`w-full mx-auto transition-all duration-700 ${hasSelectedCategory ? 'max-w-7xl' : 'max-w-3xl'}`}>
+                    <div className={`grid gap-6 ${hasSelectedCategory ? 'grid-cols-1 lg:grid-cols-12' : 'grid-cols-1'}`}>
+                        {/* Categories Sidebar */}
+                        <div className={`${hasSelectedCategory ? 'lg:col-span-4 xl:col-span-3' : 'col-span-1'}`}>
+                            <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm sticky top-24 transition-all duration-300">
+                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4 px-2">
+                                    Finance Sections
+                                </h3>
+                                <nav className="space-y-1">
+                                    {CATEGORIES.map((category) => {
+                                        const categoryModules = getModulesByCategory(category.id);
+                                        const isOpen = openCategories.includes(category.id);
+                                        const CatIcon = category.icon;
+                                        if (categoryModules.length === 0 && searchQuery) return null;
+                                        return (
+                                            <button
+                                                key={category.id}
+                                                onClick={() => toggleCategory(category.id)}
+                                                className={`w-full flex items-center justify-between px-3 py-3.5 rounded-lg transition-all ${isOpen ? 'bg-emerald-50 text-emerald-700 font-semibold' : 'text-gray-700 hover:bg-gray-50'
+                                                    }`}
+                                            >
+                                                <div className="flex items-center space-x-3 overflow-hidden">
+                                                    <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors ${isOpen ? 'bg-emerald-500 text-white' : 'bg-gray-100 text-gray-600'
+                                                        }`}>
+                                                        <CatIcon size={18} />
+                                                    </div>
+                                                    <div className="text-left">
+                                                        <p className="text-sm font-medium">{category.name}</p>
+                                                    </div>
                                                 </div>
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <div className="font-bold text-gray-900">₹{task.amount?.toLocaleString()}</div>
-                                                <div className="text-xs text-gray-500">Target: ₹{task.targetAmount?.toLocaleString()}</div>
-                                            </td>
-                                            <td className="px-6 py-4 text-sm text-gray-600">
-                                                {new Date(task.deadline).toLocaleDateString(undefined, {
-                                                    day: 'numeric',
-                                                    month: 'short',
-                                                    year: 'numeric'
+                                                <ChevronRight className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-90' : ''}`} />
+                                            </button>
+                                        );
+                                    })}
+                                </nav>
+                            </div>
+                        </div>
+
+                        {/* Modules Area */}
+                        {hasSelectedCategory && (
+                            <div className="lg:col-span-8 xl:col-span-9 space-y-6">
+                                {CATEGORIES.map((category) => {
+                                    const categoryModules = getModulesByCategory(category.id);
+                                    const isOpen = openCategories.includes(category.id);
+                                    if (categoryModules.length === 0 || !isOpen) return null;
+                                    return (
+                                        <div key={category.id} className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                            <div className="flex items-center space-x-3 mb-6 pb-4 border-b border-gray-100">
+                                                <div className="w-11 h-11 rounded-lg bg-emerald-500 flex items-center justify-center">
+                                                    <category.icon className="w-6 h-6 text-white" />
+                                                </div>
+                                                <div>
+                                                    <h2 className="text-xl font-bold text-gray-900">{category.name}</h2>
+                                                    <p className="text-sm text-gray-500">{categoryModules.length} modules available</p>
+                                                </div>
+                                            </div>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                {categoryModules.map((module) => {
+                                                    const Icon = module.icon;
+                                                    return (
+                                                        <div
+                                                            key={module.id}
+                                                            onClick={() => router.push(module.route)}
+                                                            className="group flex items-center justify-between p-4 bg-gray-50 hover:bg-emerald-50 border-2 border-transparent hover:border-emerald-500 rounded-lg cursor-pointer transition-all"
+                                                        >
+                                                            <div className="flex items-center space-x-4">
+                                                                <div className="w-11 h-11 rounded-lg bg-white border-2 border-gray-200 group-hover:border-emerald-500 flex items-center justify-center transition-all">
+                                                                    <Icon className="w-5 h-5 text-gray-600 group-hover:text-emerald-600" />
+                                                                </div>
+                                                                <div>
+                                                                    <h4 className="font-semibold text-gray-900 group-hover:text-emerald-600">{module.name}</h4>
+                                                                    <p className="text-xs text-gray-600">{module.desc}</p>
+                                                                </div>
+                                                            </div>
+                                                            <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-emerald-600 group-hover:translate-x-1 transition-all" />
+                                                        </div>
+                                                    );
                                                 })}
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${task.status === 'completed'
-                                                    ? 'bg-green-50 text-green-700 border-green-100'
-                                                    : task.status === 'in_progress'
-                                                        ? 'bg-orange-50 text-orange-700 border-orange-100'
-                                                        : 'bg-blue-50 text-blue-700 border-blue-100'
-                                                    }`}>
-                                                    <span className={`w-1.5 h-1.5 rounded-full ${task.status === 'completed' ? 'bg-green-500' : task.status === 'in_progress' ? 'bg-orange-500' : 'bg-blue-500'
-                                                        }`} />
-                                                    {task.status.charAt(0).toUpperCase() + task.status.slice(1)}
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-4 text-right">
-                                                <button
-                                                    onClick={() => setSelectedTask(task)}
-                                                    className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all ${task.status === 'completed'
-                                                        ? 'text-blue-600 bg-blue-50 hover:bg-blue-100'
-                                                        : 'text-white bg-blue-600 hover:bg-blue-700 shadow-md shadow-blue-200'
-                                                        }`}
-                                                >
-                                                    {task.status === 'completed' ? 'View proof' : 'Process task'}
-                                                    <ChevronRight className="w-4 h-4" />
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
                         )}
                     </div>
                 </div>
             </main>
-
-            {/* Modal */}
-            <AnimatePresence>
-                {selectedTask && (
-                    <ActionModal
-                        task={selectedTask}
-                        onClose={() => setSelectedTask(null)}
-                        refetch={refetch}
-                    />
-                )}
-            </AnimatePresence>
         </div>
     );
 }
 
-function StatCard({ icon, label, value, color }) {
-    const bgColors = {
-        blue: 'bg-blue-50',
-        orange: 'bg-orange-50',
-        green: 'bg-green-50'
-    };
+function Header({ fullName }) {
+    const [dropdownOpen, setDropdownOpen] = useState(false);
+    const getInitials = (name) => name?.split(" ").map(n => n[0]).join("").toUpperCase().substring(0, 2) || "AD";
 
     return (
-        <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm flex items-center gap-4">
-            <div className={`w-12 h-12 rounded-xl ${bgColors[color]} flex items-center justify-center shrink-0`}>
-                {React.cloneElement(icon, { size: 24 })}
-            </div>
-            <div>
-                <p className="text-sm font-medium text-gray-500">{label}</p>
-                <p className="text-2xl font-bold text-gray-900">{value}</p>
-            </div>
-        </div>
-    );
-}
-
-function ActionModal({ task, onClose, refetch }) {
-    const [paymentMode, setPaymentMode] = useState('online'); // 'online', 'offline'
-    const [proofFiles, setProofFiles] = useState([]);
-    const [transactionRef, setTransactionRef] = useState('');
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const [uploadSuccess, setUploadSuccess] = useState(false);
-    const [submitProofRequest] = useSubmitFinanceProofMutation();
-
-    const isCompleted = task.status === 'completed';
-
-    const handleFileChange = (e) => {
-        const files = Array.from(e.target.files);
-        setProofFiles(prev => [...prev, ...files]);
-    };
-
-    const removeFile = (index) => {
-        setProofFiles(prev => prev.filter((_, i) => i !== index));
-    };
-
-    const handleSubmit = async () => {
-        if (proofFiles.length === 0) {
-            alert('Please upload a proof of transaction');
-            return;
-        }
-
-        setIsSubmitting(true);
-        try {
-            await submitProofRequest({
-                taskId: task.taskId,
-                campaignId: task.campaignId,
-                transactionRef,
-                paymentMode, // Send payment mode
-                proofs: proofFiles
-            }).unwrap();
-
-            setUploadSuccess(true);
-            setIsSubmitting(false);
-
-            // Refresh list and close after a delay or let user see success
-            setTimeout(() => {
-                refetch();
-                onClose();
-            }, 2000);
-        } catch (error) {
-            console.error('Submit Error:', error);
-            alert('Failed to process disbursement' + (error.data?.message ? ': ' + error.data.message : ''));
-            setIsSubmitting(false);
-        }
-    };
-
-    return (
-        <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4 backdrop-blur-sm"
-            onClick={onClose}
-        >
-            <motion.div
-                initial={{ scale: 0.9, opacity: 0, y: 20 }}
-                animate={{ scale: 1, opacity: 1, y: 0 }}
-                exit={{ scale: 0.9, opacity: 0, y: 20 }}
-                className="bg-white rounded-3xl w-full max-w-2xl overflow-hidden shadow-2xl"
-                onClick={e => e.stopPropagation()}
-            >
-                {/* Modal Header */}
-                <div className="p-6 bg-gray-50 border-b border-gray-100 flex items-center justify-between">
-                    <div>
-                        <h2 className="text-xl font-bold text-gray-900">{isCompleted ? 'Transaction Details' : 'Process Disbursement'}</h2>
-                        <p className="text-sm text-gray-500">{task.campaignName}</p>
-                    </div>
-                    <button onClick={onClose} className="p-2 hover:bg-white rounded-full transition shadow-sm border border-gray-200">
-                        <XIcon className="w-5 h-5 text-gray-500" />
-                    </button>
-                </div>
-
-                <div className="p-6 overflow-y-auto max-h-[70vh]">
-                    {/* Bank Details Card */}
-                    <div className="bg-blue-600 rounded-2xl p-6 text-white mb-8 relative overflow-hidden shadow-lg shadow-blue-200">
-                        <div className="absolute top-0 right-0 p-4 opacity-10">
-                            <Building size={120} />
-                        </div>
-                        <div className="relative z-10">
-                            <div className="flex items-center gap-2 text-blue-100 text-sm font-medium mb-4">
-                                <Building size={16} /> Beneficiary Bank Details
-                            </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-y-4 gap-x-8">
-                                <div>
-                                    <p className="text-blue-100 text-xs lowercase">Bank Name & Branch</p>
-                                    <p className="font-bold text-lg">{task.beneficiaryDetails?.bankNameBranch || 'N/A'}</p>
-                                </div>
-                                <div>
-                                    <p className="text-blue-100 text-xs lowercase">Account Holder</p>
-                                    <p className="font-bold text-lg">{task.beneficiaryName || 'N/A'}</p>
-                                </div>
-                                <div className="md:col-span-1">
-                                    <p className="text-blue-100 text-xs lowercase">Account Number</p>
-                                    <div className="flex items-center gap-3">
-                                        <p className="font-mono text-xl tracking-wider">{task.beneficiaryDetails?.accountNumber || 'N/A'}</p>
-                                        <button className="p-1 hover:bg-blue-500 rounded transition" onClick={() => navigator.clipboard.writeText(task.beneficiaryDetails?.accountNumber)}>
-                                            <CreditCard size={14} />
-                                        </button>
-                                    </div>
-                                </div>
-                                <div>
-                                    <p className="text-blue-100 text-xs lowercase">IFSC Code</p>
-                                    <p className="font-mono text-xl tracking-wider">{task.beneficiaryDetails?.ifscCode || 'N/A'}</p>
-                                </div>
-                            </div>
+        <header className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div className="flex items-center justify-between h-16">
+                    <div className="flex items-center space-x-3">
+                        <img src="/TPFAid-LogoDesign-20.svg" className="h-9 w-auto" alt="TPFAid Logo" />
+                        <div className="hidden md:block h-8 w-px bg-gray-200"></div>
+                        <div>
+                            <h1 className="text-lg font-bold text-gray-900">Finance & Accounting</h1>
+                            <p className="text-xs text-gray-500">Finance & Transactions</p>
                         </div>
                     </div>
-
-                    {!isCompleted && !uploadSuccess && (
-                        <div className="space-y-6">
-                            {/* Payment Mode */}
-                            <div>
-                                <label className="block text-sm font-bold text-gray-700 mb-3">Transition Mode</label>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <button
-                                        onClick={() => setPaymentMode('online')}
-                                        className={`flex items-center justify-center gap-3 p-4 rounded-2xl border-2 transition-all ${paymentMode === 'online'
-                                            ? 'border-blue-600 bg-blue-50 text-blue-600'
-                                            : 'border-gray-100 bg-gray-50 text-gray-500 hover:border-gray-200'
-                                            }`}
-                                    >
-                                        <QrCode size={20} />
-                                        <span className="font-bold">Online</span>
-                                    </button>
-                                    <button
-                                        onClick={() => setPaymentMode('offline')}
-                                        className={`flex items-center justify-center gap-3 p-4 rounded-2xl border-2 transition-all ${paymentMode === 'offline'
-                                            ? 'border-blue-600 bg-blue-50 text-blue-600'
-                                            : 'border-gray-100 bg-gray-50 text-gray-500 hover:border-gray-200'
-                                            }`}
-                                    >
-                                        <Building size={20} />
-                                        <span className="font-bold">Offline</span>
+                    <div className="flex items-center gap-4">
+                        <NotificationBell moduleFilter="FINANCE_TASK" />
+                        <div className="relative">
+                            <button onClick={() => setDropdownOpen(!dropdownOpen)} className="flex items-center space-x-3 px-3 py-2 hover:bg-gray-50 rounded-lg transition-colors">
+                                <div className="w-10 h-10 rounded-full bg-emerald-600 flex items-center justify-center text-white font-bold">{getInitials(fullName)}</div>
+                                <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${dropdownOpen ? 'rotate-180' : ''}`} />
+                            </button>
+                            {dropdownOpen && (
+                                <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-xl border border-gray-200 py-1 z-20">
+                                    <button className="w-full flex items-center space-x-3 px-4 py-2 text-red-600 hover:bg-red-50 transition-colors">
+                                        <LogOut size={16} />
+                                        <span className="text-sm font-medium">Logout</span>
                                     </button>
                                 </div>
-                            </div>
-
-                            {/* Transaction Ref */}
-                            <div>
-                                <label className="block text-sm font-bold text-gray-700 mb-2">
-                                    Transaction Reference # (Optional)
-                                </label>
-                                <input
-                                    type="text"
-                                    value={transactionRef}
-                                    onChange={(e) => setTransactionRef(e.target.value)}
-                                    placeholder="Enter UTR, Txn ID, or Cheque #"
-                                    className="w-full bg-gray-50 border border-gray-200 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
-                                />
-                            </div>
-
-                            {/* Proof Upload */}
-                            <div>
-                                <label className="block text-sm font-bold text-gray-700 mb-2">Upload Proof (Photography)</label>
-                                <div
-                                    className="border-2 border-dashed border-gray-200 rounded-2xl p-8 text-center bg-gray-50 hover:bg-gray-100 hover:border-gray-300 transition-all group cursor-pointer"
-                                    onClick={() => document.getElementById('finance-proof').click()}
-                                >
-                                    <input
-                                        type="file"
-                                        id="finance-proof"
-                                        multiple
-                                        hidden
-                                        onChange={handleFileChange}
-                                        accept="image/*,application/pdf"
-                                    />
-                                    <div className="w-12 h-12 bg-white rounded-xl shadow-sm border border-gray-100 flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
-                                        <Camera className="text-gray-400" size={24} />
-                                    </div>
-                                    <p className="text-sm font-bold text-gray-700">Click or drag files here</p>
-                                    <p className="text-xs text-gray-500 mt-1">Upload photos of receipt, screen shot, or deposit slip</p>
-                                </div>
-
-                                {proofFiles.length > 0 && (
-                                    <div className="mt-4 grid grid-cols-2 gap-3">
-                                        {proofFiles.map((file, idx) => (
-                                            <div key={idx} className="flex items-center justify-between p-2 bg-blue-50 border border-blue-100 rounded-xl">
-                                                <div className="flex items-center gap-2 overflow-hidden">
-                                                    <FileText className="text-blue-600 shrink-0" size={16} />
-                                                    <span className="text-xs font-medium text-blue-700 truncate">{file.name}</span>
-                                                </div>
-                                                <button onClick={(e) => { e.stopPropagation(); removeFile(idx); }} className="text-blue-400 hover:text-blue-600">
-                                                    <XIcon size={14} />
-                                                </button>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    )}
-
-                    {uploadSuccess && (
-                        <div className="py-12 text-center">
-                            <motion.div
-                                initial={{ scale: 0 }}
-                                animate={{ scale: 1 }}
-                                className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4"
-                            >
-                                <CheckCircle className="text-green-600" size={40} />
-                            </motion.div>
-                            <h3 className="text-2xl font-bold text-gray-900 mb-2">Disbursement Processed!</h3>
-                            <p className="text-gray-500 mb-4 max-w-sm mx-auto">
-                                The transaction proof has been uploaded and the task is now marked as complete.
-                            </p>
-                        </div>
-                    )}
-
-                    {isCompleted && (
-                        <div className="space-y-6">
-                            <div className="bg-green-50 rounded-2xl p-4 border border-green-100 flex items-center gap-3">
-                                <CheckCircle className="text-green-600" />
-                                <span className="text-sm font-bold text-green-700 uppercase tracking-wide">Disbursement Completed Successfully</span>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100">
-                                    <p className="text-gray-400 text-xs lowercase mb-1 underline">Payment Mode</p>
-                                    <p className="font-bold text-gray-900 capitalize">{task.paymentMode || 'N/A'}</p>
-                                </div>
-                                <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100">
-                                    <p className="text-gray-400 text-xs lowercase mb-1 underline">Transaction Ref</p>
-                                    <p className="font-bold text-gray-900">{task.transactionRef || 'N/A'}</p>
-                                </div>
-                            </div>
-
-                            {/* Display Proofs */}
-                            <div>
-                                <p className="text-sm font-bold text-gray-700 mb-3">Uploaded Proofs</p>
-                                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                                    {task.proofs?.map((proof, idx) => (
-                                        <a
-                                            key={idx}
-                                            href={`${(process.env.NEXT_PUBLIC_BACKEND_API || 'http://localhost:7000/api').replace(/\/api\/?$/, '')}${proof.fileUrl}`}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="group relative aspect-square bg-gray-100 rounded-xl overflow-hidden border border-gray-200 hover:border-blue-500 transition-all shadow-sm flex flex-col items-center justify-center"
-                                        >
-                                            {proof.fileType?.startsWith('image') ? (
-                                                <img
-                                                    src={`${(process.env.NEXT_PUBLIC_BACKEND_API || 'http://localhost:7000/api').replace(/\/api\/?$/, '')}${proof.fileUrl}`}
-                                                    className="w-full h-full object-cover group-hover:scale-110 transition-transform"
-                                                    alt="Proof"
-                                                />
-                                            ) : (
-                                                <div className="flex flex-col items-center gap-2">
-                                                    <FileText className="text-blue-600 w-8 h-8" />
-                                                    <span className="text-[10px] font-bold text-gray-500 uppercase">View Document</span>
-                                                </div>
-                                            )}
-                                        </a>
-                                    ))}
-                                    {(!task.proofs || task.proofs.length === 0) && (
-                                        <div className="col-span-full py-4 text-center text-gray-400 bg-gray-50 rounded-xl border border-dashed border-gray-200">
-                                            No proofs available
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-                    )}
-                </div>
-
-                {/* Modal Footer */}
-                <div className="p-6 border-t border-gray-100 bg-gray-50 flex gap-3">
-                    <button
-                        onClick={onClose}
-                        className="flex-1 px-6 py-3 rounded-2xl text-sm font-bold text-gray-600 bg-white border border-gray-200 hover:bg-gray-50 transition-all font-sans"
-                    >
-                        Close
-                    </button>
-                    {!isCompleted && !uploadSuccess && (
-                        <button
-                            disabled={isSubmitting || proofFiles.length === 0}
-                            onClick={handleSubmit}
-                            className={`flex-[2] px-6 py-3 rounded-2xl text-sm font-bold text-white transition-all shadow-lg flex items-center justify-center gap-2 ${isSubmitting || proofFiles.length === 0
-                                ? 'bg-gray-300 shadow-none cursor-not-allowed'
-                                : 'bg-blue-600 hover:bg-blue-700 shadow-blue-200'
-                                }`}
-                        >
-                            {isSubmitting ? (
-                                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                            ) : (
-                                <>
-                                    <CheckCircle size={18} /> Process & Complete
-                                </>
                             )}
-                        </button>
-                    )}
+                        </div>
+                    </div>
                 </div>
-            </motion.div>
-        </motion.div>
+            </div>
+        </header>
+    );
+}
+
+function Title({ totalModules }) {
+    const router = useRouter();
+    return (
+        <div className="relative mb-8 pt-4">
+            <button onClick={() => router.push('/select-portal')} className="flex items-center gap-2 text-gray-600 hover:text-emerald-600 transition-colors font-medium mb-6">
+                <ArrowLeft size={20} />
+                <span>Back to Select Portal</span>
+            </button>
+            <div className="text-center">
+                <div className="inline-flex items-center space-x-2 px-4 py-1.5 bg-emerald-100 rounded-full mb-4">
+                    <Calculator className="w-4 h-4 text-emerald-600" />
+                    <span className="text-sm font-medium text-emerald-700">{totalModules} Active Modules</span>
+                </div>
+                <h1 className="text-4xl font-bold text-gray-900 mb-2">Finance System</h1>
+                <p className="text-gray-600">Comprehensive management and tracking hub</p>
+            </div>
+        </div>
+    );
+}
+
+function SearchBar({ searchQuery, setSearchQuery }) {
+    return (
+        <div className="max-w-2xl mx-auto mb-10">
+            <div className="relative">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <input
+                    type="text"
+                    placeholder="Search finance sections..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full pl-12 pr-4 py-3.5 bg-white border-2 border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 transition-all outline-none"
+                />
+            </div>
+        </div>
     );
 }

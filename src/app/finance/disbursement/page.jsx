@@ -1,4 +1,4 @@
-import Finance from '@/components/Admin/Finance/Finance';
+import DisbursementManagement from '@/components/Admin/Finance/DisbursementManagement';
 
 export const metadata = {
     title: 'Disbursement Tasks | TPF Admin',
@@ -6,5 +6,5 @@ export const metadata = {
 };
 
 export default function DisbursementPage() {
-    return <Finance />;
+    return <DisbursementManagement />;
 }
