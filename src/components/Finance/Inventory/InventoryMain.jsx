@@ -19,6 +19,7 @@ import {
     LogOut,
     ChevronDown
 } from 'lucide-react';
+import { useLogoutAdminApiMutation } from '@/utils/slices/adminApiSlice';
 
 const INVENTORY_MODULES = [
     {
@@ -77,7 +78,7 @@ const INVENTORY_MODULES = [
         category: 'expenses',
         route: '/inventory/expenses',
     },
- ];
+];
 
 const CATEGORIES = [
     { id: 'dashboard', name: 'Dashboard', icon: LayoutDashboard },
@@ -99,9 +100,20 @@ export default function InventoryMain() {
     const admin = useSelector((state) => state.adminAuth.adminInfo);
     const fullName = admin?.fullName || "";
 
+    const [logoutAdmin] = useLogoutAdminApiMutation();
+
     useEffect(() => {
         setMounted(true);
     }, []);
+
+    const handleLogout = async () => {
+        try {
+            await logoutAdmin().unwrap();
+            window.location.href = "/";
+        } catch (err) {
+            console.error("Logout failed", err);
+        }
+    };
 
     const filteredModules = useMemo(() =>
         INVENTORY_MODULES.filter((m) =>
@@ -138,7 +150,7 @@ export default function InventoryMain() {
 
     return (
         <div className="min-h-screen bg-gray-50">
-            <Header fullName={fullName} />
+            <Header fullName={fullName} handleLogout={handleLogout} />
 
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 <Title totalModules={filteredModules.length} />
@@ -236,7 +248,7 @@ export default function InventoryMain() {
     );
 }
 
-function Header({ fullName }) {
+function Header({ fullName, handleLogout }) {
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const getInitials = (name) => name?.split(" ").map(n => n[0]).join("").toUpperCase().substring(0, 2) || "AD";
 
@@ -255,15 +267,34 @@ function Header({ fullName }) {
                     <div className="relative">
                         <button onClick={() => setDropdownOpen(!dropdownOpen)} className="flex items-center space-x-3 px-3 py-2 hover:bg-gray-50 rounded-lg transition-colors">
                             <div className="w-10 h-10 rounded-full bg-emerald-600 flex items-center justify-center text-white font-bold">{getInitials(fullName)}</div>
+                            <div className="hidden sm:block text-left">
+                                <p className="text-sm font-semibold text-gray-900">
+                                    {fullName || "Admin"}
+                                </p>
+                            </div>
                             <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${dropdownOpen ? 'rotate-180' : ''}`} />
                         </button>
                         {dropdownOpen && (
-                            <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-xl border border-gray-200 py-1 z-20">
-                                <button className="w-full flex items-center space-x-3 px-4 py-2 text-red-600 hover:bg-red-50 transition-colors">
-                                    <LogOut size={16} />
-                                    <span className="text-sm font-medium">Logout</span>
-                                </button>
-                            </div>
+                            <>
+                                <div
+                                    className="fixed inset-0 z-10"
+                                    onClick={() => setDropdownOpen(false)}
+                                ></div>
+                                <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-xl border border-gray-200 py-1 z-20">
+                                    <div className="px-4 py-3 border-b border-gray-100">
+                                        <p className="text-xs text-gray-500 mt-0.5">Signed in as {fullName}</p>
+                                    </div>
+                                    <div className="py-1">
+                                        <button
+                                            onClick={handleLogout}
+                                            className="w-full flex items-center space-x-3 px-4 py-2 text-red-600 hover:bg-red-50 transition-colors"
+                                        >
+                                            <LogOut className="w-4 h-4" />
+                                            <span className="text-sm font-medium">Logout</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </>
                         )}
                     </div>
                 </div>
