@@ -8,9 +8,14 @@ export const campaignApiSlice = apiSlice.injectEndpoints({
       query: ({ page, limit }) => `campaigns/get?page=${page}&limit=${limit}`,
       providesTags: ['Campaigns'], // This will allow cache management for campaigns
     }),
+    getCampaignList: builder.query({
+      query: () => 'campaigns/list',
+      providesTags: ['Campaigns'],
+    }),
   }),
 });
 
 export const {
   useFetchCampaignsQuery,   // The hook for fetching campaigns
+  useGetCampaignListQuery,
 } = campaignApiSlice;

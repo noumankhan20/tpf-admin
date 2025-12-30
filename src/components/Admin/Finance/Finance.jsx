@@ -22,7 +22,8 @@ import {
     ChevronRight,
     QrCode,
     DollarSign,
-    ExternalLink
+    ExternalLink,
+    TrendingDown
 } from 'lucide-react';
 import {
     useGetFinanceAssignmentsQuery,
@@ -52,7 +53,7 @@ export default function FinancePage() {
     const completedCount = assignments.filter(t => t.status === 'completed').length;
 
     return (
-        <div className="min-h-screen bg-gray-50 font-sans flex flex-col">
+        <div className="min-h-screen bg-[#F8FAFC] font-sans flex flex-col">
             {/* Header */}
             <header className="flex items-center justify-between px-6 py-4 bg-white border-b border-gray-200 shrink-0 shadow-sm">
                 <div className="flex items-center space-x-4">
@@ -73,6 +74,44 @@ export default function FinancePage() {
             </header>
 
             <main className="flex-1 p-6 max-w-7xl mx-auto w-full">
+                {/* Quick Access Modules */}
+                <div className="mb-8">
+                    <h2 className="text-lg font-bold text-gray-800 mb-4">Quick Access</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <button
+                            onClick={() => router.push('/finance/expenses')}
+                            className="bg-white border-2 border-gray-200 hover:border-emerald-500 p-6 rounded-2xl shadow-sm hover:shadow-md transition-all duration-200 flex items-center justify-between group text-left"
+                        >
+                            <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 bg-rose-50 rounded-xl flex items-center justify-center text-rose-600">
+                                    <TrendingDown className="w-6 h-6" />
+                                </div>
+                                <div>
+                                    <h3 className="font-bold text-lg text-gray-900 group-hover:text-emerald-600 transition-colors">Expense Management</h3>
+                                    <p className="text-sm text-gray-500">Track all organizational expenses</p>
+                                </div>
+                            </div>
+                            <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-emerald-600 group-hover:translate-x-1 transition-all" />
+                        </button>
+
+                        <button
+                            onClick={() => router.push('/finance/disbursement')}
+                            className="bg-white border-2 border-gray-200 hover:border-emerald-500 p-6 rounded-2xl shadow-sm hover:shadow-md transition-all duration-200 flex items-center justify-between group text-left"
+                        >
+                            <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600">
+                                    <CreditCard className="w-6 h-6" />
+                                </div>
+                                <div>
+                                    <h3 className="font-bold text-lg text-gray-900 group-hover:text-emerald-600 transition-colors">Disbursement Tasks</h3>
+                                    <p className="text-sm text-gray-500">Process beneficiary payments</p>
+                                </div>
+                            </div>
+                            <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-emerald-600 group-hover:translate-x-1 transition-all" />
+                        </button>
+                    </div>
+                </div>
+
                 {/* Stats */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                     <StatCard
