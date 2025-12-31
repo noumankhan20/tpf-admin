@@ -2,9 +2,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Camera, Upload, MapPin, Calendar, CheckCircle, XCircle, Bell, ArrowLeft, Eye, Download, AlertCircle, Clock, UserCheck, FileText, ImageIcon, Trash2, MessageSquare, ChevronRight, Home, Grid, Settings, Menu, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { io } from 'socket.io-client';
 import { toast } from 'react-toastify';
 import NotificationBell from '../Common/NotificationBell';
+import { useSocket } from '@/utils/context/SocketContext';
 
 // Utility Functions
 const formatDate = (dateStr) => {
@@ -540,7 +540,7 @@ const PhotographyModule = () => {
     const [userRole, setUserRole] = useState('photographer');
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [selectedTask, setSelectedTask] = useState(null);
-    const socket = useRef(null);
+    const { socket } = useSocket();
 
 
     // Fetch assignments from API
@@ -562,34 +562,24 @@ const PhotographyModule = () => {
     const isLoading = assignmentsLoading || completedLoading;
 
     // WebSocket for real-time notifications
+    // WebSocket for real-time notifications
     useEffect(() => {
-        const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
-        socket.current = io(backendUrl, {
-            withCredentials: true,
-            transports: ['websocket', 'polling']
-        });
+        if (!socket) return;
 
-        socket.current.on('connect', () => {
-            console.log('Connected to WebSocket server');
-        });
-
-        socket.current.on('taskAssigned', (data) => {
+        const handleTaskAssigned = (data) => {
             console.log('Task assignment notification:', data);
-
             // If it's a photography task, refresh the lists
             if (data.module === 'PHOTO_TASK') {
                 refetchAssignments();
-                // We let NotificationBell handle the toast to avoid duplicates
-            }
-        });
-
-        return () => {
-            if (socket.current) {
-                socket.current.disconnect();
-                console.log('Disconnected from WebSocket server');
             }
         };
-    }, [refetchAssignments]);
+
+        socket.on('taskAssigned', handleTaskAssigned);
+
+        return () => {
+            socket.off('taskAssigned', handleTaskAssigned);
+        };
+    }, [socket, refetchAssignments]);
 
 
     const router = useRouter();
@@ -669,7 +659,8 @@ const PhotographyModule = () => {
             )}
 
             {/* Main Content */}
-            < main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8" >
+            {/* Main Content */}
+            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8">
                 {isLoading ? (
                     <div className="flex justify-center py-20">
                         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600"></div>
@@ -694,8 +685,8 @@ const PhotographyModule = () => {
                         onTaskSelect={setSelectedTask}
                     />
                 ) : null}
-            </main >
-        </div >
+            </main>
+        </div>
     );
 };
 

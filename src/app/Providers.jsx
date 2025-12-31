@@ -74,11 +74,15 @@ function AdminBootstrap({ children }) {
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
+import { SocketProvider } from "@/utils/context/SocketContext";
+
 export default function Providers({ children }) {
   return (
     <ReduxProvider store={store}>
       <AdminBootstrap>
-        {children}
+        <SocketProvider>
+          {children}
+        </SocketProvider>
         <ToastContainer />
       </AdminBootstrap>
     </ReduxProvider>

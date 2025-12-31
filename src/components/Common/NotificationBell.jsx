@@ -4,7 +4,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Bell, Camera, FileText, Share2, Wallet, Star, X, CheckCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSelector } from 'react-redux';
-import { io } from 'socket.io-client';
+import { useSelector } from 'react-redux';
+import { useSocket } from '@/utils/context/SocketContext';
 import { toast } from 'react-toastify';
 import { useRouter } from 'next/navigation';
 
@@ -13,7 +14,7 @@ const NotificationBell = ({ moduleFilter = null }) => {
     const [notifications, setNotifications] = useState([]);
     const [unreadCount, setUnreadCount] = useState(0);
     const admin = useSelector((state) => state.adminAuth.adminInfo);
-    const socket = useRef(null);
+    const { socket } = useSocket();
     const dropdownRef = useRef(null);
     const router = useRouter();
 
@@ -114,13 +115,9 @@ const NotificationBell = ({ moduleFilter = null }) => {
     }, [admin, moduleFilter]);
 
     useEffect(() => {
-        const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:7000';
-        socket.current = io(backendUrl, {
-            withCredentials: true,
-            transports: ['websocket', 'polling']
-        });
+        if (!socket) return;
 
-        socket.current.on('taskAssigned', (data) => {
+        const handleTaskAssigned = (data) => {
             const adminId = admin?._id || admin?.id;
             // Check if this task is for the current admin
             if (data.assignedAdminId === adminId) {
@@ -141,9 +138,9 @@ const NotificationBell = ({ moduleFilter = null }) => {
                     toast.success(newNotification.title);
                 }
             }
-        });
+        };
 
-        socket.current.on('formSubmitted', (data) => {
+        const handleFormSubmitted = (data) => {
             // Form submissions are global for verifiers
             const newNotification = {
                 id: data.id,
@@ -166,12 +163,16 @@ const NotificationBell = ({ moduleFilter = null }) => {
                 setUnreadCount(prev => prev + 1);
                 toast.info(newNotification.title);
             }
-        });
+        };
+
+        socket.on('taskAssigned', handleTaskAssigned);
+        socket.on('formSubmitted', handleFormSubmitted);
 
         return () => {
-            if (socket.current) socket.current.disconnect();
+            socket.off('taskAssigned', handleTaskAssigned);
+            socket.off('formSubmitted', handleFormSubmitted);
         };
-    }, [admin, moduleFilter]);
+    }, [socket, admin, moduleFilter]);
 
     // Close dropdown on click outside
     useEffect(() => {
