@@ -255,7 +255,7 @@ export default function KYCVerificationPage() {
                     </div>
                     <div className="flex items-center gap-4">
                         {isFetching && <RefreshCw className="w-4 h-4 text-blue-500 animate-spin" />}
-                        <NotificationBell moduleFilter="VERIFY" />
+                        <NotificationBell moduleFilter="KYC" />
                     </div>
                 </header>
 

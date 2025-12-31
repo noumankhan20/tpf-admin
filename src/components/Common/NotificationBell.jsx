@@ -47,7 +47,11 @@ const NotificationBell = ({ moduleFilter = null }) => {
                 }
 
                 // Fetch Pending Forms if in VERIFY module
-                if (!moduleFilter || moduleFilter === 'VERIFY') {
+                const isVerifyModule = !moduleFilter || moduleFilter === 'VERIFY';
+                const isFinancialAidFilter = moduleFilter === 'FINANCIAL_AID';
+                const isKYCFilter = moduleFilter === 'KYC';
+
+                if (isVerifyModule || isFinancialAidFilter) {
                     // Fetch Financial Aid Forms
                     const formRes = await fetch(`${apiBase}/admin/verify/forms?status=pending`, {
                         credentials: 'include'
@@ -59,7 +63,7 @@ const NotificationBell = ({ moduleFilter = null }) => {
                             id: form._id,
                             type: 'FORM',
                             formType: form.formType || 'FINANCIAL_AID',
-                            title: `New ${form.formType?.replace(/_/g, ' ') || 'FINANCIAL AID'} submitted`,
+                            title: `Pending Verification: ${form.formType?.replace(/_/g, ' ') || 'FINANCIAL AID'}`,
                             subtitle: form.fullName || form.organizationName,
                             time: form.createdAt,
                             read: false,
@@ -67,7 +71,9 @@ const NotificationBell = ({ moduleFilter = null }) => {
                         }));
                         allInitial = [...allInitial, ...formNotifications];
                     }
+                }
 
+                if (isVerifyModule || isKYCFilter) {
                     // Fetch KYC Requests
                     try {
                         const kycRes = await fetch(`${apiBase}/admin/kyc/requests?status=pending`, {
@@ -79,7 +85,7 @@ const NotificationBell = ({ moduleFilter = null }) => {
                                 id: kyc._id,
                                 type: 'FORM',
                                 formType: 'KYC',
-                                title: `New KYC Request submitted`,
+                                title: `Pending Verification: KYC Request`,
                                 subtitle: (kyc.kycDetails?.fullLegalName || kyc.fullName || 'User'),
                                 time: kyc.createdAt || kyc.updatedAt,
                                 read: false,
@@ -98,7 +104,7 @@ const NotificationBell = ({ moduleFilter = null }) => {
                     : allInitial;
 
                 setNotifications(filtered);
-                setUnreadCount(filtered.filter(n => !n.read).length);
+                setUnreadCount(filtered.length);
             } catch (err) {
                 console.error('Failed to fetch initial notifications:', err);
             }
@@ -143,15 +149,19 @@ const NotificationBell = ({ moduleFilter = null }) => {
                 id: data.id,
                 type: 'FORM',
                 formType: data.type,
-                title: `New ${data.type.replace(/_/g, ' ')} submitted`,
+                title: `Pending Verification: ${data.type.replace(/_/g, ' ')}`,
                 subtitle: data.fullName,
                 time: new Date().toISOString(),
                 read: false,
                 data: data
             };
 
-            // Only show if relevant to verify pages
-            if (!moduleFilter || moduleFilter === 'VERIFY') {
+            // Filter logic
+            const isVerifyModule = !moduleFilter || moduleFilter === 'VERIFY';
+            const isFinancialAidFilter = moduleFilter === 'FINANCIAL_AID' && data.type !== 'KYC';
+            const isKYCFilter = moduleFilter === 'KYC' && data.type === 'KYC';
+
+            if (isVerifyModule || isFinancialAidFilter || isKYCFilter) {
                 setNotifications(prev => [newNotification, ...prev]);
                 setUnreadCount(prev => prev + 1);
                 toast.info(newNotification.title);
@@ -174,13 +184,8 @@ const NotificationBell = ({ moduleFilter = null }) => {
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    const markAsRead = (id) => {
-        setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
-        setUnreadCount(prev => Math.max(0, prev - 1));
-    };
 
     const handleNotificationClick = (notification) => {
-        markAsRead(notification.id);
         setShowDropdown(false);
 
         // Navigation logic based on type
@@ -247,16 +252,16 @@ const NotificationBell = ({ moduleFilter = null }) => {
                                     <div
                                         key={n.id}
                                         onClick={() => handleNotificationClick(n)}
-                                        className={`px-4 py-3 hover:bg-gray-50 transition-colors cursor-pointer border-b border-gray-50 last:border-0 relative ${!n.read ? 'bg-blue-50/30' : ''}`}
+                                        className="px-4 py-3 hover:bg-gray-50 transition-colors cursor-pointer border-b border-gray-50 last:border-0 relative bg-blue-50/20"
                                     >
-                                        {!n.read && <div className="absolute left-1 top-1/2 -translate-y-1/2 w-1 h-8 bg-blue-500 rounded-full" />}
+                                        <div className="absolute left-1 top-1/2 -translate-y-1/2 w-1 h-8 bg-blue-500 rounded-full" />
                                         <div className="flex gap-3">
                                             <div className="w-9 h-9 bg-gray-100 rounded-xl flex items-center justify-center shrink-0">
                                                 {getIcon(n.type, n.module)}
                                             </div>
                                             <div className="flex-1 min-w-0">
                                                 <div className="flex justify-between items-start gap-2">
-                                                    <p className={`text-sm leading-tight truncate ${!n.read ? 'font-bold text-gray-900' : 'text-gray-700'}`}>
+                                                    <p className="text-sm leading-tight truncate font-bold text-gray-900">
                                                         {n.title}
                                                     </p>
                                                     <span className="text-[10px] text-gray-400 whitespace-nowrap">
@@ -264,14 +269,6 @@ const NotificationBell = ({ moduleFilter = null }) => {
                                                     </span>
                                                 </div>
                                                 {n.subtitle && <p className="text-xs text-gray-500 mt-1 truncate">{n.subtitle}</p>}
-                                                {!n.read && (
-                                                    <button
-                                                        onClick={(e) => { e.stopPropagation(); markAsRead(n.id); }}
-                                                        className="text-[10px] text-blue-600 font-bold mt-1 hover:underline"
-                                                    >
-                                                        Mark as read
-                                                    </button>
-                                                )}
                                             </div>
                                         </div>
                                     </div>

@@ -348,7 +348,7 @@ export default function FinancialAidVerifyPage() {
                   <h1 className="text-xl font-bold text-gray-800">Verify Financial Aid Forms</h1>
                </div>
                <div className="flex items-center gap-4">
-                  <NotificationBell moduleFilter="VERIFY" />
+                  <NotificationBell moduleFilter="FINANCIAL_AID" />
                </div>
             </header>
 
