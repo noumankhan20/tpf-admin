@@ -3,10 +3,13 @@ import { apiSlice } from './../apiSlice';
 export const stockApiSlice = apiSlice.injectEndpoints({
     endpoints: (builder) => ({
         getInventoryStock: builder.query({
-            query: (search) => ({
-                url: `/inventory/stock${search ? `?search=${search}` : ''}`,
-                method: 'GET',
-            }),
+            query: (params) => {
+                const queryParams = new URLSearchParams();
+                if (params?.page) queryParams.append("page", params.page);
+                if (params?.limit) queryParams.append("limit", params.limit);
+                if (params?.search) queryParams.append("search", params.search);
+                return `/inventory/stock?${queryParams.toString()}`;
+            },
             providesTags: ['Stock'],
         }),
         distributeStock: builder.mutation({

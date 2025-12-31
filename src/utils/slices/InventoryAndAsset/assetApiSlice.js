@@ -3,10 +3,13 @@ import { apiSlice } from './../apiSlice';
 export const assetApiSlice = apiSlice.injectEndpoints({
     endpoints: (builder) => ({
         getAssets: builder.query({
-            query: () => ({
-                url: '/inventory/assets',
-                method: 'GET',
-            }),
+            query: (params) => {
+                const queryParams = new URLSearchParams();
+                if (params?.page) queryParams.append("page", params.page);
+                if (params?.limit) queryParams.append("limit", params.limit);
+                if (params?.search) queryParams.append("search", params.search);
+                return `/inventory/assets?${queryParams.toString()}`;
+            },
             providesTags: ['Assets'],
         }),
         assignAsset: builder.mutation({
@@ -32,6 +35,13 @@ export const assetApiSlice = apiSlice.injectEndpoints({
             }),
             invalidatesTags: ['Assets'],
         }),
+        deleteAsset: builder.mutation({
+            query: (id) => ({
+                url: `/inventory/assets/${id}`,
+                method: 'DELETE',
+            }),
+            invalidatesTags: ['Assets', 'Items'],
+        }),
     }),
 });
 
@@ -40,4 +50,5 @@ export const {
     useAssignAssetMutation,
     useUnassignAssetMutation,
     useUpdateAssetIncomeMutation,
+    useDeleteAssetMutation,
 } = assetApiSlice;

@@ -5,7 +5,13 @@ export const vendorApiSlice = apiSlice.injectEndpoints({
        GET ALL VENDORS
     -------------------------------- */
     getVendors: builder.query({
-      query: () => "/inventory/vendors",
+      query: (params) => {
+        const queryParams = new URLSearchParams();
+        if (params?.page) queryParams.append("page", params.page);
+        if (params?.limit) queryParams.append("limit", params.limit);
+        if (params?.search) queryParams.append("search", params.search);
+        return `/inventory/vendors?${queryParams.toString()}`;
+      },
       providesTags: ["Vendors"],
     }),
 

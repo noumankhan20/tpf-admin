@@ -13,6 +13,7 @@ import {
     X,
     Share2,
     PieChart,
+    Trash2,
     Loader2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -20,6 +21,8 @@ import {
     useGetInventoryStockQuery,
     useDistributeStockMutation
 } from '../../../../utils/slices/InventoryAndAsset/stockApiSlice';
+import { useDeleteItemMutation } from '../../../../utils/slices/InventoryAndAsset/itemApiSlice';
+import Pagination from '../Common/Pagination';
 
 export default function InventoryStock() {
     const router = useRouter();
@@ -27,12 +30,19 @@ export default function InventoryStock() {
     const [searchQuery, setSearchQuery] = useState('');
     const [showDistributeModal, setShowDistributeModal] = useState(false);
     const [selectedItem, setSelectedItem] = useState(null);
+    const [currentPage, setCurrentPage] = useState(1);
 
     // API Hooks
-    const { data: stockData, isLoading } = useGetInventoryStockQuery(searchQuery);
+    const { data: stockResponse, isLoading } = useGetInventoryStockQuery({
+        page: currentPage,
+        limit: 12,
+        search: searchQuery
+    });
     const [distributeStock, { isLoading: isDistributing }] = useDistributeStockMutation();
+    const [deleteItem, { isLoading: isDeleting }] = useDeleteItemMutation();
 
-    const stock = stockData?.data || [];
+    const stock = stockResponse?.data || [];
+    const meta = stockResponse?.meta || { totalPages: 1 };
 
     // Form State
     const [distributeData, setDistributeData] = useState({
@@ -44,6 +54,11 @@ export default function InventoryStock() {
     useEffect(() => {
         setIsMounted(true);
     }, []);
+
+    // Reset to page 1 when search changes
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchQuery]);
 
     const openDistributeModal = (item) => {
         setSelectedItem(item);
@@ -76,6 +91,17 @@ export default function InventoryStock() {
     // Data is filtered by backend search query, but we can verify here if needed.
     // The backend handles filtering, so 'stock' is already filtered.
     const filteredStock = stock;
+
+    const handleStockDelete = async (id) => {
+        if (window.confirm('Are you sure you want to deactivate this inventory item?')) {
+            try {
+                await deleteItem(id).unwrap();
+            } catch (err) {
+                console.error('Failed to delete item:', err);
+                alert(err?.data?.message || 'Failed to deactivate item');
+            }
+        }
+    };
 
     if (!isMounted) return null;
 
@@ -189,18 +215,34 @@ export default function InventoryStock() {
                                                 </div>
                                             </div>
 
-                                            <button
-                                                onClick={() => openDistributeModal(item)}
-                                                className="w-full py-3 bg-gray-50 hover:bg-gray-900 hover:text-white rounded-xl text-gray-700 font-bold text-sm transition-all flex items-center justify-center gap-2"
-                                            >
-                                                <Share2 size={16} />
-                                                Distribute Stock
-                                            </button>
+                                            <div className="flex gap-2">
+                                                <button
+                                                    onClick={() => openDistributeModal(item)}
+                                                    className="flex-1 py-3 bg-gray-50 hover:bg-gray-900 hover:text-white rounded-xl text-gray-700 font-bold text-sm transition-all flex items-center justify-center gap-2"
+                                                >
+                                                    <Share2 size={16} />
+                                                    Distribute Stock
+                                                </button>
+                                                <button
+                                                    onClick={() => handleStockDelete(item._id)}
+                                                    disabled={isDeleting}
+                                                    className="px-3 bg-gray-50 hover:bg-rose-50 text-gray-300 hover:text-rose-600 rounded-xl transition-all flex items-center justify-center"
+                                                    title="Deactivate Item"
+                                                >
+                                                    <Trash2 size={16} />
+                                                </button>
+                                            </div>
                                         </motion.div>
                                     );
                                 })
                             )}
                         </AnimatePresence>
+
+                        <Pagination
+                            currentPage={currentPage}
+                            totalPages={meta.totalPages}
+                            onPageChange={(page) => setCurrentPage(page)}
+                        />
                     </div>
                 )}
             </main>

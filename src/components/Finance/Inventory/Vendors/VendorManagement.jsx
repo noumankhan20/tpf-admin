@@ -19,6 +19,7 @@ import {
     Loader2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import Pagination from '../Common/Pagination';
 import {
     useGetVendorsQuery,
     useCreateVendorMutation,
@@ -32,9 +33,14 @@ export default function VendorManagement() {
     const [searchQuery, setSearchQuery] = useState('');
     const [showAddModal, setShowAddModal] = useState(false);
     const [editingVendor, setEditingVendor] = useState(null);
+    const [currentPage, setCurrentPage] = useState(1);
 
     // API Hooks
-    const { data: vendorsData, isLoading, isError, error } = useGetVendorsQuery();
+    const { data: vendorsData, isLoading, isError, error } = useGetVendorsQuery({
+        page: currentPage,
+        limit: 12,
+        search: searchQuery
+    });
     const [createVendor, { isLoading: isCreating }] = useCreateVendorMutation();
     const [updateVendor, { isLoading: isUpdating }] = useUpdateVendorMutation();
     const [deleteVendor, { isLoading: isDeleting }] = useDeleteVendorMutation();
@@ -139,13 +145,7 @@ export default function VendorManagement() {
 
     // Get vendors from API response
     const vendors = vendorsData?.data || [];
-
-    // Filter vendors
-    const filteredVendors = vendors.filter(v =>
-        v.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (v.vendorGST && v.vendorGST.toLowerCase().includes(searchQuery.toLowerCase())) ||
-        v.contactNumber.toString().includes(searchQuery)
-    );
+    const meta = vendorsData?.meta || { totalPages: 1 };
 
     if (!isMounted) return null;
 
@@ -221,87 +221,94 @@ export default function VendorManagement() {
 
                 {/* Vendors Grid */}
                 {!isLoading && !isError && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        <AnimatePresence mode="popLayout">
-                            {filteredVendors.map((vendor) => (
-                                <motion.div
-                                    layout
-                                    initial={{ opacity: 0, scale: 0.9 }}
-                                    animate={{ opacity: 1, scale: 1 }}
-                                    exit={{ opacity: 0, scale: 0.9 }}
-                                    key={vendor._id}
-                                    className={`bg-white rounded-2xl border ${vendor.status === 'INACTIVE' ? 'border-gray-200 grayscale-[0.6] opacity-80' : 'border-gray-100 shadow-sm'} p-6 relative group transition-all hover:shadow-md`}
-                                >
-                                    <div className="flex justify-between items-start mb-4">
-                                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${vendor.status === 'INACTIVE' ? 'bg-gray-100 text-gray-400' : 'bg-emerald-50 text-emerald-600'}`}>
-                                            <Briefcase size={24} />
+                    <>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            <AnimatePresence mode="popLayout">
+                                {vendors.map((vendor) => (
+                                    <motion.div
+                                        layout
+                                        initial={{ opacity: 0, scale: 0.9 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        exit={{ opacity: 0, scale: 0.9 }}
+                                        key={vendor._id}
+                                        className={`bg-white rounded-2xl border ${vendor.status === 'INACTIVE' ? 'border-gray-200 grayscale-[0.6] opacity-80' : 'border-gray-100 shadow-sm'} p-6 relative group transition-all hover:shadow-md`}
+                                    >
+                                        <div className="flex justify-between items-start mb-4">
+                                            <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${vendor.status === 'INACTIVE' ? 'bg-gray-100 text-gray-400' : 'bg-emerald-50 text-emerald-600'}`}>
+                                                <Briefcase size={24} />
+                                            </div>
+                                            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <button
+                                                    onClick={() => handleEdit(vendor)}
+                                                    className="p-2 hover:bg-emerald-50 text-emerald-600 rounded-lg transition-colors"
+                                                    title="Edit"
+                                                >
+                                                    <Edit2 size={16} />
+                                                </button>
+                                                <button
+                                                    onClick={() => toggleStatus(vendor)}
+                                                    className={`p-2 rounded-lg transition-colors ${vendor.status === 'ACTIVE' ? 'hover:bg-rose-50 text-rose-600' : 'hover:bg-emerald-50 text-emerald-600'}`}
+                                                    title={vendor.status === 'ACTIVE' ? 'Deactivate' : 'Activate'}
+                                                >
+                                                    {vendor.status === 'ACTIVE' ? <Ban size={16} /> : <CheckCircle size={16} />}
+                                                </button>
+                                            </div>
                                         </div>
-                                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <button
-                                                onClick={() => handleEdit(vendor)}
-                                                className="p-2 hover:bg-emerald-50 text-emerald-600 rounded-lg transition-colors"
-                                                title="Edit"
-                                            >
-                                                <Edit2 size={16} />
-                                            </button>
-                                            <button
-                                                onClick={() => toggleStatus(vendor)}
-                                                className={`p-2 rounded-lg transition-colors ${vendor.status === 'ACTIVE' ? 'hover:bg-rose-50 text-rose-600' : 'hover:bg-emerald-50 text-emerald-600'}`}
-                                                title={vendor.status === 'ACTIVE' ? 'Deactivate' : 'Activate'}
-                                            >
-                                                {vendor.status === 'ACTIVE' ? <Ban size={16} /> : <CheckCircle size={16} />}
-                                            </button>
-                                        </div>
-                                    </div>
 
-                                    <h3 className="text-lg font-bold text-gray-900 mb-1">{vendor.fullName}</h3>
-                                    {vendor.vendorGST && (
-                                        <p className="text-xs font-bold text-emerald-600 mb-3 tracking-wider">{vendor.vendorGST}</p>
-                                    )}
+                                        <h3 className="text-lg font-bold text-gray-900 mb-1">{vendor.fullName}</h3>
+                                        {vendor.vendorGST && (
+                                            <p className="text-xs font-bold text-emerald-600 mb-3 tracking-wider">{vendor.vendorGST}</p>
+                                        )}
 
-                                    <div className="space-y-3">
-                                        <div className="flex items-center gap-2 text-gray-500">
-                                            <Phone size={14} className="shrink-0" />
-                                            <p className="text-sm">{vendor.contactNumber}</p>
-                                        </div>
-                                        {vendor.location && (
+                                        <div className="space-y-3">
                                             <div className="flex items-center gap-2 text-gray-500">
-                                                <MapPin size={14} className="shrink-0" />
-                                                <p className="text-sm truncate">{vendor.location}</p>
+                                                <Phone size={14} className="shrink-0" />
+                                                <p className="text-sm">{vendor.contactNumber}</p>
+                                            </div>
+                                            {vendor.location && (
+                                                <div className="flex items-center gap-2 text-gray-500">
+                                                    <MapPin size={14} className="shrink-0" />
+                                                    <p className="text-sm truncate">{vendor.location}</p>
+                                                </div>
+                                            )}
+                                            <p className="text-xs text-gray-400 line-clamp-2 leading-relaxed">
+                                                {vendor.fullAddress}
+                                            </p>
+                                            <div className="flex items-center gap-2 text-gray-400 pt-2 border-t border-gray-100">
+                                                <Calendar size={12} className="shrink-0" />
+                                                <p className="text-xs">
+                                                    Joined {new Date(vendor.joinedAt).toLocaleDateString('en-IN', {
+                                                        day: 'numeric',
+                                                        month: 'short',
+                                                        year: 'numeric'
+                                                    })}
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        {vendor.status === 'INACTIVE' && (
+                                            <div className="absolute top-4 right-4 text-[10px] font-bold bg-gray-100 text-gray-500 px-2 py-1 rounded uppercase tracking-widest">
+                                                Inactive
                                             </div>
                                         )}
-                                        <p className="text-xs text-gray-400 line-clamp-2 leading-relaxed">
-                                            {vendor.fullAddress}
-                                        </p>
-                                        <div className="flex items-center gap-2 text-gray-400 pt-2 border-t border-gray-100">
-                                            <Calendar size={12} className="shrink-0" />
-                                            <p className="text-xs">
-                                                Joined {new Date(vendor.joinedAt).toLocaleDateString('en-IN', {
-                                                    day: 'numeric',
-                                                    month: 'short',
-                                                    year: 'numeric'
-                                                })}
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    {vendor.status === 'INACTIVE' && (
-                                        <div className="absolute top-4 right-4 text-[10px] font-bold bg-gray-100 text-gray-500 px-2 py-1 rounded uppercase tracking-widest">
-                                            Inactive
-                                        </div>
-                                    )}
-                                    {vendor.status === 'SUSPENDED' && (
-                                        <div className="absolute top-4 right-4 text-[10px] font-bold bg-red-100 text-red-600 px-2 py-1 rounded uppercase tracking-widest">
-                                            Suspended
-                                        </div>
-                                    )}
-                                </motion.div>
-                            ))}
-                        </AnimatePresence>
-                    </div>
+                                        {vendor.status === 'SUSPENDED' && (
+                                            <div className="absolute top-4 right-4 text-[10px] font-bold bg-red-100 text-red-600 px-2 py-1 rounded uppercase tracking-widest">
+                                                Suspended
+                                            </div>
+                                        )}
+                                    </motion.div>
+                                ))}
+                            </AnimatePresence>
+                        </div>
+                        <Pagination
+                            currentPage={currentPage}
+                            totalPages={meta.totalPages}
+                            onPageChange={(page) => setCurrentPage(page)}
+                        />
+                    </>
                 )}
 
-                {!isLoading && !isError && filteredVendors.length === 0 && (
+                {!isLoading && !isError && vendors.length === 0 && (
                     <div className="text-center py-20 bg-white rounded-3xl border border-dashed border-gray-200">
                         <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
                             <Users className="text-gray-300" size={32} />

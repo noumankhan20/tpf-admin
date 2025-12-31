@@ -18,6 +18,7 @@ import {
     MoreVertical,
     Laptop,
     UserMinus,
+    Trash2,
     Loader2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -25,8 +26,10 @@ import {
     useGetAssetsQuery,
     useAssignAssetMutation,
     useUnassignAssetMutation,
-    useUpdateAssetIncomeMutation
+    useUpdateAssetIncomeMutation,
+    useDeleteAssetMutation
 } from '../../../../utils/slices/InventoryAndAsset/assetApiSlice';
+import Pagination from '../Common/Pagination';
 import { useGetAdminListQuery } from '../../../../utils/slices/adminApiSlice';
 
 export default function AssetManagement() {
@@ -38,15 +41,22 @@ export default function AssetManagement() {
     const [showAssignModal, setShowAssignModal] = useState(false);
     const [showIncomeModal, setShowIncomeModal] = useState(false);
     const [selectedAsset, setSelectedAsset] = useState(null);
+    const [currentPage, setCurrentPage] = useState(1);
 
     // API Hooks
-    const { data: assetsData, isLoading } = useGetAssetsQuery();
+    const { data: assetsResponse, isLoading } = useGetAssetsQuery({
+        page: currentPage,
+        limit: 10,
+        search: searchQuery
+    });
     const { data: adminListData } = useGetAdminListQuery();
     const [assignAsset, { isLoading: isAssigning }] = useAssignAssetMutation();
     const [unassignAsset, { isLoading: isUnassigning }] = useUnassignAssetMutation();
     const [updateIncome, { isLoading: isUpdating }] = useUpdateAssetIncomeMutation();
+    const [deleteAsset, { isLoading: isDeleting }] = useDeleteAssetMutation();
 
-    const assets = assetsData?.data || [];
+    const assets = assetsResponse?.data || [];
+    const meta = assetsResponse?.meta || { totalPages: 1 };
     const admins = adminListData?.data || [];
 
     // Form States
@@ -56,6 +66,11 @@ export default function AssetManagement() {
     useEffect(() => {
         setIsMounted(true);
     }, []);
+
+    // Reset to page 1 when search changes
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchQuery]);
 
     const handleAssign = async (e) => {
         e.preventDefault();
@@ -95,10 +110,18 @@ export default function AssetManagement() {
         }
     };
 
-    const filteredAssets = assets.filter(a =>
-        a.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (a.assignedTo?.fullName || '').toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    const handleAssetDelete = async (id) => {
+        if (window.confirm('Are you sure you want to deactivate this asset?')) {
+            try {
+                await deleteAsset(id).unwrap();
+            } catch (err) {
+                console.error('Failed to delete asset:', err);
+                alert(err?.data?.message || 'Failed to deactivate asset');
+            }
+        }
+    };
+
+    const filteredAssets = assets;
 
     if (!isMounted) return null;
 
@@ -217,16 +240,29 @@ export default function AssetManagement() {
                                             </div>
                                             <button
                                                 onClick={() => { setSelectedAsset(asset); setIncomeAmount(asset.monthlyIncome || ''); setShowIncomeModal(true); }}
-                                                className="p-2 hover:bg-gray-100 rounded-lg text-gray-400 hover:text-emerald-600 transition-colors"
+                                                className="p-2 hover:bg-emerald-50 rounded-lg text-gray-400 hover:text-emerald-600 transition-colors"
                                                 title="Record Income"
                                             >
                                                 <IndianRupee size={18} />
+                                            </button>
+                                            <button
+                                                onClick={() => handleAssetDelete(asset._id)}
+                                                disabled={isDeleting}
+                                                className="p-2 hover:bg-rose-50 rounded-lg text-gray-300 hover:text-rose-600 transition-colors"
+                                                title="Deactivate Asset"
+                                            >
+                                                <Trash2 size={18} />
                                             </button>
                                         </div>
                                     </div>
                                 ))
                             )}
                         </div>
+                        <Pagination
+                            currentPage={currentPage}
+                            totalPages={meta.totalPages}
+                            onPageChange={(page) => setCurrentPage(page)}
+                        />
                     </div>
                 )}
             </main>

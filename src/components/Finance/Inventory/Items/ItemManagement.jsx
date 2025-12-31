@@ -19,6 +19,7 @@ import {
     ChevronRight
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import Pagination from '../Common/Pagination';
 import {
     useGetItemsQuery,
     useCreateItemMutation,
@@ -358,57 +359,11 @@ export default function ItemManagement() {
                         </div>
 
                         {/* Pagination */}
-                        {meta.totalPages > 1 && (
-                            <div className="mt-8 flex items-center justify-center gap-2">
-                                <button
-                                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                                    disabled={currentPage === 1}
-                                    className="p-2 rounded-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                                >
-                                    <ChevronLeft size={20} />
-                                </button>
-
-                                <div className="flex items-center gap-2">
-                                    {Array.from({ length: Math.min(5, meta.totalPages) }, (_, i) => {
-                                        let pageNum;
-                                        if (meta.totalPages <= 5) {
-                                            pageNum = i + 1;
-                                        } else if (currentPage <= 3) {
-                                            pageNum = i + 1;
-                                        } else if (currentPage >= meta.totalPages - 2) {
-                                            pageNum = meta.totalPages - 4 + i;
-                                        } else {
-                                            pageNum = currentPage - 2 + i;
-                                        }
-
-                                        return (
-                                            <button
-                                                key={pageNum}
-                                                onClick={() => setCurrentPage(pageNum)}
-                                                className={`w-10 h-10 rounded-lg font-bold text-sm transition-all ${currentPage === pageNum
-                                                    ? 'bg-emerald-600 text-white shadow-md'
-                                                    : 'bg-white border border-gray-200 hover:border-emerald-200 text-gray-600'
-                                                    }`}
-                                            >
-                                                {pageNum}
-                                            </button>
-                                        );
-                                    })}
-                                </div>
-
-                                <button
-                                    onClick={() => setCurrentPage(prev => Math.min(meta.totalPages, prev + 1))}
-                                    disabled={currentPage === meta.totalPages}
-                                    className="p-2 rounded-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                                >
-                                    <ChevronRight size={20} />
-                                </button>
-
-                                <span className="ml-4 text-sm text-gray-500">
-                                    Page {currentPage} of {meta.totalPages} ({meta.total} items)
-                                </span>
-                            </div>
-                        )}
+                        <Pagination
+                            currentPage={currentPage}
+                            totalPages={meta.totalPages}
+                            onPageChange={(page) => setCurrentPage(page)}
+                        />
                     </>
                 )}
 

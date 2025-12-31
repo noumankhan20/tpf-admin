@@ -70,14 +70,7 @@ const INVENTORY_MODULES = [
         category: 'inventory',
         route: '/inventory/stock',
     },
-    {
-        id: 'expense-mgmt',
-        name: 'Expenses',
-        desc: 'Operational and maintenance costs',
-        icon: Receipt,
-        category: 'expenses',
-        route: '/inventory/expenses',
-    },
+  
 ];
 
 const CATEGORIES = [
@@ -87,7 +80,6 @@ const CATEGORIES = [
     { id: 'purchases', name: 'Purchases', icon: ShoppingCart },
     { id: 'assets', name: 'Assets', icon: HardDrive },
     { id: 'inventory', name: 'Inventory', icon: ClipboardList },
-    { id: 'expenses', name: 'Expenses', icon: Receipt },
 ];
 
 export default function InventoryMain() {

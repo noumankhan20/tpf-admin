@@ -31,7 +31,10 @@ import {
    Clock,
    TrendingUp,
    X as XIcon,
-   Printer
+   Printer,
+   Camera,
+   Upload,
+   Plus
 } from 'lucide-react';
 import { useGetAllFormsQuery, useUpdateFormStatusMutation } from '@/utils/slices/financialAidApiSlice';
 
@@ -42,8 +45,13 @@ export default function FinancialAidVerifyPage() {
    // Tab and selection state
    const [activeTab, setActiveTab] = useState('myself'); // 'myself' or 'other'
    const [selectedForm, setSelectedForm] = useState(null);
-   const [rejectReason, setRejectReason] = useState('');
-   const [isRejecting, setIsRejecting] = useState(false);
+
+   // Ground Report Modal State
+   const [isGroundReportModalOpen, setIsGroundReportModalOpen] = useState(false);
+   const [groundReportStatus, setGroundReportStatus] = useState(''); // 'approved' or 'rejected'
+   const [groundReportReason, setGroundReportReason] = useState('');
+   const [groundReportImages, setGroundReportImages] = useState([]);
+   const [imagePreviews, setImagePreviews] = useState([]);
 
    const [showSuccessMessage, setShowSuccessMessage] = useState(false);
    const [showErrorMessage, setShowErrorMessage] = useState(false);
@@ -112,30 +120,47 @@ export default function FinancialAidVerifyPage() {
 
    const [updateStatus, { isLoading: isUpdating }] = useUpdateFormStatusMutation();
 
-   const handleApprove = async (id) => {
-      try {
-         await updateStatus({ id, status: 'approved' }).unwrap();
-         setSelectedForm(null);
-         setShowSuccessMessage(true);
-      } catch (err) {
-         console.error("Failed to approve:", err);
-         setShowErrorMessage(true);
-      }
+   const handleOpenGroundReport = (status) => {
+      setGroundReportStatus(status);
+      setGroundReportReason('');
+      setGroundReportImages([]);
+      setImagePreviews([]);
+      setIsGroundReportModalOpen(true);
    };
 
-   const handleReject = async (id) => {
-      if (!rejectReason.trim()) {
-         setShowErrorMessage(true); // Show error for empty reason
+   const handleImageChange = (e) => {
+      const files = Array.from(e.target.files);
+      setGroundReportImages(prev => [...prev, ...files]);
+
+      const newPreviews = files.map(file => URL.createObjectURL(file));
+      setImagePreviews(prev => [...prev, ...newPreviews]);
+   };
+
+   const removeImage = (index) => {
+      setGroundReportImages(prev => prev.filter((_, i) => i !== index));
+      setImagePreviews(prev => prev.filter((_, i) => i !== index));
+   };
+
+   const handleSubmitGroundReport = async () => {
+      if (!groundReportReason.trim()) {
+         alert("Please provide a reason for your decision.");
          return;
       }
+
+      const formData = new FormData();
+      formData.append('status', groundReportStatus);
+      formData.append('remarks', groundReportReason); // Changed 'reason' to 'remarks' to match backend
+      groundReportImages.forEach(image => {
+         formData.append('groundReportImages', image);
+      });
+
       try {
-         await updateStatus({ id, status: 'rejected', remarks: rejectReason }).unwrap();
-         setIsRejecting(false);
-         setRejectReason('');
+         await updateStatus({ id: selectedForm._id, formData }).unwrap();
+         setIsGroundReportModalOpen(false);
          setSelectedForm(null);
          setShowSuccessMessage(true);
       } catch (err) {
-         console.error("Failed to reject:", err);
+         console.error("Failed to submit ground report:", err);
          setShowErrorMessage(true);
       }
    };
@@ -283,7 +308,7 @@ export default function FinancialAidVerifyPage() {
                      </svg>
                   </div>
                   <div>
-                     <p className="font-semibold">Form Approved Successfully!</p>
+                     <p className="font-semibold">Form Status Changed Successfully!</p>
                   </div>
                </motion.div>
 
@@ -516,7 +541,7 @@ export default function FinancialAidVerifyPage() {
                         {!isLoading && displayForms?.map((form) => (
                            <div
                               key={form._id}
-                              onClick={() => { setSelectedForm(form); setIsRejecting(false); }}
+                              onClick={() => { setSelectedForm(form); }}
                               className={`p-4 rounded-xl border cursor-pointer transition-all group ${selectedForm?._id === form._id
                                  ? 'bg-blue-50 border-blue-500 shadow-md'
                                  : 'bg-gray-50 border-gray-200 hover:bg-gray-100 hover:border-gray-300'
@@ -631,6 +656,107 @@ export default function FinancialAidVerifyPage() {
                         </div>
                      )}
                   </div>
+
+                  {/* Ground Report Modal */}
+                  <AnimatePresence>
+                     {isGroundReportModalOpen && (
+                        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                           <motion.div
+                              initial={{ opacity: 0 }}
+                              animate={{ opacity: 1 }}
+                              exit={{ opacity: 0 }}
+                              onClick={() => setIsGroundReportModalOpen(false)}
+                              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                           />
+                           <motion.div
+                              initial={{ scale: 0.95, opacity: 0, y: 20 }}
+                              animate={{ scale: 1, opacity: 1, y: 0 }}
+                              exit={{ scale: 0.95, opacity: 0, y: 20 }}
+                              className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden relative z-10"
+                           >
+                              {/* Modal Header */}
+                              <div className={`px-6 py-4 flex items-center justify-between text-white ${groundReportStatus === 'approved' ? 'bg-emerald-600' : 'bg-red-600'}`}>
+                                 <div className="flex items-center gap-3">
+                                    {groundReportStatus === 'approved' ? <CheckCircle size={24} /> : <XCircle size={24} />}
+                                    <h2 className="text-xl font-bold italic">Ground Report - {groundReportStatus === 'approved' ? 'Approve' : 'Reject'}</h2>
+                                 </div>
+                                 <button onClick={() => setIsGroundReportModalOpen(false)} className="p-1 hover:bg-white/20 rounded-full transition-colors">
+                                    <XIcon size={24} />
+                                 </button>
+                              </div>
+
+                              {/* Modal Body */}
+                              <div className="p-6 overflow-y-auto max-h-[70vh] custom-scrollbar">
+                                 <div className="mb-6">
+                                    <label className="block text-sm font-bold text-gray-700 uppercase tracking-wider mb-2">
+                                       Ground Verification Reason <span className="text-red-500">*</span>
+                                    </label>
+                                    <textarea
+                                       value={groundReportReason}
+                                       onChange={(e) => setGroundReportReason(e.target.value)}
+                                       placeholder="Explain the basis of your decision (e.g., 'I visited their home, reviewed physical documents, case is genuine...')"
+                                       className="w-full bg-gray-50 border border-gray-300 rounded-xl p-4 text-gray-800 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all resize-none"
+                                       rows="5"
+                                    />
+                                 </div>
+
+                                 <div className="mb-2">
+                                    <label className="block text-sm font-bold text-gray-700 uppercase tracking-wider mb-2">
+                                       Upload Verification Photos
+                                    </label>
+                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-4">
+                                       {imagePreviews.map((src, idx) => (
+                                          <div key={idx} className="relative aspect-square rounded-xl overflow-hidden group shadow-md border border-gray-100">
+                                             <img src={src} alt="Preview" className="w-full h-full object-cover" />
+                                             <button
+                                                onClick={() => removeImage(idx)}
+                                                className="absolute top-1 right-1 p-1 bg-red-600 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
+                                             >
+                                                <XIcon size={12} />
+                                             </button>
+                                          </div>
+                                       ))}
+                                       <label className="aspect-square rounded-xl border-2 border-dashed border-gray-300 flex flex-col items-center justify-center cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition-all group bg-gray-50 text-gray-400 hover:text-blue-600">
+                                          <input
+                                             type="file"
+                                             multiple
+                                             accept="image/*"
+                                             className="hidden"
+                                             onChange={handleImageChange}
+                                          />
+                                          <Plus size={24} className="mb-1" />
+                                          <span className="text-[10px] font-bold uppercase tracking-widest text-center px-2">Add Photo</span>
+                                       </label>
+                                    </div>
+                                 </div>
+                              </div>
+
+                              {/* Modal Footer */}
+                              <div className="p-6 bg-gray-50 border-t border-gray-200 flex justify-end gap-3">
+                                 <button
+                                    onClick={() => setIsGroundReportModalOpen(false)}
+                                    className="px-6 py-2.5 text-sm font-semibold text-gray-600 hover:bg-gray-200 rounded-xl transition-all"
+                                 >
+                                    Cancel
+                                 </button>
+                                 <button
+                                    onClick={handleSubmitGroundReport}
+                                    disabled={isUpdating}
+                                    className={`px-8 py-2.5 text-sm font-bold text-white rounded-xl shadow-lg transition-all flex items-center gap-2 ${groundReportStatus === 'approved' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-red-600 hover:bg-red-700'}`}
+                                 >
+                                    {isUpdating ? (
+                                       <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                    ) : (
+                                       <>
+                                          Submit Ground Report
+                                       </>
+                                    )}
+                                 </button>
+                              </div>
+                           </motion.div>
+                        </div>
+                     )}
+                  </AnimatePresence>
 
                   {/* RIGHT: Details Column */}
                   <div
@@ -786,6 +912,49 @@ export default function FinancialAidVerifyPage() {
                                  </DetailSection>
                               </div>
 
+                              {/* SECTION 9: Ground Verification Report */}
+                              {selectedForm.groundReport && selectedForm.groundReport.reason && (
+                                 <div className="avoid-break bg-white rounded-xl p-6 border-2 border-dashed border-emerald-200">
+                                    <div className="flex items-center gap-3 mb-4">
+                                       <div className="p-2 bg-emerald-50 rounded-lg text-emerald-600">
+                                          <CheckCircle size={20} />
+                                       </div>
+                                       <h3 className="text-lg font-bold text-gray-800 italic">Ground Verification Report</h3>
+                                    </div>
+                                    <div className="space-y-4">
+                                       <div className="bg-emerald-50/30 p-4 rounded-lg">
+                                          <p className="text-xs text-emerald-700 uppercase tracking-wider font-bold mb-2">Verification Summary</p>
+                                          <p className="text-gray-800 leading-relaxed italic">"{selectedForm.groundReport.reason}"</p>
+                                       </div>
+                                       {selectedForm.groundReport.images?.length > 0 && (
+                                          <div>
+                                             <p className="text-xs text-gray-500 uppercase tracking-wider font-bold mb-3">Verification Photos</p>
+                                             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                                                {selectedForm.groundReport.images.map((img, idx) => (
+                                                   <a
+                                                      key={idx}
+                                                      href={`${BASE_URL}${img}`}
+                                                      target="_blank"
+                                                      rel="noopener noreferrer"
+                                                      className="relative aspect-square rounded-lg overflow-hidden border border-gray-200 hover:border-emerald-500 transition-all shadow-sm group"
+                                                   >
+                                                      <img
+                                                         src={`${BASE_URL}${img}`}
+                                                         alt={`Verification ${idx + 1}`}
+                                                         className="w-full h-full object-cover transition-transform group-hover:scale-110"
+                                                      />
+                                                      <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                                         <Camera className="text-white w-6 h-6" />
+                                                      </div>
+                                                   </a>
+                                                ))}
+                                             </div>
+                                          </div>
+                                       )}
+                                    </div>
+                                 </div>
+                              )}
+
                               {/* SECTION 8: Documents (Links) */}
                               <div className="print-col-span-2">
                                  <DetailSection title="Uploaded Documents" icon={<FileText className="text-blue-600" />}>
@@ -812,54 +981,22 @@ export default function FinancialAidVerifyPage() {
                            {/* Footer / Action Bar */}
                            {selectedForm.status === 'pending' && (
                               <div className="border-t border-gray-200 p-6 bg-white absolute bottom-0 w-full backdrop-blur-md z-20">
-                                 {isRejecting ? (
-                                    <div className="animate-in slide-in-from-bottom-2 fade-in duration-300 bg-white border border-red-300 rounded-xl p-4 shadow-2xl">
-                                       <h4 className="text-red-600 font-semibold mb-2 flex items-center gap-2">
-                                          <XCircle size={16} /> Reject Application
-                                       </h4>
-                                       <textarea
-                                          className="w-full bg-gray-50 border border-gray-300 rounded-lg p-3 text-sm text-gray-800 focus:border-red-500 focus:outline-none mb-3 resize-none"
-                                          rows="3"
-                                          placeholder="Enter detailed reason for rejection..."
-                                          value={rejectReason}
-                                          onChange={(e) => setRejectReason(e.target.value)}
-                                          autoFocus
-                                       />
-                                       <div className="flex justify-end gap-3">
-                                          <button
-                                             onClick={() => setIsRejecting(false)}
-                                             className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 transition"
-                                          >
-                                             Cancel
-                                          </button>
-                                          <button
-                                             onClick={() => handleReject(selectedForm._id)}
-                                             disabled={isUpdating}
-                                             className="px-4 py-2 text-sm bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium shadow-lg transition"
-                                          >
-                                             Confirm Rejection
-                                          </button>
-                                       </div>
-                                    </div>
-                                 ) : (
-                                    <div className="flex justify-end gap-4">
-                                       <button
-                                          onClick={() => setIsRejecting(true)}
-                                          className="flex items-center gap-2 px-6 py-3 bg-red-50 text-red-600 hover:bg-red-600 hover:text-white rounded-xl border border-red-200 transition-all font-semibold"
-                                       >
-                                          <XCircle size={18} />
-                                          Reject
-                                       </button>
-                                       <button
-                                          onClick={() => handleApprove(selectedForm._id)}
-                                          disabled={isUpdating}
-                                          className="flex items-center gap-2 px-8 py-3 bg-emerald-600 text-white hover:bg-emerald-700 rounded-xl shadow-lg shadow-emerald-500/20 transition-all font-bold text-lg hover:-translate-y-1"
-                                       >
-                                          <CheckCircle size={20} />
-                                          Approve
-                                       </button>
-                                    </div>
-                                 )}
+                                 <div className="flex justify-end gap-4">
+                                    <button
+                                       onClick={() => handleOpenGroundReport('rejected')}
+                                       className="flex items-center gap-2 px-6 py-3 bg-red-50 text-red-600 hover:bg-red-600 hover:text-white rounded-xl border border-red-200 transition-all font-semibold"
+                                    >
+                                       <XCircle size={18} />
+                                       Reject
+                                    </button>
+                                    <button
+                                       onClick={() => handleOpenGroundReport('approved')}
+                                       className="flex items-center gap-2 px-8 py-3 bg-emerald-600 text-white hover:bg-emerald-700 rounded-xl shadow-lg shadow-emerald-500/20 transition-all font-bold text-lg hover:-translate-y-1"
+                                    >
+                                       <CheckCircle size={20} />
+                                       Approve
+                                    </button>
+                                 </div>
                               </div>
                            )}
                         </div>

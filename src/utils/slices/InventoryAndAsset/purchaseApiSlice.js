@@ -3,10 +3,13 @@ import { apiSlice } from './../apiSlice';
 export const purchaseApiSlice = apiSlice.injectEndpoints({
     endpoints: (builder) => ({
         getPurchases: builder.query({
-            query: (search) => ({
-                url: `/inventory/purchases${search ? `?search=${search}` : ''}`,
-                method: 'GET',
-            }),
+            query: (params) => {
+                const queryParams = new URLSearchParams();
+                if (params?.page) queryParams.append("page", params.page);
+                if (params?.limit) queryParams.append("limit", params.limit);
+                if (params?.search) queryParams.append("search", params.search);
+                return `/inventory/purchases?${queryParams.toString()}`;
+            },
             providesTags: ['Purchases'],
         }),
         createPurchase: builder.mutation({
@@ -17,10 +20,18 @@ export const purchaseApiSlice = apiSlice.injectEndpoints({
             }),
             invalidatesTags: ['Purchases', 'Stock', 'Items'],
         }),
+        deletePurchase: builder.mutation({
+            query: (id) => ({
+                url: `/inventory/purchases/${id}`,
+                method: 'DELETE',
+            }),
+            invalidatesTags: ['Purchases', 'Stock', 'Items'],
+        }),
     }),
 });
 
 export const {
     useGetPurchasesQuery,
     useCreatePurchaseMutation,
+    useDeletePurchaseMutation,
 } = purchaseApiSlice;

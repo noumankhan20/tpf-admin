@@ -20,7 +20,8 @@ import {
     AlertCircle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useGetPurchasesQuery, useCreatePurchaseMutation } from '../../../../utils/slices/InventoryAndAsset/purchaseApiSlice';
+import Pagination from '../Common/Pagination';
+import { useGetPurchasesQuery, useCreatePurchaseMutation, useDeletePurchaseMutation } from '../../../../utils/slices/InventoryAndAsset/purchaseApiSlice';
 import { useGetVendorsQuery } from '../../../../utils/slices/InventoryAndAsset/vendorApiSlice';
 import { useGetItemsQuery } from '../../../../utils/slices/InventoryAndAsset/itemApiSlice';
 
@@ -29,15 +30,22 @@ export default function PurchaseManagement() {
     const [isMounted, setIsMounted] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [showAddModal, setShowAddModal] = useState(false);
+    const [currentPage, setCurrentPage] = useState(1);
 
     // API Hooks
-    const { data: purchasesResponse, isLoading, isError } = useGetPurchasesQuery(searchQuery);
+    const { data: purchasesResponse, isLoading, isError } = useGetPurchasesQuery({
+        page: currentPage,
+        limit: 10,
+        search: searchQuery
+    });
     const { data: vendorsResponse } = useGetVendorsQuery();
     const { data: itemsResponse } = useGetItemsQuery({}); // Fetch all items (Inventory + Asset)
 
     const [createPurchase, { isLoading: isCreating }] = useCreatePurchaseMutation();
+    const [deletePurchase] = useDeletePurchaseMutation();
 
     const purchases = purchasesResponse?.data || [];
+    const meta = purchasesResponse?.meta || { totalPages: 1 };
     const vendors = vendorsResponse?.data || [];
     const items = itemsResponse?.data || [];
 
@@ -56,16 +64,21 @@ export default function PurchaseManagement() {
         setIsMounted(true);
     }, []);
 
+    // Reset to page 1 when search changes
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchQuery]);
+
     const handleVendorChange = (e) => {
         setFormData(prev => ({ ...prev, vendorId: e.target.value }));
     };
 
-const addLineItem = () => {
-    setFormData(prev => ({
-        ...prev,
-        lineItems: [...prev.lineItems, { itemId: '', qty: '', price: '', unit: '' }]
-    }));
-};
+    const addLineItem = () => {
+        setFormData(prev => ({
+            ...prev,
+            lineItems: [...prev.lineItems, { itemId: '', qty: '', price: '', unit: '' }]
+        }));
+    };
 
     const removeLineItem = (index) => {
         setFormData(prev => ({
@@ -74,85 +87,96 @@ const addLineItem = () => {
         }));
     };
 
-const updateLineItem = (index, field, value) => {
-    setFormData(prev => {
-        const updatedLines = [...prev.lineItems];
-        
-        // If itemId is being updated, also store the unit
-        if (field === 'itemId') {
-            const selectedItem = items.find(item => item._id === value);
-            updatedLines[index] = { 
-                ...updatedLines[index], 
-                itemId: value,
-                unit: selectedItem?.unit || '' // Store the unit
-            };
-        } else {
-            updatedLines[index] = { ...updatedLines[index], [field]: value };
-        }
-        
-        return { ...prev, lineItems: updatedLines };
-    });
-};
+    const updateLineItem = (index, field, value) => {
+        setFormData(prev => {
+            const updatedLines = [...prev.lineItems];
+
+            // If itemId is being updated, also store the unit
+            if (field === 'itemId') {
+                const selectedItem = items.find(item => item._id === value);
+                updatedLines[index] = {
+                    ...updatedLines[index],
+                    itemId: value,
+                    unit: selectedItem?.unit || '' // Store the unit
+                };
+            } else {
+                updatedLines[index] = { ...updatedLines[index], [field]: value };
+            }
+
+            return { ...prev, lineItems: updatedLines };
+        });
+    };
 
     const handleSubmit = async (e) => {
-    e.preventDefault();
+        e.preventDefault();
 
-    // Basic validation
-    if (formData.lineItems.length === 0) {
-        alert("Please add at least one item.");
-        return;
-    }
-
-    // Validate all line items have valid values
-    for (const item of formData.lineItems) {
-        if (!item.itemId) {
-            alert("Please select an item for all line items.");
+        // Basic validation
+        if (formData.lineItems.length === 0) {
+            alert("Please add at least one item.");
             return;
         }
-        if (!item.qty || Number(item.qty) <= 0) {
-            alert("Please enter a valid quantity for all items.");
-            return;
+
+        // Validate all line items have valid values
+        for (const item of formData.lineItems) {
+            if (!item.itemId) {
+                alert("Please select an item for all line items.");
+                return;
+            }
+            if (!item.qty || Number(item.qty) <= 0) {
+                alert("Please enter a valid quantity for all items.");
+                return;
+            }
+            if (!item.price || Number(item.price) < 0) {
+                alert("Please enter a valid price for all items.");
+                return;
+            }
         }
-        if (!item.price || Number(item.price) < 0) {
-            alert("Please enter a valid price for all items.");
-            return;
+
+        const formDataToSend = new FormData();
+        formDataToSend.append('vendorId', formData.vendorId);
+        formDataToSend.append('purchaseDate', formData.purchaseDate);
+        formDataToSend.append('paymentStatus', formData.paymentStatus);
+
+        // Correctly structure items for backend with proper number conversion
+        const itemsPayload = formData.lineItems.map(item => ({
+            itemId: item.itemId,
+            quantity: Number(item.qty),
+            price: Number(item.price) // Backend expects 'price', not 'unitPrice'
+        }));
+
+        formDataToSend.append('items', JSON.stringify(itemsPayload));
+
+        if (formData.proofFile) {
+            formDataToSend.append('proof', formData.proofFile);
         }
-    }
 
-    const formDataToSend = new FormData();
-    formDataToSend.append('vendorId', formData.vendorId);
-    formDataToSend.append('purchaseDate', formData.purchaseDate);
-    formDataToSend.append('paymentStatus', formData.paymentStatus);
+        try {
+            await createPurchase(formDataToSend).unwrap();
 
-    // Correctly structure items for backend with proper number conversion
-    const itemsPayload = formData.lineItems.map(item => ({
-        itemId: item.itemId,
-        quantity: Number(item.qty),
-        price: Number(item.price) // Backend expects 'price', not 'unitPrice'
-    }));
+            setShowAddModal(false);
+            setFormData({
+                vendorId: '',
+                purchaseDate: new Date().toISOString().split('T')[0],
+                paymentStatus: 'PENDING',
+                proofFile: null,
+                lineItems: []
+            });
+        } catch (err) {
+            console.error('Failed to create purchase:', err);
+            alert(err?.data?.message || 'Failed to record purchase');
+        }
+    };
 
-    formDataToSend.append('items', JSON.stringify(itemsPayload));
-
-    if (formData.proofFile) {
-        formDataToSend.append('proof', formData.proofFile);
-    }
-
-    try {
-        await createPurchase(formDataToSend).unwrap();
-
-        setShowAddModal(false);
-        setFormData({
-            vendorId: '',
-            purchaseDate: new Date().toISOString().split('T')[0],
-            paymentStatus: 'PENDING',
-            proofFile: null,
-            lineItems: []
-        });
-    } catch (err) {
-        console.error('Failed to create purchase:', err);
-        alert(err?.data?.message || 'Failed to record purchase');
-    }
-};
+    const handleDelete = async (id) => {
+        if (window.confirm('Are you sure you want to delete this purchase record? Stock will be reverted.')) {
+            try {
+                await deletePurchase(id).unwrap();
+            } catch (err) {
+                console.error('Failed to delete purchase:', err);
+                alert(err?.data?.message || 'Failed to delete purchase');
+            }
+        }
+    };
 
     if (!isMounted) return null;
 
@@ -251,15 +275,24 @@ const updateLineItem = (index, field, value) => {
                                                     </p>
                                                 </div>
                                             </div>
-                                            <div className="text-right">
-                                                <p className="text-2xl font-bold text-gray-900">₹{po.totalAmount.toLocaleString()}</p>
-                                                <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold mt-1 
-                                                    ${po.paymentStatus === 'PAID' ? 'bg-green-50 text-green-700' :
-                                                        po.paymentStatus === 'PENDING' ? 'bg-yellow-50 text-yellow-700' : 'bg-blue-50 text-blue-700'}`}>
-                                                    <CheckCircle2 size={12} />
-                                                    {po.paymentStatus}
-                                                    {po.bill?.fileUrl && <span className="ml-1 text-[10px] underline cursor-pointer" onClick={() => window.open(process.env.NEXT_PUBLIC_BACKEND_URL + po.bill.fileUrl, '_blank')}>View Proof</span>}
+                                            <div className="text-right flex items-center gap-4">
+                                                <div>
+                                                    <p className="text-2xl font-bold text-gray-900">₹{po.totalAmount.toLocaleString()}</p>
+                                                    <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold mt-1 
+                                                        ${po.paymentStatus === 'PAID' ? 'bg-green-50 text-green-700' :
+                                                            po.paymentStatus === 'PENDING' ? 'bg-yellow-50 text-yellow-700' : 'bg-blue-50 text-blue-700'}`}>
+                                                        <CheckCircle2 size={12} />
+                                                        {po.paymentStatus}
+                                                        {po.bill?.fileUrl && <span className="ml-1 text-[10px] underline cursor-pointer" onClick={() => window.open(process.env.NEXT_PUBLIC_BACKEND_URL + po.bill.fileUrl, '_blank')}>View Proof</span>}
+                                                    </div>
                                                 </div>
+                                                <button
+                                                    onClick={() => handleDelete(po._id)}
+                                                    className="p-2 text-gray-300 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all"
+                                                    title="Delete Purchase Record"
+                                                >
+                                                    <Trash2 size={18} />
+                                                </button>
                                             </div>
                                         </div>
 
@@ -287,6 +320,12 @@ const updateLineItem = (index, field, value) => {
                                 ))
                             )}
                         </AnimatePresence>
+
+                        <Pagination
+                            currentPage={currentPage}
+                            totalPages={meta.totalPages}
+                            onPageChange={(page) => setCurrentPage(page)}
+                        />
                     </div>
                 )}
             </main>
@@ -392,64 +431,64 @@ const updateLineItem = (index, field, value) => {
                                             <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Items & Quantities</label>
                                         </div>
 
-                                      <div className="space-y-3">
-    {formData.lineItems.map((line, idx) => (
-        <div key={idx} className="flex gap-3 items-start">
-            <div className="flex-1">
-                <select
-                    required
-                    value={line.itemId}
-                    onChange={(e) => updateLineItem(idx, 'itemId', e.target.value)}
-                    className="w-full px-4 py-2 bg-white border border-gray-200 rounded-xl focus:border-emerald-500 outline-none text-sm"
-                >
-                    <option value="">Select Item</option>
-                    {items.map(item => (
-                        <option key={item._id} value={item._id}>{item.name} ({item.itemType})</option>
-                    ))}
-                </select>
-            </div>
-            <div className="w-32">
-                <div className="relative">
-                 <input
-    type="number"
-    min="1"
-    step="1"
-    placeholder="Qty"
-    required
-    value={line.qty}
-    onChange={(e) => updateLineItem(idx, 'qty', e.target.value)}
-    className="w-full px-4 py-2 pr-12 bg-white border border-gray-200 rounded-xl focus:border-emerald-500 outline-none text-sm"
-/>
-                    {line.unit && (
-                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium text-gray-500">
-                            {line.unit}
-                        </span>
-                    )}
-                </div>
-            </div>
-            <div className="w-32 relative">
-                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">₹</div>
-              <input
-    type="number"
-    min="0"
-    step="0.01"
-    placeholder="Price"
-    required
-    value={line.price}
-    onChange={(e) => updateLineItem(idx, 'price', e.target.value)}
-    className="w-full pl-6 pr-4 py-2 bg-white border border-gray-200 rounded-xl focus:border-emerald-500 outline-none text-sm"
-/>
-            </div>
-            <button
-                type="button"
-                onClick={() => removeLineItem(idx)}
-                className="p-2 text-rose-500 hover:bg-rose-50 rounded-lg transition-colors"
-            >
-                <Trash2 size={16} />
-            </button>
-        </div>
-    ))}
-</div>
+                                        <div className="space-y-3">
+                                            {formData.lineItems.map((line, idx) => (
+                                                <div key={idx} className="flex gap-3 items-start">
+                                                    <div className="flex-1">
+                                                        <select
+                                                            required
+                                                            value={line.itemId}
+                                                            onChange={(e) => updateLineItem(idx, 'itemId', e.target.value)}
+                                                            className="w-full px-4 py-2 bg-white border border-gray-200 rounded-xl focus:border-emerald-500 outline-none text-sm"
+                                                        >
+                                                            <option value="">Select Item</option>
+                                                            {items.map(item => (
+                                                                <option key={item._id} value={item._id}>{item.name} ({item.itemType})</option>
+                                                            ))}
+                                                        </select>
+                                                    </div>
+                                                    <div className="w-32">
+                                                        <div className="relative">
+                                                            <input
+                                                                type="number"
+                                                                min="1"
+                                                                step="1"
+                                                                placeholder="Qty"
+                                                                required
+                                                                value={line.qty}
+                                                                onChange={(e) => updateLineItem(idx, 'qty', e.target.value)}
+                                                                className="w-full px-4 py-2 pr-12 bg-white border border-gray-200 rounded-xl focus:border-emerald-500 outline-none text-sm"
+                                                            />
+                                                            {line.unit && (
+                                                                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium text-gray-500">
+                                                                    {line.unit}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                    <div className="w-32 relative">
+                                                        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">₹</div>
+                                                        <input
+                                                            type="number"
+                                                            min="0"
+                                                            step="0.01"
+                                                            placeholder="Price"
+                                                            required
+                                                            value={line.price}
+                                                            onChange={(e) => updateLineItem(idx, 'price', e.target.value)}
+                                                            className="w-full pl-6 pr-4 py-2 bg-white border border-gray-200 rounded-xl focus:border-emerald-500 outline-none text-sm"
+                                                        />
+                                                    </div>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => removeLineItem(idx)}
+                                                        className="p-2 text-rose-500 hover:bg-rose-50 rounded-lg transition-colors"
+                                                    >
+                                                        <Trash2 size={16} />
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
 
                                         <button
                                             type="button"

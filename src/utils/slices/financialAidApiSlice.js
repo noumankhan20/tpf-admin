@@ -30,10 +30,10 @@ export const financialAidApiSlice = apiSlice.injectEndpoints({
       providesTags: (result, error, id) => [{ type: "FinancialAidForms", id }],
     }),
     updateFormStatus: builder.mutation({
-      query: ({ id, status, remarks }) => ({
+      query: ({ id, formData }) => ({
         url: `/admin/verify/form/${id}/status`,
         method: "PUT",
-        body: { status, remarks },
+        body: formData,
       }),
       invalidatesTags: ["FinancialAidForms"],
     }),
