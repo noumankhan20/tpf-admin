@@ -1,5 +1,5 @@
 "use client";
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import EmployeeModal from "./employeemodal";
 import {
     ArrowLeft,
@@ -15,7 +15,6 @@ import {
     CheckCircle,
     XCircle,
     Eye,
-    Edit,
     FileText,
     TrendingUp,
     AlertCircle,
@@ -26,174 +25,76 @@ import {
     Trash2,
     UserX,
     Loader2,
+    Mail,
+    Briefcase,
+    Building2,
+    MoreVertical,
 } from 'lucide-react';
-
-// Sample employee data - FIXED: All employees now have consistent salary structure
-const initialEmployeesData = [
-    {
-        id: 1,
-        name: "John Doe",
-        email: "john.doe@company.com",
-        department: "Engineering",
-        position: "Senior Developer",
-        joinDate: "2023-01-15",
-        status: "active",
-        salary: {
-            amount: 80000,
-            history: [
-                { month: "Nov 2024", amount: 80000 },
-                { month: "Oct 2024", amount: 78000 },
-                { month: "Sep 2024", amount: 77000 }
-            ]
-        },
-        loginRecords: [
-            { date: "2024-12-13", loginTime: "08:55 AM", logoutTime: "06:05 PM", duration: "9h 10m" },
-            { date: "2024-12-12", loginTime: "09:10 AM", logoutTime: "06:35 PM", duration: "9h 25m" },
-            { date: "2024-12-11", loginTime: "-", logoutTime: "-", duration: "0h" }
-        ],
-        expenses: [
-            { id: 1, type: "Travel", amount: 500, description: "Client meeting in Pune", date: "2024-12-10", status: "approved", receipt: true },
-            { id: 2, type: "Meals", amount: 150, description: "Team lunch", date: "2024-12-08", status: "pending", receipt: true }
-        ]
-    },
-    {
-        id: 2,
-        name: "Sarah Smith",
-        email: "sarah.smith@company.com",
-        department: "Marketing",
-        position: "Marketing Manager",
-        joinDate: "2023-03-20",
-        status: "active",
-        salary: {
-            amount: 69000,
-            history: [
-                { month: "Nov 2024", amount: 69000 },
-                { month: "Oct 2024", amount: 67000 }
-            ]
-        },
-        loginRecords: [
-            { date: "2024-12-13", loginTime: "08:40 AM", logoutTime: "05:50 PM", duration: "9h 10m" },
-            { date: "2024-12-12", loginTime: "08:55 AM", logoutTime: "06:05 PM", duration: "9h 10m" }
-        ],
-        expenses: [
-            { id: 3, type: "Equipment", amount: 1200, description: "New laptop for campaign work", date: "2024-12-05", status: "rejected", receipt: true },
-            { id: 4, type: "Software", amount: 300, description: "Adobe Creative Cloud subscription", date: "2024-12-01", status: "approved", receipt: false }
-        ]
-    },
-    {
-        id: 3,
-        name: "Michael Johnson",
-        email: "michael.j@company.com",
-        department: "Sales",
-        position: "Sales Executive",
-        joinDate: "2023-06-10",
-        status: "active",
-        salary: {
-            amount: 55000,
-            history: [
-                { month: "Nov 2024", amount: 55000 }
-            ]
-        },
-        loginRecords: [
-            { date: "2024-12-13", loginTime: "09:25 AM", logoutTime: "07:05 PM", duration: "9h 40m" }
-        ],
-        expenses: [
-            { id: 5, type: "Travel", amount: 800, description: "Client visit to Delhi", date: "2024-12-09", status: "pending", receipt: true }
-        ]
-    },
-    {
-        id: 4,
-        name: "Emily Davis",
-        email: "emily.davis@company.com",
-        department: "HR",
-        position: "HR Manager",
-        joinDate: "2022-11-01",
-        status: "on-leave",
-        salary: {
-            amount: 70000,
-            history: [
-                { month: "Nov 2024", amount: 70000 }
-            ]
-        },
-        loginRecords: [
-            { date: "2024-12-11", loginTime: "09:00 AM", logoutTime: "06:00 PM", duration: "9h" }
-        ],
-        expenses: []
-    },
-    {
-        id: 5,
-        name: "Robert Brown",
-        email: "robert.brown@company.com",
-        department: "Engineering",
-        position: "Backend Developer",
-        joinDate: "2024-01-15",
-        status: "active",
-        salary: {
-            amount: 68000,
-            history: [
-                { month: "Nov 2024", amount: 68000 }
-            ]
-        },
-        loginRecords: [
-            { date: "2024-12-13", loginTime: "09:55 AM", logoutTime: "07:05 PM", duration: "9h 10m" }
-        ],
-        expenses: [
-            { id: 6, type: "Training", amount: 500, description: "AWS Certification course", date: "2024-12-07", status: "pending", receipt: true }
-        ]
-    }
-];
+import { useGetEmployeesQuery, useGetSalaryQuery, useGetExpensesQuery } from '@/utils/slices/adminApiSlice';
+import DetailsModal from "./popupModal"
 
 export default function EmployeeManagement() {
-    const [employees, setEmployees] = useState(initialEmployeesData);
+    const [employees, setEmployees] = useState([]);
     const [activeTab, setActiveTab] = useState("overview");
     const [selectedEmployee, setSelectedEmployee] = useState(null);
     const [searchQuery, setSearchQuery] = useState("");
-    const [showModal, setShowModal] = useState(false);
     const [modalType, setModalType] = useState("");
     const [selectedItem, setSelectedItem] = useState(null);
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage] = useState(10);
-    const [isLoading, setIsLoading] = useState(false);
+    const [selectedSalary, setSelectedSalary] = useState(null);
+    const [modalOpen, setModalOpen] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [editedEmployee, setEditedEmployee] = useState(null);
+    const [selectedExpense, setSelectedExpense] = useState(null);
 
-    const [expenseForm, setExpenseForm] = useState({
-        type: 'Travel',
-        amount: '',
-        description: '',
-        date: new Date().toISOString().split('T')[0],
-        receipt: false
-    });
+    const { data, error, isLoading } = useGetEmployeesQuery();
+    const { data: salaryData, isLoading: isSalaryLoading, error: salaryError } = useGetSalaryQuery(
+        selectedEmployee ? selectedEmployee._id : null
+    );
+    const { data: expensesData } = useGetExpensesQuery(selectedEmployee ? selectedEmployee._id : null);
 
-    const [newEmployeeForm, setNewEmployeeForm] = useState({
-        fullname: '',
-        email: '',
-        password: '',
-        department: '',
-        position: '',
-        joinDate: new Date().toISOString().split('T')[0]
-    });
+    useEffect(() => {
+        if (expensesData?.data && selectedEmployee && !selectedEmployee.expenses) {
+            setSelectedEmployee(prev => ({ ...prev, expenses: expensesData.data }));
+        }
+    }, [expensesData, selectedEmployee]);
 
-    const [salaryForm, setSalaryForm] = useState({
-        month: '',
-        amount: '',
-    });
+    useEffect(() => {
+        if (data) {
+            setEmployees(data.admins);
+            console.log("data is this", data.admins);
+        }
+    }, [data]);
 
-    // Filter and search employees
+    const handleViewSalaryDetails = (salary) => {
+        setSelectedSalary(salary);
+        setModalOpen(true);
+    };
+
+    const handleViewExpenseDetails = (expense) => {
+        setSelectedExpense(expense);
+        setModalOpen(true);
+    };
+
+    const handleCloseModal = () => {
+        setModalOpen(false);
+        setSelectedSalary(null);
+        setSelectedExpense(null);
+    };
+
     const filteredEmployees = useMemo(() => {
         return employees.filter(emp => {
             const searchLower = searchQuery.toLowerCase();
             return (
-                emp.name.toLowerCase().includes(searchLower) ||
-                emp.email.toLowerCase().includes(searchLower) ||
-                emp.department.toLowerCase().includes(searchLower) ||
-                emp.position.toLowerCase().includes(searchLower)
+                (emp.name && emp.name.toLowerCase().includes(searchLower)) ||
+                (emp.email && emp.email.toLowerCase().includes(searchLower)) ||
+                (emp.department && emp.department.toLowerCase().includes(searchLower)) ||
+                (emp.position && emp.position.toLowerCase().includes(searchLower))
             );
         });
     }, [employees, searchQuery]);
 
-
-    // Pagination
     const totalPages = Math.ceil(filteredEmployees.length / itemsPerPage);
     const indexOfLastItem = currentPage * itemsPerPage;
     const indexOfFirstItem = indexOfLastItem - itemsPerPage;
@@ -214,480 +115,310 @@ export default function EmployeeManagement() {
         }
     };
 
-    const openModal = (type, item = null) => {
-        setModalType(type);
-        setSelectedItem(item);
-        setShowModal(true);
-        if (type === 'add-employee') {
-            setNewEmployeeForm({
-                fullname: '',
-                email: '',
-                password: '',
-                department: '',
-                position: '',
-                joinDate: new Date().toISOString().split('T')[0]
-            });
-        }
-
-        if (type === 'expense' && item) {
-            setExpenseForm({
-                type: item.type,
-                amount: item.amount,
-                description: item.description,
-                date: item.date,
-                receipt: item.receipt
-            });
-        }
-    };
-
-    const closeModal = () => {
-        setShowModal(false);
-        setModalType("");
-        setSelectedItem(null);
-        setExpenseForm({
-            type: 'Travel',
-            amount: '',
-            description: '',
-            date: new Date().toISOString().split('T')[0],
-            receipt: false
-        });
-        setSalaryForm({
-            month: '',
-            amount: '',
-        });
-        setNewEmployeeForm({
-            fullname: '',
-            email: '',
-            password: '',
-            department: '',
-            position: '',
-            joinDate: new Date().toISOString().split('T')[0]
-        });
-    };
-
-    // Statistics
     const totalEmployees = employees.length;
 
     const getStatusBadge = (status) => {
+        if (!status) return null;
         const styles = {
-            present: "bg-green-100 text-green-800",
-            absent: "bg-red-100 text-red-800",
-            leave: "bg-yellow-100 text-yellow-800",
-            approved: "bg-blue-100 text-blue-800",
-            pending: "bg-yellow-100 text-yellow-800",
-            rejected: "bg-red-100 text-red-800",
-            active: "bg-green-100 text-green-800",
-            "on-leave": "bg-yellow-100 text-yellow-800",
-            inactive: "bg-gray-100 text-gray-800"
+            disabled: "bg-red-50 text-red-700 border border-red-200",
+            active: "bg-emerald-50 text-emerald-700 border border-emerald-200",
         };
         return (
-            <span className={`px-2 sm:px-3 py-1 text-xs font-medium rounded-full ${styles[status]}`}>
+            <span className={`px-3 py-1 text-xs font-semibold rounded-full ${styles[status]}`}>
                 {status.charAt(0).toUpperCase() + status.slice(1).replace('-', ' ')}
             </span>
         );
     };
 
-    // Handle expense actions
-    const handleExpenseAction = (action, expenseId) => {
-        setIsLoading(true);
-        setTimeout(() => {
-            const updatedEmployees = employees.map(emp => {
-                if (emp.id === selectedEmployee.id) {
-                    return {
-                        ...emp,
-                        expenses: emp.expenses.map(exp =>
-                            exp.id === expenseId ? { ...exp, status: action } : exp
-                        )
-                    };
-                }
-                return emp;
-            });
+    const salaryHistory = salaryData?.data || [];
+    const totalSalary = salaryData?.totalSalary || 0;
 
-            setEmployees(updatedEmployees);
-            setSelectedEmployee({
-                ...selectedEmployee,
-                expenses: selectedEmployee.expenses.map(exp =>
-                    exp.id === expenseId ? { ...exp, status: action } : exp
-                )
-            });
-            setIsLoading(false);
-            closeModal();
-        }, 800);
-    };
-
-    // Handle add expense
-    const handleAddExpense = () => {
-        setIsLoading(true);
-        setTimeout(() => {
-            const newExpense = {
-                id: Date.now(),
-                type: expenseForm.type,
-                amount: parseFloat(expenseForm.amount),
-                description: expenseForm.description,
-                date: expenseForm.date,
-                status: 'pending',
-                receipt: expenseForm.receipt
-            };
-
-            const updatedEmployees = employees.map(emp => {
-                if (emp.id === selectedEmployee.id) {
-                    return {
-                        ...emp,
-                        expenses: [newExpense, ...emp.expenses]
-                    };
-                }
-                return emp;
-            });
-
-            setEmployees(updatedEmployees);
-            setSelectedEmployee({
-                ...selectedEmployee,
-                expenses: [newExpense, ...selectedEmployee.expenses]
-            });
-            setIsLoading(false);
-            closeModal();
-        }, 1000);
-    };
-
-    // Handle edit employee
-    const startEditEmployee = () => {
-        setIsEditing(true);
-        setEditedEmployee({ ...selectedEmployee });
-    };
-
-    const saveEmployeeChanges = () => {
-        setIsLoading(true);
-        setTimeout(() => {
-            const updatedEmployees = employees.map(emp =>
-                emp.id === editedEmployee.id ? editedEmployee : emp
-            );
-            setEmployees(updatedEmployees);
-            setSelectedEmployee(editedEmployee);
-            setIsEditing(false);
-            setIsLoading(false);
-        }, 800);
-    };
-
-    const deactivateEmployee = () => {
-        if (window.confirm(`Are you sure you want to deactivate ${selectedEmployee.name}?`)) {
-            setIsLoading(true);
-            setTimeout(() => {
-                const updatedEmployees = employees.map(emp =>
-                    emp.id === selectedEmployee.id ? { ...emp, status: 'inactive' } : emp
-                );
-                setEmployees(updatedEmployees);
-                setSelectedEmployee({ ...selectedEmployee, status: 'inactive' });
-                setIsLoading(false);
-            }, 800);
-        }
-    };
-
-    // Handle add salary
-    const handleAddSalary = () => {
-        if (!salaryForm.month || !salaryForm.amount) {
-            alert('Please fill all salary fields');
-            return;
-        }
-
-        setIsLoading(true);
-        setTimeout(() => {
-            const amount = parseFloat(salaryForm.amount);
-
-            const newSalaryRecord = {
-                month: salaryForm.month,
-                amount: amount,
-            };
-
-            const updatedEmployees = employees.map(emp => {
-                if (emp.id === selectedEmployee.id) {
-                    return {
-                        ...emp,
-                        salary: {
-                            ...emp.salary,
-                            amount: amount,
-                            history: [newSalaryRecord, ...emp.salary.history]
-                        }
-                    };
-                }
-                return emp;
-            });
-
-            setEmployees(updatedEmployees);
-            const updatedEmployee = updatedEmployees.find(emp => emp.id === selectedEmployee.id);
-            setSelectedEmployee(updatedEmployee);
-            setIsLoading(false);
-            closeModal();
-            alert('Salary added successfully!');
-        }, 1000);
-    };
-
-    // Handle add new employee
-    const handleAddEmployee = async () => {
-        if (!newEmployeeForm.fullname || !newEmployeeForm.email || !newEmployeeForm.password ||
-            !newEmployeeForm.department || !newEmployeeForm.position || !newEmployeeForm.joinDate) {
-            alert('Please fill all fields');
-            return;
-        }
-
-        setIsLoading(true);
-        try {
-            const newEmployee = {
-                id: Date.now(),
-                name: newEmployeeForm.fullname,
-                email: newEmployeeForm.email,
-                department: newEmployeeForm.department,
-                position: newEmployeeForm.position,
-                joinDate: newEmployeeForm.joinDate,
-                status: "active",
-                salary: { amount: 0, history: [] },
-                loginRecords: [],
-                expenses: []
-            };
-
-            setEmployees(prevEmployees => [...prevEmployees, newEmployee]);
-            alert('Employee added successfully!');
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-
-    // Employee Detail View
     if (selectedEmployee) {
         return (
-            <>
-                <div className="min-h-screen bg-gray-50 p-4 sm:p-6">
-                    <button onClick={handleBack} className="flex items-center cursor-pointer text-gray-600 hover:text-gray-900 mb-4">
-                        <ArrowLeft className="w-5 h-5 mr-2" />
-                        <span className="text-sm sm:text-base">Back to Employees</span>
-                    </button>
+            <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-slate-50 p-4 sm:p-8">
+                {modalOpen && (selectedSalary || selectedExpense) && (
+                    <DetailsModal
+                        data={selectedSalary || selectedExpense}
+                        type={selectedSalary ? "salary" : "expense"}
+                        onClose={handleCloseModal}
+                    />
+                )}
 
-                    {/* Employee Header */}
-                    <div className="bg-white rounded-lg shadow-md p-4 sm:p-6 mb-4 sm:mb-6">
-                        <div className="flex items-start justify-between gap-4 mb-4">
-                            <div className="flex items-start gap-4">
-                                <div className="w-16 h-16 bg-emerald-500 rounded-full flex items-center justify-center text-white text-2xl font-bold">
-                                    {selectedEmployee.name.charAt(0)}
-                                </div>
-                                <div className="flex-1">
-                                    {isEditing ? (
-                                        <div className="space-y-2">
-                                            <input
-                                                type="text"
-                                                value={editedEmployee.name}
-                                                onChange={(e) => setEditedEmployee({ ...editedEmployee, name: e.target.value })}
-                                                className="text-xl sm:text-2xl font-bold border-b-2 border-blue-500 focus:outline-none"
-                                            />
-                                            <input
-                                                type="email"
-                                                value={editedEmployee.email}
-                                                onChange={(e) => setEditedEmployee({ ...editedEmployee, email: e.target.value })}
-                                                className="text-sm text-gray-600 border-b border-gray-300 focus:outline-none"
-                                            />
-                                        </div>
-                                    ) : (
-                                        <>
-                                            <h2 className="text-xl sm:text-2xl font-bold">{selectedEmployee.name}</h2>
-                                            <p className="text-sm text-gray-600">{selectedEmployee.email}</p>
-                                        </>
-                                    )}
-                                </div>
-                            </div>
-                            <div className="flex gap-2">
-                                {isEditing ? (
-                                    <>
-                                        <button
-                                            onClick={saveEmployeeChanges}
-                                            disabled={isLoading}
-                                            className="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm disabled:opacity-50"
-                                        >
-                                            {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                                        </button>
-                                        <button
-                                            onClick={() => setIsEditing(false)}
-                                            className="px-3 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 text-sm"
-                                        >
-                                            <XCircle className="w-4 h-4" />
-                                        </button>
-                                    </>
-                                ) : (
-                                    <>
-                                        <button
-                                            onClick={startEditEmployee}
-                                            className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
-                                        >
-                                            <Edit className="w-4 h-4" />
-                                        </button>
-                                        {selectedEmployee.status !== 'inactive' && (
-                                            <button
-                                                onClick={deactivateEmployee}
-                                                className="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm"
-                                            >
-                                                <UserX className="w-4 h-4" />
-                                            </button>
-                                        )}
-                                    </>
-                                )}
-                            </div>
-                        </div>
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                            <div>
-                                <p className="text-xs text-gray-500">Department</p>
-                                {isEditing ? (
-                                    <input
-                                        type="text"
-                                        value={editedEmployee.department}
-                                        onChange={(e) => setEditedEmployee({ ...editedEmployee, department: e.target.value })}
-                                        className="font-medium border-b border-gray-300 focus:outline-none w-full"
-                                    />
-                                ) : (
-                                    <p className="font-medium">{selectedEmployee.department}</p>
-                                )}
-                            </div>
-                            <div>
-                                <p className="text-xs text-gray-500">Position</p>
-                                {isEditing ? (
-                                    <input
-                                        type="text"
-                                        value={editedEmployee.position}
-                                        onChange={(e) => setEditedEmployee({ ...editedEmployee, position: e.target.value })}
-                                        className="font-medium border-b border-gray-300 focus:outline-none w-full"
-                                    />
-                                ) : (
-                                    <p className="font-medium">{selectedEmployee.position}</p>
-                                )}
-                            </div>
-                            <div>
-                                <p className="text-xs text-gray-500">Join Date</p>
-                                <p className="font-medium">{selectedEmployee.joinDate}</p>
-                            </div>
-                            <div>
-                                <p className="text-xs text-gray-500">Status</p>
-                                {getStatusBadge(selectedEmployee.status)}
-                            </div>
-                        </div>
+                <button 
+                    onClick={handleBack} 
+                    className="group flex cursor-pointer items-center gap-2 text-slate-600 hover:text-slate-900 mb-6 transition-all duration-200"
+                >
+                    <div className="p-2 rounded-lg bg-white shadow-sm group-hover:shadow-md group-hover:bg-slate-50 transition-all duration-200">
+                        <ArrowLeft className="w-4 h-4" />
                     </div>
+                    <span className="font-medium">Back to Employees</span>
+                </button>
 
-                    {/* Tabs */}
-                    <div className="bg-white rounded-lg shadow-md mb-4 sm:mb-6">
-                        <div className="flex overflow-x-auto">
-                            {["login", "salary", "expenses"].map(tab => (
-                                <button
-                                    key={tab}
-                                    onClick={() => setActiveTab(tab)}
-                                    className={`px-4 sm:px-6 py-3 sm:py-4 text-sm sm:text-base font-medium whitespace-nowrap ${activeTab === tab
-                                        ? "border-b-2 border-blue-600 text-blue-600"
-                                        : "text-gray-600 hover:text-gray-900"
-                                        }`}
-                                >
-                                    {tab.charAt(0).toUpperCase() + tab.slice(1)}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* Tab Content */}
-                    <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
-
-                        {activeTab === "login" && (
-                            <div>
-                                <h3 className="text-lg font-semibold mb-4">Login Records</h3>
-                                <div className="overflow-x-auto -mx-4 sm:mx-0">
-                                    <table className="min-w-full">
-                                        <thead className="bg-gray-50">
-                                            <tr>
-                                                <th className="px-3 py-2 text-left text-xs font-semibold">Date</th>
-                                                <th className="px-3 py-2 text-left text-xs font-semibold">Login</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-gray-300">
-                                            {selectedEmployee.loginRecords.map((record, idx) => (
-                                                <tr key={idx}>
-                                                    <td className="px-3 py-2 text-xs sm:text-sm">{record.date}</td>
-                                                    <td className="px-3 py-2 text-xs sm:text-sm">{record.loginTime}</td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
+                <div className="bg-white rounded-2xl shadow-lg border border-slate-200 p-6 sm:p-8 mb-6">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6 mb-6">
+                        <div className="relative">
+                            <div className="w-20 h-20 bg-gradient-to-br from-emerald-500 to-emerald-800 rounded-2xl flex items-center justify-center text-white text-3xl font-bold shadow-lg">
+                                {selectedEmployee.fullName.charAt(0)}
                             </div>
-                        )}
-
-                        {activeTab === "salary" && (
-                            <div>
-                                <div className="bg-gradient-to-r from-blue-50 to-blue-100 p-4 sm:p-6 rounded-lg mb-6">
-                                    <p className="text-sm text-gray-600 mb-1">Current Salary</p>
-                                    <p className="text-3xl sm:text-4xl font-bold text-blue-600">
-                                        ₹{selectedEmployee.salary.amount}
-                                    </p>
-                                </div>
-
-                                <div className="flex justify-between items-center mb-4">
-                                    <h3 className="text-lg font-semibold">Salary History</h3>
-                                    <button
-                                        onClick={() => openModal("salary")}
-                                        className="px-3 sm:px-4 py-2 cursor-pointer bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 flex items-center gap-2"
-                                    >
-                                        <Plus className="w-4 h-4" />
-                                        <span className="hidden sm:inline">Add </span>Salary
-                                    </button>
-                                </div>
+                            <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-emerald-500 rounded-full border-4 border-white"></div>
+                        </div>
+                        <div className="flex-1">
+                            {isEditing ? (
                                 <div className="space-y-3">
-                                    {selectedEmployee.salary.history.map((record, idx) => (
-                                        <div key={idx} className="border border-gray-300 rounded-lg p-4 hover:bg-gray-50 transition">
+                                    <input
+                                        type="text"
+                                        value={editedEmployee.fullName}
+                                        onChange={(e) => setEditedEmployee({ ...editedEmployee, name: e.target.value })}
+                                        className="text-2xl font-bold border-b-2 border-blue-500 focus:outline-none bg-transparent"
+                                    />
+                                    <input
+                                        type="email"
+                                        value={editedEmployee.email}
+                                        onChange={(e) => setEditedEmployee({ ...editedEmployee, email: e.target.value })}
+                                        className="text-slate-600 border-b border-slate-300 focus:outline-none bg-transparent"
+                                    />
+                                </div>
+                            ) : (
+                                <>
+                                    <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-1">{selectedEmployee.fullName}</h2>
+                                    <p className="text-slate-600 flex items-center gap-2">
+                                        <Mail className="w-4 h-4" />
+                                        {selectedEmployee.email}
+                                    </p>
+                                </>
+                            )}
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div className="bg-gradient-to-br from-blue-50 to-blue-100/50 rounded-xl p-4 border border-blue-200">
+                            <div className="flex items-center gap-2 text-blue-600 mb-2">
+                                <Building2 className="w-4 h-4" />
+                                <p className="text-xs font-semibold uppercase tracking-wide">Department</p>
+                            </div>
+                            {isEditing ? (
+                                <input
+                                    type="text"
+                                    value={editedEmployee.department}
+                                    onChange={(e) => setEditedEmployee({ ...editedEmployee, department: e.target.value })}
+                                    className="font-semibold text-slate-900 border-b border-blue-300 focus:outline-none w-full bg-transparent"
+                                />
+                            ) : (
+                                <p className="font-semibold text-slate-900">{selectedEmployee.department}</p>
+                            )}
+                        </div>
+
+                        <div className="bg-gradient-to-br from-purple-50 to-purple-100/50 rounded-xl p-4 border border-purple-200">
+                            <div className="flex items-center gap-2 text-purple-600 mb-2">
+                                <Briefcase className="w-4 h-4" />
+                                <p className="text-xs font-semibold uppercase tracking-wide">Position</p>
+                            </div>
+                            {isEditing ? (
+                                <input
+                                    type="text"
+                                    value={editedEmployee.position}
+                                    onChange={(e) => setEditedEmployee({ ...editedEmployee, position: e.target.value })}
+                                    className="font-semibold text-slate-900 border-b border-purple-300 focus:outline-none w-full bg-transparent"
+                                />
+                            ) : (
+                                <p className="font-semibold text-slate-900">{selectedEmployee.position}</p>
+                            )}
+                        </div>
+
+                        <div className="bg-gradient-to-br from-amber-50 to-amber-100/50 rounded-xl p-4 border border-amber-200">
+                            <div className="flex items-center gap-2 text-amber-600 mb-2">
+                                <Calendar className="w-4 h-4" />
+                                <p className="text-xs font-semibold uppercase tracking-wide">Join Date</p>
+                            </div>
+                            <p className="font-semibold text-slate-900">
+                                {selectedEmployee.createdAt
+                                    ? new Date(selectedEmployee.createdAt).toLocaleDateString("en-IN", {
+                                        day: "2-digit",
+                                        month: "short",
+                                        year: "numeric",
+                                    })
+                                    : "Not Available"}
+                            </p>
+                        </div>
+
+                        <div className="bg-gradient-to-br from-emerald-50 to-emerald-100/50 rounded-xl p-4 border border-emerald-200">
+                            <div className="flex items-center gap-2 text-emerald-600 mb-2">
+                                <CheckCircle className="w-4 h-4" />
+                                <p className="text-xs font-semibold uppercase tracking-wide">Status</p>
+                            </div>
+                            {getStatusBadge(selectedEmployee.status)}
+                        </div>
+                    </div>
+                </div>
+
+                <div className="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden mb-6">
+                    <div className="flex border-b border-slate-200">
+                        {["login", "salary", "expenses"].map(tab => (
+                            <button
+                                key={tab}
+                                onClick={() => setActiveTab(tab)}
+                                className={`flex-1 px-6 py-4 text-sm font-semibold transition-all duration-200 relative ${
+                                    activeTab === tab
+                                        ? "text-blue-600 bg-blue-50"
+                                        : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
+                                }`}
+                            >
+                                {activeTab === tab && (
+                                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-600"></div>
+                                )}
+                                {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                <div className="bg-white rounded-2xl shadow-lg border border-slate-200 p-6 sm:p-8">
+                    {activeTab === "login" && (
+                        <div>
+                            <div className="flex items-center gap-3 mb-6">
+                                <div className="p-3 bg-blue-100 rounded-xl">
+                                    <Clock className="w-5 h-5 text-blue-600" />
+                                </div>
+                                <h3 className="text-xl font-bold text-slate-900">Login Records</h3>
+                            </div>
+                            <div className="overflow-x-auto">
+                                <table className="w-full">
+                                    <thead>
+                                        <tr className="border-b border-slate-200">
+                                            <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Date</th>
+                                            <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Login Time</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-100">
+                                        {selectedEmployee.loginRecords.map((record, idx) => (
+                                            <tr key={idx} className="hover:bg-slate-50 transition-colors">
+                                                <td className="px-4 py-4 text-sm text-slate-900">{record.date}</td>
+                                                <td className="px-4 py-4 text-sm text-slate-600">{record.loginTime}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    )}
+
+                    {activeTab === "salary" && (
+                        <div>
+                            <div className="bg-gradient-to-br from-emerald-500 to-emerald-800 rounded-2xl p-6 sm:p-8 mb-8 shadow-xl">
+                                <div className="flex items-center gap-3 mb-3">
+                                    <div className="p-2 bg-white/20 rounded-lg">
+                                        <DollarSign className="w-5 h-5 text-white" />
+                                    </div>
+                                    <p className="text-sm font-medium text-blue-100 uppercase tracking-wide">Total Salary </p>
+                                </div>
+                                <p className="text-4xl sm:text-5xl font-bold text-white">
+                                    {isSalaryLoading
+                                        ? "Loading..."
+                                        : totalSalary > 0
+                                            ? `₹${totalSalary.toLocaleString()}`
+                                            : "Not available"
+                                    }
+                                </p>
+                            </div>
+
+                            <div className="flex items-center gap-3 mb-6">
+                                <div className="p-3 bg-emerald-100 rounded-xl">
+                                    <FileText className="w-5 h-5 text-emerald-600" />
+                                </div>
+                                <h3 className="text-xl font-bold text-slate-900">Salary History</h3>
+                            </div>
+
+                            <div className="space-y-4">
+                                {salaryHistory.length > 0 ? (
+                                    salaryHistory.map((record, idx) => (
+                                        <div key={idx} className="group border border-slate-200 rounded-xl p-5 hover:shadow-md hover:border-blue-300 transition-all duration-200">
                                             <div className="flex justify-between items-center">
-                                                <div>
-                                                    <p className="font-semibold">{record.month}</p>
-                                                    <p className="text-sm text-gray-600">Salary: ₹{record.amount.toLocaleString()}</p>
+                                                <div className="flex-1">
+                                                    <div className="flex items-center gap-3 mb-2">
+                                                        <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                                                            <DollarSign className="w-5 h-5 text-blue-600" />
+                                                        </div>
+                                                        <div>
+                                                            <p className="font-semibold text-slate-900">
+                                                                {new Date(record.createdAt).toLocaleDateString("en-IN", {
+                                                                    day: "numeric",
+                                                                    month: "long",
+                                                                    year: "numeric"
+                                                                })}
+                                                            </p>
+                                                            <p className="text-sm text-slate-600">Payment processed</p>
+                                                        </div>
+                                                    </div>
+                                                    <p className="text-2xl font-bold text-emerald-600">₹{record.amount.toLocaleString()}</p>
                                                 </div>
                                                 <button
-                                                    onClick={() => openModal("payslip", record)}
-                                                    className="px-3 py-1 text-sm cursor-pointer bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
+                                                    onClick={() => handleViewSalaryDetails(record)}
+                                                    className="px-5 py-2.5 cursor-pointer bg-emerald-600 text-white rounded-xl text-sm font-semibold hover:bg-emerald-700 transition-all duration-200 hover:shadow-lg hover:scale-105"
                                                 >
-                                                    <Eye className="w-4 h-4" />
-                                                    View
+                                                    View Details
                                                 </button>
                                             </div>
                                         </div>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-
-                        {activeTab === "expenses" && (
-                            <div>
-                                <div className="flex justify-between items-center mb-4">
-                                    <h3 className="text-lg font-semibold">Expenses</h3>
-                                    <button
-                                        onClick={() => openModal("expense")}
-                                        className="px-3 sm:px-4 py-2 cursor-pointer bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 flex items-center gap-2"
-                                    >
-                                        <Plus className="w-4 h-4" />
-                                        <span className="hidden sm:inline">Add </span>Expense
-                                    </button>
-                                </div>
-                                {selectedEmployee.expenses.length === 0 ? (
-                                    <div className="text-center py-12 text-gray-500">
-                                        <Receipt className="w-12 h-12 mx-auto mb-2 opacity-30" />
-                                        <p>No expenses recorded</p>
-                                    </div>
+                                    ))
                                 ) : (
-                                    <div className="space-y-3">
-                                        {selectedEmployee.expenses.map(expense => (
-                                            <div key={expense.id} className="border border-gray-300 rounded-lg p-4 hover:bg-gray-50 transition">
-                                                <div className="flex justify-between items-start mb-2">
-                                                    <div>
-                                                        <p className="font-semibold">{expense.type}</p>
-                                                        <p className="text-sm text-gray-600">{expense.description}</p>
-                                                        <p className="text-xs text-gray-500 mt-1">{expense.date}</p>
+                                    <div className="text-center py-16">
+                                        <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                            <Receipt className="w-8 h-8 text-slate-400" />
+                                        </div>
+                                        <p className="text-slate-500 font-medium">No salary history available</p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {activeTab === "expenses" && (
+                        <div>
+                            <div className="flex items-center gap-3 mb-6">
+                                <div className="p-3 bg-amber-100 rounded-xl">
+                                    <Receipt className="w-5 h-5 text-amber-600" />
+                                </div>
+                                <h3 className="text-xl font-bold text-slate-900">Expense Records</h3>
+                            </div>
+
+                            {selectedEmployee && selectedEmployee.expenses && selectedEmployee.expenses.length === 0 ? (
+                                <div className="text-center py-16">
+                                    <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                        <Receipt className="w-8 h-8 text-slate-400" />
+                                    </div>
+                                    <p className="text-slate-500 font-medium">No expenses recorded</p>
+                                </div>
+                            ) : (
+                                selectedEmployee && selectedEmployee.expenses && selectedEmployee.expenses.length > 0 ? (
+                                    <div className="space-y-4">
+                                        {selectedEmployee.expenses.map((expense) => (
+                                            <div key={expense._id} className="group border border-slate-200 rounded-xl p-5 hover:shadow-md hover:border-amber-300 transition-all duration-200">
+                                                <div className="flex justify-between items-start mb-4">
+                                                    <div className="flex-1">
+                                                        <div className="flex items-center gap-3 mb-2">
+                                                            <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center">
+                                                                <Receipt className="w-5 h-5 text-amber-600" />
+                                                            </div>
+                                                            <div>
+                                                                <p className="font-semibold text-slate-900">{expense.reimbursementTo.adminId.fullName}</p>
+                                                                <p className="text-sm text-slate-600">{expense.description}</p>
+                                                            </div>
+                                                        </div>
+                                                        <p className="text-xs text-slate-500 ml-13">
+                                                            {new Date(expense.createdAt).toLocaleDateString("en-IN", {
+                                                                day: "numeric",
+                                                                month: "long",
+                                                                year: "numeric"
+                                                            })}
+                                                        </p>
                                                     </div>
                                                     {getStatusBadge(expense.status)}
                                                 </div>
-                                                <div className="flex justify-between items-center mt-3">
-                                                    <span className="text-lg font-bold text-green-600">₹{expense.amount}</span>
+                                                <div className="flex justify-between items-center pt-4 border-t border-slate-100">
+                                                    <span className="text-2xl font-bold text-emerald-600">₹{expense.amount.toLocaleString()}</span>
                                                     <button
-                                                        onClick={() => openModal("expense", expense)}
-                                                        className="text-sm cursor-pointer text-blue-600 hover:text-blue-800 flex items-center gap-1"
+                                                        onClick={() => handleViewExpenseDetails(expense)}
+                                                        className="flex items-center cursor-pointer gap-2 px-4 py-2 bg-emerald-600 text-white hover:bg-emerald-800 rounded-lg transition-all duration-200 font-medium"
                                                     >
                                                         <Eye className="w-4 h-4" />
                                                         View Details
@@ -696,79 +427,81 @@ export default function EmployeeManagement() {
                                             </div>
                                         ))}
                                     </div>
-                                )}
-                            </div>
-                        )}
-                    </div>
+                                ) : (
+                                    <div className="text-center py-16">
+                                        <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                            <Receipt className="w-8 h-8 text-slate-400" />
+                                        </div>
+                                        <p className="text-slate-500 font-medium">No expenses recorded</p>
+                                    </div>
+                                )
+                            )}
+                        </div>
+                    )}
                 </div>
-
-                {showModal && (
-                    <EmployeeModal
-                        type={modalType}
-                        item={selectedItem}
-                        onClose={closeModal}
-                        expenseForm={expenseForm}
-                        setExpenseForm={setExpenseForm}
-                        newEmployeeForm={newEmployeeForm}
-                        setNewEmployeeForm={setNewEmployeeForm}
-                        salaryForm={salaryForm}
-                        setSalaryForm={setSalaryForm}
-                        selectedEmployee={selectedEmployee}
-                        getStatusBadge={getStatusBadge}
-                        handleExpenseAction={handleExpenseAction}
-                        handleAddExpense={handleAddExpense}
-                        handleAddSalary={handleAddSalary}
-                        handleAddEmployee={handleAddEmployee}
-                        isLoading={isLoading}
-                    />
-                )}
-            </>
+            </div>
         );
     }
 
-    // Main Overview
+    if (isLoading) {
+        return (
+            <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-slate-50 flex items-center justify-center">
+                <div className="text-center">
+                    <Loader2 className="w-12 h-12 text-blue-600 animate-spin mx-auto mb-4" />
+                    <p className="text-slate-600 font-medium">Loading employees...</p>
+                </div>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-slate-50 flex items-center justify-center p-4">
+                <div className="bg-white rounded-2xl shadow-lg border border-red-200 p-8 max-w-md">
+                    <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <AlertCircle className="w-8 h-8 text-red-600" />
+                    </div>
+                    <h3 className="text-xl font-bold text-slate-900 text-center mb-2">Error Loading Data</h3>
+                    <p className="text-slate-600 text-center">{error.message}</p>
+                </div>
+            </div>
+        );
+    }
+
     return (
-        <div className="min-h-screen bg-gray-50 p-4 sm:p-6">
-            <button onClick={handleBack} className="flex items-center cursor-pointer text-gray-600 hover:text-gray-900 mb-4">
-                <ArrowLeft className="w-5 h-5 mr-2" />
-                <span className="text-sm sm:text-base">Back to TPF Management</span>
+        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-slate-50 p-4 sm:p-8">
+            <button 
+                onClick={handleBack} 
+                className="group flex items-center gap-2 text-slate-600 hover:text-slate-900 mb-6 transition-all duration-200"
+            >
+                <div className="p-2 rounded-lg bg-white shadow-sm group-hover:shadow-md group-hover:bg-slate-50 transition-all duration-200">
+                    <ArrowLeft className="w-4 h-4" />
+                </div>
+                <span className="font-medium">Back to TPF Management</span>
             </button>
 
-            <h1 className="text-2xl sm:text-3xl font-bold mb-6 text-center">Employee Management</h1>
-
-            {/* Statistics */}
-            <div className="flex justify-center items-center space-x-4 mb-6">
-                {/* First Card */}
-                <div className="bg-white rounded-lg shadow p-4 hover:shadow-md transition w-1/2">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-xs text-gray-600">Total Employees</p>
-                            <p className="text-2xl font-bold">{totalEmployees}</p>
-                        </div>
-                        <Users className="w-8 h-8 text-blue-500" />
-                    </div>
-                </div>
-
-                {/* Second Card */}
-                <button
-                    onClick={() => openModal("add-employee")}
-                    className="bg-emerald-500 rounded-lg shadow p-4 cursor-pointer hover:shadow-lg hover:from-emerald-600 hover:to-emerald-700 transition transform hover:scale-105 w-1/2"
-                >
-                    <div className="flex items-center justify-between h-full">
-                        <div className="text-left">
-                            <p className="text-xs text-blue-100 font-medium">Add Employee</p>
-                            <p className="text-sm text-white mt-1">Click to add new</p>
-                        </div>
-                        <Plus className="w-8 h-8 text-white" />
-                    </div>
-                </button>
+            <div className="text-center mb-8">
+                <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-2">Employee Management</h1>
+                <p className="text-slate-600">Manage and monitor your team members</p>
             </div>
 
+            <div className="max-w-sm mx-auto mb-8">
+                <div className="bg-white rounded-2xl shadow-lg border border-slate-200 p-6 hover:shadow-xl transition-all duration-200">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <p className="text-sm text-slate-600 mb-1 font-medium">Total Employees</p>
+                            <p className="text-4xl font-bold text-slate-900">{totalEmployees}</p>
+                        </div>
+                        <div className="p-4 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl shadow-lg">
+                            <Users className="w-8 h-8 text-white" />
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-            {/* Search */}
-            <div className="bg-white rounded-lg shadow p-4 mb-6">
+            <div className="bg-white rounded-2xl shadow-lg border border-slate-200 p-6 mb-6">
                 <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                    <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
                     <input
                         type="text"
                         placeholder="Search by name, email, department, or position..."
@@ -777,58 +510,56 @@ export default function EmployeeManagement() {
                             setSearchQuery(e.target.value);
                             setCurrentPage(1);
                         }}
-                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full pl-12 pr-4 py-3.5 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                     />
                 </div>
                 {searchQuery && (
-                    <p className="text-sm text-gray-600 mt-2">
+                    <p className="text-sm text-slate-600 mt-3 font-medium">
                         Found {filteredEmployees.length} employee{filteredEmployees.length !== 1 ? 's' : ''}
                     </p>
                 )}
             </div>
 
-            {/* Employee List */}
-            <div className="bg-white rounded-lg shadow p-4 sm:p-6">
-                <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-lg font-semibold">Employees</h2>
-                    <div className="text-sm text-gray-600">
-                        Showing {indexOfFirstItem + 1}-{Math.min(indexOfLastItem, filteredEmployees.length)} of {filteredEmployees.length}
+            <div className="bg-white rounded-2xl shadow-lg border border-slate-200 p-6 sm:p-8">
+                <div className="flex justify-between items-center mb-6">
+                    <h2 className="text-xl font-bold text-slate-900">All Employees</h2>
+                    <div className="text-sm text-slate-600 font-medium">
+                        {indexOfFirstItem + 1}-{Math.min(indexOfLastItem, filteredEmployees.length)} of {filteredEmployees.length}
                     </div>
                 </div>
 
-                {/* Desktop Table View */}
                 <div className="hidden md:block overflow-x-auto">
-                    <table className="min-w-full">
-                        <thead className="bg-gray-50">
-                            <tr>
-                                <th className="px-4 py-3 text-center text-xs font-semibold">Employee</th>
-                                <th className="px-4 py-3 text-center text-xs font-semibold">Department</th>
-                                <th className="px-4 py-3 text-center text-xs font-semibold">Position</th>
-                                <th className="px-4 py-3 text-center text-xs font-semibold">Status</th>
-                                <th className="px-4 py-3 text-center text-xs font-semibold">Action</th>
+                    <table className="w-full">
+                        <thead>
+                            <tr className="border-b border-slate-200">
+                                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Employee</th>
+                                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Department</th>
+                                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Position</th>
+                                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Status</th>
+                                <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">Action</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-300">
+                        <tbody className="divide-y divide-slate-100">
                             {currentEmployees.map(employee => (
-                                <tr key={employee.id} className="hover:bg-gray-50 transition">
-                                    <td className="px-4 py-3">
+                                <tr key={employee._id} className="hover:bg-slate-50 transition-colors">
+                                    <td className="px-4 py-4">
                                         <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 bg-emerald-500 rounded-full flex items-center justify-center text-white text-sm font-bold">
-                                                {employee.name.charAt(0)}
+                                            <div className="w-11 h-11 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl flex items-center justify-center text-white text-sm font-bold shadow-md">
+                                                {employee.fullName.charAt(0)}
                                             </div>
                                             <div>
-                                                <p className="text-sm font-medium">{employee.name}</p>
-                                                <p className="text-xs text-gray-500">{employee.email}</p>
+                                                <p className="text-sm font-semibold text-slate-900">{employee.fullName}</p>
+                                                <p className="text-xs text-slate-500">{employee.email}</p>
                                             </div>
                                         </div>
                                     </td>
-                                    <td className="px-4 py-3 text-sm">{employee.department}</td>
-                                    <td className="px-4 py-3 text-sm">{employee.position}</td>
-                                    <td className="px-4 py-3">{getStatusBadge(employee.status)}</td>
-                                    <td className="px-4 py-3">
+                                    <td className="px-4 py-4 text-sm text-slate-700">{employee.department}</td>
+                                    <td className="px-4 py-4 text-sm text-slate-700">{employee.position}</td>
+                                    <td className="px-4 py-4">{getStatusBadge(employee.status)}</td>
+                                    <td className="px-4 py-4 text-right">
                                         <button
                                             onClick={() => setSelectedEmployee(employee)}
-                                            className="px-4 py-2 cursor-pointer bg-blue-600 text-white rounded-lg text-xs hover:bg-blue-700 transition"
+                                            className="px-4 py-2 cursor-pointer bg-emerald-600 text-white rounded-xl text-xs font-semibold hover:bg-emerald-700 transition-all duration-200 hover:shadow-lg hover:scale-105"
                                         >
                                             View Details
                                         </button>
@@ -839,29 +570,26 @@ export default function EmployeeManagement() {
                     </table>
                 </div>
 
-                {/* Mobile Card View */}
                 <div className="md:hidden space-y-4">
                     {currentEmployees.map(employee => (
-                        <div key={employee.id} className="border rounded-lg p-4 hover:shadow-md transition">
-                            <div className="flex items-start gap-3 mb-3">
-                                <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold">
-                                    {employee.name.charAt(0)}
+                        <div key={employee._id} className="border border-slate-200 rounded-xl p-5 hover:shadow-md hover:border-blue-300 transition-all duration-200">
+                            <div className="flex items-start gap-4 mb-4">
+                                <div className="w-14 h-14 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-md flex-shrink-0">
+                                    {employee.fullName.charAt(0)}
                                 </div>
-                                <div className="flex-1">
-                                    <h3 className="font-semibold">{employee.name}</h3>
-                                    <p className="text-sm text-gray-600">{employee.position}</p>
-                                    <p className="text-xs text-gray-500">{employee.department}</p>
+                                <div className="flex-1 min-w-0">
+                                    <h3 className="font-semibold text-slate-900 mb-1">{employee.fullName}</h3>
+                                    <p className="text-sm text-slate-600 mb-1">{employee.position}</p>
+                                    <p className="text-xs text-slate-500">{employee.department}</p>
                                 </div>
                             </div>
-                            <div className="flex gap-2 mb-3">
-                                <div className="text-xs">
-                                    <span className="text-gray-500">Status: </span>
-                                    {getStatusBadge(employee.status)}
-                                </div>
+                            <div className="flex items-center justify-between mb-4">
+                                <span className="text-xs text-slate-500 font-medium">Status:</span>
+                                {getStatusBadge(employee.status)}
                             </div>
                             <button
                                 onClick={() => setSelectedEmployee(employee)}
-                                className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 transition"
+                                className="w-full px-4 py-3 cursor-pointer bg-emerald-600 text-white rounded-xl text-sm font-semibold hover:bg-emerald-700 transition-all duration-200 hover:shadow-lg"
                             >
                                 View Details
                             </button>
@@ -869,13 +597,12 @@ export default function EmployeeManagement() {
                     ))}
                 </div>
 
-                {/* Pagination */}
                 {totalPages > 1 && (
-                    <div className="flex items-center justify-between mt-6 pt-4 border-t">
+                    <div className="flex items-center justify-between mt-8 pt-6 border-t border-slate-200">
                         <button
                             onClick={() => handlePageChange(currentPage - 1)}
                             disabled={currentPage === 1}
-                            className="flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                            className="flex items-center gap-2 px-5 py-2.5 bg-white border border-slate-300 rounded-xl hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 font-medium text-slate-700 hover:shadow-md"
                         >
                             <ChevronLeft className="w-4 h-4" />
                             <span className="hidden sm:inline">Previous</span>
@@ -892,10 +619,11 @@ export default function EmployeeManagement() {
                                         <button
                                             key={page}
                                             onClick={() => handlePageChange(page)}
-                                            className={`w-10 h-10 rounded-lg transition ${currentPage === page
-                                                ? 'bg-blue-600 text-white'
-                                                : 'bg-gray-100 hover:bg-gray-200'
-                                                }`}
+                                            className={`w-10 h-10 rounded-xl transition-all duration-200 font-semibold ${
+                                                currentPage === page
+                                                    ? 'bg-blue-600 text-white shadow-lg'
+                                                    : 'bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 hover:shadow-md'
+                                            }`}
                                         >
                                             {page}
                                         </button>
@@ -904,7 +632,7 @@ export default function EmployeeManagement() {
                                     page === currentPage - 2 ||
                                     page === currentPage + 2
                                 ) {
-                                    return <span key={page} className="text-gray-400">...</span>;
+                                    return <span key={page} className="text-slate-400 px-2">...</span>;
                                 }
                                 return null;
                             })}
@@ -913,7 +641,7 @@ export default function EmployeeManagement() {
                         <button
                             onClick={() => handlePageChange(currentPage + 1)}
                             disabled={currentPage === totalPages}
-                            className="flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                            className="flex items-center gap-2 px-5 py-2.5 bg-white border border-slate-300 rounded-xl hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 font-medium text-slate-700 hover:shadow-md"
                         >
                             <span className="hidden sm:inline">Next</span>
                             <ChevronRight className="w-4 h-4" />
@@ -922,38 +650,20 @@ export default function EmployeeManagement() {
                 )}
 
                 {filteredEmployees.length === 0 && (
-                    <div className="text-center py-12">
-                        <Users className="w-16 h-16 mx-auto text-gray-300 mb-4" />
-                        <p className="text-gray-500">No employees found</p>
+                    <div className="text-center py-16">
+                        <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <Users className="w-10 h-10 text-slate-400" />
+                        </div>
+                        <p className="text-slate-600 font-medium mb-2">No employees found</p>
                         {searchQuery && (
                             <button
                                 onClick={() => setSearchQuery('')}
-                                className="mt-2 text-blue-600 hover:text-blue-700 text-sm"
+                                className="text-blue-600 hover:text-blue-700 text-sm font-semibold hover:underline"
                             >
                                 Clear search
                             </button>
                         )}
                     </div>
-                )}
-                {showModal && (
-                    <EmployeeModal
-                        type={modalType}
-                        item={selectedItem}
-                        onClose={closeModal}
-                        expenseForm={expenseForm}
-                        setExpenseForm={setExpenseForm}
-                        newEmployeeForm={newEmployeeForm}
-                        setNewEmployeeForm={setNewEmployeeForm}
-                        salaryForm={salaryForm}
-                        setSalaryForm={setSalaryForm}
-                        selectedEmployee={selectedEmployee}
-                        getStatusBadge={getStatusBadge}
-                        handleExpenseAction={handleExpenseAction}
-                        handleAddExpense={handleAddExpense}
-                        handleAddSalary={handleAddSalary}
-                        handleAddEmployee={handleAddEmployee}
-                        isLoading={isLoading}
-                    />
                 )}
             </div>
         </div>

@@ -102,6 +102,28 @@ export const adminApiSlice = apiSlice.injectEndpoints({
         method: "GET",
       }),
     }),
+
+    getEmployees: builder.query({
+      query: () => ({
+        url: "/adminAuth/getemployees", // The GET request for /getall
+        method: "GET",
+      }),
+    }),
+
+    getSalary: builder.query({
+      query: (id) => ({
+        url: `/inventory/expenses/${id}/salary`, // The GET request for /getall
+        method: "GET",
+      }),
+    }),
+
+    getExpenses: builder.query({
+      query: (id) => ({
+        url: `/inventory/expenses/${id}/expense`, // The GET request for /getall
+        method: "GET",
+      }),
+    }),
+
   }),
 });
 
@@ -117,4 +139,7 @@ export const {
   useEditAdminMutation,
   useGetPermanentDonorsQuery,
   useGetAdminListQuery,
+  useGetEmployeesQuery,
+  useGetSalaryQuery,
+  useGetExpensesQuery
 } = adminApiSlice;

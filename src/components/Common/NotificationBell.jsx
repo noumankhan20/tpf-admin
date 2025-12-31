@@ -4,7 +4,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Bell, Camera, FileText, Share2, Wallet, Star, X, CheckCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSelector } from 'react-redux';
-import { useSelector } from 'react-redux';
 import { useSocket } from '@/utils/context/SocketContext';
 import { toast } from 'react-toastify';
 import { useRouter } from 'next/navigation';
