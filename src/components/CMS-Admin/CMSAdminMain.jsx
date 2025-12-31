@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSelector } from 'react-redux';
+import NotificationBell from '../Common/NotificationBell';
 import {
   LogOut,
   Search,
@@ -165,13 +166,13 @@ export default function CMSAdminPanel() {
   }, [searchQuery]);
 
   const handleLogout = async () => {
-  try {
-    await logoutAdmin().unwrap();
-    window.location.href = "/";
-  } catch (err) {
-    console.error("Logout failed", err);
-  }
-};
+    try {
+      await logoutAdmin().unwrap();
+      window.location.href = "/";
+    } catch (err) {
+      console.error("Logout failed", err);
+    }
+  };
 
   if (!admin || !mounted) {
     return (
@@ -229,7 +230,7 @@ function Header({ isLoaded, fullName, handleLogout }) {
     return (parts[0][0] + parts[1][0]).toUpperCase();
   };
 
-  
+
   return (
     <header className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -246,6 +247,7 @@ function Header({ isLoaded, fullName, handleLogout }) {
 
 
           <div className="flex items-center space-x-4">
+            <NotificationBell moduleFilter="CMS_TASK" />
             <div className="relative">
               <button
                 onClick={() => setDropdownOpen(!dropdownOpen)}
@@ -418,8 +420,8 @@ function ListView({
                     key={category.id}
                     onClick={() => toggleCategory(category.id)}
                     className={`w-full flex items-center justify-between px-3 py-3 sm:py-3.5 rounded-lg transition-colors duration-300 ease-out ${isOpen
-                        ? 'bg-emerald-50 text-emerald-700 font-semibold'
-                        : 'text-gray-700 hover:bg-gray-50'
+                      ? 'bg-emerald-50 text-emerald-700 font-semibold'
+                      : 'text-gray-700 hover:bg-gray-50'
                       }`}
                   >
                     <div className="flex items-center space-x-3 flex-1 overflow-hidden">

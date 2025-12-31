@@ -20,7 +20,8 @@ const NotificationBell = ({ moduleFilter = null }) => {
     // Fetch initial pending data on mount
     useEffect(() => {
         const fetchInitialData = async () => {
-            if (!admin?._id) return;
+            const adminId = admin?._id || admin?.id;
+            if (!adminId) return;
             try {
                 const apiBase = process.env.NEXT_PUBLIC_BACKEND_API || 'http://localhost:7000/api';
 
@@ -114,8 +115,9 @@ const NotificationBell = ({ moduleFilter = null }) => {
         });
 
         socket.current.on('taskAssigned', (data) => {
+            const adminId = admin?._id || admin?.id;
             // Check if this task is for the current admin
-            if (data.assignedAdminId === admin?._id) {
+            if (data.assignedAdminId === adminId) {
                 const newNotification = {
                     id: data.taskId,
                     type: 'TASK',
@@ -185,7 +187,7 @@ const NotificationBell = ({ moduleFilter = null }) => {
         if (notification.type === 'TASK') {
             switch (notification.module) {
                 case 'PHOTO_TASK': router.push('/photography'); break;
-                case 'CMS_TASK': router.push('/cms-admin/fundraising-now'); break;
+                case 'CMS_TASK': router.push('/cms-admin/fundraiser'); break;
                 case 'SOCIAL_TASK': router.push('/social-media'); break;
                 case 'FINANCE_TASK': router.push('/finance'); break;
                 default: break;

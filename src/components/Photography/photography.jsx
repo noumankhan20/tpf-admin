@@ -4,6 +4,7 @@ import { Camera, Upload, MapPin, Calendar, CheckCircle, XCircle, Bell, ArrowLeft
 import { useRouter } from 'next/navigation';
 import { io } from 'socket.io-client';
 import { toast } from 'react-toastify';
+import NotificationBell from '../Common/NotificationBell';
 
 // Utility Functions
 const formatDate = (dateStr) => {
@@ -538,21 +539,9 @@ const PhotographyModule = () => {
     const [activeView, setActiveView] = useState('dashboard');
     const [userRole, setUserRole] = useState('photographer');
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-    const [showNotifications, setShowNotifications] = useState(false);
     const [selectedTask, setSelectedTask] = useState(null);
     const socket = useRef(null);
-    const notificationRef = useRef(null);
 
-    // Close notifications when clicking outside
-    useEffect(() => {
-        const handleClickOutside = (event) => {
-            if (notificationRef.current && !notificationRef.current.contains(event.target)) {
-                setShowNotifications(false);
-            }
-        };
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, []);
 
     // Fetch assignments from API
     const {
@@ -590,14 +579,7 @@ const PhotographyModule = () => {
             // If it's a photography task, refresh the lists
             if (data.module === 'PHOTO_TASK') {
                 refetchAssignments();
-                toast.success(`New Task Assigned: ${data.taskType.replace(/_/g, ' ')}`, {
-                    position: "top-right",
-                    autoClose: 5000,
-                    hideProgressBar: false,
-                    closeOnClick: true,
-                    pauseOnHover: true,
-                    draggable: true,
-                });
+                // We let NotificationBell handle the toast to avoid duplicates
             }
         });
 
@@ -609,8 +591,6 @@ const PhotographyModule = () => {
         };
     }, [refetchAssignments]);
 
-    // Notifications count based on assignments
-    const count = assignments.length; // Assuming all returned are pending or we filter
 
     const router = useRouter();
     const navigation = [
@@ -652,85 +632,7 @@ const PhotographyModule = () => {
                 </div>
 
                 <div className="flex items-center gap-4 relative">
-                    <button
-                        onClick={() => setShowNotifications(!showNotifications)}
-                        className="p-2 hover:bg-gray-100 rounded-full transition relative"
-                    >
-                        <Bell className="w-5 h-5 text-gray-600" />
-                        {count > 0 ? (
-                            <span className="absolute top-2 right-2 flex h-2 w-2">
-                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                                <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
-                            </span>
-                        ) : null}
-                    </button>
-
-                    {/* Notification Dropdown */}
-                    {showNotifications && (
-                        <div
-                            ref={notificationRef}
-                            className="absolute top-full right-0 mt-2 w-80 bg-white rounded-xl shadow-xl border border-gray-100 py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-200"
-                        >
-                            <div className="px-4 py-2 border-b border-gray-50 flex justify-between items-center">
-                                <h3 className="font-semibold text-gray-800">New Assignments</h3>
-                                <span className="bg-emerald-100 text-emerald-600 text-[10px] font-bold px-2 py-0.5 rounded-full">
-                                    {count} New
-                                </span>
-                            </div>
-                            <div className="max-h-96 overflow-y-auto font-sans">
-                                {assignments.length > 0 ? (
-                                    assignments.slice(0, 5).map((task) => (
-                                        <div
-                                            key={task.id}
-                                            className="px-4 py-3 hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-0"
-                                        >
-                                            <div className="flex gap-3">
-                                                <div className="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                                                    <Camera className="w-4 h-4 text-emerald-600" />
-                                                </div>
-                                                <div className="flex-1 min-w-0">
-                                                    <p className="text-sm font-medium text-gray-900 truncate">{task.campaignName}</p>
-                                                    <p className="text-xs text-gray-500 truncate">{task.beneficiaryName}</p>
-                                                    <div className="flex items-center gap-2 mt-2">
-                                                        <button
-                                                            onClick={() => {
-                                                                setSelectedTask(task);
-                                                                setActiveView('upload');
-                                                                setShowNotifications(false);
-                                                            }}
-                                                            className="text-[10px] font-bold text-emerald-600 hover:text-emerald-700 uppercase tracking-wider"
-                                                        >
-                                                            Start Upload
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ))
-                                ) : (
-                                    <div className="px-4 py-8 text-center">
-                                        <Bell className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-                                        <p className="text-sm text-gray-500">No new notifications</p>
-                                    </div>
-                                )}
-                            </div>
-                            {assignments.length > 5 && (
-                                <button
-                                    onClick={() => {
-                                        setActiveView('dashboard');
-                                        setShowNotifications(false);
-                                    }}
-                                    className="w-full py-2 text-xs text-center text-gray-500 hover:text-emerald-600 transition-colors border-t border-gray-50"
-                                >
-                                    View all assignments
-                                </button>
-                            )}
-                        </div>
-                    )}
-
-                    {/* <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
-                        <User className="w-4 h-4 text-gray-600" />
-                    </div> */}
+                    <NotificationBell moduleFilter="PHOTO_TASK" />
 
                     {/* Mobile Menu Toggle (Simplified) */}
                     <button
