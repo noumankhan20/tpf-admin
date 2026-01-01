@@ -1,6 +1,5 @@
 "use client";
 import { useState, useMemo, useEffect } from 'react';
-import EmployeeModal from "./employeemodal";
 import {
     ArrowLeft,
     Users,
@@ -30,7 +29,7 @@ import {
     Building2,
     MoreVertical,
 } from 'lucide-react';
-import { useGetEmployeesQuery, useGetSalaryQuery, useGetExpensesQuery } from '@/utils/slices/adminApiSlice';
+import { useGetEmployeesQuery, useGetSalaryQuery, useGetExpensesQuery, useGetEmployeeLoginLogoutTimeQuery } from '@/utils/slices/adminApiSlice';
 import DetailsModal from "./popupModal"
 
 export default function EmployeeManagement() {
@@ -53,6 +52,9 @@ export default function EmployeeManagement() {
         selectedEmployee ? selectedEmployee._id : null
     );
     const { data: expensesData } = useGetExpensesQuery(selectedEmployee ? selectedEmployee._id : null);
+    const { data: loginLogoutData, error: loginLogoutError, isLoading: loginLogoutLoading } = useGetEmployeeLoginLogoutTimeQuery(
+        selectedEmployee && selectedEmployee._id ? selectedEmployee._id : undefined
+    );
 
     useEffect(() => {
         if (expensesData?.data && selectedEmployee && !selectedEmployee.expenses) {
@@ -66,6 +68,18 @@ export default function EmployeeManagement() {
             console.log("data is this", data.admins);
         }
     }, [data]);
+
+    useEffect(() => {
+        if (selectedEmployee) {
+            console.log("Fetching login/logout data for:", selectedEmployee._id);
+        }
+    }, [selectedEmployee]);
+
+    useEffect(() => {
+        if (selectedEmployee) {
+            console.log("Login/Logout Data:", loginLogoutData);
+        }
+    }, [loginLogoutData, selectedEmployee]);
 
     const handleViewSalaryDetails = (salary) => {
         setSelectedSalary(salary);
@@ -115,6 +129,25 @@ export default function EmployeeManagement() {
         }
     };
 
+    if (loginLogoutLoading) {
+        return (
+            <div className="min-h-screen flex justify-center items-center">
+                <Loader2 className="animate-spin" />
+                <p>Loading login/logout data...</p>
+            </div>
+        );
+    }
+
+    // Error state for login/logout data
+    if (loginLogoutError) {
+        return (
+            <div className="min-h-screen flex justify-center items-center">
+                <AlertCircle className="w-6 h-6 text-red-600" />
+                <p>Error loading login/logout data: {loginLogoutError.message}</p>
+            </div>
+        );
+    }
+
     const totalEmployees = employees.length;
 
     const getStatusBadge = (status) => {
@@ -144,8 +177,8 @@ export default function EmployeeManagement() {
                     />
                 )}
 
-                <button 
-                    onClick={handleBack} 
+                <button
+                    onClick={handleBack}
                     className="group flex cursor-pointer items-center gap-2 text-slate-600 hover:text-slate-900 mb-6 transition-all duration-200"
                 >
                     <div className="p-2 rounded-lg bg-white shadow-sm group-hover:shadow-md group-hover:bg-slate-50 transition-all duration-200">
@@ -257,11 +290,10 @@ export default function EmployeeManagement() {
                             <button
                                 key={tab}
                                 onClick={() => setActiveTab(tab)}
-                                className={`flex-1 px-6 py-4 text-sm font-semibold transition-all duration-200 relative ${
-                                    activeTab === tab
+                                className={`flex-1 px-6 py-4 text-sm font-semibold transition-all duration-200 relative ${activeTab === tab
                                         ? "text-blue-600 bg-blue-50"
                                         : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
-                                }`}
+                                    }`}
                             >
                                 {activeTab === tab && (
                                     <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-600"></div>
@@ -273,7 +305,7 @@ export default function EmployeeManagement() {
                 </div>
 
                 <div className="bg-white rounded-2xl shadow-lg border border-slate-200 p-6 sm:p-8">
-                    {activeTab === "login" && (
+                    {activeTab === "login" && selectedEmployee && (
                         <div>
                             <div className="flex items-center gap-3 mb-6">
                                 <div className="p-3 bg-blue-100 rounded-xl">
@@ -285,15 +317,15 @@ export default function EmployeeManagement() {
                                 <table className="w-full">
                                     <thead>
                                         <tr className="border-b border-slate-200">
-                                            <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Date</th>
                                             <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Login Time</th>
+                                            <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Logout Time</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100">
-                                        {selectedEmployee.loginRecords.map((record, idx) => (
+                                        {loginLogoutData?.sessions?.map((session, idx) => (
                                             <tr key={idx} className="hover:bg-slate-50 transition-colors">
-                                                <td className="px-4 py-4 text-sm text-slate-900">{record.date}</td>
-                                                <td className="px-4 py-4 text-sm text-slate-600">{record.loginTime}</td>
+                                                <td className="px-4 py-4 text-sm text-slate-900">{new Date(session.loginTime).toLocaleString()}</td>
+                                                <td className="px-4 py-4 text-sm text-slate-600">{session.logoutTime === "Not logged out yet" ? "Still Logged In" : new Date(session.logoutTime).toLocaleString()}</td>
                                             </tr>
                                         ))}
                                     </tbody>
@@ -470,8 +502,8 @@ export default function EmployeeManagement() {
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-slate-50 p-4 sm:p-8">
-            <button 
-                onClick={handleBack} 
+            <button
+                onClick={handleBack}
                 className="group flex items-center gap-2 text-slate-600 hover:text-slate-900 mb-6 transition-all duration-200"
             >
                 <div className="p-2 rounded-lg bg-white shadow-sm group-hover:shadow-md group-hover:bg-slate-50 transition-all duration-200">
@@ -619,11 +651,10 @@ export default function EmployeeManagement() {
                                         <button
                                             key={page}
                                             onClick={() => handlePageChange(page)}
-                                            className={`w-10 h-10 rounded-xl transition-all duration-200 font-semibold ${
-                                                currentPage === page
+                                            className={`w-10 h-10 rounded-xl transition-all duration-200 font-semibold ${currentPage === page
                                                     ? 'bg-blue-600 text-white shadow-lg'
                                                     : 'bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 hover:shadow-md'
-                                            }`}
+                                                }`}
                                         >
                                             {page}
                                         </button>

@@ -124,6 +124,14 @@ export const adminApiSlice = apiSlice.injectEndpoints({
       }),
     }),
 
+    getEmployeeLoginLogoutTime: builder.query({
+      query: (adminId) => ({
+        url: `/adminAuth/get-login-logout-time`, // The GET request for /getall
+        method: "GET",
+        params: { adminId },
+      }),
+    }),
+
   }),
 });
 
@@ -141,5 +149,6 @@ export const {
   useGetAdminListQuery,
   useGetEmployeesQuery,
   useGetSalaryQuery,
-  useGetExpensesQuery
+  useGetExpensesQuery,
+  useGetEmployeeLoginLogoutTimeQuery
 } = adminApiSlice;
