@@ -1,5 +1,6 @@
 export const ADMIN_MODULES = [
   "Security & Access",
+  "Admin Dashboard",
   "task-management",
   "Social-Media",
   "TPF Management",

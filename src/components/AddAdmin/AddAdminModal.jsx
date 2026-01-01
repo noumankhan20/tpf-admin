@@ -17,6 +17,7 @@ const AddAdminModal = ({ isOpen, onClose, onSubmit }) => {
 
   const availableModules = [
     "Security & Access",
+    "Admin Dashboard",
     "Social-Media",
     "TPF Management",
     "Donation Management",
@@ -108,7 +109,7 @@ const AddAdminModal = ({ isOpen, onClose, onSubmit }) => {
             <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
               Basic Information
             </h3>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Full Name */}
               <div className="space-y-2">
@@ -200,11 +201,10 @@ const AddAdminModal = ({ isOpen, onClose, onSubmit }) => {
             <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
               Administrator Level
             </h3>
-            <div className={`p-4 border-2 rounded-xl transition-all duration-200 ${
-              formData.isSuperAdmin 
-                ? 'border-purple-300 bg-purple-50' 
+            <div className={`p-4 border-2 rounded-xl transition-all duration-200 ${formData.isSuperAdmin
+                ? 'border-purple-300 bg-purple-50'
                 : 'border-gray-200 bg-gray-50 hover:border-gray-300'
-            }`}>
+              }`}>
               <label className="flex items-start gap-3 cursor-pointer">
                 <div className="relative flex items-center justify-center mt-0.5">
                   <input
@@ -242,18 +242,17 @@ const AddAdminModal = ({ isOpen, onClose, onSubmit }) => {
                   {formData.modules.length === availableModules.length ? 'Deselect All' : 'Select All'}
                 </button>
               </div>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-64 overflow-y-auto p-1">
                 {availableModules.map((module) => {
                   const isSelected = formData.modules.includes(module);
                   return (
                     <label
                       key={module}
-                      className={`flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all duration-200 ${
-                        isSelected
+                      className={`flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all duration-200 ${isSelected
                           ? 'border-blue-300 bg-blue-50'
                           : 'border-gray-200 hover:border-gray-300 bg-white'
-                      }`}
+                        }`}
                     >
                       <div className="relative flex items-center justify-center">
                         <input
@@ -266,16 +265,15 @@ const AddAdminModal = ({ isOpen, onClose, onSubmit }) => {
                           <CheckCircle2 className="absolute w-4 h-4 text-blue-600 pointer-events-none" />
                         )}
                       </div>
-                      <span className={`text-sm flex-1 transition-colors ${
-                        isSelected ? 'text-gray-900 font-medium' : 'text-gray-700'
-                      }`}>
+                      <span className={`text-sm flex-1 transition-colors ${isSelected ? 'text-gray-900 font-medium' : 'text-gray-700'
+                        }`}>
                         {module}
                       </span>
                     </label>
                   );
                 })}
               </div>
-              
+
               {formData.modules.length > 0 && (
                 <div className="text-sm text-gray-600 bg-blue-50 border border-blue-200 rounded-lg p-3">
                   <span className="font-medium text-blue-700">{formData.modules.length}</span> module{formData.modules.length !== 1 ? 's' : ''} selected
@@ -297,11 +295,10 @@ const AddAdminModal = ({ isOpen, onClose, onSubmit }) => {
             <button
               disabled={!isFormValid}
               onClick={handleSubmit}
-              className={`flex-1 rounded-xl py-3 px-4 text-base font-medium transition-all duration-200 ${
-                isFormValid
+              className={`flex-1 rounded-xl py-3 px-4 text-base font-medium transition-all duration-200 ${isFormValid
                   ? "bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40 active:scale-[0.98]"
                   : "bg-gray-200 text-gray-400 cursor-not-allowed"
-              }`}
+                }`}
             >
               Create Admin
             </button>

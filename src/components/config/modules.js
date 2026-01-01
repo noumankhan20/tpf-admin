@@ -19,9 +19,18 @@ import {
   HandHeart,
   Book,
   ClipboardList,
+  LayoutDashboard,
 } from "lucide-react";
 
 export const MODULES = [
+  {
+    id: "Admin Dashboard",
+    name: "Dashboard",
+    icon: LayoutDashboard,
+    route: "/admin/dashboard",
+    category: "administration",
+    desc: "System analytics overview",
+  },
   {
     id: "Security & Access",
     name: "Security & Access",
