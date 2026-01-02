@@ -546,7 +546,7 @@ export default function DonationManagement() {
                                         <td className="px-6 py-4 whitespace-nowrap text-sm">
                                             <button
                                                 onClick={() => setSelectedDonation(donation)}
-                                                className="text-emerald-600 hover:text-emerald-900 transition-colors flex items-center gap-1"
+                                                className="text-emerald-600 hover:text-emerald-900 cursor-pointer transition-colors flex items-center gap-1"
                                             >
                                                 <Eye className="w-4 h-4 cursor-pointer" />
                                                 View
