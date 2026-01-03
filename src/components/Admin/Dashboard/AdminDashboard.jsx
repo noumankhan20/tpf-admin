@@ -222,7 +222,7 @@ const DonationTrendChart = () => {
                         Donation Trend
                     </h3>
                     <p className="text-lg text-gray-600">
-                        Total: <span className="font-black text-emerald-600">₹{(totalAmount / 100000).toFixed(2)}L</span>
+                        Total: <span className="font-black text-emerald-600">₹{totalAmount.toLocaleString('en-IN')}</span>
                     </p>
                 </div>
 
@@ -616,7 +616,7 @@ const ActivityCalendar = () => {
                                             <span className="text-xs text-gray-500 font-semibold">{event.time}</span>
                                         </div>
                                         <h5 className="font-black text-gray-900 mb-2">{event.title}</h5>
-                                       
+
                                         {event.assignee && (
                                             <p className="text-sm text-gray-600">Assignee: <span className="font-bold">{event.assignee}</span></p>
                                         )}
