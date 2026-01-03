@@ -32,100 +32,85 @@ import {
     Tooltip,
     ResponsiveContainer,
 } from "recharts";
-import { useGetCalendarEventsQuery } from "../../../utils/slices/adminDashboardApiSlice";
+import {
+    useGetCalendarEventsQuery,
+    useGetSummaryMetricsQuery,
+    useGetDonationAnalyticsQuery
+} from "../../../utils/slices/adminDashboardApiSlice";
 
 // --- Mock Data ---
-const SUMMARY_METRICS = [
-    {
-        id: 1,
-        label: "Total Donors",
-        value: "2,543",
-        icon: Users,
-        route: "/donation-management/offline-donation",
-        gradient: "from-blue-500 to-blue-600",
-    },
-    {
-        id: 2,
-        label: "Total Donation Collected",
-        value: "₹45,23,000",
-        icon: IndianRupee,
-        route: "/donation-management",
-        gradient: "from-emerald-500 to-emerald-600",
-    },
-    {
-        id: 3,
-        label: "Total Admins",
-        value: "12",
-        icon: UserCog,
-        route: "/add-admin",
-        gradient: "from-purple-500 to-purple-600",
-    },
-    {
-        id: 4,
-        label: "Total Volunteers",
-        value: "87",
-        icon: HeartHandshake,
-        route: "/admin/volunteers",
-        gradient: "from-amber-500 to-amber-600",
-    },
-    {
-        id: 5,
-        label: "Total Campaigns",
-        value: "8",
-        icon: Flag,
-        route: "/campaigns",
-        gradient: "from-pink-500 to-pink-600",
-    },
-    {
-        id: 6,
-        label: "Total Pending Tasks",
-        value: "24",
-        icon: CheckSquare,
-        route: "/admin/task-management",
-        gradient: "from-teal-500 to-teal-600",
-    },
-];
-
-const DONATION_DATA_CURRENT_YEAR = [
-    { month: "Jan", Zakaat: 145000, Imdaad: 52000, Lillah: 38000 },
-    { month: "Feb", Zakaat: 152000, Imdaad: 48000, Lillah: 42000 },
-    { month: "Mar", Zakaat: 148000, Imdaad: 61000, Lillah: 45000 },
-    { month: "Apr", Zakaat: 161000, Imdaad: 55000, Lillah: 48000 },
-    { month: "May", Zakaat: 175000, Imdaad: 67000, Lillah: 52000 },
-    { month: "Jun", Zakaat: 182000, Imdaad: 72000, Lillah: 58000 },
-    { month: "Jul", Zakaat: 192000, Imdaad: 69000, Lillah: 61000 },
-    { month: "Aug", Zakaat: 184000, Imdaad: 84000, Lillah: 55000 },
-    { month: "Sep", Zakaat: 198000, Imdaad: 92000, Lillah: 68000 },
-    { month: "Oct", Zakaat: 205000, Imdaad: 88000, Lillah: 72000 },
-    { month: "Nov", Zakaat: 212000, Imdaad: 98000, Lillah: 75000 },
-    { month: "Dec", Zakaat: 225000, Imdaad: 105000, Lillah: 82000 },
-];
-
-const DONATION_DATA_PREVIOUS_YEAR = [
-    { month: "Jan", Zakaat: 125000, Imdaad: 42000, Lillah: 28000 },
-    { month: "Feb", Zakaat: 132000, Imdaad: 38000, Lillah: 32000 },
-    { month: "Mar", Zakaat: 128000, Imdaad: 51000, Lillah: 35000 },
-    { month: "Apr", Zakaat: 141000, Imdaad: 45000, Lillah: 38000 },
-    { month: "May", Zakaat: 155000, Imdaad: 57000, Lillah: 42000 },
-    { month: "Jun", Zakaat: 162000, Imdaad: 62000, Lillah: 48000 },
-    { month: "Jul", Zakaat: 172000, Imdaad: 59000, Lillah: 51000 },
-    { month: "Aug", Zakaat: 164000, Imdaad: 74000, Lillah: 45000 },
-    { month: "Sep", Zakaat: 178000, Imdaad: 82000, Lillah: 58000 },
-    { month: "Oct", Zakaat: 185000, Imdaad: 78000, Lillah: 62000 },
-    { month: "Nov", Zakaat: 192000, Imdaad: 88000, Lillah: 65000 },
-    { month: "Dec", Zakaat: 205000, Imdaad: 95000, Lillah: 72000 },
-];
-
-const DONATION_TYPE_DISTRIBUTION = [
-    { name: "Zakaat", value: 2150000, percentage: 58 },
-    { name: "Imdaad", value: 892000, percentage: 24 },
-    { name: "Lillah", value: 668000, percentage: 18 },
-];
-
 const COLORS = {
-    Zakaat: "#10b981",
-    Imdaad: "#14b8a6",
-    Lillah: "#6366f1",
+    ZAKAAT: "#10b981",
+    SADAQAH: "#f59e0b",
+    LILLAH: "#6366f1",
+    IMDAD: "#14b8a6",
+};
+
+const SummaryMetrics = () => {
+    const { data, isLoading } = useGetSummaryMetricsQuery();
+    const metrics = data?.metrics || {};
+    const router = useRouter();
+
+    const summaryItems = [
+        {
+            id: 1,
+            label: "Total Donors",
+            value: metrics.totalDonors || 0,
+            icon: HeartHandshake,
+            route: "/donation-management/offline-donation",
+            gradient: "from-blue-500 to-blue-600",
+        },
+        {
+            id: 2,
+            label: "Total Donation Collected",
+            value: metrics.totalDonationCollected ? `₹${(metrics.totalDonationCollected).toLocaleString('en-IN')}` : "₹0",
+            icon: IndianRupee,
+            route: "/donation-management",
+            gradient: "from-emerald-500 to-emerald-600",
+        },
+        {
+            id: 3,
+            label: "Total Admins",
+            value: metrics.totalAdmins || 0,
+            icon: UserCog,
+            route: "/add-admin",
+            gradient: "from-purple-500 to-purple-600",
+        },
+        {
+            id: 4,
+            label: "Total Users",
+            value: metrics.totalUsers || 0,
+            icon: Users,
+            route: "/admin/volunteers",
+            gradient: "from-amber-500 to-amber-600",
+        },
+        {
+            id: 5,
+            label: "Total Campaigns",
+            value: metrics.totalCampaigns || 0,
+            icon: Flag,
+            route: "/campaigns",
+            gradient: "from-pink-500 to-pink-600",
+        },
+        {
+            id: 6,
+            label: "Total Pending Tasks",
+            value: metrics.totalPendingTasks || 0,
+            icon: CheckSquare,
+            route: "/admin/task-management",
+            gradient: "from-teal-500 to-teal-600",
+        },
+    ];
+
+    if (isLoading) return <div className="text-center py-10">Loading Metrics...</div>;
+
+    return (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-5 mb-10">
+            {summaryItems.map((metric, index) => (
+                <MetricCard key={metric.id} metric={metric} index={index} />
+            ))}
+        </div>
+    );
 };
 
 const MetricCard = ({ metric, index }) => {
@@ -178,27 +163,50 @@ const MetricCard = ({ metric, index }) => {
 };
 
 const DonationTrendChart = () => {
-    const [selectedFilter, setSelectedFilter] = useState("current");
-    const [activeType, setActiveType] = useState("Zakaat");
+    const [timeRange, setTimeRange] = useState("year"); // today, week, month, year
+    const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
+    const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+    const [activeType, setActiveType] = useState("ALL");
 
-    const getCurrentData = () => {
-        return selectedFilter === "current" ? DONATION_DATA_CURRENT_YEAR : DONATION_DATA_PREVIOUS_YEAR;
-    };
+    const { data, isLoading } = useGetDonationAnalyticsQuery({
+        timeRange,
+        month: selectedMonth,
+        year: selectedYear,
+        donationType: activeType
+    });
 
-    const chartData = getCurrentData();
-
-    const calculateTotal = () => {
-        return chartData.reduce((acc, month) => {
-            acc += month[activeType] || 0;
-            return acc;
-        }, 0);
-    };
+    const trendData = data?.analytics?.trend || [];
+    const totalAmount = data?.analytics?.trend?.reduce((acc, curr) => acc + curr.total, 0) || 0;
 
     const donationTypes = [
-        { key: "Zakaat", color: "#10b981", label: "Zakaat" },
-        { key: "Imdaad", color: "#14b8a6", label: "Imdaad" },
-        { key: "Lillah", color: "#6366f1", label: "Lillah" },
+        { key: "ALL", label: "All Donations" },
+        { key: "ZAKAAT", label: "Zakaat" },
+        { key: "SADAQAH", label: "Sadaqah" },
+        { key: "LILLAH", label: "Lillah" },
+        { key: "IMDAD", label: "Imdad" },
     ];
+
+    const months = [
+        "January", "February", "March", "April", "May", "June",
+        "July", "August", "September", "October", "November", "December"
+    ];
+
+    // Format Data for Chart
+    const formattedData = trendData.map(item => {
+        let label = "";
+        if (timeRange === 'year') {
+            label = months[item._id.month - 1].substring(0, 3);
+        } else if (timeRange === 'month' || timeRange === 'week') {
+            label = `${item._id.day}/${item._id.month}`;
+        } else if (timeRange === 'today') {
+            label = `${item._id.hour}:00`;
+        }
+        return {
+            ...item,
+            label,
+            value: item.total
+        };
+    });
 
     return (
         <motion.div
@@ -208,44 +216,45 @@ const DonationTrendChart = () => {
             className="bg-white rounded-2xl shadow-sm p-8 border border-gray-100"
         >
             {/* Header */}
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-8 gap-4">
+            <div className="flex flex-col xl:flex-row xl:items-center justify-between mb-8 gap-4">
                 <div>
                     <h3 className="text-2xl font-black text-gray-900 mb-2">
                         Donation Trend
                     </h3>
                     <p className="text-lg text-gray-600">
-                        Total: <span className="font-black text-emerald-600">₹{(calculateTotal() / 100000).toFixed(2)}L</span>
+                        Total: <span className="font-black text-emerald-600">₹{(totalAmount / 100000).toFixed(2)}L</span>
                     </p>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-3">
-                    {/* Year filter */}
-                    <div className="flex items-center gap-2 bg-gray-100 rounded-xl p-1.5">
-                        <button
-                            onClick={() => setSelectedFilter("current")}
-                            className={`px-5 py-2.5 rounded-lg text-sm font-bold transition-all ${selectedFilter === "current"
-                                ? "bg-white text-emerald-600 shadow-md"
-                                : "text-gray-600 hover:text-gray-900"
-                                }`}
-                        >
-                            Current FY
-                        </button>
-                        <button
-                            onClick={() => setSelectedFilter("previous")}
-                            className={`px-5 py-2.5 rounded-lg text-sm font-bold transition-all ${selectedFilter === "previous"
-                                ? "bg-white text-emerald-600 shadow-md"
-                                : "text-gray-600 hover:text-gray-900"
-                                }`}
-                        >
-                            Previous FY
-                        </button>
+                    {/* Time Range Filter */}
+                    <div className="flex items-center gap-2 bg-gray-100 rounded-xl p-1.5 overflow-x-auto">
+                        {['today', 'week', 'month', 'year'].map((range) => (
+                            <button
+                                key={range}
+                                onClick={() => setTimeRange(range)}
+                                className={`px-4 py-2 rounded-lg text-sm font-bold transition-all capitalize ${timeRange === range
+                                    ? "bg-white text-emerald-600 shadow-md"
+                                    : "text-gray-600 hover:text-gray-900"
+                                    }`}
+                            >
+                                {range}
+                            </button>
+                        ))}
                     </div>
 
-                    {/* Download button */}
-                    <button className="px-5 py-2.5 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white rounded-xl text-sm font-bold flex items-center gap-2 transition-all shadow-md hover:shadow-lg">
-                        <Download size={18} strokeWidth={2.5} />
-                        Export
-                    </button>
+                    {/* Month Selector */}
+                    {timeRange === 'month' && (
+                        <select
+                            value={selectedMonth}
+                            onChange={(e) => setSelectedMonth(e.target.value)}
+                            className="bg-gray-100 border-none text-gray-700 text-sm font-bold rounded-xl focus:ring-emerald-500 p-2.5 cursor-pointer"
+                        >
+                            {months.map((m, i) => (
+                                <option key={i} value={i + 1}>{m}</option>
+                            ))}
+                        </select>
+                    )}
                 </div>
             </div>
 
@@ -270,82 +279,83 @@ const DonationTrendChart = () => {
             </div>
 
             {/* Chart */}
-            <ResponsiveContainer width="100%" height={420}>
-                <AreaChart
-                    data={chartData}
-                    margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-
-                >
-                    <defs>
-                        <linearGradient id="colorZakaat" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#10b981" stopOpacity={0.4} />
-                            <stop offset="95%" stopColor="#10b981" stopOpacity={0.05} />
-                        </linearGradient>
-                        <linearGradient id="colorImdaad" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#14b8a6" stopOpacity={0.4} />
-                            <stop offset="95%" stopColor="#14b8a6" stopOpacity={0.05} />
-                        </linearGradient>
-                        <linearGradient id="colorLillah" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#6366f1" stopOpacity={0.4} />
-                            <stop offset="95%" stopColor="#6366f1" stopOpacity={0.05} />
-                        </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" vertical={false} />
-                    <XAxis
-                        dataKey="month"
-                        stroke="#9ca3af"
-                        style={{ fontSize: 13, fontWeight: 600 }}
-                        tickLine={false}
-                        axisLine={false}
-                        dy={10}
-                    />
-                    <YAxis
-                        stroke="#9ca3af"
-                        style={{ fontSize: 13, fontWeight: 600 }}
-                        tickFormatter={(value) => `₹${(value / 1000).toFixed(0)}k`}
-                        tickLine={false}
-                        axisLine={false}
-                    />
-                    <Tooltip
-                        contentStyle={{
-                            backgroundColor: "rgba(255, 255, 255, 0.98)",
-                            border: "1px solid #e5e7eb",
-                            borderRadius: "16px",
-                            boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
-                            padding: "16px 20px",
-                            backdropFilter: "blur(10px)"
-                        }}
-                        itemStyle={{
-                            color: '#111827',
-                            fontWeight: 700,
-                            fontSize: '14px',
-                            padding: '4px 0'
-                        }}
-                        formatter={(value, name) => [`₹${value.toLocaleString('en-IN')}`, name]}
-                        labelStyle={{
-                            fontWeight: 800,
-                            marginBottom: 12,
-                            color: '#111827',
-                            fontSize: '15px',
-                            borderBottom: '2px solid #e5e7eb',
-                            paddingBottom: '8px'
-                        }}
-                    />
-                    <Area
-                        type="monotone"
-                        dataKey={activeType}
-                        stroke={COLORS[activeType]}
-                        strokeWidth={4}
-                        fillOpacity={1}
-                        fill={`url(#color${activeType})`}
-                    />
-                </AreaChart>
-            </ResponsiveContainer>
+            <div className="h-[420px] w-full">
+                {isLoading ? (
+                    <div className="h-full flex items-center justify-center text-gray-400">Loading Chart...</div>
+                ) : (
+                    <ResponsiveContainer width="100%" height="100%">
+                        <AreaChart
+                            data={formattedData}
+                            margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                        >
+                            <defs>
+                                <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.4} />
+                                    <stop offset="95%" stopColor="#10b981" stopOpacity={0.05} />
+                                </linearGradient>
+                            </defs>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" vertical={false} />
+                            <XAxis
+                                dataKey="label"
+                                stroke="#9ca3af"
+                                style={{ fontSize: 13, fontWeight: 600 }}
+                                tickLine={false}
+                                axisLine={false}
+                                dy={10}
+                            />
+                            <YAxis
+                                stroke="#9ca3af"
+                                style={{ fontSize: 13, fontWeight: 600 }}
+                                tickFormatter={(value) => `₹${(value / 1000).toFixed(0)}k`}
+                                tickLine={false}
+                                axisLine={false}
+                            />
+                            <Tooltip
+                                contentStyle={{
+                                    backgroundColor: "rgba(255, 255, 255, 0.98)",
+                                    border: "1px solid #e5e7eb",
+                                    borderRadius: "16px",
+                                    boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
+                                    padding: "16px 20px",
+                                    backdropFilter: "blur(10px)"
+                                }}
+                                formatter={(value) => [`₹${value.toLocaleString('en-IN')}`, activeType]}
+                            />
+                            <Area
+                                type="monotone"
+                                dataKey="value"
+                                stroke="#10b981"
+                                strokeWidth={4}
+                                fillOpacity={1}
+                                fill="url(#colorValue)"
+                            />
+                        </AreaChart>
+                    </ResponsiveContainer>
+                )}
+            </div>
         </motion.div>
     );
 };
 
+
+
 const DonationTypeBreakdown = () => {
+    // Fetch breakdown for default Year range
+    const { data, isLoading } = useGetDonationAnalyticsQuery({
+        timeRange: 'year',
+        year: new Date().getFullYear(),
+        donationType: 'ALL'
+    });
+
+    const breakdown = data?.analytics?.breakdown || [];
+    const total = breakdown.reduce((acc, curr) => acc + curr.total, 0);
+
+    const formattedBreakdown = breakdown.map(item => ({
+        name: item._id, // ZAKAAT, SADAQAH
+        value: item.total,
+        percentage: total ? Math.round((item.total / total) * 100) : 0
+    }));
+
     return (
         <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -357,97 +367,56 @@ const DonationTypeBreakdown = () => {
                 Donation by Type
             </h3>
 
-            {/* Responsive layout */}
-            <div className="flex flex-col items-center">
-                {/* Pie Chart and Labels Around */}
-                <div className="relative w-full h-[400px]">
-                    <ResponsiveContainer width="100%" height="100%">
-                        <RechartPieChart>
-                            <Pie
-                                data={DONATION_TYPE_DISTRIBUTION}
-                                cx="50%"
-                                cy="50%"
-                                innerRadius={70}
-                                outerRadius={110}
-                                paddingAngle={5}
-                                dataKey="value"
-                                label={({
-                                    cx,
-                                    cy,
-                                    midAngle,
-                                    innerRadius,
-                                    outerRadius,
-                                    value,
-                                    index,
-                                    name
-                                }) => {
-                                    const RADIAN = Math.PI / 180;
-                                    const radius = outerRadius + 30;
-                                    const x = cx + radius * Math.cos(-midAngle * RADIAN);
-                                    const y = cy + radius * Math.sin(-midAngle * RADIAN);
-                                    const item = DONATION_TYPE_DISTRIBUTION[index];
+            {isLoading ? (
+                <div className="h-[400px] flex items-center justify-center text-gray-400">Loading...</div>
+            ) : (
+                <div className="flex flex-col items-center">
+                    {/* Pie Chart */}
+                    <div className="relative w-full h-[400px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <RechartPieChart>
+                                <Pie
+                                    data={formattedBreakdown}
+                                    cx="50%"
+                                    cy="50%"
+                                    innerRadius={70}
+                                    outerRadius={110}
+                                    paddingAngle={5}
+                                    dataKey="value"
+                                >
+                                    {formattedBreakdown.map((entry, index) => (
+                                        <Cell key={`cell-${index}`} fill={COLORS[entry.name] || "#ccc"} stroke="none" />
+                                    ))}
+                                </Pie>
+                                <Tooltip
+                                    formatter={(value) => `₹${value.toLocaleString('en-IN')}`}
+                                    contentStyle={{
+                                        backgroundColor: "white",
+                                        border: "none",
+                                        borderRadius: "12px",
+                                        boxShadow: "0 10px 40px rgba(0,0,0,0.1)",
+                                        padding: "12px",
+                                    }}
+                                />
+                            </RechartPieChart>
+                        </ResponsiveContainer>
+                    </div>
 
-                                    return (
-                                        <g>
-                                            <text
-                                                x={x}
-                                                y={y}
-                                                fill={COLORS[name]}
-                                                textAnchor={x > cx ? "start" : "end"}
-                                                dominantBaseline="central"
-                                                className="text-sm font-black"
-                                            >
-                                                {name}
-                                            </text>
-                                            <text
-                                                x={x}
-                                                y={y + 18}
-                                                fill="#6b7280"
-                                                textAnchor={x > cx ? "start" : "end"}
-                                                dominantBaseline="central"
-                                                className="text-xs font-bold"
-                                            >
-                                                ₹{(item.value / 100000).toFixed(2)}L ({item.percentage}%)
-                                            </text>
-                                        </g>
-                                    );
-                                }}
-                                labelLine={{
-                                    stroke: '#e5e7eb',
-                                    strokeWidth: 2,
-                                }}
-                            >
-                                {DONATION_TYPE_DISTRIBUTION.map((entry, index) => (
-                                    <Cell key={`cell-${index}`} fill={COLORS[entry.name]} stroke="none" />
-                                ))}
-                            </Pie>
-                            <Tooltip
-                                formatter={(value) => `₹${value.toLocaleString('en-IN')}`}
-                                contentStyle={{
-                                    backgroundColor: "white",
-                                    border: "none",
-                                    borderRadius: "12px",
-                                    boxShadow: "0 10px 40px rgba(0,0,0,0.1)",
-                                    padding: "12px",
-                                }}
-                            />
-                        </RechartPieChart>
-                    </ResponsiveContainer>
+                    {/* Legend */}
+                    <div className="flex flex-wrap justify-center gap-6 mt-8">
+                        {formattedBreakdown.map((item) => (
+                            <div key={item.name} className="flex items-center gap-2">
+                                <div
+                                    className="w-3 h-3 rounded-full shadow-sm"
+                                    style={{ backgroundColor: COLORS[item.name] || "#ccc" }}
+                                />
+                                <span className="text-sm font-bold text-gray-700">{item.name}</span>
+                                <span className="text-xs text-gray-500">({item.percentage}%)</span>
+                            </div>
+                        ))}
+                    </div>
                 </div>
-
-                {/* Legend - Simplified for better flow */}
-                <div className="flex flex-wrap justify-center gap-6 mt-8">
-                    {DONATION_TYPE_DISTRIBUTION.map((item) => (
-                        <div key={item.name} className="flex items-center gap-2">
-                            <div
-                                className="w-3 h-3 rounded-full shadow-sm"
-                                style={{ backgroundColor: COLORS[item.name] }}
-                            />
-                            <span className="text-sm font-bold text-gray-700">{item.name}</span>
-                        </div>
-                    ))}
-                </div>
-            </div>
+            )}
         </motion.div>
     );
 };
@@ -496,7 +465,6 @@ const ActivityCalendar = () => {
     const getTypeColor = (type) => {
         switch (type) {
             case "expense": return "bg-red-500";
-            case "donation": return "bg-emerald-500";
             case "task": return "bg-blue-500";
             case "purchase": return "bg-amber-500";
             case "admin": return "bg-purple-500";
@@ -508,7 +476,6 @@ const ActivityCalendar = () => {
     const getTypeBadge = (type) => {
         switch (type) {
             case "expense": return "bg-red-50 text-red-700 border border-red-200";
-            case "donation": return "bg-emerald-50 text-emerald-700 border border-emerald-200";
             case "task": return "bg-blue-50 text-blue-700 border border-blue-200";
             case "purchase": return "bg-amber-50 text-amber-700 border border-amber-200";
             case "admin": return "bg-purple-50 text-purple-700 border border-purple-200";
@@ -649,9 +616,7 @@ const ActivityCalendar = () => {
                                             <span className="text-xs text-gray-500 font-semibold">{event.time}</span>
                                         </div>
                                         <h5 className="font-black text-gray-900 mb-2">{event.title}</h5>
-                                        {event.amount && (
-                                            <p className="text-sm font-black text-emerald-600">{event.amount}</p>
-                                        )}
+                                       
                                         {event.assignee && (
                                             <p className="text-sm text-gray-600">Assignee: <span className="font-bold">{event.assignee}</span></p>
                                         )}
@@ -711,11 +676,7 @@ export default function AdminDashboard() {
                 </motion.div>
 
                 {/* Summary Metrics */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-5 mb-10">
-                    {SUMMARY_METRICS.map((metric, index) => (
-                        <MetricCard key={metric.id} metric={metric} index={index} />
-                    ))}
-                </div>
+                <SummaryMetrics />
 
                 {/* Charts Row */}
                 <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 mb-10">
