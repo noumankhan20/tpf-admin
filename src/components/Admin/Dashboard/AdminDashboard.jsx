@@ -32,6 +32,7 @@ import {
     Tooltip,
     ResponsiveContainer,
 } from "recharts";
+import { useGetCalendarEventsQuery } from "../../../utils/slices/adminDashboardApiSlice";
 
 // --- Mock Data ---
 const SUMMARY_METRICS = [
@@ -273,7 +274,7 @@ const DonationTrendChart = () => {
                 <AreaChart
                     data={chartData}
                     margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-                   
+
                 >
                     <defs>
                         <linearGradient id="colorZakaat" x1="0" y1="0" x2="0" y2="1">
@@ -455,23 +456,12 @@ const ActivityCalendar = () => {
     const [currentDate, setCurrentDate] = useState(new Date());
     const [selectedDay, setSelectedDay] = useState(null);
 
-    const events = {
-        "2024-03-05": [
-            { id: 1, type: "expense", title: "Office Supplies", time: "10:00 AM", amount: "₹12,000" },
-            { id: 2, type: "task", title: "Review Campaign", time: "2:30 PM", assignee: "Ali" },
-        ],
-        "2024-03-12": [
-            { id: 3, type: "donation", title: "Large Donation", time: "11:15 AM", amount: "₹50,000" },
-        ],
-        "2024-03-15": [
-            { id: 4, type: "purchase", title: "New Camera Gear", time: "09:00 AM", amount: "₹1,45,000" },
-            { id: 5, type: "admin", title: "New Admin Onboarded", time: "1:00 PM", name: "Zainab" },
-            { id: 6, type: "task", title: "Upload Event Photos", time: "4:00 PM", assignee: "Bilal" },
-        ],
-        "2024-03-22": [
-            { id: 7, type: "campaign", title: "Ramadan Drive Launch", time: "9:00 AM" },
-        ],
-    };
+    const { data: eventsData, isLoading } = useGetCalendarEventsQuery({
+        month: currentDate.getMonth() + 1,
+        year: currentDate.getFullYear()
+    });
+
+    const events = eventsData?.events || {};
 
     const getDaysInMonth = (date) => {
         const year = date.getFullYear();
@@ -496,7 +486,10 @@ const ActivityCalendar = () => {
     };
 
     const getDayEvents = (day) => {
-        const dateStr = `2024-03-${String(day).padStart(2, "0")}`;
+        const yearStr = currentDate.getFullYear();
+        const monthStr = String(currentDate.getMonth() + 1).padStart(2, "0");
+        const dayStr = String(day).padStart(2, "0");
+        const dateStr = `${yearStr}-${monthStr}-${dayStr}`;
         return events[dateStr] || [];
     };
 
