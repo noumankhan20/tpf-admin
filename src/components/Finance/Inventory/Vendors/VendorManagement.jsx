@@ -388,7 +388,7 @@ export default function VendorManagement() {
                                     </div>
                                     <div>
                                         <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">
-                                            GST Number
+                                            GST Number / Vendor ID
                                         </label>
                                         <input
                                             name="vendorGST"

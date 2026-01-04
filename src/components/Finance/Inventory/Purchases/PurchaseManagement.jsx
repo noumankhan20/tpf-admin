@@ -10,14 +10,13 @@ import {
     X,
     Calendar,
     IndianRupee,
-    Package,
     Trash2,
     FileText,
     User,
     CheckCircle2,
-    ArrowRight,
     Loader2,
-    AlertCircle
+    AlertCircle,
+    Eye
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Pagination from '../Common/Pagination';
@@ -30,6 +29,7 @@ export default function PurchaseManagement() {
     const [isMounted, setIsMounted] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [showAddModal, setShowAddModal] = useState(false);
+    const [viewPurchase, setViewPurchase] = useState(null);
     const [currentPage, setCurrentPage] = useState(1);
 
     // API Hooks
@@ -48,8 +48,6 @@ export default function PurchaseManagement() {
     const meta = purchasesResponse?.meta || { totalPages: 1 };
     const vendors = vendorsResponse?.data || [];
     const items = itemsResponse?.data || [];
-
-    // console.log("Items fetched:", items);
 
     // Form State
     const [formData, setFormData] = useState({
@@ -244,11 +242,19 @@ export default function PurchaseManagement() {
 
                 {/* Purchase History */}
                 {!isLoading && !isError && (
-                    <div className="space-y-4">
-                        <h2 className="text-lg font-bold text-gray-800 mb-4">Recent Purchases</h2>
-                        <AnimatePresence>
+                    <div className="bg-white border border-gray-200 rounded-3xl overflow-hidden shadow-sm">
+                        <div className="grid grid-cols-12 gap-4 border-b border-gray-100 bg-gray-50/50 p-4 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                            <div className="col-span-1">Ref</div>
+                            <div className="col-span-3">Vendor</div>
+                            <div className="col-span-2">Date</div>
+                            <div className="col-span-2 text-right">Amount</div>
+                            <div className="col-span-2">Status</div>
+                            <div className="col-span-2 text-right">Actions</div>
+                        </div>
+
+                        <div className="divide-y divide-gray-100">
                             {purchases.length === 0 ? (
-                                <div className="text-center py-20 bg-white rounded-3xl border border-dashed border-gray-200">
+                                <div className="text-center py-20">
                                     <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-300">
                                         <ShoppingCart size={32} />
                                     </div>
@@ -259,75 +265,73 @@ export default function PurchaseManagement() {
                                 purchases.map((po) => (
                                     <motion.div
                                         key={po._id}
-                                        initial={{ opacity: 0, y: 10 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow"
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        className="grid grid-cols-12 gap-4 p-4 items-center hover:bg-gray-50 transition-colors group"
                                     >
-                                        <div className="flex flex-col md:flex-row justify-between md:items-center mb-6">
-                                            <div className="flex items-center gap-4 mb-4 md:mb-0">
-                                                <div className="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center">
-                                                    <FileText size={20} />
-                                                </div>
-                                                <div>
-                                                    <h3 className="text-lg font-bold text-gray-900">{po.vendorId?.fullName || "Unknown Vendor"}</h3>
-                                                    <p className="text-xs font-medium text-gray-500 flex items-center gap-2">
-                                                        <span className='uppercase'>#{po._id.slice(-6)}</span> <span className="w-1 h-1 rounded-full bg-gray-300"></span> {new Date(po.purchaseDate).toLocaleDateString()}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                            <div className="text-right flex items-center gap-4">
-                                                <div>
-                                                    <p className="text-2xl font-bold text-gray-900">₹{po.totalAmount.toLocaleString()}</p>
-                                                    <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold mt-1 
-                                                        ${po.paymentStatus === 'PAID' ? 'bg-green-50 text-green-700' :
-                                                            po.paymentStatus === 'PENDING' ? 'bg-yellow-50 text-yellow-700' : 'bg-blue-50 text-blue-700'}`}>
-                                                        <CheckCircle2 size={12} />
-                                                        {po.paymentStatus}
-                                                        {po.bill?.fileUrl && <span className="ml-1 text-[10px] underline cursor-pointer" onClick={() => window.open(process.env.NEXT_PUBLIC_BACKEND_URL + po.bill.fileUrl, '_blank')}>View Proof</span>}
-                                                    </div>
-                                                </div>
-                                                <button
-                                                    onClick={() => handleDelete(po._id)}
-                                                    className="p-2 text-gray-300 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all"
-                                                    title="Delete Purchase Record"
-                                                >
-                                                    <Trash2 size={18} />
-                                                </button>
+                                        <div className="col-span-1">
+                                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter bg-gray-100 px-1.5 py-0.5 rounded">
+                                                #{po._id.slice(-4)}
+                                            </span>
+                                        </div>
+                                        <div className="col-span-3">
+                                            <p className="font-bold text-gray-900 line-clamp-1">{po.vendorId?.fullName || "Unknown Vendor"}</p>
+                                            <p className="text-[10px] text-gray-400 italic">
+                                                {po.items.length} {po.items.length === 1 ? 'item' : 'items'}
+                                            </p>
+                                        </div>
+                                        <div className="col-span-2">
+                                            <p className="text-sm font-medium text-gray-600">
+                                                {new Date(po.purchaseDate).toLocaleDateString()}
+                                            </p>
+                                        </div>
+                                        <div className="col-span-2 text-right">
+                                            <p className="text-sm font-bold text-gray-900">₹{po.totalAmount.toLocaleString()}</p>
+                                        </div>
+                                        <div className="col-span-2">
+                                            <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-bold 
+                                                    ${po.paymentStatus === 'PAID' ? 'bg-green-50 text-green-700' :
+                                                    po.paymentStatus === 'PENDING' ? 'bg-yellow-50 text-yellow-700' : 'bg-blue-50 text-blue-700'}`}>
+                                                {po.paymentStatus}
                                             </div>
                                         </div>
-
-                                        <div className="bg-gray-50 rounded-xl p-4">
-                                            <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Items Purchased</p>
-                                            <div className="grid gap-3">
-                                                {po.items.map((item, idx) => (
-                                                    <div key={idx} className="flex justify-between items-center text-sm">
-                                                        <div className="flex items-center gap-2">
-                                                            <span className={`w-2 h-2 rounded-full ${item.itemId?.itemType === 'ASSET' ? 'bg-blue-400' : 'bg-orange-400'}`}></span>
-                                                            <span className="font-medium text-gray-700">{item.itemId?.name}</span>
-                                                            <span className="text-gray-400">x {item.quantity} {item.itemId?.unit}</span>
-                                                        </div>
-                                                        <span className="font-bold text-gray-600">₹{item.totalPrice.toLocaleString()}</span>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                            {/* System Behavior Note */}
-                                            <div className="mt-4 pt-4 border-t border-gray-200 flex items-center gap-2 text-[11px] text-gray-400 italic">
-                                                <div className="w-4 h-4 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">i</div>
-                                                Inventory stock updated automatically.
-                                            </div>
+                                        <div className="col-span-2 flex items-center justify-end gap-1">
+                                            <button
+                                                onClick={() => setViewPurchase(po)}
+                                                className="p-2 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all"
+                                                title="View Details"
+                                            >
+                                                <Eye size={18} />
+                                            </button>
+                                            {po.bill?.fileUrl && (
+                                                <button
+                                                    onClick={() => window.open(process.env.NEXT_PUBLIC_BACKEND_URL + po.bill.fileUrl, '_blank')}
+                                                    className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
+                                                    title="View Bill Proof"
+                                                >
+                                                    <FileText size={18} />
+                                                </button>
+                                            )}
+                                            <button
+                                                onClick={() => handleDelete(po._id)}
+                                                className="p-2 text-gray-300 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all"
+                                                title="Delete"
+                                            >
+                                                <Trash2 size={18} />
+                                            </button>
                                         </div>
                                     </motion.div>
                                 ))
                             )}
-                        </AnimatePresence>
-
-                        <Pagination
-                            currentPage={currentPage}
-                            totalPages={meta.totalPages}
-                            onPageChange={(page) => setCurrentPage(page)}
-                        />
+                        </div>
                     </div>
                 )}
+
+                <Pagination
+                    currentPage={currentPage}
+                    totalPages={meta.totalPages}
+                    onPageChange={(page) => setCurrentPage(page)}
+                />
             </main>
 
             {/* Add Purchase Modal */}
@@ -516,6 +520,113 @@ export default function PurchaseManagement() {
                                     </button>
                                 </div>
                             </form>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+            {/* Purchase Detail Modal */}
+            <AnimatePresence>
+                {viewPurchase && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => setViewPurchase(null)}
+                            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+                        ></motion.div>
+                        <motion.div
+                            initial={{ scale: 0.95, opacity: 0, y: 20 }}
+                            animate={{ scale: 1, opacity: 1, y: 0 }}
+                            exit={{ scale: 0.95, opacity: 0, y: 20 }}
+                            className="bg-white rounded-3xl w-full max-w-lg shadow-2xl relative overflow-hidden z-10"
+                        >
+                            <div className="px-8 py-6 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+                                <div>
+                                    <h2 className="text-xl font-bold text-gray-900">Purchase Details</h2>
+                                    <p className="text-sm text-gray-500 uppercase tracking-widest font-bold">Ref: #{viewPurchase._id.slice(-8)}</p>
+                                </div>
+                                <button
+                                    onClick={() => setViewPurchase(null)}
+                                    className="p-2 hover:bg-gray-200 rounded-full transition-colors"
+                                >
+                                    <X size={20} className="text-gray-400" />
+                                </button>
+                            </div>
+
+                            <div className="p-8 space-y-8">
+                                <div className="grid grid-cols-2 gap-8">
+                                    <div>
+                                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Vendor</p>
+                                        <p className="font-bold text-gray-900 text-lg">{viewPurchase.vendorId?.fullName || "N/A"}</p>
+                                        <p className="text-xs text-gray-500">{viewPurchase.vendorId?.email}</p>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Date</p>
+                                        <p className="font-bold text-gray-900">{new Date(viewPurchase.purchaseDate).toLocaleDateString(undefined, { dateStyle: 'long' })}</p>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4">Items Summary</p>
+                                    <div className="bg-gray-50 rounded-2xl border border-gray-100 overflow-hidden">
+                                        <table className="w-full text-sm">
+                                            <thead>
+                                                <tr className="border-b border-gray-200 text-[10px] uppercase text-gray-400 font-bold">
+                                                    <th className="px-4 py-3 text-left">Item</th>
+                                                    <th className="px-4 py-3 text-center">Qty</th>
+                                                    <th className="px-4 py-3 text-right">Total</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-gray-100">
+                                                {viewPurchase.items.map((item, idx) => (
+                                                    <tr key={idx}>
+                                                        <td className="px-4 py-3">
+                                                            <p className="font-bold text-gray-900">{item.itemId?.name}</p>
+                                                            <p className="text-[10px] text-gray-400 font-bold uppercase">{item.itemId?.itemType}</p>
+                                                        </td>
+                                                        <td className="px-4 py-3 text-center text-gray-600 font-medium">
+                                                            {item.quantity} {item.itemId?.unit}
+                                                        </td>
+                                                        <td className="px-4 py-3 text-right font-bold text-gray-900">
+                                                            ₹{item.totalPrice.toLocaleString()}
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                            <tfoot>
+                                                <tr className="bg-gray-100/50">
+                                                    <td colSpan="2" className="px-4 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest">Grand Total</td>
+                                                    <td className="px-4 py-4 text-right text-lg font-bold text-emerald-600">
+                                                        ₹{viewPurchase.totalAmount.toLocaleString()}
+                                                    </td>
+                                                </tr>
+                                            </tfoot>
+                                        </table>
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center justify-between p-4 bg-emerald-50 rounded-2xl border border-emerald-100">
+                                    <div className="flex gap-3">
+                                        <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center text-emerald-600 shadow-sm shrink-0">
+                                            <CheckCircle2 size={20} />
+                                        </div>
+                                        <div>
+                                            <p className="text-xs font-bold text-emerald-800 uppercase tracking-tight">Payment Status</p>
+                                            <p className="text-sm font-bold text-emerald-600 tracking-wide uppercase">{viewPurchase.paymentStatus}</p>
+                                        </div>
+                                    </div>
+                                    {viewPurchase.bill?.fileUrl && (
+                                        <button
+                                            onClick={() => window.open(process.env.NEXT_PUBLIC_BACKEND_URL + viewPurchase.bill.fileUrl, '_blank')}
+                                            className="px-4 py-2 bg-emerald-600 text-white text-xs font-bold rounded-xl hover:bg-emerald-700 transition-colors shadow-lg shadow-emerald-200"
+                                        >
+                                            View Proof
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
                         </motion.div>
                     </div>
                 )}
