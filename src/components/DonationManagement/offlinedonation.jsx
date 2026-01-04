@@ -722,7 +722,7 @@ export default function OfflineDonationPage() {
               </h2>
               <button
                 onClick={() => setIsFilterModalOpen(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition-colors cursor-pointer"
+                className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors cursor-pointer"
               >
                 <Filter className="w-4 h-4" />
                 Filters
