@@ -9,10 +9,29 @@ export const donationApiSlice = apiSlice.injectEndpoints({
         params: params, // Pass filters and pagination params
       }),
     }),
+
+      getOfflineDonations: builder.query({
+        query:(params) =>({
+          url:'offline-donations/get',
+          method:'GET',
+          params: params,
+        })
+      }),
+
+      approveOfflineDonations: builder.mutation({
+      query: ({donationId}) => ({
+        url: "offline-donations/approve",
+        method: "POST",
+        body: { donationId }, // Send the array of donation IDs to approve
+      }),
+    }),
+
     })
 })
 
 
 export const {
     useGetDonationsQuery,
+    useGetOfflineDonationsQuery,
+    useApproveOfflineDonationsMutation,
 } = donationApiSlice

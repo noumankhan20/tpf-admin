@@ -14,67 +14,8 @@ import {
   Building,
   User,
 } from "lucide-react";
-
-// ==================== MOCK DATA ====================
-const INITIAL_DONATIONS = [
-  {
-    id: "OD001",
-    donorId: "DNR12345",
-    method: "IMPS",
-    amount: 5000,
-    remarks: "Monthly contribution",
-    status: "pending",
-    submittedOn: "2024-12-10T10:30:00",
-    approvedOn: null,
-    referenceNumber: "IMPS2024120001",
-    bankName: "HDFC Bank",
-    bankAccountName: "John Doe",
-    transactionDate: "2024-12-10",
-  },
-  {
-    id: "OD002",
-    donorId: "DNR12346",
-    method: "CHEQUE",
-    amount: 10000,
-    remarks: "Annual donation",
-    status: "approved",
-    submittedOn: "2024-12-08T14:20:00",
-    approvedOn: "2024-12-09T09:15:00",
-    chequeNumber: "CHQ123456",
-    chequeDate: "2024-12-07",
-    bankName: "SBI",
-    branchName: "Mumbai Central",
-  },
-  {
-    id: "OD003",
-    donorId: "DNR12347",
-    method: "NEFT",
-    amount: 7500,
-    remarks: "Emergency fund",
-    status: "approved",
-    submittedOn: "2024-12-05T16:45:00",
-    approvedOn: null,
-    referenceNumber: "NEFT2024120501",
-    bankName: "ICICI Bank",
-    bankAccountName: "Jane Smith",
-    transactionDate: "2024-12-05",
-  },
-  {
-    id: "OD004",
-    donorId: "DNR12348",
-    method: "RTGS",
-    amount: 50000,
-    remarks: "Large contribution",
-    status: "pending",
-    submittedOn: "2024-12-12T11:00:00",
-    approvedOn: null,
-    utrNumber: "RTGS2024121200001",
-    bankName: "Axis Bank",
-    bankAccountName: "Robert Johnson",
-    transactionDate: "2024-12-12",
-  },
-];
-
+import { useGetOfflineDonationsQuery,useApproveOfflineDonationsMutation } from '@/utils/slices/donationApiSlice';
+import FilterModal from "../lib/filters";
 // ==================== STATUS BADGE COMPONENT ====================
 const StatusBadge = ({ status }) => {
   const styles = {
@@ -92,450 +33,6 @@ const StatusBadge = ({ status }) => {
   );
 };
 
-// ==================== ADD OFFLINE DONATION MODAL ====================
-const AddOfflineDonationModal = ({ isOpen, onClose, onAdd }) => {
-  const [selectedMethod, setSelectedMethod] = useState("");
-  const [formData, setFormData] = useState({
-    donorId: "",
-    amount: "",
-    remarks: "",
-    // IMPS/NEFT fields
-    referenceNumber: "",
-    bankName: "",
-    bankAccountName: "",
-    transactionDate: "",
-    // RTGS fields
-    utrNumber: "",
-    // CHEQUE fields
-    chequeNumber: "",
-    chequeDate: "",
-    branchName: "",
-  });
-
-  const handleMethodChange = (method) => {
-    setSelectedMethod(method);
-    // Reset method-specific fields
-    setFormData({
-      ...formData,
-      referenceNumber: "",
-      utrNumber: "",
-      chequeNumber: "",
-      chequeDate: "",
-      branchName: "",
-      bankName: "",
-      bankAccountName: "",
-      transactionDate: "",
-    });
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-
-    const baseData = {
-      id: `OD${Date.now()}`,
-      donorId: formData.donorId,
-      method: selectedMethod,
-      amount: parseFloat(formData.amount),
-      remarks: formData.remarks,
-      status: "pending",
-      submittedOn: new Date().toISOString(),
-      approvedOn: null,
-    };
-
-    let methodSpecificData = {};
-
-    if (selectedMethod === "IMPS" || selectedMethod === "NEFT") {
-      methodSpecificData = {
-        referenceNumber: formData.referenceNumber,
-        bankName: formData.bankName,
-        bankAccountName: formData.bankAccountName,
-        transactionDate: formData.transactionDate,
-      };
-    } else if (selectedMethod === "RTGS") {
-      methodSpecificData = {
-        utrNumber: formData.utrNumber,
-        bankName: formData.bankName,
-        bankAccountName: formData.bankAccountName,
-        transactionDate: formData.transactionDate || null,
-      };
-    } else if (selectedMethod === "CHEQUE") {
-      methodSpecificData = {
-        chequeNumber: formData.chequeNumber,
-        chequeDate: formData.chequeDate,
-        bankName: formData.bankName,
-        branchName: formData.branchName,
-      };
-    }
-
-    onAdd({ ...baseData, ...methodSpecificData });
-
-    // Reset form
-    setSelectedMethod("");
-    setFormData({
-      donorId: "",
-      amount: "",
-      remarks: "",
-      referenceNumber: "",
-      bankName: "",
-      bankAccountName: "",
-      transactionDate: "",
-      utrNumber: "",
-      chequeNumber: "",
-      chequeDate: "",
-      branchName: "",
-    });
-
-    onClose();
-  };
-
-  if (!isOpen) return null;
-
-  return (
-    <div className="fixed inset-0 bg-black/20 backdrop-blur-sm  flex items-center justify-center z-50 p-4"
-     onClick={onClose}
-    >
-      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
-      onClick={(e) => e.stopPropagation()}
-      >
-        <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-gray-900">
-            Add Offline Donation
-          </h3>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
-          {/* Method Selection */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Payment Method *
-            </label>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              {["IMPS", "NEFT", "RTGS", "CHEQUE"].map((method) => (
-                <button
-                  key={method}
-                  type="button"
-                  onClick={() => handleMethodChange(method)}
-                  className={`py-3 px-4 rounded-lg border-2 font-medium transition-all ${selectedMethod === method
-                    ? "border-blue-600 bg-blue-50 text-blue-700"
-                    : "border-gray-200 bg-white text-gray-700 hover:border-gray-300"
-                    }`}
-                >
-                  {method}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {selectedMethod && (
-            <>
-              {/* Common Fields */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Donor ID *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.donorId}
-                    onChange={(e) =>
-                      setFormData({ ...formData, donorId: e.target.value })
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="DNR12345"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Amount *
-                  </label>
-                  <input
-                    type="number"
-                    required
-                    min="1"
-                    step="0.01"
-                    value={formData.amount}
-                    onChange={(e) =>
-                      setFormData({ ...formData, amount: e.target.value })
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="5000"
-                  />
-                </div>
-              </div>
-
-              {/* Method-Specific Fields */}
-              {(selectedMethod === "IMPS" || selectedMethod === "NEFT") && (
-                <div className="space-y-4 p-4 bg-gray-50 rounded-lg">
-                  <h4 className="font-medium text-gray-900">
-                    {selectedMethod} Details
-                  </h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Reference Number *
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={formData.referenceNumber}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            referenceNumber: e.target.value,
-                          })
-                        }
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Transaction Date *
-                      </label>
-                      <input
-                        type="date"
-                        required
-                        value={formData.transactionDate}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            transactionDate: e.target.value,
-                          })
-                        }
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Bank Name *
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={formData.bankName}
-                        onChange={(e) =>
-                          setFormData({ ...formData, bankName: e.target.value })
-                        }
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Account Holder Name *
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={formData.bankAccountName}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            bankAccountName: e.target.value,
-                          })
-                        }
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {selectedMethod === "RTGS" && (
-                <div className="space-y-4 p-4 bg-gray-50 rounded-lg">
-                  <h4 className="font-medium text-gray-900">RTGS Details</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        UTR Number *
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={formData.utrNumber}
-                        onChange={(e) =>
-                          setFormData({ ...formData, utrNumber: e.target.value })
-                        }
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Transaction Date
-                      </label>
-                      <input
-                        type="date"
-                        value={formData.transactionDate}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            transactionDate: e.target.value,
-                          })
-                        }
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Bank Name *
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={formData.bankName}
-                        onChange={(e) =>
-                          setFormData({ ...formData, bankName: e.target.value })
-                        }
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Account Holder Name *
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={formData.bankAccountName}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            bankAccountName: e.target.value,
-                          })
-                        }
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {selectedMethod === "CHEQUE" && (
-                <div className="space-y-4 p-4 bg-gray-50 rounded-lg">
-                  <h4 className="font-medium text-gray-900">Cheque Details</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Cheque Number *
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={formData.chequeNumber}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            chequeNumber: e.target.value,
-                          })
-                        }
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Cheque Date *
-                      </label>
-                      <input
-                        type="date"
-                        required
-                        value={formData.chequeDate}
-                        onChange={(e) =>
-                          setFormData({ ...formData, chequeDate: e.target.value })
-                        }
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Bank Name *
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={formData.bankName}
-                        onChange={(e) =>
-                          setFormData({ ...formData, bankName: e.target.value })
-                        }
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Branch Name *
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={formData.branchName}
-                        onChange={(e) =>
-                          setFormData({ ...formData, branchName: e.target.value })
-                        }
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Remarks
-                </label>
-                <textarea
-                  value={formData.remarks}
-                  onChange={(e) =>
-                    setFormData({ ...formData, remarks: e.target.value })
-                  }
-                  rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Additional notes..."
-                />
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex justify-end gap-3 pt-4 border-t">
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                  Add Donation
-                </button>
-              </div>
-            </>
-          )}
-
-          {!selectedMethod && (
-            <p className="text-center text-gray-500 py-8">
-              Please select a payment method to continue
-            </p>
-          )}
-        </form>
-      </div>
-    </div>
-  );
-};
 
 // ==================== DETAILS MODAL ====================
 const OfflineDonationDetailsModal = ({ isOpen, onClose, donation, onApprove }) => {
@@ -553,7 +50,9 @@ const OfflineDonationDetailsModal = ({ isOpen, onClose, donation, onApprove }) =
     <div className="fixed inset-0 bg-black/20 backdrop-blur-sm  flex items-center justify-center z-50 p-4"
      onClick={onClose}
     >
-      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between">
           <h3 className="text-lg font-semibold text-gray-900">
             Donation Details
@@ -570,18 +69,14 @@ const OfflineDonationDetailsModal = ({ isOpen, onClose, donation, onApprove }) =
           {/* Basic Info */}
           <div className="grid grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg">
             <div>
-              <p className="text-sm text-gray-600">Donation ID</p>
-              <p className="font-medium text-gray-900">{donation.id}</p>
+              <p className="text-sm text-gray-600">Donor Email</p>
+              <p className="font-medium text-gray-900">{donation.email}</p>
             </div>
             <div>
               <p className="text-sm text-gray-600">Status</p>
               <div className="mt-1">
                 <StatusBadge status={donation.status} />
               </div>
-            </div>
-            <div>
-              <p className="text-sm text-gray-600">Donor ID</p>
-              <p className="font-medium text-gray-900">{donation.donorId}</p>
             </div>
             <div>
               <p className="text-sm text-gray-600">Method</p>
@@ -626,19 +121,19 @@ const OfflineDonationDetailsModal = ({ isOpen, onClose, donation, onApprove }) =
                   <div>
                     <p className="text-sm text-gray-600">Transaction Date</p>
                     <p className="font-medium text-gray-900">
-                      {donation.transactionDate}
+                      {donation.transactionDate ? new Date(donation.transactionDate).toLocaleDateString("en-IN") : "N/A"}
                     </p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-600">Bank Name</p>
                     <p className="font-medium text-gray-900">
-                      {donation.bankName}
+                      {donation.bankName || "N/A"}
                     </p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-600">Account Holder</p>
                     <p className="font-medium text-gray-900">
-                      {donation.bankAccountName}
+                      {donation.bankAccountName || "N/A"}
                     </p>
                   </div>
                 </>
@@ -655,7 +150,7 @@ const OfflineDonationDetailsModal = ({ isOpen, onClose, donation, onApprove }) =
                   <div>
                     <p className="text-sm text-gray-600">Transaction Date</p>
                     <p className="font-medium text-gray-900">
-                      {donation.transactionDate || "N/A"}
+                      {donation.transactionDate ? new Date(donation.transactionDate).toLocaleDateString("en-IN") : "N/A"}
                     </p>
                   </div>
                   <div>
@@ -679,12 +174,6 @@ const OfflineDonationDetailsModal = ({ isOpen, onClose, donation, onApprove }) =
                     <p className="text-sm text-gray-600">Cheque Number</p>
                     <p className="font-medium text-gray-900">
                       {donation.chequeNumber}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600">Cheque Date</p>
-                    <p className="font-medium text-gray-900">
-                      {donation.chequeDate}
                     </p>
                   </div>
                   <div>
@@ -758,7 +247,7 @@ const OfflineDonationTable = ({ donations, onView, onApprove }) => {
           <thead className="bg-gray-50 border-b border-gray-200">
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Donor ID
+                Email
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Method
@@ -784,7 +273,7 @@ const OfflineDonationTable = ({ donations, onView, onApprove }) => {
                   <div className="flex items-center">
                     <User className="w-4 h-4 text-gray-400 mr-2" />
                     <span className="text-sm font-medium text-gray-900">
-                      {donation.donorId}
+                      {donation.email}
                     </span>
                   </div>
                 </td>
@@ -842,7 +331,7 @@ const OfflineDonationTable = ({ donations, onView, onApprove }) => {
               <div className="flex items-center">
                 <User className="w-4 h-4 text-gray-400 mr-2" />
                 <span className="text-sm font-medium text-gray-900">
-                  {donation.donorId}
+                  {donation.email}
                 </span>
               </div>
               <StatusBadge status={donation.status} />
@@ -896,10 +385,17 @@ const OfflineDonationTable = ({ donations, onView, onApprove }) => {
 
 // ==================== MAIN PAGE COMPONENT ====================
 export default function OfflineDonationPage() {
-  const [donations, setDonations] = useState(INITIAL_DONATIONS);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [selectedDonation, setSelectedDonation] = useState(null);
+  const [approveOfflineDonation] = useApproveOfflineDonationsMutation();
+  // Fetch offline donations using RTK Query
+  const { data, error, isLoading, refetch } = useGetOfflineDonationsQuery();
+
+  // Extract donations and stats from API response
+  const donations = data?.donations || [];
+  const totalAmount = data?.totalAmount || 0;
+  const pagination = data?.pagination || { currentPage: 1, totalPages: 1, totalDonations: 0 };
 
   // Calculate stats
   const stats = useMemo(() => {
@@ -910,23 +406,21 @@ export default function OfflineDonationPage() {
     };
   }, [donations]);
 
-  const handleAddDonation = (newDonation) => {
-    setDonations((prev) => [newDonation, ...prev]);
+  const handleApprove = async (id) => {
+    try {
+      // Call the API to approve the donation
+      const response = await approveOfflineDonation({ donationId: id }).unwrap();
+      alert(response.message);  // Show success message
+      refetch(); // Refetch donations list after approving
+    } catch (error) {
+      console.error("Error approving donation", error);
+      alert("Error approving donation");
+    }
   };
 
   const handleViewDetails = (donation) => {
     setSelectedDonation(donation);
     setIsDetailsModalOpen(true);
-  };
-
-  const handleApprove = (id) => {
-    setDonations((prev) =>
-      prev.map((d) =>
-        d.id === id
-          ? { ...d, status: "approved", approvedOn: new Date().toISOString() }
-          : d
-      )
-    );
   };
 
   return (
@@ -947,16 +441,9 @@ export default function OfflineDonationPage() {
                 Offline Donations
               </h1>
               <p className="text-gray-600 mt-1">
-                Add, verify and approve offline donation entries
+                Verify and approve offline donation entries
               </p>
             </div>
-            <button
-              onClick={() => setIsAddModalOpen(true)}
-              className="flex items-center backdrop:blur-sm px-4 py-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-700 transition-colors cursor-pointer shadow-sm"
-            >
-              <Plus className="w-5 h-5 mr-2" />
-              Add Offline Donation
-            </button>
           </div>
         </div>
 
@@ -969,7 +456,7 @@ export default function OfflineDonationPage() {
                   Total Offline
                 </p>
                 <p className="text-2xl font-bold text-gray-900 mt-1">
-                  {stats.total}
+                  {isLoading ? "..." : stats.total}
                 </p>
               </div>
               <div className="p-3 bg-blue-100 rounded-lg">
@@ -983,7 +470,7 @@ export default function OfflineDonationPage() {
               <div>
                 <p className="text-sm font-medium text-gray-600">Pending</p>
                 <p className="text-2xl font-bold text-yellow-600 mt-1">
-                  {stats.pending}
+                  {isLoading ? "..." : stats.pending}
                 </p>
               </div>
               <div className="p-3 bg-yellow-100 rounded-lg">
@@ -997,7 +484,7 @@ export default function OfflineDonationPage() {
               <div>
                 <p className="text-sm font-medium text-gray-600">Approved</p>
                 <p className="text-2xl font-bold text-green-600 mt-1">
-                  {stats.approved}
+                  {isLoading ? "..." : stats.approved}
                 </p>
               </div>
               <div className="p-3 bg-green-100 rounded-lg">
@@ -1005,45 +492,69 @@ export default function OfflineDonationPage() {
               </div>
             </div>
           </div>
+
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Total Amount</p>
+                <p className="text-2xl font-bold text-emerald-600 mt-1">
+                  {isLoading ? "..." : `₹${totalAmount.toLocaleString('en-IN')}`}
+                </p>
+              </div>
+              <div className="p-3 bg-emerald-100 rounded-lg">
+                <FileText className="w-6 h-6 text-emerald-600" />
+              </div>
+            </div>
+          </div>
         </div>
 
+        {/* Loading State */}
+        {isLoading && (
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
+            <p className="text-gray-500">Loading offline donations...</p>
+          </div>
+        )}
+
+        {/* Error State */}
+        {error && (
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
+            <p className="text-red-500">Error loading offline donations. Please try again.</p>
+          </div>
+        )}
+
         {/* Table */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h2 className="text-lg font-semibold text-gray-900">
-              All Offline Donations
-            </h2>
+        {!isLoading && !error && (
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <h2 className="text-lg font-semibold text-gray-900">
+                All Offline Donations
+              </h2>
+            </div>
+            <div className="p-6">
+              {donations.length > 0 ? (
+                <OfflineDonationTable
+                  donations={donations}
+                  onView={handleViewDetails}
+                  onApprove={handleApprove}
+                />
+              ) : (
+                <div className="text-center py-12">
+                  <Building className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                  <p className="text-gray-500">No offline donations yet</p>
+                  <button
+                    onClick={() => setIsAddModalOpen(true)}
+                    className="mt-4 text-blue-600 hover:text-blue-700 font-medium"
+                  >
+                    Add your first donation
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
-          <div className="p-6">
-            {donations.length > 0 ? (
-              <OfflineDonationTable
-                donations={donations}
-                onView={handleViewDetails}
-                onApprove={handleApprove}
-              />
-            ) : (
-              <div className="text-center py-12">
-                <Building className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                <p className="text-gray-500">No offline donations yet</p>
-                <button
-                  onClick={() => setIsAddModalOpen(true)}
-                  className="mt-4 text-blue-600 hover:text-blue-700 font-medium"
-                >
-                  Add your first donation
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
+        )}
       </div>
 
       {/* Modals */}
-      <AddOfflineDonationModal
-        isOpen={isAddModalOpen}
-        onClose={() => setIsAddModalOpen(false)}
-        onAdd={handleAddDonation}
-      />
-
       <OfflineDonationDetailsModal
         isOpen={isDetailsModalOpen}
         onClose={() => setIsDetailsModalOpen(false)}
