@@ -40,7 +40,7 @@ export default function ItemManagement() {
     // API Hooks
     const { data: itemsResponse, isLoading, isError, error } = useGetItemsQuery({
         page: currentPage,
-        limit: 20,
+        limit: 12,
         search: searchQuery || undefined,
         itemType: filterType !== 'all' ? filterType.toUpperCase() : undefined,
     });
@@ -513,7 +513,7 @@ export default function ItemManagement() {
 
                                 <div>
                                     <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">
-                                        Vendor (Optional)
+                                        Vendor
                                     </label>
                                     <select
                                         name="vendorId"

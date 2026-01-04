@@ -19,7 +19,8 @@ import {
     Laptop,
     UserMinus,
     Trash2,
-    Loader2
+    Loader2,
+    Eye
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -40,6 +41,7 @@ export default function AssetManagement() {
     // Modals
     const [showAssignModal, setShowAssignModal] = useState(false);
     const [showIncomeModal, setShowIncomeModal] = useState(false);
+    const [viewAsset, setViewAsset] = useState(null);
     const [selectedAsset, setSelectedAsset] = useState(null);
     const [currentPage, setCurrentPage] = useState(1);
 
@@ -233,11 +235,18 @@ export default function AssetManagement() {
                                             )}
                                         </div>
 
-                                        <div className="col-span-3 flex items-center justify-end gap-4">
-                                            <div className="text-right">
+                                        <div className="col-span-3 flex items-center justify-end gap-2">
+                                            <div className="text-right mr-2">
                                                 <p className="font-bold text-gray-900">₹{(asset.totalIncome || 0).toLocaleString()}</p>
                                                 <p className="text-xs text-green-600 font-medium">+₹{(asset.monthlyIncome || 0).toLocaleString()}/mo</p>
                                             </div>
+                                            <button
+                                                onClick={() => setViewAsset(asset)}
+                                                className="p-2 hover:bg-emerald-50 rounded-lg text-gray-400 hover:text-emerald-600 transition-colors"
+                                                title="View Details"
+                                            >
+                                                <Eye size={18} />
+                                            </button>
                                             <button
                                                 onClick={() => { setSelectedAsset(asset); setIncomeAmount(asset.monthlyIncome || ''); setShowIncomeModal(true); }}
                                                 className="p-2 hover:bg-emerald-50 rounded-lg text-gray-400 hover:text-emerald-600 transition-colors"
@@ -371,6 +380,114 @@ export default function AssetManagement() {
                                     >Update Income</button>
                                 </div>
                             </form>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+            {/* Asset Detail Modal */}
+            <AnimatePresence>
+                {viewAsset && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => setViewAsset(null)}
+                            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+                        ></motion.div>
+                        <motion.div
+                            initial={{ scale: 0.95, opacity: 0, y: 20 }}
+                            animate={{ scale: 1, opacity: 1, y: 0 }}
+                            exit={{ scale: 0.95, opacity: 0, y: 20 }}
+                            className="bg-white rounded-3xl w-full max-w-lg shadow-2xl relative overflow-hidden z-10"
+                        >
+                            <div className="px-8 py-6 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+                                <div>
+                                    <h2 className="text-xl font-bold text-gray-900">Asset Record</h2>
+                                    <p className="text-sm text-gray-500 uppercase tracking-widest font-bold">UID: {viewAsset._id.slice(-8).toUpperCase()}</p>
+                                </div>
+                                <button
+                                    onClick={() => setViewAsset(null)}
+                                    className="p-2 hover:bg-gray-200 rounded-full transition-colors"
+                                >
+                                    <X size={20} className="text-gray-400" />
+                                </button>
+                            </div>
+
+                            <div className="p-8 space-y-8">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-16 h-16 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center shadow-inner">
+                                        <Laptop size={32} />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-2xl font-bold text-gray-900">{viewAsset.name}</h3>
+                                        <p className="text-sm font-medium text-gray-500">{viewAsset.itemType} • {viewAsset.unit}</p>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-6">
+                                    <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Status</p>
+                                        <p className={`text-sm font-bold uppercase ${viewAsset.assetStatus === 'ASSIGNED' ? 'text-indigo-600' : 'text-emerald-600'}`}>
+                                            {viewAsset.assetStatus}
+                                        </p>
+                                    </div>
+                                    <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Total Income</p>
+                                        <p className="text-sm font-bold text-gray-900">₹{viewAsset.totalIncome?.toLocaleString() || '0'}</p>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-4">
+                                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100 pb-2">Assignment Activity</p>
+
+                                    <div className="space-y-4">
+                                        {viewAsset.assignmentDate && (
+                                            <div className="flex gap-4">
+                                                <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+                                                    <UserPlus size={16} />
+                                                </div>
+                                                <div>
+                                                    <p className="text-sm font-bold text-gray-900">Assigned To {viewAsset.assignedTo?.fullName || 'User'}</p>
+                                                    <p className="text-xs text-gray-500">
+                                                        {new Date(viewAsset.assignmentDate).toLocaleDateString(undefined, { dateStyle: 'full' })} at {new Date(viewAsset.assignmentDate).toLocaleTimeString()}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {viewAsset.unassignmentDate && (
+                                            <div className="flex gap-4">
+                                                <div className="w-8 h-8 rounded-lg bg-orange-50 text-orange-600 flex items-center justify-center shrink-0">
+                                                    <UserMinus size={16} />
+                                                </div>
+                                                <div>
+                                                    <p className="text-sm font-bold text-gray-900">Last Returned/Unassigned</p>
+                                                    <p className="text-xs text-gray-500">
+                                                        {new Date(viewAsset.unassignmentDate).toLocaleDateString(undefined, { dateStyle: 'full' })} at {new Date(viewAsset.unassignmentDate).toLocaleTimeString()}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {!viewAsset.assignmentDate && !viewAsset.unassignmentDate && (
+                                            <div className="flex items-center gap-3 text-gray-400 py-4 italic text-sm">
+                                                <Clock size={16} />
+                                                No assignment history recorded yet.
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div className="pt-4">
+                                    <button
+                                        onClick={() => setViewAsset(null)}
+                                        className="w-full py-4 bg-gray-900 text-white rounded-2xl font-bold hover:bg-black transition-all shadow-xl active:scale-[0.98]"
+                                    >
+                                        Close Details
+                                    </button>
+                                </div>
+                            </div>
                         </motion.div>
                     </div>
                 )}
