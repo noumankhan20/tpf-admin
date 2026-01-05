@@ -26,6 +26,27 @@ export const donationApiSlice = apiSlice.injectEndpoints({
       }),
     }),
 
+       getAllDonors: builder.query({
+      query: (params) => ({
+        url: 'donations/getall', // Your backend endpoint
+        method: 'GET',
+        params: params, // Pass filters and pagination params
+      }),
+      // Optional: Use transformResponse to modify the response data if necessary
+      transformResponse: (response) => {
+        // For example, you can reformat or add computed fields here
+        return response;
+      },
+    }),
+
+    // Fetch a single donor's detailed information (including donation history)
+    getDonorDetails: builder.query({
+      query: (id) => ({
+        url: `/donations/donor/${id}`, // Your backend endpoint for individual donor details
+        method: 'GET',
+      }),
+    }),
+
     })
 })
 
@@ -34,4 +55,6 @@ export const {
     useGetDonationsQuery,
     useGetOfflineDonationsQuery,
     useApproveOfflineDonationsMutation,
+    useGetAllDonorsQuery,
+    useGetDonorDetailsQuery
 } = donationApiSlice

@@ -1,79 +1,34 @@
 "use client";
 import { useState } from 'react';
-import { ArrowLeft, Search, Plus, Users, IndianRupee, TrendingUp, User } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-
-// Sample data
-const donorsData = [
-  {
-    id: 1,
-    name: "John Doe",
-    email: "john.doe@email.com",
-    phone: "+1 234 567 8900",
-    totalDonations: 5000,
-    donationCount: 12,
-    joinDate: "2022-03-15", // New field added here
-    lastDonation: "2024-12-10",
-    history: [
-      { id: 1, amount: 500, campaign: "Education Fund", date: "2024-12-10", method: "Credit Card" },
-      { id: 2, amount: 300, campaign: "Healthcare Initiative", date: "2024-11-15", method: "Bank Transfer" },
-      { id: 3, amount: 200, campaign: "Community Development", date: "2024-10-20", method: "PayPal" }
-    ]
-  },
-  {
-    id: 2,
-    name: "Jane Smith",
-    email: "jane.smith@email.com",
-    phone: "+1 234 567 8901",
-    totalDonations: 8500,
-    donationCount: 15,
-    joinDate: "2022-09-15", // New field added here
-    lastDonation: "2024-12-12",
-    history: [
-      { id: 1, amount: 1000, campaign: "Emergency Relief", date: "2024-12-12", method: "Credit Card" },
-      { id: 2, amount: 750, campaign: "Education Fund", date: "2024-11-25", method: "Credit Card" }
-    ]
-  },
-  {
-    id: 3,
-    name: "Michael Johnson",
-    email: "michael.j@email.com",
-    phone: "+1 234 567 8902",
-    totalDonations: 3200,
-    donationCount: 8,
-    joinDate: "2022-03-15", // New field added here
-    lastDonation: "2024-12-08",
-    history: [
-      { id: 1, amount: 400, campaign: "Clean Water Project", date: "2024-12-08", method: "Bank Transfer" }
-    ]
-  }
-];
-
-const donationTrends = [
-  { month: "Jul", amount: 12000 },
-  { month: "Aug", amount: 15000 },
-  { month: "Sep", amount: 18000 },
-  { month: "Oct", amount: 16000 },
-  { month: "Nov", amount: 22000 },
-  { month: "Dec", amount: 25000 }
-];
+import { ArrowLeft, Search, Users, IndianRupee, TrendingUp, User } from 'lucide-react';
+import { useGetAllDonorsQuery, useGetDonorDetailsQuery } from '@/utils/slices/donationApiSlice';
 
 export default function DonorModule() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedDonor, setSelectedDonor] = useState(null);
+  const [selectedDonorId, setSelectedDonorId] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [showAddDonor, setShowAddDonor] = useState(false);
   const itemsPerPage = 10;
 
-  // Calculate statistics
-  const totalDonations = donorsData.reduce((sum, donor) => sum + donor.totalDonations, 0);
-  const totalDonors = donorsData.length;
-  const avgDonation = totalDonations / totalDonors;
-  const topDonors = [...donorsData].sort((a, b) => b.totalDonations - a.totalDonations).slice(0, 3);
+  // Fetch all donors data
+  const { data: allDonorsData, isLoading: isLoadingAll, error: errorAll } = useGetAllDonorsQuery();
+  
+  // Fetch selected donor details
+  const { data: donorDetailsData, isLoading: isLoadingDetails, error: errorDetails } = useGetDonorDetailsQuery(
+    selectedDonorId,
+    { skip: !selectedDonorId }
+  );
+
+  // Extract data from API response
+  const totalDonations = allDonorsData?.totalAmountDonated || 0;
+  const totalDonors = allDonorsData?.totalDonors || 0;
+  const avgDonation = allDonorsData?.averageDonationAmount || 0;
+  const topDonors = allDonorsData?.topDonors || [];
+  const donorsData = allDonorsData?.donors || [];
 
   // Filter donors based on search
   const filteredDonors = donorsData.filter(donor =>
-    donor.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    donor.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
     donor.email.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -83,15 +38,46 @@ export default function DonorModule() {
   const paginatedDonors = filteredDonors.slice(startIndex, startIndex + itemsPerPage);
 
   const handleBackClick = () => {
-    if (selectedDonor) {
-      setSelectedDonor(null);
+    if (selectedDonorId) {
+      setSelectedDonorId(null);
     } else {
-      // Navigate to /tpf-management
       window.location.href = '/tpf-management';
     }
   };
 
-  if (selectedDonor) {
+  if (isLoadingAll) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-6 flex items-center justify-center">
+        <div className="text-xl text-gray-600">Loading donors...</div>
+      </div>
+    );
+  }
+
+  if (errorAll) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-6 flex items-center justify-center">
+        <div className="text-xl text-red-600">Error loading donors data</div>
+      </div>
+    );
+  }
+
+  if (selectedDonorId) {
+    if (isLoadingDetails) {
+      return (
+        <div className="min-h-screen bg-gray-50 p-6 flex items-center justify-center">
+          <div className="text-xl text-gray-600">Loading donor details...</div>
+        </div>
+      );
+    }
+
+    if (errorDetails) {
+      return (
+        <div className="min-h-screen bg-gray-50 p-6 flex items-center justify-center">
+          <div className="text-xl text-red-600">Error loading donor details</div>
+        </div>
+      );
+    }
+
     return (
       <div className="min-h-screen bg-gray-50 p-6">
         <div className="max-w-7xl mx-auto">
@@ -99,12 +85,12 @@ export default function DonorModule() {
           <div className="mb-6">
             <button
               onClick={handleBackClick}
-              className="flex items-center text-gray-600 hover:text-gray-900 mb-4"
+              className="flex items-center cursor-pointer text-gray-600 hover:text-gray-900 mb-4"
             >
               <ArrowLeft className="w-5 h-5 mr-2" />
               Back to Donors
             </button>
-            <h1 className="text-3xl font-bold text-gray-900">{selectedDonor.name}</h1>
+            <h1 className="text-3xl font-bold text-gray-900">{donorDetailsData?.fullName}</h1>
             <p className="text-gray-600 mt-1">Detailed donor information and donation history</p>
           </div>
 
@@ -114,19 +100,19 @@ export default function DonorModule() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <p className="text-sm text-gray-600">Email</p>
-                <p className="font-medium">{selectedDonor.email}</p>
+                <p className="font-medium">{donorDetailsData?.email}</p>
               </div>
               <div>
                 <p className="text-sm text-gray-600">Phone</p>
-                <p className="font-medium">{selectedDonor.phone}</p>
+                <p className="font-medium">{donorDetailsData?.mobileNo}</p>
               </div>
               <div>
                 <p className="text-sm text-gray-600">Total Donations</p>
-                <p className="font-medium text-green-600">₹{selectedDonor.totalDonations.toLocaleString()}</p>
+                <p className="font-medium text-green-600">₹{donorDetailsData?.totalAmountDonated?.toLocaleString()}</p>
               </div>
               <div>
                 <p className="text-sm text-gray-600">Number of Donations</p>
-                <p className="font-medium">{selectedDonor.donationCount}</p>
+                <p className="font-medium">{donorDetailsData?.totalDonations}</p>
               </div>
             </div>
           </div>
@@ -139,20 +125,20 @@ export default function DonorModule() {
                 <thead className="bg-gray-50">
                   <tr>
                     <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Date</th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Campaign</th>
                     <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Amount</th>
                     <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Method</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
-                  {selectedDonor.history.map(donation => (
-                    <tr key={donation.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 text-sm">{donation.date}</td>
-                      <td className="px-4 py-3 text-sm">{donation.campaign}</td>
-                      <td className="px-4 py-3 text-sm font-medium text-green-600">
-                        ₹{donation.amount.toLocaleString()}
+                  {donorDetailsData?.donations?.map((donation, index) => (
+                    <tr key={index} className="hover:bg-gray-50">
+                      <td className="px-4 py-3 text-sm">
+                        {new Date(donation.donationDate).toLocaleDateString()}
                       </td>
-                      <td className="px-4 py-3 text-sm">{donation.method}</td>
+                      <td className="px-4 py-3 text-sm font-medium text-green-600">
+                        ₹{donation.amountDonated?.toLocaleString()}
+                      </td>
+                      <td className="px-4 py-3 text-sm">{donation.paymentMode}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -218,7 +204,7 @@ export default function DonorModule() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">Top Donor</p>
-                <p className="text-2xl font-bold text-gray-900">₹{topDonors[0]?.totalDonations.toLocaleString()}</p>
+                <p className="text-2xl font-bold text-gray-900">₹{topDonors[0]?.totalAmount?.toLocaleString() || 0}</p>
               </div>
               <User className="w-8 h-8 text-orange-500" />
             </div>
@@ -230,17 +216,17 @@ export default function DonorModule() {
           <h2 className="text-xl font-semibold mb-4">Top Donors</h2>
           <div className="space-y-3">
             {topDonors.map((donor, index) => (
-              <div key={donor.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+              <div key={donor._id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                 <div className="flex items-center">
                   <div className="w-8 h-8 bg-emerald-500 text-white rounded-full flex items-center justify-center font-bold mr-3">
                     {index + 1}
                   </div>
                   <div>
-                    <p className="font-medium">{donor.name}</p>
+                    <p className="font-medium">{donor.fullName}</p>
                     <p className="text-sm text-gray-600">{donor.email}</p>
                   </div>
                 </div>
-                <p className="text-lg font-bold text-blue-600">₹{donor.totalDonations.toLocaleString()}</p>
+                <p className="text-lg font-bold text-blue-600">₹{donor.totalAmount?.toLocaleString()}</p>
               </div>
             ))}
           </div>
@@ -282,17 +268,17 @@ export default function DonorModule() {
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {paginatedDonors.map(donor => (
-                  <tr key={donor.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 text-sm font-medium">{donor.name}</td>
+                  <tr key={donor._id} className="hover:bg-gray-50">
+                    <td className="px-4 py-3 text-sm font-medium">{donor.fullName}</td>
                     <td className="px-4 py-3 text-sm text-gray-600">{donor.email}</td>
-                    <td className="px-4 py-3 text-sm text-gray-600">{donor.phone}</td>
-                    <td className="px-4 py-3 text-sm">{new Date(donor.joinDate).toLocaleDateString()}</td> {/* Format joinDate */}
+                    <td className="px-4 py-3 text-sm text-gray-600">{donor.mobileNo}</td>
+                    <td className="px-4 py-3 text-sm">{new Date(donor.createdDate).toLocaleDateString()}</td>
                     <td className="px-4 py-3 text-sm font-medium text-blue-600">
-                      ₹{donor.totalDonations.toLocaleString()}
+                      ₹{donor.donationStats?.totalAmount?.toLocaleString() || 0}
                     </td>
                     <td className="px-4 py-3 text-sm">
                       <button
-                        onClick={() => setSelectedDonor(donor)}
+                        onClick={() => setSelectedDonorId(donor._id)}
                         className="text-red-600 hover:text-red-800 font-medium cursor-pointer"
                       >
                         View Details
@@ -360,7 +346,6 @@ export default function DonorModule() {
                   </button>
                   <button
                     onClick={() => {
-                      // Add donor logic here
                       setShowAddDonor(false);
                     }}
                     className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
