@@ -120,14 +120,14 @@ const RecentTransactions = () => {
                                 </td>
                                 <td className="py-4 font-black text-gray-900">₹{donation.amount?.toLocaleString('en-IN')}</td>
                                 <td className="py-4">
-                                    <span className={`px-2 py-1 rounded-lg text-[10px] font-black uppercase ${donation.donationType === 'ZAKAAT' ? 'bg-emerald-50 text-emerald-600' :
-                                            donation.donationType === 'SADAQAH' ? 'bg-amber-50 text-amber-600' :
-                                                'bg-blue-50 text-blue-600'
+                                    <span className={`px-2 py-1 rounded-lg text-[10px] font-black uppercase ${donation.purpose === 'ZAKAAT' ? 'bg-emerald-50 text-emerald-600' :
+                                        donation.purpose === 'SADAQAH' ? 'bg-amber-50 text-amber-600' :
+                                            'bg-blue-50 text-blue-600'
                                         }`}>
-                                        {donation.donationType || 'SADAQAH'}
+                                        {donation.purpose || 'SADAQAH'}
                                     </span>
                                 </td>
-                                <td className="py-4 text-sm text-gray-500">{donation.createdAt ? new Date(donation.createdAt).toLocaleDateString() : 'N/A'}</td>
+                                <td className="py-4 text-sm text-gray-500">{donation.date ? new Date(donation.date).toLocaleDateString() : 'N/A'}</td>
                             </tr>
                         )) : (
                             <tr>
