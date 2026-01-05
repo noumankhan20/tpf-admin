@@ -86,11 +86,6 @@ export default function FinancialAidVerifyPage() {
       if (!formsData?.data) return [];
 
       let filtered = formsData.data.filter(form => {
-         // Tab Filter
-         const isMyself = form.formType === 'myself';
-         if (activeTab === 'myself' && !isMyself) return false;
-         if (activeTab === 'other' && isMyself) return false;
-
          // Status Filter
          if (statusFilter !== 'all' && form.status !== statusFilter) return false;
 
@@ -267,27 +262,7 @@ export default function FinancialAidVerifyPage() {
 
             <StatCards totalCount={totalCount} stats={stats} />
 
-            {/* Tabs */}
-            <div className="flex space-x-6 border-b border-gray-200 mb-4 shrink-0">
-               <button
-                  onClick={() => { setActiveTab('myself'); setSelectedForm(null); }}
-                  className={`pb-3 px-2 text-sm font-medium transition-colors relative flex items-center gap-2 ${activeTab === 'myself' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-600 hover:text-gray-800'}`}
-               >
-                  Myself
-                  {tabCounts?.myself > 0 && (
-                     <span className="px-2 py-0.5 bg-blue-100 text-blue-600 text-xs rounded-full font-semibold">{tabCounts.myself}</span>
-                  )}
-               </button>
-               <button
-                  onClick={() => { setActiveTab('other'); setSelectedForm(null); }}
-                  className={`pb-3 px-2 text-sm font-medium transition-colors relative flex items-center gap-2 ${activeTab === 'other' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-600 hover:text-gray-800'}`}
-               >
-                  Others
-                  {tabCounts?.other > 0 && (
-                     <span className="px-2 py-0.5 bg-blue-100 text-blue-600 text-xs rounded-full font-semibold">{tabCounts.other}</span>
-                  )}
-               </button>
-            </div>
+
 
             <FilterBar
                searchQuery={searchQuery} setSearchQuery={setSearchQuery}
