@@ -20,16 +20,34 @@ import {
   Book,
   ClipboardList,
   LayoutDashboard,
+  LayoutGrid,
+  Calendar,
 } from "lucide-react";
 
 export const MODULES = [
   {
-    id: "Admin Dashboard",
-    name: "Dashboard",
-    icon: LayoutDashboard,
-    route: "/admin/dashboard",
-    category: "administration",
-    desc: "System analytics overview",
+    id: "Dashboard Overview",
+    name: "Overview",
+    icon: TrendingUp,
+    route: "/admin/dashboard/overview",
+    category: "dashboard",
+    desc: "Detailed charts and analytics",
+  },
+  {
+    id: "Dashboard Summary",
+    name: "Summary Cards",
+    icon: LayoutGrid,
+    route: "/admin/dashboard/summary",
+    category: "dashboard",
+    desc: "Key metrics and recent transactions",
+  },
+  {
+    id: "Dashboard Calendar",
+    name: "Calendar",
+    icon: Calendar,
+    route: "/admin/dashboard/calendar",
+    category: "dashboard",
+    desc: "Activity and events calendar",
   },
   {
     id: "Security & Access",

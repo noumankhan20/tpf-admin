@@ -35,10 +35,12 @@ import {
   User,
   KeyRound,
   Layers,
+  LayoutDashboard,
 } from 'lucide-react';
 import LoginNotificationModal from '../Common/LoginNotificationModal';
 
 const CATEGORIES = [
+  { id: 'dashboard', name: 'Dashboard', icon: LayoutDashboard },
   { id: 'administration', name: 'Administration', icon: Settings },
   { id: 'people', name: 'People Management', icon: Users },
   { id: 'finance', name: 'Finance & Transactions', icon: Calculator },
@@ -81,7 +83,10 @@ export default function SelectPanel() {
 
 
   const allowedModules = useMemo(() => {
-    return MODULES.filter((mod) => adminModules.includes(mod.id));
+    return MODULES.filter((mod) =>
+      adminModules.includes(mod.id) ||
+      (adminModules.includes("Admin Dashboard") && mod.category === "dashboard")
+    );
   }, [adminModules]);
 
 
