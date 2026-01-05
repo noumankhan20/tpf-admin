@@ -263,7 +263,7 @@ const AdminPanel = () => {
         <div className="px-4 lg:px-8 pt-6">
           <button
             onClick={() => window.history.back()}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-white transition-all border border-slate-200 hover:border-slate-300 hover:shadow-sm"
+            className="flex items-center cursor-pointer gap-2 px-4 py-2 rounded-xl text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-white transition-all border border-slate-200 hover:border-slate-300 hover:shadow-sm"
           >
             <ArrowLeft className="w-4 h-4" />
             <span>Back</span>
@@ -363,6 +363,7 @@ const AdminPanel = () => {
                     <th className="px-6 py-3.5 text-left text-xs font-medium text-slate-600 uppercase tracking-wider">Name</th>
                     <th className="px-6 py-3.5 text-left text-xs font-medium text-slate-600 uppercase tracking-wider">Email</th>
                     <th className="px-6 py-3.5 text-left text-xs font-medium text-slate-600 uppercase tracking-wider">Type</th>
+                    <th className="px-6 py-3.5 text-left text-xs font-medium text-slate-600 uppercase tracking-wider">Status</th>
                     <th className="px-6 py-3.5 text-left text-xs font-medium text-slate-600 uppercase tracking-wider">Date</th>
                     <th className="px-6 py-3.5 text-left text-xs font-medium text-slate-600 uppercase tracking-wider">Action</th>
                   </tr>
@@ -384,6 +385,7 @@ const AdminPanel = () => {
                           <span className="capitalize">{ticket.queryType}</span>
                         </span>
                       </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">{ticket.status}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">{formatDateShort(ticket.createdAt)}</td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <button
