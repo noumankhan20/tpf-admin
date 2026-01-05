@@ -22,6 +22,7 @@ import {
   LayoutDashboard,
   LayoutGrid,
   Calendar,
+  Download,
 } from "lucide-react";
 
 export const MODULES = [
@@ -128,6 +129,14 @@ export const MODULES = [
     route: "/documents",
     category: "documentation",
     desc: "Document storage and access",
+  },
+  {
+    id: "Downloads",
+    name: "Downloads",
+    icon: Download,
+    route: "/downloads",
+    category: "documentation",
+    desc: "Export data to CSV/PDF",
   },
   {
     id: "CMS-Admin",

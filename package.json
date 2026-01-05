@@ -12,6 +12,8 @@
     "@reduxjs/toolkit": "^2.11.1",
     "axios": "^1.13.2",
     "framer-motion": "^12.23.26",
+    "jspdf": "^4.0.0",
+    "jspdf-autotable": "^5.0.7",
     "lucide-react": "^0.552.0",
     "next": "^16.0.8",
     "react": "^19.2.1",
@@ -19,7 +21,8 @@
     "react-redux": "^9.2.0",
     "react-toastify": "^11.0.5",
     "recharts": "^3.6.0",
-    "socket.io-client": "^4.8.3"
+    "socket.io-client": "^4.8.3",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

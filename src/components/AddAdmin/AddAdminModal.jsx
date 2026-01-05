@@ -30,7 +30,8 @@ const AddAdminModal = ({ isOpen, onClose, onSubmit }) => {
     "Legal and Compliance",
     "Financial Aid",
     "KYC Verification",
-    "Tickets-Queries"
+    "Tickets-Queries",
+    "Downloads"
   ];
 
   const isFormValid =
@@ -202,8 +203,8 @@ const AddAdminModal = ({ isOpen, onClose, onSubmit }) => {
               Administrator Level
             </h3>
             <div className={`p-4 border-2 rounded-xl transition-all duration-200 ${formData.isSuperAdmin
-                ? 'border-purple-300 bg-purple-50'
-                : 'border-gray-200 bg-gray-50 hover:border-gray-300'
+              ? 'border-purple-300 bg-purple-50'
+              : 'border-gray-200 bg-gray-50 hover:border-gray-300'
               }`}>
               <label className="flex items-start gap-3 cursor-pointer">
                 <div className="relative flex items-center justify-center mt-0.5">
@@ -250,8 +251,8 @@ const AddAdminModal = ({ isOpen, onClose, onSubmit }) => {
                     <label
                       key={module}
                       className={`flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all duration-200 ${isSelected
-                          ? 'border-blue-300 bg-blue-50'
-                          : 'border-gray-200 hover:border-gray-300 bg-white'
+                        ? 'border-blue-300 bg-blue-50'
+                        : 'border-gray-200 hover:border-gray-300 bg-white'
                         }`}
                     >
                       <div className="relative flex items-center justify-center">
@@ -296,8 +297,8 @@ const AddAdminModal = ({ isOpen, onClose, onSubmit }) => {
               disabled={!isFormValid}
               onClick={handleSubmit}
               className={`flex-1 rounded-xl py-3 px-4 text-base font-medium transition-all duration-200 ${isFormValid
-                  ? "bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40 active:scale-[0.98]"
-                  : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                ? "bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40 active:scale-[0.98]"
+                : "bg-gray-200 text-gray-400 cursor-not-allowed"
                 }`}
             >
               Create Admin
