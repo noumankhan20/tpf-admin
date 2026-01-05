@@ -40,7 +40,12 @@ export const RequestDetail = React.memo(({
                 <div className="p-6 border-b border-gray-200 bg-white backdrop-blur-sm z-10 sticky top-0">
                     <div className="flex justify-between items-start">
                         <div>
-                            <h2 className="text-3xl font-bold text-gray-800 mb-2">{selectedForm.fullName || selectedForm.organizationName}</h2>
+                            <h2 className="text-3xl font-bold text-gray-800 mb-2">
+                                {selectedForm.fullName || selectedForm.organizationName}
+                                {selectedForm.formType === 'other' && selectedForm.relationName && (
+                                    <span className="text-gray-400 font-medium text-lg ml-2"> (For: {selectedForm.relationName})</span>
+                                )}
+                            </h2>
                             <div className="flex items-center gap-3 text-sm">
                                 <span className="px-3 py-1 bg-gray-100 rounded-full flex items-center gap-1.5 text-gray-700">
                                     {selectedForm.isOrganization ? <Building size={14} className="text-blue-600" /> : <User size={14} className="text-emerald-600" />}
@@ -71,7 +76,10 @@ export const RequestDetail = React.memo(({
                         {/* SECTION 1: Personal / Basic Info */}
                         <DetailSection title="Basic Information" icon={<User className="text-blue-600" />}>
                             <Grid>
-                                <Field label="Full Name" value={selectedForm.fullName} />
+                                <Field
+                                    label={selectedForm.formType === 'other' ? "Campaigner Name" : "Campaigner & Beneficiary"}
+                                    value={selectedForm.fullName}
+                                />
                                 <Field label="Contact Number" value={selectedForm.contactNumber} icon={<Phone size={14} />} />
                                 <Field label="Email Address" value={selectedForm.email} icon={<Mail size={14} />} />
                                 {!selectedForm.isOrganization && (
@@ -79,8 +87,12 @@ export const RequestDetail = React.memo(({
                                         <Field label="Date of Birth" value={selectedForm.dateOfBirth} />
                                         <Field label="Gender" value={selectedForm.gender} />
                                         <Field label="Marital Status" value={selectedForm.maritalStatus} />
-                                        <Field label="Relation" value={selectedForm.relation} />
-                                        <Field label="Relation Name" value={selectedForm.relationName} />
+                                        {selectedForm.formType === 'other' && (
+                                            <>
+                                                <Field label="Relationship" value={selectedForm.relation} />
+                                                <Field label="Beneficiary Name" value={selectedForm.relationName} />
+                                            </>
+                                        )}
                                     </>
                                 )}
                             </Grid>
