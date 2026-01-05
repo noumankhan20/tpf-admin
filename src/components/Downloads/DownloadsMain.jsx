@@ -22,6 +22,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 import { toast } from 'react-toastify';
+import { useCreateAuditLogMutation } from '../../utils/slices/auditLogApiSlice';
 
 const API_URL = process.env.NEXT_PUBLIC_BACKEND_API || 'http://localhost:7000/api';
 
@@ -185,6 +186,7 @@ const getThemeClasses = (theme) => {
 export default function DownloadsMain() {
     const router = useRouter();
     const [loading, setLoading] = useState({ id: null, type: null });
+    const [createAuditLog] = useCreateAuditLogMutation();
 
     const fetchData = async (resource) => {
         try {
@@ -240,6 +242,20 @@ export default function DownloadsMain() {
                 generateExcel(data, resource);
             } else {
                 await generatePDF(data, resource);
+            }
+
+            // Create Audit Log using RTK Mutation
+            try {
+                await createAuditLog({
+                    action: `Downloaded ${resource.title} Report`,
+                    entity: resource.title,
+                    details: {
+                        format: type.toUpperCase(),
+                        recordCount: data.length
+                    }
+                }).unwrap();
+            } catch (auditError) {
+                console.error("Failed to create audit log:", auditError);
             }
 
             toast.update(toastId, {

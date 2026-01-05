@@ -1,41 +1,56 @@
 "use client";
 import { useState, useMemo } from "react";
-import { ArrowLeft, AlertCircle, Search, Filter, X, Clock, CheckCircle, XCircle } from "lucide-react";
-
-const mockAuditLogs = [
-  { id: 1, adminName: 'Rahul Sharma', adminEmail: 'rahul@donatenow.org', role: ["Campaign Manager"], action: "Updated donation campaign", entity: "Campaign", timestamp: "2024-12-12T10:30:00", },
-  { id: 2, adminName: 'Priya Patel', adminEmail: "priya.p@donatenow.org", role: ['CMS Admin'], action: "Verified payment", entity: "Donation", timestamp: "2024-12-12T09:15:00",  },
-  { id: 3, adminName: "Zakaria Rodriguez", adminEmail: "zakaria.r@donatenow.org", role: ["Volunteer Manager"], action: "Edited CMS page", entity: "CMS", timestamp: "2024-12-12T08:45:00",  },
-];
+import { ArrowLeft, AlertCircle, Search, Filter, X, Clock, CheckCircle, Loader2 } from "lucide-react";
+import { useGetAuditLogsQuery } from "../../utils/slices/auditLogApiSlice";
 
 export default function AuditLogs() {
+  const { data: logs = [], isLoading: loading } = useGetAuditLogsQuery();
   const [searchTerm, setSearchTerm] = useState("");
   const [roleFilter, setRoleFilter] = useState("All");
   const [selectedAdmin, setSelectedAdmin] = useState(null);
   const [showFilters, setShowFilters] = useState(false);
 
-  const uniqueRoles = ["All", ...new Set(mockAuditLogs.flatMap((log) => log.role))];
+  // useEffect removed as hook handles fetching
+
+
+  const uniqueRoles = ["All", ...new Set(logs.flatMap((log) => log.role || []))];
 
   const filteredLogs = useMemo(() => {
-    return mockAuditLogs.filter((log) => {
-      const matchesSearch = log.adminName.toLowerCase().includes(searchTerm.toLowerCase()) || log.action.toLowerCase().includes(searchTerm.toLowerCase()) || log.entity.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesRole = roleFilter === "All" || log.role.includes(roleFilter);
+    return logs.filter((log) => {
+      const nameMatch = log.adminName?.toLowerCase().includes(searchTerm.toLowerCase());
+      const emailMatch = log.adminEmail?.toLowerCase().includes(searchTerm.toLowerCase());
+      const actionMatch = log.action?.toLowerCase().includes(searchTerm.toLowerCase());
+      const entityMatch = log.entity?.toLowerCase().includes(searchTerm.toLowerCase());
+
+      const matchesSearch = nameMatch || emailMatch || actionMatch || entityMatch;
+      const matchesRole = roleFilter === "All" || (log.role && log.role.includes(roleFilter));
+
       return matchesSearch && matchesRole;
     });
-  }, [searchTerm, roleFilter,]);
+  }, [searchTerm, roleFilter, logs]);
 
   const getAdminActivities = (adminEmail) => {
-    return mockAuditLogs.filter((log) => log.adminEmail === adminEmail).sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    return logs.filter((log) => log.adminEmail === adminEmail).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   };
 
   const formatDate = (timestamp) => {
+    if (!timestamp) return "-";
     const date = new Date(timestamp);
     return date.toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" });
   };
 
   const getInitials = (name) => {
-    return name.split(" ").map((n) => n[0]).join("").toUpperCase();
+    if (!name) return "AD";
+    return name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-emerald-600" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 p-4 md:p-8">
@@ -87,7 +102,7 @@ export default function AuditLogs() {
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {filteredLogs.map((log) => (
-                  <tr key={log.id} className="hover:bg-gray-50 transition-colors">
+                  <tr key={log._id || log.id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-emerald-800 rounded-full flex items-center justify-center">
@@ -100,10 +115,10 @@ export default function AuditLogs() {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="px-2 py-1 text-xs font-medium bg-purple-100 text-emerald-800 rounded">{log.role[0]}</span>
+                      <span className="px-2 py-1 text-xs font-medium bg-purple-100 text-emerald-800 rounded">{log.role && log.role[0] ? log.role[0] : 'Admin'}</span>
                     </td>
                     <td className="px-6 py-4"><p className="text-sm text-gray-900">{log.action}</p></td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{formatDate(log.timestamp)}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{formatDate(log.createdAt || log.timestamp)}</td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <button onClick={() => setSelectedAdmin(log)} className="text-blue-600 hover:text-blue-800 text-sm font-medium transition-colors cursor-pointer">View History</button>
                     </td>
@@ -116,7 +131,7 @@ export default function AuditLogs() {
 
         <div className="lg:hidden space-y-3 md:space-y-4">
           {filteredLogs.map((log) => (
-            <div key={log.id} className="bg-white rounded-lg shadow p-3 md:p-4">
+            <div key={log._id || log.id} className="bg-white rounded-lg shadow p-3 md:p-4">
               <div className="flex items-start justify-between mb-3">
                 <div className="flex items-center gap-2 md:gap-3 flex-1 min-w-0">
                   <div className="w-9 h-9 md:w-10 md:h-10 bg-emerald-800 rounded-full flex items-center justify-center flex-shrink-0">
@@ -130,13 +145,13 @@ export default function AuditLogs() {
               </div>
               <div className="space-y-2 mb-3">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="px-2 py-1 text-xs font-medium bg-purple-100 text-emerald-800 rounded">{log.role[0]}</span>
+                  <span className="px-2 py-1 text-xs font-medium bg-purple-100 text-emerald-800 rounded">{log.role && log.role[0]}</span>
                   <span className="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-800 rounded">{log.entity}</span>
                 </div>
                 <p className="text-xs md:text-sm text-gray-900">{log.action}</p>
                 <div className="flex items-center gap-2 text-xs md:text-sm text-gray-500">
                   <Clock className="w-3 h-3 md:w-4 md:h-4 flex-shrink-0" />
-                  <span className="truncate">{formatDate(log.timestamp)}</span>
+                  <span className="truncate">{formatDate(log.createdAt || log.timestamp)}</span>
                 </div>
               </div>
               <button onClick={() => setSelectedAdmin(log)} className="w-full px-3 md:px-4 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors text-xs md:text-sm font-medium">View Past Activities</button>
@@ -154,8 +169,8 @@ export default function AuditLogs() {
       </div>
 
       {selectedAdmin && (
-        <div className="fixed inset-0 bg-black bg-transparent backdrop-blur-sm flex items-center justify-center p-3 md:p-4 z-50" 
-        onClick={() => setSelectedAdmin(null)}>
+        <div className="fixed inset-0 bg-black bg-transparent backdrop-blur-sm flex items-center justify-center p-3 md:p-4 z-50"
+          onClick={() => setSelectedAdmin(null)}>
           <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[85vh] md:max-h-[80vh] overflow-hidden" onClick={(e) => e.stopPropagation()}>
             <div className="p-4 md:p-6 border-b border-gray-200 flex items-center justify-between">
               <div className="flex-1 min-w-0 pr-2">
@@ -169,7 +184,7 @@ export default function AuditLogs() {
             <div className="p-4 md:p-6 overflow-y-auto max-h-[calc(85vh-100px)] md:max-h-[calc(80vh-120px)]">
               <div className="space-y-3 md:space-y-4">
                 {getAdminActivities(selectedAdmin.adminEmail).map((activity) => (
-                  <div key={activity.id} className="relative pl-6 md:pl-8 pb-6 md:pb-8 border-l-2 border-gray-200 last:pb-0">
+                  <div key={activity._id || activity.id} className="relative pl-6 md:pl-8 pb-6 md:pb-8 border-l-2 border-gray-200 last:pb-0">
                     <div className="absolute left-0 top-0 w-3 h-3 md:w-4 md:h-4 rounded-full -translate-x-[7px] md:-translate-x-[9px] bg-green-500" />
                     <div className="bg-gray-50 rounded-lg p-3 md:p-4">
                       <div className="flex items-start justify-between mb-2 gap-2">
@@ -185,9 +200,15 @@ export default function AuditLogs() {
                         </span>
                         <span className="flex items-center gap-1">
                           <Clock className="w-3 h-3 md:w-4 md:h-4 flex-shrink-0" />
-                          <span className="truncate">{formatDate(activity.timestamp)}</span>
+                          <span className="truncate">{formatDate(activity.createdAt || activity.timestamp)}</span>
                         </span>
                       </div>
+                      {activity.details && Object.keys(activity.details).length > 0 && (
+                        <div className="mt-2 pt-2 border-t border-gray-200 text-xs text-gray-500">
+                          <p className="font-medium mb-1">Details:</p>
+                          <pre className="whitespace-pre-wrap font-mono bg-gray-50 p-2 rounded">{JSON.stringify(activity.details, null, 2)}</pre>
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}
