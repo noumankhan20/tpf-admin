@@ -13,9 +13,10 @@ import {
   CreditCard,
   Building,
   User,
+  Filter,
 } from "lucide-react";
-import { useGetOfflineDonationsQuery,useApproveOfflineDonationsMutation } from '@/utils/slices/donationApiSlice';
-import FilterModal from "../lib/filters";
+import { useGetOfflineDonationsQuery, useApproveOfflineDonationsMutation } from '@/utils/slices/donationApiSlice';
+
 // ==================== STATUS BADGE COMPONENT ====================
 const StatusBadge = ({ status }) => {
   const styles = {
@@ -33,6 +34,170 @@ const StatusBadge = ({ status }) => {
   );
 };
 
+// ==================== FILTER MODAL ====================
+const FilterModal = ({ isOpen, onClose, filters, setFilters, onApply }) => {
+  if (!isOpen) return null;
+
+  const [localFilters, setLocalFilters] = useState(filters);
+
+  const handleApply = () => {
+    setFilters(localFilters);
+    onApply();
+    onClose();
+  };
+
+  const handleReset = () => {
+    const resetFilters = {
+      startDate: '',
+      endDate: '',
+      minAmount: '',
+      maxAmount: '',
+      method: '',
+      status: '',
+    };
+    setLocalFilters(resetFilters);
+    setFilters(resetFilters);
+    onApply();
+    onClose();
+  };
+
+  return (
+    <div
+      className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white rounded-lg shadow-xl max-w-md w-full"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="border-b px-6 py-4 flex items-center justify-between">
+          <h3 className="text-lg font-semibold text-gray-900">Filter Donations</h3>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="p-6 space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Date Range
+            </label>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Start Date</label>
+                <input
+                  type="date"
+                  value={localFilters.startDate}
+                  onChange={(e) =>
+                    setLocalFilters({ ...localFilters, startDate: e.target.value })
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">End Date</label>
+                <input
+                  type="date"
+                  value={localFilters.endDate}
+                  onChange={(e) =>
+                    setLocalFilters({ ...localFilters, endDate: e.target.value })
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-sm"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Amount Range
+            </label>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Min Amount</label>
+                <input
+                  type="number"
+                  placeholder="Min"
+                  value={localFilters.minAmount}
+                  onChange={(e) =>
+                    setLocalFilters({ ...localFilters, minAmount: e.target.value })
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Max Amount</label>
+                <input
+                  type="number"
+                  placeholder="Max"
+                  value={localFilters.maxAmount}
+                  onChange={(e) =>
+                    setLocalFilters({ ...localFilters, maxAmount: e.target.value })
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-sm"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Payment Method
+            </label>
+            <select
+              value={localFilters.method}
+              onChange={(e) =>
+                setLocalFilters({ ...localFilters, method: e.target.value })
+              }
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-sm"
+            >
+              <option value="">All Methods</option>
+              <option value="RTGS">RTGS</option>
+              <option value="NEFT">NEFT</option>
+              <option value="IMPS">IMPS</option>
+              <option value="CHEQUE">CHEQUE</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Status
+            </label>
+            <select
+              value={localFilters.status}
+              onChange={(e) =>
+                setLocalFilters({ ...localFilters, status: e.target.value })
+              }
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-sm"
+            >
+              <option value="">All Status</option>
+              <option value="pending">Pending</option>
+              <option value="approved">Approved</option>
+            </select>
+          </div>
+        </div>
+
+        <div className="border-t px-6 py-4 flex gap-3 justify-end">
+          <button
+            onClick={handleReset}
+            className="px-4 py-2 cursor-pointer bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+          >
+            Reset
+          </button>
+          <button
+            onClick={handleApply}
+            className="px-4 py-2 cursor-pointer bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition-colors"
+          >
+            Apply Filters
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 // ==================== DETAILS MODAL ====================
 const OfflineDonationDetailsModal = ({ isOpen, onClose, donation, onApprove }) => {
@@ -66,17 +231,24 @@ const OfflineDonationDetailsModal = ({ isOpen, onClose, donation, onApprove }) =
         </div>
 
         <div className="p-6 space-y-6">
-          {/* Basic Info */}
           <div className="grid grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg">
             <div>
-              <p className="text-sm text-gray-600">Donor Email</p>
-              <p className="font-medium text-gray-900">{donation.email}</p>
+              <p className="text-sm text-gray-600">Donor Name</p>
+              <p className="font-medium text-gray-900">{donation.fullName || "N/A"}</p>
             </div>
             <div>
               <p className="text-sm text-gray-600">Status</p>
               <div className="mt-1">
                 <StatusBadge status={donation.status} />
               </div>
+            </div>
+            <div>
+              <p className="text-sm text-gray-600">Email</p>
+              <p className="font-medium text-gray-900">{donation.email}</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-600">Mobile</p>
+              <p className="font-medium text-gray-900">{donation.mobile || "N/A"}</p>
             </div>
             <div>
               <p className="text-sm text-gray-600">Method</p>
@@ -94,17 +266,12 @@ const OfflineDonationDetailsModal = ({ isOpen, onClose, donation, onApprove }) =
                 {formatDate(donation.submittedOn)}
               </p>
             </div>
-            {donation.approvedOn && (
-              <div>
-                <p className="text-sm text-gray-600">Approved On</p>
-                <p className="font-medium text-gray-900">
-                  {formatDate(donation.approvedOn)}
-                </p>
-              </div>
-            )}
+            <div>
+              <p className="text-sm text-gray-600">Mobile No</p>
+              <p className="font-medium text-gray-900">{donation.mobile}</p>
+            </div>
           </div>
 
-          {/* Method-Specific Details */}
           <div className="p-4 border border-gray-200 rounded-lg">
             <h4 className="font-medium text-gray-900 mb-4">
               {donation.method} Details
@@ -193,7 +360,6 @@ const OfflineDonationDetailsModal = ({ isOpen, onClose, donation, onApprove }) =
             </div>
           </div>
 
-          {/* Remarks */}
           {donation.remarks && (
             <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
               <p className="text-sm font-medium text-blue-900 mb-1">Remarks</p>
@@ -241,11 +407,13 @@ const OfflineDonationTable = ({ donations, onView, onApprove }) => {
 
   return (
     <>
-      {/* Desktop Table */}
       <div className="hidden md:block overflow-x-auto">
         <table className="w-full">
           <thead className="bg-gray-50 border-b border-gray-200">
             <tr>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Name
+              </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Email
               </th>
@@ -273,9 +441,12 @@ const OfflineDonationTable = ({ donations, onView, onApprove }) => {
                   <div className="flex items-center">
                     <User className="w-4 h-4 text-gray-400 mr-2" />
                     <span className="text-sm font-medium text-gray-900">
-                      {donation.email}
+                      {donation.fullName || "N/A"}
                     </span>
                   </div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <span className="text-sm text-gray-900">{donation.email}</span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center">
@@ -320,7 +491,6 @@ const OfflineDonationTable = ({ donations, onView, onApprove }) => {
         </table>
       </div>
 
-      {/* Mobile Cards */}
       <div className="md:hidden space-y-4">
         {donations.map((donation) => (
           <div
@@ -331,10 +501,14 @@ const OfflineDonationTable = ({ donations, onView, onApprove }) => {
               <div className="flex items-center">
                 <User className="w-4 h-4 text-gray-400 mr-2" />
                 <span className="text-sm font-medium text-gray-900">
-                  {donation.email}
+                  {donation.fullName || "N/A"}
                 </span>
               </div>
               <StatusBadge status={donation.status} />
+            </div>
+
+            <div className="text-sm text-gray-600">
+              {donation.email}
             </div>
 
             <div className="grid grid-cols-2 gap-3">
@@ -387,17 +561,36 @@ const OfflineDonationTable = ({ donations, onView, onApprove }) => {
 export default function OfflineDonationPage() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [selectedDonation, setSelectedDonation] = useState(null);
+  const [filters, setFilters] = useState({
+    startDate: '',
+    endDate: '',
+    minAmount: '',
+    maxAmount: '',
+    method: '',
+    status: '',
+  });
+  
   const [approveOfflineDonation] = useApproveOfflineDonationsMutation();
-  // Fetch offline donations using RTK Query
-  const { data, error, isLoading, refetch } = useGetOfflineDonationsQuery();
+  
+  const queryParams = useMemo(() => {
+    const params = {};
+    if (filters.startDate) params.startDate = filters.startDate;
+    if (filters.endDate) params.endDate = filters.endDate;
+    if (filters.minAmount) params.minAmount = filters.minAmount;
+    if (filters.maxAmount) params.maxAmount = filters.maxAmount;
+    if (filters.method) params.method = filters.method;
+    if (filters.status) params.status = filters.status;
+    return params;
+  }, [filters]);
 
-  // Extract donations and stats from API response
+  const { data, error, isLoading, refetch } = useGetOfflineDonationsQuery(queryParams);
+
   const donations = data?.donations || [];
   const totalAmount = data?.totalAmount || 0;
   const pagination = data?.pagination || { currentPage: 1, totalPages: 1, totalDonations: 0 };
 
-  // Calculate stats
   const stats = useMemo(() => {
     return {
       total: donations.length,
@@ -408,10 +601,9 @@ export default function OfflineDonationPage() {
 
   const handleApprove = async (id) => {
     try {
-      // Call the API to approve the donation
       const response = await approveOfflineDonation({ donationId: id }).unwrap();
-      alert(response.message);  // Show success message
-      refetch(); // Refetch donations list after approving
+      alert(response.message);
+      refetch();
     } catch (error) {
       console.error("Error approving donation", error);
       alert("Error approving donation");
@@ -423,10 +615,13 @@ export default function OfflineDonationPage() {
     setIsDetailsModalOpen(true);
   };
 
+  const handleApplyFilters = () => {
+    refetch();
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
         <div className="mb-8">
           <button
             onClick={() => window.history.back()}
@@ -447,7 +642,6 @@ export default function OfflineDonationPage() {
           </div>
         </div>
 
-        {/* Stats Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <div className="flex items-center justify-between">
@@ -508,27 +702,31 @@ export default function OfflineDonationPage() {
           </div>
         </div>
 
-        {/* Loading State */}
         {isLoading && (
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
             <p className="text-gray-500">Loading offline donations...</p>
           </div>
         )}
 
-        {/* Error State */}
         {error && (
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
             <p className="text-red-500">Error loading offline donations. Please try again.</p>
           </div>
         )}
 
-        {/* Table */}
         {!isLoading && !error && (
           <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-            <div className="px-6 py-4 border-b border-gray-200">
+            <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
               <h2 className="text-lg font-semibold text-gray-900">
                 All Offline Donations
               </h2>
+              <button
+                onClick={() => setIsFilterModalOpen(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors cursor-pointer"
+              >
+                <Filter className="w-4 h-4" />
+                Filters
+              </button>
             </div>
             <div className="p-6">
               {donations.length > 0 ? (
@@ -541,12 +739,6 @@ export default function OfflineDonationPage() {
                 <div className="text-center py-12">
                   <Building className="w-12 h-12 text-gray-300 mx-auto mb-4" />
                   <p className="text-gray-500">No offline donations yet</p>
-                  <button
-                    onClick={() => setIsAddModalOpen(true)}
-                    className="mt-4 text-blue-600 hover:text-blue-700 font-medium"
-                  >
-                    Add your first donation
-                  </button>
                 </div>
               )}
             </div>
@@ -554,12 +746,19 @@ export default function OfflineDonationPage() {
         )}
       </div>
 
-      {/* Modals */}
       <OfflineDonationDetailsModal
         isOpen={isDetailsModalOpen}
         onClose={() => setIsDetailsModalOpen(false)}
         donation={selectedDonation}
         onApprove={handleApprove}
+      />
+
+      <FilterModal
+        isOpen={isFilterModalOpen}
+        onClose={() => setIsFilterModalOpen(false)}
+        filters={filters}
+        setFilters={setFilters}
+        onApply={handleApplyFilters}
       />
     </div>
   );

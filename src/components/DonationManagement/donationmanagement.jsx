@@ -163,6 +163,12 @@ const DonationDetailsModal = ({ donation, onClose }) => {
                         <div>
                             <label className="text-xs sm:text-sm font-medium text-gray-500">Email</label>
                             <p className="mt-1 text-sm sm:text-base text-gray-900 break-all">{donation.email}</p>
+                        </div><div>
+                            <label className="text-xs sm:text-sm font-medium text-gray-500">Full Name</label>
+                            <p className="mt-1 text-sm sm:text-base text-gray-900 break-all">{donation.fullName}</p>
+                        </div><div>
+                            <label className="text-xs sm:text-sm font-medium text-gray-500">Mobile No</label>
+                            <p className="mt-1 text-sm sm:text-base text-gray-900 break-all">{donation.mobile}</p>
                         </div>
                         <div>
                             <label className="text-xs sm:text-sm font-medium text-gray-500">Donation Amount</label>
@@ -170,7 +176,7 @@ const DonationDetailsModal = ({ donation, onClose }) => {
                         </div>
                         <div>
                             <label className="text-xs sm:text-sm font-medium text-gray-500">Location</label>
-                            {/* <p className="mt-1 text-xl sm:text-2xl font-bold text-emerald-600">₹{donation.amount.toLocaleString()}</p> */}
+                              <p className="mt-1 text-sm sm:text-base text-gray-900 break-all">{donation.kycStatus}</p>
                         </div>
                         <div>
                             <label className="text-xs sm:text-sm font-medium text-gray-500">Donation Date</label>
@@ -297,9 +303,6 @@ export default function DonationManagement() {
                             <span>Click here to view Offline Donations</span>
                             <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4" />
                         </p>
-                        <p className="mt-1 sm:mt-2 text-xl sm:text-3xl font-bold text-orange-500">
-                            {isLoading ? '...' : pagination.totalDonations - 1}
-                        </p>
                     </div>
                 </div>
 
@@ -386,7 +389,7 @@ export default function DonationManagement() {
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4">
-                                                {/* <div className="text-sm text-gray-900">{donation.email}</div> */}
+                                                <div className="text-sm text-gray-900">{donation.kycStatus}</div>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                                 {new Date(donation.date).toLocaleDateString('en-IN')}
