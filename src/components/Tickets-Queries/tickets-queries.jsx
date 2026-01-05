@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect, useMemo } from 'react';
-import { Search, Filter, ChevronDown, ArrowLeft, ChevronLeft, ChevronRight, X, Eye, Calendar, Mail, User, MessageSquare, Clock, TrendingUp, AlertCircle, FileText, Inbox } from 'lucide-react';
-import { useGetAllTicketsQuery } from '@/utils/slices/ticketApiSlice';
+import { Search, Filter, ChevronDown, ArrowLeft, ChevronLeft, Check,ChevronRight, X, Eye, Calendar, Mail, User, MessageSquare, Clock, TrendingUp, AlertCircle, FileText, Inbox } from 'lucide-react';
+import { useGetAllTicketsQuery,useMarkTicketAsResolvedMutation } from '@/utils/slices/ticketApiSlice';
 
 // Helper function to format date and time
 const toISTDate = (dateString) => {
@@ -73,6 +73,7 @@ const AdminPanel = () => {
     isError,
     error,
   } = useGetAllTicketsQuery();
+  const [markTicketAsResolved, { isLoading: isMarkingResolved }] = useMarkTicketAsResolvedMutation();
   const tickets = data?.tickets || [];
 
   // Get unique query types for filter
@@ -124,6 +125,15 @@ const AdminPanel = () => {
   const QUERY_BADGE_CLASS = () =>
   "bg-slate-50 text-slate-700 border border-slate-200";
 
+  // Handle mark as resolved
+  const handleMarkAsResolved = async (ticketId) => {
+    try {
+      await markTicketAsResolved(ticketId).unwrap();
+      setSelectedTicket(null);
+    } catch (error) {
+      console.error('Failed to mark ticket as resolved:', error);
+    }
+  };
 
   // Message detail modal
   const MessageModal = ({ ticket, onClose }) => (
@@ -143,12 +153,22 @@ const AdminPanel = () => {
             </div>
             <h2 className="text-xl font-semibold text-slate-900">Message Details</h2>
           </div>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-slate-200/50 rounded-xl transition-all duration-200 group"
-          >
-            <X className="w-5 h-5 text-slate-500 group-hover:text-slate-700" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => handleMarkAsResolved(ticket._id)}
+              disabled={isMarkingResolved}
+              className="px-4 py-2 bg-gradient-to-br from-emerald-500 to-teal-600 text-white rounded-xl hover:from-emerald-600 hover:to-teal-700 transition-all duration-200 font-medium text-sm flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Check className="w-4 h-4" />
+              {isMarkingResolved ? 'Marking...' : 'Mark as Resolved'}
+            </button>
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-slate-200/50 rounded-xl transition-all duration-200 group"
+            >
+              <X className="w-5 h-5 text-slate-500 group-hover:text-slate-700" />
+            </button>
+          </div>
         </div>
 
         {/* Modal Content */}
@@ -263,7 +283,7 @@ const AdminPanel = () => {
         <div className="px-4 lg:px-8 pt-6">
           <button
             onClick={() => window.history.back()}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-white transition-all border border-slate-200 hover:border-slate-300 hover:shadow-sm"
+            className="flex items-center cursor-pointer gap-2 px-4 py-2 rounded-xl text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-white transition-all border border-slate-200 hover:border-slate-300 hover:shadow-sm"
           >
             <ArrowLeft className="w-4 h-4" />
             <span>Back</span>
@@ -363,6 +383,7 @@ const AdminPanel = () => {
                     <th className="px-6 py-3.5 text-left text-xs font-medium text-slate-600 uppercase tracking-wider">Name</th>
                     <th className="px-6 py-3.5 text-left text-xs font-medium text-slate-600 uppercase tracking-wider">Email</th>
                     <th className="px-6 py-3.5 text-left text-xs font-medium text-slate-600 uppercase tracking-wider">Type</th>
+                    <th className="px-6 py-3.5 text-left text-xs font-medium text-slate-600 uppercase tracking-wider">Status</th>
                     <th className="px-6 py-3.5 text-left text-xs font-medium text-slate-600 uppercase tracking-wider">Date</th>
                     <th className="px-6 py-3.5 text-left text-xs font-medium text-slate-600 uppercase tracking-wider">Action</th>
                   </tr>
@@ -384,6 +405,7 @@ const AdminPanel = () => {
                           <span className="capitalize">{ticket.queryType}</span>
                         </span>
                       </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">{ticket.status}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">{formatDateShort(ticket.createdAt)}</td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <button

@@ -9,7 +9,16 @@ export const ticketsApiSlice = apiSlice.injectEndpoints({
       }),
       providesTags: ["Tickets"],
     }),
+
+    markTicketAsResolved: builder.mutation({
+      query: (ticketId) => ({
+        url: `/ticket/${ticketId}/resolved`,
+        method: "PUT",
+      }),
+      invalidatesTags: ["Tickets"],
+    }),
+
   }),
 });
 
-export const { useGetAllTicketsQuery } = ticketsApiSlice;
+export const { useGetAllTicketsQuery,useMarkTicketAsResolvedMutation } = ticketsApiSlice;
