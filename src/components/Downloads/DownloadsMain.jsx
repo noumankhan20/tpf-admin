@@ -15,7 +15,15 @@ import {
     Loader2,
     CheckCircle2,
     ArrowRight,
-    ArrowLeft
+    ArrowLeft,
+    Calendar,
+    Filter,
+    ChevronDown,
+    FileJson,
+    PieChart,
+    HelpCircle,
+    Info,
+    DownloadCloud
 } from 'lucide-react';
 import axios from 'axios';
 import jsPDF from 'jspdf';
@@ -44,7 +52,8 @@ const RESOURCES = [
             { header: 'Type', key: 'donationType', width: 15 },
             { header: 'Status', key: 'status', width: 15 },
             { header: 'Txn ID', key: 'id', width: 25 },
-        ]
+        ],
+        dateKey: 'date'
     },
     {
         id: 'offline_donations',
@@ -63,7 +72,8 @@ const RESOURCES = [
             { header: 'Bank', key: 'bankName', width: 20, fallback: '-' },
             { header: 'Status', key: 'status', width: 15 },
             { header: 'Approved', key: 'approvedOn', width: 15, format: (val) => val ? new Date(val).toLocaleDateString() : '-' }
-        ]
+        ],
+        dateKey: 'submittedOn'
     },
     {
         id: 'permanent_donors',
@@ -119,7 +129,8 @@ const RESOURCES = [
             { header: 'Total', key: 'totalAmount', width: 15, format: (val) => `₹${val}` },
             { header: 'Payment', key: 'paymentStatus', width: 15 },
             { header: 'Bill', key: 'bill.fileUrl', width: 40, isLink: true, format: (url) => url ? 'View Bill' : '-' },
-        ]
+        ],
+        dateKey: 'purchaseDate'
     },
     {
         id: 'expenses',
@@ -137,7 +148,8 @@ const RESOURCES = [
             { header: 'Amount', key: 'amount', width: 15, format: (val) => `₹${val}` },
             { header: 'By', key: 'recordedBy.fullName', width: 20, fallback: '-' },
             { header: 'Payment', key: 'paymentMethod', width: 15 },
-        ]
+        ],
+        dateKey: 'date'
     },
     {
         id: 'vendors',
@@ -157,6 +169,91 @@ const RESOURCES = [
         ]
     }
 ];
+
+const DOWNLOAD_INSTRUCTIONS = [
+    {
+        title: 'Select Report Type',
+        text: 'Choose between Transactions, Offline Donations, Purchases, or Expenses using the top navigation buttons.',
+        icon: Filter
+    },
+    {
+        title: 'Apply Date Filters',
+        text: 'Use the Time Interval dropdown to select common periods like "This Month" or define a "Custom Range" for specific dates.',
+        icon: Calendar
+    },
+    {
+        title: 'Choose Format',
+        text: 'Export your filtered data as a professional PDF for printing or a clean Excel sheet for further analysis.',
+        icon: FileSpreadsheet
+    }
+];
+
+const FINANCIAL_RESOURCE_IDS = ['transactions', 'offline_donations', 'purchases', 'expenses'];
+
+const PERIODS = [
+    { label: 'All Records', value: 'all' },
+    { label: 'This Month', value: 'this_month' },
+    { label: 'Last Month', value: 'last_month' },
+    { label: 'This Financial Year', value: 'this_fy' },
+    { label: 'Last Financial Year', value: 'last_fy' },
+    { label: 'Custom Range', value: 'custom' },
+];
+
+const MONTHS = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+];
+
+const filterDataByPeriod = (data, dateKey, period, customRange = null) => {
+    if (!period || period === 'all') return data;
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth();
+
+    return data.filter(item => {
+        const itemDateRaw = getValue(item, dateKey);
+        if (!itemDateRaw) return false;
+        const itemDate = new Date(itemDateRaw);
+        if (isNaN(itemDate.getTime())) return false;
+
+        // Reset hours for accurate comparison
+        const itemYear = itemDate.getFullYear();
+        const itemMonth = itemDate.getMonth();
+
+        switch (period) {
+            case 'custom':
+                if (!customRange?.start || !customRange?.end) return true;
+                const start = new Date(customRange.start);
+                const end = new Date(customRange.end);
+                end.setHours(23, 59, 59, 999);
+                return itemDate >= start && itemDate <= end;
+            case 'this_month':
+                return itemMonth === currentMonth && itemYear === currentYear;
+            case 'last_month': {
+                const lastMonthDate = new Date(currentYear, currentMonth - 1, 1);
+                return itemMonth === lastMonthDate.getMonth() && itemYear === lastMonthDate.getFullYear();
+            }
+            case 'this_fy': {
+                const fyStartYear = currentMonth >= 3 ? currentYear : currentYear - 1;
+                const startDate = new Date(fyStartYear, 3, 1);
+                const endDate = new Date(fyStartYear + 1, 2, 31, 23, 59, 59);
+                return itemDate >= startDate && itemDate <= endDate;
+            }
+            case 'last_fy': {
+                const fyStartYear = (currentMonth >= 3 ? currentYear : currentYear - 1) - 1;
+                const startDate = new Date(fyStartYear, 3, 1);
+                const endDate = new Date(fyStartYear + 1, 2, 31, 23, 59, 59);
+                return itemDate >= startDate && itemDate <= endDate;
+            }
+            default:
+                if (period.startsWith('month_')) {
+                    const monthIndex = parseInt(period.split('_')[1]);
+                    return itemMonth === monthIndex && itemYear === currentYear;
+                }
+                return true;
+        }
+    });
+};
 
 const getValue = (obj, path, fallback) => {
     if (!obj) return fallback;
@@ -188,6 +285,17 @@ export default function DownloadsMain() {
     const [loading, setLoading] = useState({ id: null, type: null });
     const [createAuditLog] = useCreateAuditLogMutation();
 
+    const [financialFilters, setFinancialFilters] = useState({
+        typeId: 'transactions',
+        period: 'all',
+        startDate: '',
+        endDate: ''
+    });
+
+    const financialResources = RESOURCES.filter(r => FINANCIAL_RESOURCE_IDS.includes(r.id));
+    const otherResources = RESOURCES.filter(r => !FINANCIAL_RESOURCE_IDS.includes(r.id));
+    const selectedFinancialResource = financialResources.find(r => r.id === financialFilters.typeId) || financialResources[0];
+
     const fetchData = async (resource) => {
         try {
             const { data } = await axios.get(`${API_URL}${resource.endpoint}`, {
@@ -216,12 +324,22 @@ export default function DownloadsMain() {
         }
     };
 
-    const handleDownload = async (resource, type) => {
+    const handleDownload = async (resource, type, customFilters = null) => {
         setLoading({ id: resource.id, type });
         const toastId = toast.loading(`Preparing ${resource.title} export...`);
 
         try {
-            const data = await fetchData(resource);
+            let data = await fetchData(resource);
+
+            // Apply filters if provided
+            if (customFilters && customFilters.period && customFilters.period !== 'all') {
+                data = filterDataByPeriod(
+                    data,
+                    resource.dateKey || 'createdAt',
+                    customFilters.period,
+                    { start: customFilters.startDate, end: customFilters.endDate }
+                );
+            }
 
             if (!data || data.length === 0) {
                 toast.update(toastId, {
@@ -251,7 +369,9 @@ export default function DownloadsMain() {
                     entity: resource.title,
                     details: {
                         format: type.toUpperCase(),
-                        recordCount: data.length
+                        recordCount: data.length,
+                        period: customFilters?.period || 'all',
+                        dateRange: customFilters?.period === 'custom' ? `${customFilters.startDate} to ${customFilters.endDate}` : null
                     }
                 }).unwrap();
             } catch (auditError) {
@@ -398,80 +518,255 @@ export default function DownloadsMain() {
                 <p className="text-gray-600">Export system records and data for external use.</p>
             </div>
 
-            {/* Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {RESOURCES.map((resource) => {
-                    const Icon = resource.icon;
-                    const theme = getThemeClasses(resource.theme);
-                    const isExcelLoading = loading.id === resource.id && loading.type === 'excel';
-                    const isPdfLoading = loading.id === resource.id && loading.type === 'pdf';
+            {/* Refactored Layout */}
+            <div className="space-y-12">
+                {/* 1. Primary Financial Section - Full Width */}
+                <section>
+                    <div className="bg-white border border-gray-100 rounded-[2.5rem] p-1 shadow-2xl shadow-emerald-900/5 overflow-hidden">
+                        <div className="bg-gradient-to-br from-emerald-50 via-white to-white rounded-[2.25rem] p-8 md:p-12 relative">
+                            {/* Decorative Background Elements */}
+                            <div className="absolute top-0 right-0 w-1/3 h-full overflow-hidden pointer-events-none">
+                                <div className="absolute -top-24 -right-24 w-96 h-96 bg-emerald-400/10 rounded-full blur-3xl"></div>
+                                <div className="absolute top-1/2 -right-12 w-64 h-64 bg-teal-400/10 rounded-full blur-3xl"></div>
+                            </div>
 
-                    return (
-                        <div
-                            key={resource.id}
-                            className={`group relative bg-white border-2 border-gray-100 rounded-2xl p-6 transition-all duration-300 ${theme.hoverBorder} hover:shadow-xl hover:-translate-y-1`}
-                        >
-                            {/* Decorative Corner */}
-                            <div className={`absolute top-0 right-0 w-24 h-24 ${theme.lightBg} rounded-bl-full opacity-0 group-hover:opacity-100 transition-opacity duration-300`}></div>
-
-                            <div className="relative">
-                                {/* Icon Header */}
-                                <div className="flex justify-between items-start mb-6">
-                                    <div className={`w-14 h-14 rounded-xl ${theme.bg} flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform duration-300`}>
-                                        <Icon className="w-7 h-7 text-white" strokeWidth={2} />
+                            <div className="relative z-10">
+                                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8 mb-12">
+                                    <div className="max-w-2xl">
+                                        <div className="flex items-center gap-4 mb-6">
+                                            <div className="w-16 h-16 rounded-2xl bg-emerald-500 flex items-center justify-center shadow-2xl shadow-emerald-200 group-hover:scale-110 transition-transform">
+                                                <PieChart className="w-8 h-8 text-white" />
+                                            </div>
+                                            <div>
+                                                <div className="flex items-center gap-3">
+                                                    <h2 className="text-3xl font-black text-gray-900 tracking-tight">Financial Reports</h2>
+                                                    
+                                                </div>
+                                                <p className="text-gray-500 text-lg font-medium max-w-md mt-1">
+                                                    Access and export professional financial reports with precise data filtering.
+                                                </p>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div className="opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-2 group-hover:translate-x-0">
-                                        <div className={`${theme.lightBg} p-2 rounded-lg`}>
-                                            <ArrowRight className={`w-5 h-5 ${theme.text}`} />
+
+                                    <div className="flex flex-wrap items-center gap-3">
+                                        {financialResources.map(res => (
+                                            <button
+                                                key={res.id}
+                                                onClick={() => setFinancialFilters({ ...financialFilters, typeId: res.id })}
+                                                className={`px-6 py-3 rounded-2xl text-sm font-bold transition-all duration-300 ${financialFilters.typeId === res.id
+                                                    ? 'bg-gray-900 text-white shadow-xl shadow-gray-200 -translate-y-1'
+                                                    : 'bg-white text-gray-500 hover:bg-gray-50 border-2 border-transparent'
+                                                    }`}
+                                            >
+                                                {res.title}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Filters Grid */}
+                                <div className="bg-white/50 backdrop-blur-sm border-2 border-white rounded-[2rem] p-8 mt-8">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                                        {/* Period Selection */}
+                                        <div className="space-y-3">
+                                            <label className="text-xs font-black text-gray-400 uppercase tracking-widest flex items-center gap-2 px-1">
+                                                <Calendar className="w-4 h-4 text-emerald-500" />
+                                                Time Interval
+                                            </label>
+                                            <div className="relative group">
+                                                <select
+                                                    value={financialFilters.period}
+                                                    onChange={(e) => setFinancialFilters({ ...financialFilters, period: e.target.value })}
+                                                    className="w-full pl-5 pr-12 py-4 bg-white border-2 border-gray-100 rounded-2xl font-bold text-gray-700 appearance-none focus:outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 transition-all cursor-pointer shadow-sm hover:shadow-md"
+                                                >
+                                                    <optgroup label="Standard Periods" className="font-bold">
+                                                        {PERIODS.map(p => (
+                                                            <option key={p.value} value={p.value}>{p.label}</option>
+                                                        ))}
+                                                    </optgroup>
+                                                    <optgroup label="Specific Month (This Year)" className="font-bold">
+                                                        {MONTHS.map((m, i) => (
+                                                            <option key={i} value={`month_${i}`}>{m}</option>
+                                                        ))}
+                                                    </optgroup>
+                                                </select>
+                                                <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none group-hover:text-emerald-500 transition-colors" />
+                                            </div>
+                                        </div>
+
+                                        {/* Dynamic Custom Range Inputs */}
+                                        {financialFilters.period === 'custom' && (
+                                            <>
+                                                <div className="space-y-3 animate-in fade-in slide-in-from-left-4 duration-300">
+                                                    <label className="text-xs font-black text-gray-400 uppercase tracking-widest flex items-center gap-2 px-1">
+                                                        <Calendar className="w-4 h-4 text-emerald-500" />
+                                                        Start Date
+                                                    </label>
+                                                    <input
+                                                        type="date"
+                                                        value={financialFilters.startDate}
+                                                        onChange={(e) => setFinancialFilters({ ...financialFilters, startDate: e.target.value })}
+                                                        className="w-full px-5 py-4 bg-white border-2 border-gray-100 rounded-2xl font-bold text-gray-700 focus:outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 transition-all shadow-sm"
+                                                    />
+                                                </div>
+                                                <div className="space-y-3 animate-in fade-in slide-in-from-left-4 duration-300">
+                                                    <label className="text-xs font-black text-gray-400 uppercase tracking-widest flex items-center gap-2 px-1">
+                                                        <Calendar className="w-4 h-4 text-emerald-500" />
+                                                        End Date
+                                                    </label>
+                                                    <input
+                                                        type="date"
+                                                        value={financialFilters.endDate}
+                                                        onChange={(e) => setFinancialFilters({ ...financialFilters, endDate: e.target.value })}
+                                                        className="w-full px-5 py-4 bg-white border-2 border-gray-100 rounded-2xl font-bold text-gray-700 focus:outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 transition-all shadow-sm"
+                                                    />
+                                                </div>
+                                            </>
+                                        )}
+
+                                        {/* Action Buttons */}
+                                        <div className={`flex items-end gap-3 ${financialFilters.period === 'custom' ? 'lg:col-span-1' : 'md:col-span-1 lg:col-span-3'}`}>
+                                            <div className="flex gap-3 w-full">
+                                                <button
+                                                    onClick={() => handleDownload(selectedFinancialResource, 'excel', financialFilters)}
+                                                    disabled={loading.id !== null}
+                                                    className="flex-1 flex items-center justify-center gap-3 px-6 py-4 bg-white border-2 border-gray-100 text-gray-700 rounded-2xl font-bold hover:bg-emerald-50 hover:border-emerald-200 hover:text-emerald-700 active:scale-95 transition-all disabled:opacity-50 shadow-sm hover:shadow-md group/btn"
+                                                >
+                                                    {loading.id === selectedFinancialResource.id && loading.type === 'excel' ? (
+                                                        <Loader2 className="w-5 h-5 animate-spin" />
+                                                    ) : (
+                                                        <FileSpreadsheet className="w-5 h-5 text-emerald-500 group-hover/btn:rotate-12 transition-transform" />
+                                                    )}
+                                                    <span className="hidden sm:inline">Export Excel</span>
+                                                    <span className="sm:hidden">Excel</span>
+                                                </button>
+
+                                                <button
+                                                    onClick={() => handleDownload(selectedFinancialResource, 'pdf', financialFilters)}
+                                                    disabled={loading.id !== null}
+                                                    className="flex-1 flex items-center justify-center gap-3 px-6 py-4 bg-gray-900 text-white rounded-2xl font-bold hover:bg-black hover:shadow-2xl hover:shadow-gray-200 active:scale-95 transition-all disabled:opacity-50"
+                                                >
+                                                    {loading.id === selectedFinancialResource.id && loading.type === 'pdf' ? (
+                                                        <Loader2 className="w-5 h-5 animate-spin" />
+                                                    ) : (
+                                                        <FileText className="w-5 h-5" />
+                                                    )}
+                                                    <span className="hidden sm:inline">Export PDF</span>
+                                                    <span className="sm:hidden">PDF</span>
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-
-                                {/* Content */}
-                                <h3 className={`text-xl font-bold text-gray-900 mb-2 group-hover:${theme.text} transition-colors`}>
-                                    {resource.title}
-                                </h3>
-                                <p className="text-gray-500 text-sm mb-6 leading-relaxed">
-                                    {resource.description}
-                                </p>
-
-                                {/* Buttons */}
-                                <div className="grid grid-cols-2 gap-3">
-                                    <button
-                                        onClick={() => handleDownload(resource, 'excel')}
-                                        disabled={loading.id !== null}
-                                        className={`flex items-center justify-center gap-2 px-4 py-3 text-sm font-bold text-gray-700 bg-white border-2 border-gray-100 rounded-xl ${theme.btnHover} hover:border-gray-200 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed`}
-                                    >
-                                        {isExcelLoading ? (
-                                            <Loader2 className="w-4 h-4 animate-spin" />
-                                        ) : (
-                                            <FileSpreadsheet className={`w-4 h-4 ${theme.text}`} />
-                                        )}
-                                        Excel
-                                    </button>
-                                    <button
-                                        onClick={() => handleDownload(resource, 'pdf')}
-                                        disabled={loading.id !== null}
-                                        className={`flex items-center justify-center gap-2 px-4 py-3 text-sm font-bold text-gray-700 bg-white border-2 border-gray-100 rounded-xl ${theme.btnHover} hover:border-gray-200 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed`}
-                                    >
-                                        {isPdfLoading ? (
-                                            <Loader2 className="w-4 h-4 animate-spin" />
-                                        ) : (
-                                            <FileText className={`w-4 h-4 ${theme.text}`} />
-                                        )}
-                                        PDF
-                                    </button>
-                                </div>
                             </div>
                         </div>
-                    );
-                })}
-            </div>
+                    </div>
+                </section>
 
-            {/* Footer */}
-            <div className="mt-8 flex items-center justify-center gap-2 text-sm text-gray-400">
-                <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                <span>All reports are generated in real-time</span>
+                {/* 2. Secondary Records Grid */}
+                <section>
+                    <div className="flex items-center justify-between mb-8 px-2">
+                        <div>
+                            <h2 className="text-xl font-black text-gray-900 uppercase tracking-[0.2em]">Administrative Records</h2>
+                            <p className="text-sm font-medium text-gray-400 mt-1">General system-level database exports</p>
+                        </div>
+                        <div className="h-px bg-gray-100 flex-1 mx-8 hidden sm:block"></div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                        {otherResources.map((resource) => {
+                            const Icon = resource.icon;
+                            const theme = getThemeClasses(resource.theme);
+                            const isExcelLoading = loading.id === resource.id && loading.type === 'excel';
+                            const isPdfLoading = loading.id === resource.id && loading.type === 'pdf';
+
+                            return (
+                                <div
+                                    key={resource.id}
+                                    className="group bg-white border-2 border-gray-100 rounded-[2rem] p-8 shadow-sm hover:shadow-2xl hover:shadow-gray-900/5 hover:-translate-y-2 transition-all duration-500"
+                                >
+                                    <div className="flex items-center justify-between mb-8">
+                                        <div className={`w-16 h-16 rounded-[1.25rem] ${theme.bg} flex items-center justify-center shadow-2xl relative overflow-hidden transition-transform duration-500 group-hover:scale-110`}>
+                                            <Icon className="w-8 h-8 text-white relative z-10" strokeWidth={2.5} />
+                                            <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-500"></div>
+                                        </div>
+                                        <div className={`w-10 h-10 rounded-full border-2 border-gray-50 flex items-center justify-center group-hover:border-${resource.theme}-200 bg-gray-50/50 transition-colors`}>
+                                            <ArrowRight className={`w-5 h-5 ${theme.text} opacity-0 group-hover:opacity-100 transition-all -translate-x-2 group-hover:translate-x-0`} />
+                                        </div>
+                                    </div>
+
+                                    <div className="mb-8">
+                                        <h3 className="text-xl font-black text-gray-900 mb-2">{resource.title}</h3>
+                                        <p className="text-gray-400 font-medium text-sm leading-relaxed">
+                                            {resource.description}
+                                        </p>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <button
+                                            onClick={() => handleDownload(resource, 'excel')}
+                                            disabled={loading.id !== null}
+                                            className={`flex items-center justify-center gap-2 px-4 py-3.5 text-xs font-black text-gray-600 bg-gray-50 border-2 border-transparent rounded-2xl hover:bg-white hover:border-gray-200 active:scale-95 transition-all disabled:opacity-50`}
+                                        >
+                                            {isExcelLoading ? <Loader2 size={16} className="animate-spin" /> : <FileSpreadsheet size={16} className={theme.text} />}
+                                            EXCEL
+                                        </button>
+                                        <button
+                                            onClick={() => handleDownload(resource, 'pdf')}
+                                            disabled={loading.id !== null}
+                                            className={`flex items-center justify-center gap-2 px-4 py-3.5 text-xs font-black text-gray-600 bg-gray-50 border-2 border-transparent rounded-2xl hover:bg-white hover:border-gray-200 active:scale-95 transition-all disabled:opacity-50`}
+                                        >
+                                            {isPdfLoading ? <Loader2 size={16} className="animate-spin" /> : <FileText size={16} className={theme.text} />}
+                                            PDF
+                                        </button>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </section>
+
+                {/* 3. Instructions & Guide */}
+                <section className="bg-emerald-900/5 border border-emerald-100/50 rounded-[2.5rem] p-8 md:p-12 relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 rounded-full blur-3xl -mr-32 -mt-32 group-hover:scale-110 transition-transform duration-700"></div>
+
+                    <div className="relative z-10">
+                        <div className="flex items-center gap-4 mb-10">
+                            <div className="w-12 h-12 rounded-xl bg-emerald-500/10 flex items-center justify-center">
+                                <HelpCircle className="w-6 h-6 text-emerald-600" />
+                            </div>
+                            <div>
+                                <h2 className="text-xl font-black text-gray-900 uppercase tracking-widest">How to Export Financial Reports</h2>
+                                <p className="text-sm font-medium text-gray-500">Master the financial intelligence tools</p>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
+                            {DOWNLOAD_INSTRUCTIONS.map((step, idx) => (
+                                <div key={idx} className="relative">
+                                    <div className="flex items-start gap-4">
+                                        <div className="flex-shrink-0 w-8 h-8 rounded-full bg-emerald-500 text-white flex items-center justify-center text-xs font-black shadow-lg shadow-emerald-200">
+                                            {idx + 1}
+                                        </div>
+                                        <div>
+                                            <h3 className="font-black text-gray-900 mb-2 flex items-center gap-2">
+                                                <step.icon size={16} className="text-emerald-500" />
+                                                {step.title}
+                                            </h3>
+                                            <p className="text-gray-500 text-sm font-medium leading-relaxed">
+                                                {step.text}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    {idx < 2 && (
+                                        <div className="hidden lg:block absolute top-4 left-full w-full h-px border-t border-dashed border-emerald-200 -ml-4 z-0"></div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </section>
             </div>
         </div>
     );
