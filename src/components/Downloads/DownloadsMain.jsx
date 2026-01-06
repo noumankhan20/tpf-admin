@@ -36,14 +36,14 @@ const API_URL = process.env.NEXT_PUBLIC_BACKEND_API || 'http://localhost:7000/ap
 
 const RESOURCES = [
     {
-        id: 'transactions',
-        title: 'Transactions',
+        id: 'online_donations',
+        title: 'Online Donations',
         description: 'Online donation records',
         icon: CreditCard,
         theme: 'emerald',
         endpoint: '/donations/get',
         dataKey: 'donations',
-        fileName: 'transactions',
+        fileName: 'online_donations',
         columns: [
             { header: 'Date', key: 'date', width: 15, format: (val) => val ? new Date(val).toLocaleDateString() : '-' },
             { header: 'Name', key: 'fullName', width: 25, fallback: 'Anonymous' },
@@ -74,6 +74,42 @@ const RESOURCES = [
             { header: 'Approved', key: 'approvedOn', width: 15, format: (val) => val ? new Date(val).toLocaleDateString() : '-' }
         ],
         dateKey: 'submittedOn'
+    },
+    {
+        id: 'expenses',
+        title: 'Expenses',
+        description: 'Operational and purchase costs',
+        icon: Receipt,
+        theme: 'orange',
+        endpoint: '/inventory/expenses',
+        dataKey: 'data',
+        fileName: 'expenses',
+        columns: [
+            { header: 'Date', key: 'date', width: 15, format: (val) => val ? new Date(val).toLocaleDateString() : '-' },
+            { header: 'Title/Description', key: 'description', width: 30 },
+            { header: 'Amount', key: 'amount', width: 15, format: (val) => `₹${val}` },
+            { header: 'Type', key: 'expenseType', width: 20 },
+            { header: 'Payment Method', key: 'paymentMethod', width: 15 },
+            { header: 'Recorded By', key: 'recordedBy.fullName', width: 20, fallback: '-' },
+        ],
+        dateKey: 'date'
+    },
+    {
+        id: 'all_donations',
+        title: 'All Donations',
+        description: 'Consolidated Online, Offline and Expenses',
+        icon: PieChart,
+        theme: 'emerald',
+        fileName: 'all_donations_report',
+        columns: [
+            { header: 'Date', key: 'finalDate', width: 15, format: (val) => val ? new Date(val).toLocaleDateString() : '-' },
+            { header: 'Description/From', key: 'finalDescription', width: 30 },
+            { header: 'Amount', key: 'finalAmount', width: 15, format: (val) => `₹${val}` },
+            { header: 'Category', key: 'finalCategory', width: 20 },
+            { header: 'Sub-Type', key: 'finalType', width: 20 },
+            { header: 'Status', key: 'finalStatus', width: 15 }
+        ],
+        dateKey: 'finalDate'
     },
     {
         id: 'permanent_donors',
@@ -114,44 +150,6 @@ const RESOURCES = [
         ]
     },
     {
-        id: 'purchases',
-        title: 'Purchases',
-        description: 'Inventory stock logs',
-        icon: ShoppingBag,
-        theme: 'rose',
-        endpoint: '/inventory/purchases',
-        dataKey: 'data',
-        fileName: 'purchases',
-        columns: [
-            { header: 'Date', key: 'purchaseDate', width: 15, format: (val) => val ? new Date(val).toLocaleDateString() : '-' },
-            { header: 'Vendor', key: 'vendorId.fullName', width: 25, fallback: '-' },
-            { header: 'Items', key: 'items', width: 35, format: (items) => Array.isArray(items) ? `${items.length} items` : '-' },
-            { header: 'Total', key: 'totalAmount', width: 15, format: (val) => `₹${val}` },
-            { header: 'Payment', key: 'paymentStatus', width: 15 },
-            { header: 'Bill', key: 'bill.fileUrl', width: 40, isLink: true, format: (url) => url ? 'View Bill' : '-' },
-        ],
-        dateKey: 'purchaseDate'
-    },
-    {
-        id: 'expenses',
-        title: 'Expenses',
-        description: 'Operational costs',
-        icon: Receipt,
-        theme: 'orange',
-        endpoint: '/inventory/expenses',
-        dataKey: 'data',
-        fileName: 'expenses',
-        columns: [
-            { header: 'Date', key: 'date', width: 15, format: (val) => val ? new Date(val).toLocaleDateString() : '-' },
-            { header: 'Title', key: 'description', width: 30 },
-            { header: 'Type', key: 'expenseType', width: 20 },
-            { header: 'Amount', key: 'amount', width: 15, format: (val) => `₹${val}` },
-            { header: 'By', key: 'recordedBy.fullName', width: 20, fallback: '-' },
-            { header: 'Payment', key: 'paymentMethod', width: 15 },
-        ],
-        dateKey: 'date'
-    },
-    {
         id: 'vendors',
         title: 'Vendors',
         description: 'Supplier directory',
@@ -173,7 +171,7 @@ const RESOURCES = [
 const DOWNLOAD_INSTRUCTIONS = [
     {
         title: 'Select Report Type',
-        text: 'Choose between Transactions, Offline Donations, Purchases, or Expenses using the top navigation buttons.',
+        text: 'Choose between All Donations, Offline Donations, Expenses, or Online Donations using the top navigation buttons.',
         icon: Filter
     },
     {
@@ -188,7 +186,7 @@ const DOWNLOAD_INSTRUCTIONS = [
     }
 ];
 
-const FINANCIAL_RESOURCE_IDS = ['transactions', 'offline_donations', 'purchases', 'expenses'];
+const FINANCIAL_RESOURCE_IDS = ['all_donations', 'offline_donations', 'expenses', 'online_donations'];
 
 const PERIODS = [
     { label: 'All Records', value: 'all' },
@@ -286,7 +284,7 @@ export default function DownloadsMain() {
     const [createAuditLog] = useCreateAuditLogMutation();
 
     const [financialFilters, setFinancialFilters] = useState({
-        typeId: 'transactions',
+        typeId: 'all_donations',
         period: 'all',
         startDate: '',
         endDate: ''
@@ -298,6 +296,44 @@ export default function DownloadsMain() {
 
     const fetchData = async (resource) => {
         try {
+            if (resource.id === 'all_donations') {
+                const [online, offline, expenses] = await Promise.all([
+                    fetchData(RESOURCES.find(r => r.id === 'online_donations')),
+                    fetchData(RESOURCES.find(r => r.id === 'offline_donations')),
+                    fetchData(RESOURCES.find(r => r.id === 'expenses'))
+                ]);
+
+                return [
+                    ...online.map(d => ({
+                        ...d,
+                        finalDate: d.date,
+                        finalDescription: d.fullName || 'Anonymous',
+                        finalAmount: d.amount,
+                        finalCategory: 'Online',
+                        finalType: d.donationType,
+                        finalStatus: d.status
+                    })),
+                    ...offline.map(d => ({
+                        ...d,
+                        finalDate: d.submittedOn,
+                        finalDescription: d.fullName || '-',
+                        finalAmount: d.amount,
+                        finalCategory: 'Offline',
+                        finalType: d.method,
+                        finalStatus: d.status
+                    })),
+                    ...expenses.map(d => ({
+                        ...d,
+                        finalDate: d.date,
+                        finalDescription: d.description,
+                        finalAmount: d.amount,
+                        finalCategory: 'Expense',
+                        finalType: d.expenseType,
+                        finalStatus: 'N/A'
+                    }))
+                ].sort((a, b) => new Date(b.finalDate) - new Date(a.finalDate));
+            }
+
             const { data } = await axios.get(`${API_URL}${resource.endpoint}`, {
                 withCredentials: true
             });
@@ -520,6 +556,47 @@ export default function DownloadsMain() {
 
             {/* Refactored Layout */}
             <div className="space-y-12">
+                {/* 0. Instructions & Guide - At the Top now */}
+                <section className="bg-emerald-900/5 border border-emerald-100/50 rounded-[2.5rem] p-8 md:p-12 relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 rounded-full blur-3xl -mr-32 -mt-32 group-hover:scale-110 transition-transform duration-700"></div>
+
+                    <div className="relative z-10">
+                        <div className="flex items-center gap-4 mb-10">
+                            <div className="w-12 h-12 rounded-xl bg-emerald-500/10 flex items-center justify-center">
+                                <HelpCircle className="w-6 h-6 text-emerald-600" />
+                            </div>
+                            <div>
+                                <h2 className="text-xl font-bold text-gray-900 uppercase tracking-wider">How to Export Financial Reports</h2>
+                                <p className="text-sm font-medium text-gray-500">Master the financial intelligence tools</p>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
+                            {DOWNLOAD_INSTRUCTIONS.map((step, idx) => (
+                                <div key={idx} className="relative">
+                                    <div className="flex items-start gap-4">
+                                        <div className="flex-shrink-0 w-8 h-8 rounded-full bg-emerald-500 text-white flex items-center justify-center text-xs font-bold shadow-lg shadow-emerald-200">
+                                            {idx + 1}
+                                        </div>
+                                        <div>
+                                            <h3 className="font-bold text-gray-900 mb-2 flex items-center gap-2">
+                                                <step.icon size={16} className="text-emerald-500" />
+                                                {step.title}
+                                            </h3>
+                                            <p className="text-gray-500 text-sm font-medium leading-relaxed">
+                                                {step.text}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    {idx < 2 && (
+                                        <div className="hidden lg:block absolute top-4 left-full w-full h-px border-t border-dashed border-emerald-200 -ml-4 z-0"></div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </section>
+
                 {/* 1. Primary Financial Section - Full Width */}
                 <section>
                     <div className="bg-white border border-gray-100 rounded-[2.5rem] p-1 shadow-2xl shadow-emerald-900/5 overflow-hidden">
@@ -539,8 +616,7 @@ export default function DownloadsMain() {
                                             </div>
                                             <div>
                                                 <div className="flex items-center gap-3">
-                                                    <h2 className="text-3xl font-black text-gray-900 tracking-tight">Financial Reports</h2>
-                                                    
+                                                    <h2 className="text-3xl font-bold text-gray-900">Financial Reports</h2>
                                                 </div>
                                                 <p className="text-gray-500 text-lg font-medium max-w-md mt-1">
                                                     Access and export professional financial reports with precise data filtering.
@@ -549,14 +625,14 @@ export default function DownloadsMain() {
                                         </div>
                                     </div>
 
-                                    <div className="flex flex-wrap items-center gap-3">
+                                    <div className="flex flex-wrap items-center gap-2">
                                         {financialResources.map(res => (
                                             <button
                                                 key={res.id}
                                                 onClick={() => setFinancialFilters({ ...financialFilters, typeId: res.id })}
                                                 className={`px-6 py-3 rounded-2xl text-sm font-bold transition-all duration-300 ${financialFilters.typeId === res.id
                                                     ? 'bg-gray-900 text-white shadow-xl shadow-gray-200 -translate-y-1'
-                                                    : 'bg-white text-gray-500 hover:bg-gray-50 border-2 border-transparent'
+                                                    : 'bg-white text-gray-500 hover:bg-gray-50 border-2 border-gray-200'
                                                     }`}
                                             >
                                                 {res.title}
@@ -570,7 +646,7 @@ export default function DownloadsMain() {
                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
                                         {/* Period Selection */}
                                         <div className="space-y-3">
-                                            <label className="text-xs font-black text-gray-400 uppercase tracking-widest flex items-center gap-2 px-1">
+                                            <label className="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2 px-1">
                                                 <Calendar className="w-4 h-4 text-emerald-500" />
                                                 Time Interval
                                             </label>
@@ -599,7 +675,7 @@ export default function DownloadsMain() {
                                         {financialFilters.period === 'custom' && (
                                             <>
                                                 <div className="space-y-3 animate-in fade-in slide-in-from-left-4 duration-300">
-                                                    <label className="text-xs font-black text-gray-400 uppercase tracking-widest flex items-center gap-2 px-1">
+                                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2 px-1">
                                                         <Calendar className="w-4 h-4 text-emerald-500" />
                                                         Start Date
                                                     </label>
@@ -611,7 +687,7 @@ export default function DownloadsMain() {
                                                     />
                                                 </div>
                                                 <div className="space-y-3 animate-in fade-in slide-in-from-left-4 duration-300">
-                                                    <label className="text-xs font-black text-gray-400 uppercase tracking-widest flex items-center gap-2 px-1">
+                                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2 px-1">
                                                         <Calendar className="w-4 h-4 text-emerald-500" />
                                                         End Date
                                                     </label>
@@ -668,7 +744,7 @@ export default function DownloadsMain() {
                 <section>
                     <div className="flex items-center justify-between mb-8 px-2">
                         <div>
-                            <h2 className="text-xl font-black text-gray-900 uppercase tracking-[0.2em]">Administrative Records</h2>
+                            <h2 className="text-xl font-bold text-gray-900 uppercase tracking-wider">Administrative Records</h2>
                             <p className="text-sm font-medium text-gray-400 mt-1">General system-level database exports</p>
                         </div>
                         <div className="h-px bg-gray-100 flex-1 mx-8 hidden sm:block"></div>
@@ -697,7 +773,7 @@ export default function DownloadsMain() {
                                     </div>
 
                                     <div className="mb-8">
-                                        <h3 className="text-xl font-black text-gray-900 mb-2">{resource.title}</h3>
+                                        <h3 className="text-xl font-bold text-gray-900 mb-2">{resource.title}</h3>
                                         <p className="text-gray-400 font-medium text-sm leading-relaxed">
                                             {resource.description}
                                         </p>
@@ -707,7 +783,7 @@ export default function DownloadsMain() {
                                         <button
                                             onClick={() => handleDownload(resource, 'excel')}
                                             disabled={loading.id !== null}
-                                            className={`flex items-center justify-center gap-2 px-4 py-3.5 text-xs font-black text-gray-600 bg-gray-50 border-2 border-transparent rounded-2xl hover:bg-white hover:border-gray-200 active:scale-95 transition-all disabled:opacity-50`}
+                                            className={`flex items-center justify-center gap-2 px-4 py-3.5 text-xs font-bold text-gray-600 bg-gray-50 border-2 border-transparent rounded-2xl hover:bg-white hover:border-gray-200 active:scale-95 transition-all disabled:opacity-50`}
                                         >
                                             {isExcelLoading ? <Loader2 size={16} className="animate-spin" /> : <FileSpreadsheet size={16} className={theme.text} />}
                                             EXCEL
@@ -715,7 +791,7 @@ export default function DownloadsMain() {
                                         <button
                                             onClick={() => handleDownload(resource, 'pdf')}
                                             disabled={loading.id !== null}
-                                            className={`flex items-center justify-center gap-2 px-4 py-3.5 text-xs font-black text-gray-600 bg-gray-50 border-2 border-transparent rounded-2xl hover:bg-white hover:border-gray-200 active:scale-95 transition-all disabled:opacity-50`}
+                                            className={`flex items-center justify-center gap-2 px-4 py-3.5 text-xs font-bold text-gray-600 bg-gray-50 border-2 border-transparent rounded-2xl hover:bg-white hover:border-gray-200 active:scale-95 transition-all disabled:opacity-50`}
                                         >
                                             {isPdfLoading ? <Loader2 size={16} className="animate-spin" /> : <FileText size={16} className={theme.text} />}
                                             PDF
@@ -724,47 +800,6 @@ export default function DownloadsMain() {
                                 </div>
                             );
                         })}
-                    </div>
-                </section>
-
-                {/* 3. Instructions & Guide */}
-                <section className="bg-emerald-900/5 border border-emerald-100/50 rounded-[2.5rem] p-8 md:p-12 relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 rounded-full blur-3xl -mr-32 -mt-32 group-hover:scale-110 transition-transform duration-700"></div>
-
-                    <div className="relative z-10">
-                        <div className="flex items-center gap-4 mb-10">
-                            <div className="w-12 h-12 rounded-xl bg-emerald-500/10 flex items-center justify-center">
-                                <HelpCircle className="w-6 h-6 text-emerald-600" />
-                            </div>
-                            <div>
-                                <h2 className="text-xl font-black text-gray-900 uppercase tracking-widest">How to Export Financial Reports</h2>
-                                <p className="text-sm font-medium text-gray-500">Master the financial intelligence tools</p>
-                            </div>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
-                            {DOWNLOAD_INSTRUCTIONS.map((step, idx) => (
-                                <div key={idx} className="relative">
-                                    <div className="flex items-start gap-4">
-                                        <div className="flex-shrink-0 w-8 h-8 rounded-full bg-emerald-500 text-white flex items-center justify-center text-xs font-black shadow-lg shadow-emerald-200">
-                                            {idx + 1}
-                                        </div>
-                                        <div>
-                                            <h3 className="font-black text-gray-900 mb-2 flex items-center gap-2">
-                                                <step.icon size={16} className="text-emerald-500" />
-                                                {step.title}
-                                            </h3>
-                                            <p className="text-gray-500 text-sm font-medium leading-relaxed">
-                                                {step.text}
-                                            </p>
-                                        </div>
-                                    </div>
-                                    {idx < 2 && (
-                                        <div className="hidden lg:block absolute top-4 left-full w-full h-px border-t border-dashed border-emerald-200 -ml-4 z-0"></div>
-                                    )}
-                                </div>
-                            ))}
-                        </div>
                     </div>
                 </section>
             </div>

@@ -15,19 +15,8 @@ export default function AuditLogs() {
 
   const uniqueRoles = ["All", ...new Set(logs.flatMap((log) => log.role || []))];
 
-  const groupedLogs = useMemo(() => {
-    const groups = {};
-    logs.forEach((log) => {
-      const email = log.adminEmail || 'unknown';
-      if (!groups[email] || new Date(log.createdAt || log.timestamp) > new Date(groups[email].createdAt || groups[email].timestamp)) {
-        groups[email] = log;
-      }
-    });
-    return Object.values(groups).sort((a, b) => new Date(b.createdAt || b.timestamp) - new Date(a.createdAt || a.timestamp));
-  }, [logs]);
-
   const filteredLogs = useMemo(() => {
-    return groupedLogs.filter((log) => {
+    return logs.filter((log) => {
       const nameMatch = log.adminName?.toLowerCase().includes(searchTerm.toLowerCase());
       const emailMatch = log.adminEmail?.toLowerCase().includes(searchTerm.toLowerCase());
       const actionMatch = log.action?.toLowerCase().includes(searchTerm.toLowerCase());
@@ -38,10 +27,13 @@ export default function AuditLogs() {
 
       return matchesSearch && matchesRole;
     });
-  }, [searchTerm, roleFilter, groupedLogs]);
+  }, [searchTerm, roleFilter, logs]);
 
   const getAdminActivities = (adminEmail) => {
-    return logs.filter((log) => log.adminEmail === adminEmail).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    const adminLog = logs.find((log) => log.adminEmail === adminEmail);
+    // If there is no history array (legacy logs), wrap individual log in an array
+    if (adminLog && !adminLog.history) return [adminLog];
+    return adminLog?.history || [];
   };
 
   const formatDate = (timestamp) => {
@@ -211,7 +203,7 @@ export default function AuditLogs() {
                         </span>
                         <span className="flex items-center gap-1">
                           <Clock className="w-3 h-3 md:w-4 md:h-4 flex-shrink-0" />
-                          <span className="truncate">{formatDate(activity.createdAt || activity.timestamp)}</span>
+                          <span className="truncate">{formatDate(activity.timestamp || activity.createdAt)}</span>
                         </span>
                       </div>
                       {activity.details && Object.keys(activity.details).length > 0 && (
