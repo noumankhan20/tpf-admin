@@ -29,7 +29,7 @@ import {
     Building2,
     MoreVertical,
 } from 'lucide-react';
-import { useGetEmployeesQuery, useGetSalaryQuery, useGetExpensesQuery, useGetEmployeeLoginLogoutTimeQuery } from '@/utils/slices/adminApiSlice';
+import { useGetEmployeesQuery, useGetAdminSalaryQuery, useGetAdminExpensesQuery, useGetEmployeeLoginLogoutTimeQuery } from '@/utils/slices/adminApiSlice';
 import DetailsModal from "./popupModal"
 
 export default function EmployeeManagement() {
@@ -48,10 +48,10 @@ export default function EmployeeManagement() {
     const [selectedExpense, setSelectedExpense] = useState(null);
 
     const { data, error, isLoading } = useGetEmployeesQuery();
-    const { data: salaryData, isLoading: isSalaryLoading, error: salaryError } = useGetSalaryQuery(
+    const { data: salaryData, isLoading: isSalaryLoading, error: salaryError } = useGetAdminSalaryQuery(
         selectedEmployee ? selectedEmployee._id : null
     );
-    const { data: expensesData } = useGetExpensesQuery(selectedEmployee ? selectedEmployee._id : null);
+    const { data: expensesData } = useGetAdminExpensesQuery(selectedEmployee ? selectedEmployee._id : null);
     const { data: loginLogoutData, error: loginLogoutError, isLoading: loginLogoutLoading } = useGetEmployeeLoginLogoutTimeQuery(
         selectedEmployee && selectedEmployee._id ? selectedEmployee._id : undefined
     );
@@ -291,8 +291,8 @@ export default function EmployeeManagement() {
                                 key={tab}
                                 onClick={() => setActiveTab(tab)}
                                 className={`flex-1 px-6 py-4 text-sm font-semibold transition-all duration-200 relative ${activeTab === tab
-                                        ? "text-blue-600 bg-blue-50"
-                                        : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
+                                    ? "text-blue-600 bg-blue-50"
+                                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
                                     }`}
                             >
                                 {activeTab === tab && (
@@ -652,8 +652,8 @@ export default function EmployeeManagement() {
                                             key={page}
                                             onClick={() => handlePageChange(page)}
                                             className={`w-10 h-10 rounded-xl transition-all duration-200 font-semibold ${currentPage === page
-                                                    ? 'bg-blue-600 text-white shadow-lg'
-                                                    : 'bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 hover:shadow-md'
+                                                ? 'bg-blue-600 text-white shadow-lg'
+                                                : 'bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 hover:shadow-md'
                                                 }`}
                                         >
                                             {page}
