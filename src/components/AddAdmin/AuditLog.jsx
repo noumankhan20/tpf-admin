@@ -15,8 +15,19 @@ export default function AuditLogs() {
 
   const uniqueRoles = ["All", ...new Set(logs.flatMap((log) => log.role || []))];
 
+  const groupedLogs = useMemo(() => {
+    const groups = {};
+    logs.forEach((log) => {
+      const email = log.adminEmail || 'unknown';
+      if (!groups[email] || new Date(log.createdAt || log.timestamp) > new Date(groups[email].createdAt || groups[email].timestamp)) {
+        groups[email] = log;
+      }
+    });
+    return Object.values(groups).sort((a, b) => new Date(b.createdAt || b.timestamp) - new Date(a.createdAt || a.timestamp));
+  }, [logs]);
+
   const filteredLogs = useMemo(() => {
-    return logs.filter((log) => {
+    return groupedLogs.filter((log) => {
       const nameMatch = log.adminName?.toLowerCase().includes(searchTerm.toLowerCase());
       const emailMatch = log.adminEmail?.toLowerCase().includes(searchTerm.toLowerCase());
       const actionMatch = log.action?.toLowerCase().includes(searchTerm.toLowerCase());
@@ -27,7 +38,7 @@ export default function AuditLogs() {
 
       return matchesSearch && matchesRole;
     });
-  }, [searchTerm, roleFilter, logs]);
+  }, [searchTerm, roleFilter, groupedLogs]);
 
   const getAdminActivities = (adminEmail) => {
     return logs.filter((log) => log.adminEmail === adminEmail).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
