@@ -126,7 +126,7 @@ export const MODULES = [
     id: "Document Management",
     name: "Document Management",
     icon: FileText,
-    route: "/documents",
+    route: "/documentation-management",
     category: "documentation",
     desc: "Document storage and access",
   },
