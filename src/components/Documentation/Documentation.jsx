@@ -1,0 +1,468 @@
+'use client';
+import React, { useState } from 'react';
+import { Plus, Search, Filter, Eye, Edit, Trash2, FileText, CheckCircle, XCircle, Clock, Download, TrendingUp, Calendar, Users } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+export default function Documentation() {
+  const [showFilters, setShowFilters] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const router= useRouter();
+  const [agreements, setAgreements] = useState([
+    {
+      id: 1,
+      title: 'Partnership Agreement with XYZ Foundation',
+      type: 'Partnership Agreement',
+      signingDate: '2025-12-15',
+      creationDate: '2025-12-01',
+      status: 'Active',
+      parties: 'ABC Foundation, XYZ Foundation'
+    },
+    {
+      id: 2,
+      title: 'Service Agreement for IT Infrastructure',
+      type: 'Service Agreement',
+      signingDate: '2025-11-20',
+      creationDate: '2025-11-10',
+      status: 'Draft',
+      parties: 'ABC Foundation, Tech Solutions Ltd'
+    },
+    {
+      id: 3,
+      title: 'MoU with Government Department',
+      type: 'MoU',
+      signingDate: '2024-06-30',
+      creationDate: '2024-06-15',
+      status: 'Expired',
+      parties: 'ABC Foundation, Ministry of Education'
+    },
+    {
+      id: 4,
+      title: 'Contract for Educational Program',
+      type: 'Contract',
+      signingDate: '2025-08-10',
+      creationDate: '2025-08-01',
+      status: 'Terminated',
+      parties: 'ABC Foundation, Education Corp'
+    },
+    {
+      id: 5,
+      title: 'NDA with Research Institute',
+      type: 'NDA',
+      signingDate: '2025-10-05',
+      creationDate: '2025-09-25',
+      status: 'Active',
+      parties: 'ABC Foundation, Research Institute'
+    }
+  ]);
+
+  const stats = [
+    {
+      title: 'Draft Agreements',
+      count: agreements.filter(a => a.status === 'Draft').length,
+      icon: FileText,
+      color: 'from-blue-500 to-blue-600',
+      lightColor: 'bg-blue-50',
+      textColor: 'text-blue-600',
+    },
+    {
+      title: 'Active Agreements',
+      count: agreements.filter(a => a.status === 'Active').length,
+      icon: CheckCircle,
+      color: 'from-emerald-500 to-emerald-600',
+      lightColor: 'bg-emerald-50',
+      textColor: 'text-emerald-600',
+    },
+    {
+      title: 'Terminated',
+      count: agreements.filter(a => a.status === 'Terminated').length,
+      icon: XCircle,
+      color: 'from-red-500 to-red-600',
+      lightColor: 'bg-red-50',
+      textColor: 'text-red-600',
+    },
+    {
+      title: 'Expired',
+      count: agreements.filter(a => a.status === 'Expired').length,
+      icon: Clock,
+      color: 'from-orange-500 to-orange-600',
+      lightColor: 'bg-orange-50',
+      textColor: 'text-orange-600',
+    }
+  ];
+
+  const getStatusBadge = (status) => {
+    const statusStyles = {
+      Draft: 'bg-blue-100 text-blue-700 border-blue-200',
+      Active: 'bg-emerald-100 text-emerald-700 border-emerald-200',
+      Expired: 'bg-orange-100 text-orange-700 border-orange-200',
+      Terminated: 'bg-red-100 text-red-700 border-red-200',
+      Signed: 'bg-purple-100 text-purple-700 border-purple-200',
+      Cancelled: 'bg-gray-100 text-gray-700 border-gray-200'
+    };
+    return statusStyles[status] || 'bg-gray-100 text-gray-700 border-gray-200';
+  };
+
+  const handleView = (id) => {
+    console.log('View agreement:', id);
+  };
+
+  const handleEdit = (id) => {
+    console.log('Edit agreement:', id);
+  };
+
+  const handleDelete = (id) => {
+    if (window.confirm('Are you sure you want to delete this agreement?')) {
+      setAgreements(agreements.filter(a => a.id !== id));
+    }
+  };
+
+  const handleCreateNew = () => {
+    router.push('/documentation-management/add-agreement')
+    console.log('Navigate to AddAgreement.jsx');
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-emerald-50">
+      {/* Enhanced Header */}
+      <header className="bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-500 text-white shadow-2xl relative overflow-hidden">
+        {/* Decorative background pattern */}
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute top-0 left-0 w-96 h-96 bg-white rounded-full mix-blend-overlay filter blur-3xl -translate-x-1/2 -translate-y-1/2"></div>
+          <div className="absolute bottom-0 right-0 w-96 h-96 bg-white rounded-full mix-blend-overlay filter blur-3xl translate-x-1/2 translate-y-1/2"></div>
+        </div>
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+            <div className="flex-1">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="p-3 bg-white/20 backdrop-blur-sm rounded-xl">
+                  <FileText className="w-8 h-8" />
+                </div>
+                <div>
+                  <h1 className="text-3xl md:text-4xl font-bold tracking-tight">
+                    Documentation Management
+                  </h1>
+                  <p className="text-emerald-100 text-sm md:text-base mt-1">
+                    MoU & Contract Management System
+                  </p>
+                </div>
+              </div>
+              <p className="text-emerald-50 max-w-2xl">
+                Centralized hub for managing agreements, contracts, and memorandums with powerful tracking and analytics
+              </p>
+            </div>
+            
+            <div className="flex flex-wrap gap-3">
+              <button
+                onClick={handleCreateNew}
+                className="flex items-center cursor-pointer gap-2 px-6 py-3 bg-white text-emerald-600 rounded-xl hover:bg-emerald-50 transition-all font-semibold shadow-xl hover:shadow-2xl hover:scale-105"
+              >
+                <Plus className="w-5 h-5" />
+                Create Agreement
+              </button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Enhanced Stats Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          {stats.map((stat, index) => {
+            const Icon = stat.icon;
+            return (
+              <div
+                key={index}
+                className="group bg-white rounded-2xl shadow-lg border border-gray-100 p-6 hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 relative overflow-hidden"
+              >
+                {/* Gradient background on hover */}
+                <div className={`absolute inset-0 bg-gradient-to-br ${stat.color} opacity-0 group-hover:opacity-5 transition-opacity`}></div>
+                
+                <div className="relative z-10">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className={`${stat.lightColor} p-3 rounded-xl group-hover:scale-110 transition-transform`}>
+                      <Icon className={`w-7 h-7 ${stat.textColor}`} />
+                    </div>
+                  </div>
+                  <p className="text-sm font-medium text-gray-600 mb-1">
+                    {stat.title}
+                  </p>
+                  <p className="text-4xl font-bold text-gray-900">
+                    {stat.count}
+                  </p>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Enhanced Search & Actions Bar */}
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 mb-6">
+          <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
+            <div className="flex flex-col md:flex-row gap-4 flex-1 w-full">
+              <div className="flex-1 relative group">
+                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5 group-focus-within:text-emerald-500 transition-colors" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search agreements, parties, or reference numbers..."
+                  className="w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-50 transition-all"
+                />
+              </div>
+              <button
+                onClick={() => setShowFilters(!showFilters)}
+                className={`flex items-center gap-2 px-6 py-3 border-2 rounded-xl transition-all font-medium ${
+                  showFilters 
+                    ? 'bg-emerald-50 border-emerald-500 text-emerald-600' 
+                    : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                <Filter className="w-5 h-5" />
+                Filters
+                {showFilters && <span className="text-xs bg-emerald-500 text-white rounded-full w-5 h-5 flex items-center justify-center">✓</span>}
+              </button>
+            </div>
+          </div>
+
+          {/* Enhanced Filter Panel */}
+          {showFilters && (
+            <div className="mt-6 pt-6 border-t-2 border-gray-100 animate-slideDown">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Agreement Type
+                  </label>
+                  <select className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-50 transition-all bg-white">
+                    <option>All Types</option>
+                    <option>MoU</option>
+                    <option>Contract</option>
+                    <option>Service Agreement</option>
+                    <option>Partnership Agreement</option>
+                    <option>NDA</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Status
+                  </label>
+                  <select className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-50 transition-all bg-white">
+                    <option>All Statuses</option>
+                    <option>Draft</option>
+                    <option>Signed</option>
+                    <option>Active</option>
+                    <option>Expired</option>
+                    <option>Terminated</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    From Date
+                  </label>
+                  <input
+                    type="date"
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-50 transition-all"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    To Date
+                  </label>
+                  <input
+                    type="date"
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-50 transition-all"
+                  />
+                </div>
+              </div>
+              <div className="mt-4 flex gap-3">
+                <button className="px-6 py-2 bg-emerald-500 text-white rounded-xl hover:bg-emerald-600 transition-all font-medium">
+                  Apply Filters
+                </button>
+                <button 
+                  onClick={() => setShowFilters(false)}
+                  className="px-6 py-2 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-all font-medium"
+                >
+                  Clear All
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Enhanced Agreements Table */}
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gradient-to-r from-gray-50 to-gray-100 border-b-2 border-gray-200">
+                <tr>
+                  <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                    Agreement Title
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                    Type
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                    Parties
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                    Signing Date
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                    Created
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-100">
+                {agreements.length === 0 ? (
+                  <tr>
+                    <td colSpan="7" className="px-6 py-16 text-center">
+                      <div className="flex flex-col items-center justify-center">
+                        <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                          <FileText className="w-10 h-10 text-gray-400" />
+                        </div>
+                        <p className="text-xl font-semibold text-gray-900 mb-2">No agreements found</p>
+                        <p className="text-sm text-gray-500 mb-6">Create your first agreement to get started</p>
+                        <button 
+                          onClick={handleCreateNew}
+                          className="px-6 py-3 bg-emerald-500 text-white rounded-xl hover:bg-emerald-600 transition-all font-medium shadow-lg"
+                        >
+                          Create Agreement
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ) : (
+                  agreements.map((agreement) => (
+                    <tr key={agreement.id} className="hover:bg-emerald-50/50 transition-colors group">
+                      <td className="px-6 py-4">
+                        <div className="text-sm font-semibold text-gray-900 group-hover:text-emerald-600 transition-colors">
+                          {agreement.title}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-600 font-medium">{agreement.type}</div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="text-sm text-gray-600 max-w-xs truncate" title={agreement.parties}>
+                          {agreement.parties}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-600 font-medium">
+                          {new Date(agreement.signingDate).toLocaleDateString('en-GB')}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-500">
+                          {new Date(agreement.creationDate).toLocaleDateString('en-GB')}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span
+                          className={`px-3 py-1.5 inline-flex text-xs leading-5 font-bold rounded-full border ${getStatusBadge(
+                            agreement.status
+                          )}`}
+                        >
+                          {agreement.status}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => handleView(agreement.id)}
+                            className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all"
+                            title="View"
+                          >
+                            <Eye className="w-5 h-5" />
+                          </button>
+                          <button
+                            onClick={() => handleEdit(agreement.id)}
+                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                            title="Edit"
+                          >
+                            <Edit className="w-5 h-5" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(agreement.id)}
+                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                            title="Delete"
+                          >
+                            <Trash2 className="w-5 h-5" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Enhanced Pagination */}
+        {agreements.length > 0 && (
+          <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+            <div className="text-sm text-gray-600 font-medium">
+              Showing <span className="text-emerald-600 font-bold">1</span> to{' '}
+              <span className="text-emerald-600 font-bold">{agreements.length}</span> of{' '}
+              <span className="text-emerald-600 font-bold">{agreements.length}</span> results
+            </div>
+            <div className="flex gap-2">
+              <button className="px-5 py-2.5 border-2 border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                Previous
+              </button>
+              <button className="px-5 py-2.5 bg-emerald-500 text-white rounded-xl text-sm font-bold hover:bg-emerald-600 transition-all shadow-md">
+                1
+              </button>
+              <button className="px-5 py-2.5 border-2 border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition-all">
+                Next
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Enhanced Footer */}
+      <footer className="bg-gradient-to-r from-gray-900 to-gray-800 text-white py-8 px-4 mt-16">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-emerald-500 rounded-lg flex items-center justify-center">
+                <FileText className="w-6 h-6" />
+              </div>
+              <div>
+                <p className="font-semibold">Documentation Management System</p>
+                <p className="text-sm text-gray-400">Professional MoU & Contract Management</p>
+              </div>
+            </div>
+            <p className="text-sm text-gray-400">
+              © 2026 All rights reserved.
+            </p>
+          </div>
+        </div>
+      </footer>
+
+      <style jsx>{`
+        @keyframes slideDown {
+          from {
+            opacity: 0;
+            transform: translateY(-10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        
+        .animate-slideDown {
+          animation: slideDown 0.3s ease-out;
+        }
+      `}</style>
+    </div>
+  );
+}
