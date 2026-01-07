@@ -147,7 +147,7 @@ export default function Documentation() {
                 </div>
               </div>
               <p className="text-emerald-50 max-w-2xl">
-                Centralized hub for managing agreements, contracts, and memorandums with powerful tracking and analytics
+                Centralized hub for managing agreements, contracts, and memorandums with tracking 
               </p>
             </div>
             
@@ -426,26 +426,6 @@ export default function Documentation() {
           </div>
         )}
       </div>
-
-      {/* Enhanced Footer */}
-      <footer className="bg-gradient-to-r from-gray-900 to-gray-800 text-white py-8 px-4 mt-16">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-emerald-500 rounded-lg flex items-center justify-center">
-                <FileText className="w-6 h-6" />
-              </div>
-              <div>
-                <p className="font-semibold">Documentation Management System</p>
-                <p className="text-sm text-gray-400">Professional MoU & Contract Management</p>
-              </div>
-            </div>
-            <p className="text-sm text-gray-400">
-              © 2026 All rights reserved.
-            </p>
-          </div>
-        </div>
-      </footer>
 
       <style jsx>{`
         @keyframes slideDown {
