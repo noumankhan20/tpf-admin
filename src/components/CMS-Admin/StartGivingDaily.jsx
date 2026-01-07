@@ -7,6 +7,7 @@ import {
   useCreateStartGivingMutation,
   useUpdateStartGivingMutation
 } from "@/utils/slices/cms/startgivingApi";
+import { getMediaUrl } from "@/utils/media";
 
 export default function StartGivingDaily() {
   const BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
@@ -48,7 +49,7 @@ export default function StartGivingDaily() {
         buttonText: "Start Giving Daily",
       });
 
-      setImagePreview(`${BASE_URL}${section.image}`);
+      setImagePreview(getMediaUrl(section.image));
     } else {
       setMode("create");
       setBannerData(null);
@@ -131,7 +132,7 @@ export default function StartGivingDaily() {
         buttonText: "Start Giving Daily",
       });
 
-      setImagePreview(`${BASE_URL}${bannerData.image}`);
+      setImagePreview(getMediaUrl(bannerData.image));
       setImageFile(null);
     } else {
       setFormData({
@@ -147,12 +148,12 @@ export default function StartGivingDaily() {
   };
 
   if (error) {
-  return (
-    <div className="p-10 text-center text-red-500">
-      Failed to load Start Giving section
-    </div>
-  );
-}
+    return (
+      <div className="p-10 text-center text-red-500">
+        Failed to load Start Giving section
+      </div>
+    );
+  }
 
 
   return (

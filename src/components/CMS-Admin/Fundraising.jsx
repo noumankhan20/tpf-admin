@@ -27,6 +27,7 @@ import {
   PlusIcon,
 } from "lucide-react";
 import axios from "axios";
+import { getMediaUrl } from "@/utils/media";
 
 export default function FundraisingCMS() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -239,14 +240,8 @@ export default function FundraisingCMS() {
   // Helper function to get the correct image URL
   const getImageUrl = (preview, isExisting) => {
     if (!preview) return null;
-    if (isExisting) {
-      if (preview.startsWith("http")) return preview;
-      // Ensure no double slashes
-      const baseUrl = IMAGE_URL.replace(/\/$/, "");
-      const path = preview.replace(/^\//, "");
-      return `${baseUrl}/${path}`;
-    }
-    return preview;
+    if (preview.startsWith("data:") || preview.startsWith("blob:")) return preview;
+    return getMediaUrl(preview);
   };
 
   const handleCampaignSelect = (campaignId) => {
@@ -549,11 +544,11 @@ export default function FundraisingCMS() {
                       <div className="w-20 h-20 rounded-lg overflow-hidden">
                         {card.mediaType === "video" ? (
                           <video
-                            src={`${IMAGE_URL}${card.videoUrl}`}
+                            src={getMediaUrl(card.videoUrl)}
                             className="w-full h-full object-cover" />
                         ) : (
                           <img
-                            src={`${IMAGE_URL}${card.imageUrl}`}
+                            src={getMediaUrl(card.imageUrl)}
                             className="w-full h-full object-cover" />
                         )}
                       </div>

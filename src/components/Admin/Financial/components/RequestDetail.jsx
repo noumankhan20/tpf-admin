@@ -6,6 +6,7 @@ import {
 import { Badge } from './Badge';
 
 import { useGetFormByIdQuery } from '@/utils/slices/financialAidApiSlice';
+import { getMediaUrl } from '@/utils/media';
 
 export const RequestDetail = React.memo(({
     selectedForm: summaryForm, // Recieve summary from list
@@ -217,13 +218,13 @@ export const RequestDetail = React.memo(({
                                             {selectedForm.groundReport.images.map((img, idx) => (
                                                 <a
                                                     key={idx}
-                                                    href={`${baseUrl}${img}`}
+                                                    href={getMediaUrl(img)}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
                                                     className="relative aspect-square rounded-lg overflow-hidden border border-gray-200 hover:border-emerald-500 transition-all shadow-sm group"
                                                 >
                                                     <img
-                                                        src={`${baseUrl}${img}`}
+                                                        src={getMediaUrl(img)}
                                                         alt={`Verification ${idx + 1}`}
                                                         className="w-full h-full object-cover transition-transform group-hover:scale-110"
                                                     />
@@ -243,18 +244,18 @@ export const RequestDetail = React.memo(({
                     <div className="print-col-span-2">
                         <DetailSection title="Uploaded Documents" icon={<FileText className="text-blue-600" />}>
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <DocLink label="Government ID" url={selectedForm.govIdDocumentPath} backendUrl={baseUrl} />
-                                <DocLink label="Bank Statement" url={selectedForm.bankStatementPath} backendUrl={baseUrl} />
+                                <DocLink label="Government ID" url={selectedForm.govIdDocumentPath} />
+                                <DocLink label="Bank Statement" url={selectedForm.bankStatementPath} />
 
                                 {selectedForm.isOrganization && (
                                     <>
-                                        <DocLink label="80G Certificate" url={selectedForm.certification80GPath} backendUrl={baseUrl} />
-                                        <DocLink label="PAN Card Image" url={selectedForm.panCardImagePath} backendUrl={baseUrl} />
+                                        <DocLink label="80G Certificate" url={selectedForm.certification80GPath} />
+                                        <DocLink label="PAN Card Image" url={selectedForm.panCardImagePath} />
                                     </>
                                 )}
 
                                 {selectedForm.supportingDocumentsPaths?.map((path, idx) => (
-                                    <DocLink key={idx} label={`Supporting Doc ${idx + 1}`} url={path} backendUrl={baseUrl} />
+                                    <DocLink key={idx} label={`Supporting Doc ${idx + 1}`} url={path} />
                                 ))}
                             </div>
                         </DetailSection>
@@ -348,9 +349,9 @@ function Field({ label, value, icon, isLink, copyable }) {
     );
 }
 
-function DocLink({ label, url, backendUrl }) {
+function DocLink({ label, url }) {
     if (!url) return null;
-    const fullUrl = url.startsWith('http') ? url : `${backendUrl}${url}`;
+    const fullUrl = getMediaUrl(url);
     return (
         <a
             href={fullUrl}

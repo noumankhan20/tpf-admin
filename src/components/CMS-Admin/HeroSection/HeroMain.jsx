@@ -15,6 +15,7 @@ import {
     useCreateHeroMutation,
     useUpdateHeroMutation
 } from "@/utils/slices/cms/heroApi";
+import { getMediaUrl } from "@/utils/media";
 import HeroForm from "./HeroForm";
 import HeroPreview from "./HeroPreview";
 
@@ -50,7 +51,7 @@ export default function HeroSection() {
                 ...hero,
                 id: hero._id,
                 image: hero.image
-                    ? `${process.env.NEXT_PUBLIC_BACKEND_URL}${hero.image}`
+                    ? getMediaUrl(hero.image)
                     : null,
                 lastUpdated: new Date(hero.updatedAt).toLocaleDateString(),
             };
