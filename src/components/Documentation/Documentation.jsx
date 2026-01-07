@@ -2,57 +2,18 @@
 import React, { useState } from 'react';
 import { Plus, Search, Filter, Eye, Edit, Trash2, FileText, CheckCircle, XCircle, Clock, Download, TrendingUp, Calendar, Users } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useGetAgreementsQuery } from '@/utils/slices/documentationApiSlice';
+
 export default function Documentation() {
   const [showFilters, setShowFilters] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const router= useRouter();
-  const [agreements, setAgreements] = useState([
-    {
-      id: 1,
-      title: 'Partnership Agreement with XYZ Foundation',
-      type: 'Partnership Agreement',
-      signingDate: '2025-12-15',
-      creationDate: '2025-12-01',
-      status: 'Active',
-      parties: 'ABC Foundation, XYZ Foundation'
-    },
-    {
-      id: 2,
-      title: 'Service Agreement for IT Infrastructure',
-      type: 'Service Agreement',
-      signingDate: '2025-11-20',
-      creationDate: '2025-11-10',
-      status: 'Draft',
-      parties: 'ABC Foundation, Tech Solutions Ltd'
-    },
-    {
-      id: 3,
-      title: 'MoU with Government Department',
-      type: 'MoU',
-      signingDate: '2024-06-30',
-      creationDate: '2024-06-15',
-      status: 'Expired',
-      parties: 'ABC Foundation, Ministry of Education'
-    },
-    {
-      id: 4,
-      title: 'Contract for Educational Program',
-      type: 'Contract',
-      signingDate: '2025-08-10',
-      creationDate: '2025-08-01',
-      status: 'Terminated',
-      parties: 'ABC Foundation, Education Corp'
-    },
-    {
-      id: 5,
-      title: 'NDA with Research Institute',
-      type: 'NDA',
-      signingDate: '2025-10-05',
-      creationDate: '2025-09-25',
-      status: 'Active',
-      parties: 'ABC Foundation, Research Institute'
-    }
-  ]);
+  const router = useRouter();
+  
+  // RTK Query hook
+  const { data, isLoading, isError, error } = useGetAgreementsQuery();
+  
+  // Extract agreements from API response
+  const agreements = data?.data || [];
 
   const stats = [
     {
@@ -111,13 +72,18 @@ export default function Documentation() {
 
   const handleDelete = (id) => {
     if (window.confirm('Are you sure you want to delete this agreement?')) {
-      setAgreements(agreements.filter(a => a.id !== id));
+      console.log('Delete agreement:', id);
     }
   };
 
   const handleCreateNew = () => {
-    router.push('/documentation-management/add-agreement')
-    console.log('Navigate to AddAgreement.jsx');
+    router.push('/documentation-management/add-agreement');
+  };
+
+  // Format parties array to string
+  const formatParties = (parties) => {
+    if (!parties || parties.length === 0) return 'N/A';
+    return parties.join(', ');
   };
 
   return (
@@ -318,7 +284,28 @@ export default function Documentation() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-100">
-                {agreements.length === 0 ? (
+                {isLoading ? (
+                  <tr>
+                    <td colSpan="7" className="px-6 py-16 text-center">
+                      <div className="flex flex-col items-center justify-center">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-500 mb-4"></div>
+                        <p className="text-sm text-gray-500">Loading agreements...</p>
+                      </div>
+                    </td>
+                  </tr>
+                ) : isError ? (
+                  <tr>
+                    <td colSpan="7" className="px-6 py-16 text-center">
+                      <div className="flex flex-col items-center justify-center">
+                        <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mb-4">
+                          <XCircle className="w-10 h-10 text-red-500" />
+                        </div>
+                        <p className="text-xl font-semibold text-gray-900 mb-2">Error loading agreements</p>
+                        <p className="text-sm text-gray-500">{error?.data?.message || 'Something went wrong'}</p>
+                      </div>
+                    </td>
+                  </tr>
+                ) : agreements.length === 0 ? (
                   <tr>
                     <td colSpan="7" className="px-6 py-16 text-center">
                       <div className="flex flex-col items-center justify-center">
@@ -341,25 +328,25 @@ export default function Documentation() {
                     <tr key={agreement.id} className="hover:bg-emerald-50/50 transition-colors group">
                       <td className="px-6 py-4">
                         <div className="text-sm font-semibold text-gray-900 group-hover:text-emerald-600 transition-colors">
-                          {agreement.title}
+                          {agreement.agreementTitle}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-600 font-medium">{agreement.type}</div>
+                        <div className="text-sm text-gray-600 font-medium">{agreement.agreementType}</div>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="text-sm text-gray-600 max-w-xs truncate" title={agreement.parties}>
-                          {agreement.parties}
+                        <div className="text-sm text-gray-600 max-w-xs truncate" title={formatParties(agreement.parties)}>
+                          {formatParties(agreement.parties)}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-600 font-medium">
-                          {new Date(agreement.signingDate).toLocaleDateString('en-GB')}
+                          {agreement.signingDate ? new Date(agreement.signingDate).toLocaleDateString('en-GB') : 'N/A'}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-500">
-                          {new Date(agreement.creationDate).toLocaleDateString('en-GB')}
+                          {new Date(agreement.createdAt).toLocaleDateString('en-GB')}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">

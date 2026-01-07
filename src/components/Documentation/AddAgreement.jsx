@@ -1,21 +1,44 @@
 'use client';
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { Plus, X, Upload, ArrowLeft, Image as ImageIcon, Check, FileText, Calendar, Users, FileCheck, AlertCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useCreateAgreementMutation } from '@/utils/slices/documentationApiSlice';
+
 export default function AddAgreement() {
-  const [currentStep, setCurrentStep] = useState(1);
-  const [agreementType, setAgreementType] = useState('');
-  const [parties, setParties] = useState([
-    { id: 1, name: '', type: '', signatory: '', email: '', phone: '', signatureType: 'upload', signatureFile: null, signatureCanvas: null },
-    { id: 2, name: '', type: '', signatory: '', email: '', phone: '', signatureType: 'upload', signatureFile: null, signatureCanvas: null }
-  ]);
   const router = useRouter();
+  const [createAgreement, { isLoading }] = useCreateAgreementMutation();
+
+  // Form state
+  const [agreementTitle, setAgreementTitle] = useState("");
+  const [agreementType, setAgreementType] = useState('');
+  const [customAgreementType, setCustomAgreementType] = useState('');
+  const [currentStep, setCurrentStep] = useState(1);
+  
+  const [dates, setDates] = useState({
+    creationDate: "",
+    signingDate: "",
+    startDate: "",
+    endDate: "",
+  });
+
+  const [scope, setScope] = useState("");
+  const [keyTerms, setKeyTerms] = useState("");
+  const [status, setStatus] = useState("");
+  const [financialValue, setFinancialValue] = useState("");
+
+  const [parties, setParties] = useState([
+    { id: 1, name: '', type: '', email: '', phone: '', signatureType: 'upload', signatureFile: null },
+    { id: 2, name: '', type: '', email: '', phone: '', signatureType: 'upload', signatureFile: null }
+  ]);
+
   const [uploadedFiles, setUploadedFiles] = useState({
     signed: [],
     supporting: [],
     amendments: []
   });
+
   const [isDrawing, setIsDrawing] = useState({});
+  const [error, setError] = useState('');
   const canvasRefs = useRef({});
 
   const steps = [
@@ -25,17 +48,16 @@ export default function AddAgreement() {
     { num: 4, title: 'Documents', icon: FileCheck }
   ];
 
+  // Party management
   const addParty = () => {
-    setParties([...parties, { 
-      id: Date.now(), 
-      name: '', 
-      type: '', 
-      signatory: '', 
-      email: '', 
+    setParties([...parties, {
+      id: Date.now(),
+      name: '',
+      type: '',
+      email: '',
       phone: '',
       signatureType: 'upload',
-      signatureFile: null,
-      signatureCanvas: null
+      signatureFile: null
     }]);
   };
 
@@ -50,16 +72,17 @@ export default function AddAgreement() {
   };
 
   const updateParty = (id, field, value) => {
-    setParties(parties.map(party => 
+    setParties(parties.map(party =>
       party.id === id ? { ...party, [field]: value } : party
     ));
   };
 
+  // Signature handling
   const handleSignatureTypeChange = (id, type) => {
-    setParties(parties.map(party => 
+    setParties(parties.map(party =>
       party.id === id ? { ...party, signatureType: type, signatureFile: null } : party
     ));
-    
+
     if (type === 'draw') {
       setTimeout(() => {
         const canvas = canvasRefs.current[id];
@@ -79,28 +102,42 @@ export default function AddAgreement() {
   };
 
   const handleSignatureFileUpload = (id, e) => {
-    const file = e.target.files[0];
-    if (file && file.size <= 2 * 1024 * 1024) {
-      setParties(parties.map(party => 
-        party.id === id ? { ...party, signatureFile: file } : party
-      ));
-    } else if (file) {
-      alert('File size must be less than 2MB');
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      setError('Signature file size must be less than 2MB');
+      return;
     }
+
+    setError('');
+    setParties(parties.map(party =>
+      party.id === id ? { ...party, signatureFile: file } : party
+    ));
   };
 
   const getCanvasCoordinates = (canvas, e) => {
     const rect = canvas.getBoundingClientRect();
     const scaleX = canvas.width / rect.width;
     const scaleY = canvas.height / rect.height;
-    
-    const clientX = e.clientX || (e.touches && e.touches[0]?.clientX);
-    const clientY = e.clientY || (e.touches && e.touches[0]?.clientY);
-    
+
+    const clientX = e.clientX || e.touches?.[0]?.clientX;
+    const clientY = e.clientY || e.touches?.[0]?.clientY;
+
     return {
       x: (clientX - rect.left) * scaleX / 2,
       y: (clientY - rect.top) * scaleY / 2
     };
+  };
+
+  const dataURLtoFile = (dataUrl, filename) => {
+    const arr = dataUrl.split(",");
+    const mime = arr[0].match(/:(.*?);/)[1];
+    const bstr = atob(arr[1]);
+    let n = bstr.length;
+    const u8arr = new Uint8Array(n);
+    while (n--) u8arr[n] = bstr.charCodeAt(n);
+    return new File([u8arr], filename, { type: mime });
   };
 
   const startDrawing = (id, e) => {
@@ -126,7 +163,16 @@ export default function AddAgreement() {
   };
 
   const stopDrawing = (id) => {
-    setIsDrawing({ ...isDrawing, [id]: false });
+    setIsDrawing((prev) => ({ ...prev, [id]: false }));
+    const canvas = canvasRefs.current[id];
+    if (!canvas) return;
+
+    const dataUrl = canvas.toDataURL("image/png");
+    const file = dataURLtoFile(dataUrl, `signature-${id}.png`);
+
+    setParties((prev) =>
+      prev.map((p) => p.id === id ? { ...p, signatureFile: file } : p)
+    );
   };
 
   const clearSignature = (id) => {
@@ -134,26 +180,32 @@ export default function AddAgreement() {
     if (canvas) {
       const ctx = canvas.getContext('2d');
       ctx.clearRect(0, 0, canvas.width, canvas.height);
+      setParties(parties.map(party =>
+        party.id === id ? { ...party, signatureFile: null } : party
+      ));
     }
   };
 
+  // File upload handling
   const handleFileUpload = (category, e) => {
-    const files = Array.from(e.target.files);
-    const validFiles = files.filter(file => {
-      if (category === 'signed') {
-        return file.size <= 10 * 1024 * 1024;
-      }
-      return file.size <= 5 * 1024 * 1024;
-    });
+    const files = Array.from(e.target.files || []);
+    const maxSize = category === 'signed' ? 10 * 1024 * 1024 : 5 * 1024 * 1024;
     
+    const validFiles = files.filter(file => file.size <= maxSize);
+
     if (validFiles.length !== files.length) {
-      alert('Some files were too large and were not uploaded');
+      setError(`Some files were too large. Maximum size: ${category === 'signed' ? '10MB' : '5MB'}`);
+    } else {
+      setError('');
     }
-    
+
     setUploadedFiles(prev => ({
       ...prev,
       [category]: [...prev[category], ...validFiles]
     }));
+
+    // Reset input
+    e.target.value = '';
   };
 
   const removeFile = (category, index) => {
@@ -163,32 +215,153 @@ export default function AddAgreement() {
     }));
   };
 
-  const handleBack = () => {
-    router.push('/documentation-management')
-    console.log('Navigate back to Documentation Management');
+  // Validation
+  const validateStep = (step) => {
+    switch (step) {
+      case 1:
+        if (!agreementTitle.trim()) {
+          setError('Agreement title is required');
+          return false;
+        }
+        if (!agreementType) {
+          setError('Agreement type is required');
+          return false;
+        }
+        if (agreementType === 'Other' && !customAgreementType.trim()) {
+          setError('Please specify the agreement type');
+          return false;
+        }
+        break;
+
+      case 2:
+        for (let i = 0; i < parties.length; i++) {
+          const party = parties[i];
+          if (!party.name.trim()) {
+            setError(`Party ${i + 1}: Name is required`);
+            return false;
+          }
+          if (!party.type) {
+            setError(`Party ${i + 1}: Type is required`);
+            return false;
+          }
+          if (!party.email.trim() || !party.email.includes('@')) {
+            setError(`Party ${i + 1}: Valid email is required`);
+            return false;
+          }
+          if (!party.phone.trim()) {
+            setError(`Party ${i + 1}: Phone is required`);
+            return false;
+          }
+          if (!party.signatureFile) {
+            setError(`Party ${i + 1}: Signature is required`);
+            return false;
+          }
+        }
+        break;
+
+      case 3:
+        if (!dates.creationDate || !dates.signingDate || !dates.startDate || !dates.endDate) {
+          setError('All dates are required');
+          return false;
+        }
+        if (!scope.trim()) {
+          setError('Purpose/Scope is required');
+          return false;
+        }
+        if (!keyTerms.trim()) {
+          setError('Key Obligations are required');
+          return false;
+        }
+        if (!status) {
+          setError('Status is required');
+          return false;
+        }
+        break;
+
+      case 4:
+        if (uploadedFiles.signed.length === 0) {
+          setError('Signed agreement document is required');
+          return false;
+        }
+        break;
+    }
+
+    setError('');
+    return true;
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    console.log('Form submitted with data:', { parties, uploadedFiles });
-  };
-
+  // Navigation
   const nextStep = () => {
+    if (!validateStep(currentStep)) return;
     if (currentStep < 4) setCurrentStep(currentStep + 1);
   };
 
   const prevStep = () => {
-    if (currentStep > 1) setCurrentStep(currentStep - 1);
+    if (currentStep > 1) {
+      setCurrentStep(currentStep - 1);
+      setError('');
+    }
+  };
+
+  const handleBack = () => {
+    router.push('/documentation-management');
+  };
+
+  // Form submission
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!validateStep(4)) return;
+
+    const formData = new FormData();
+
+    // Basic info
+    formData.append("agreementTitle", agreementTitle);
+    formData.append("agreementType", agreementType === 'Other' ? customAgreementType : agreementType);
+
+    // Parties
+    const cleanedParties = parties.map(({ signatureFile, ...rest }) => rest);
+    formData.append("parties", JSON.stringify(cleanedParties));
+
+    // Dates
+    formData.append("dates", JSON.stringify(dates));
+
+    // Terms
+    formData.append("scope", scope);
+    formData.append("keyTerms", keyTerms);
+    formData.append("status", status);
+    if (financialValue) formData.append("financialValue", financialValue);
+
+    // Documents
+    uploadedFiles.signed.forEach((file) => formData.append("signed", file));
+    uploadedFiles.supporting.forEach((file) => formData.append("supporting", file));
+    uploadedFiles.amendments.forEach((file) => formData.append("amendments", file));
+
+    // Signatures
+    parties.forEach((party) => {
+      if (party.signatureFile) {
+        formData.append("signatures", party.signatureFile);
+      }
+    });
+
+    try {
+      await createAgreement(formData).unwrap();
+      router.push("/documentation-management");
+    } catch (error) {
+      console.error("Create agreement failed", error);
+      setError(error?.data?.message || "Failed to create agreement. Please try again.");
+    }
   };
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Minimal Header */}
+      {/* Header */}
       <header className="bg-white border-b border-gray-200">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <button
             onClick={handleBack}
-            className="flex items-center gap-2 cursor-pointer text-gray-600 hover:text-gray-900 mb-6 transition-colors group"
+            disabled={isLoading}
+            className="flex items-center gap-2 cursor-pointer text-gray-600 hover:text-gray-900 mb-6 transition-colors group disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
             <span className="text-sm font-medium">Back to Agreements</span>
@@ -200,7 +373,7 @@ export default function AddAgreement() {
         </div>
       </header>
 
-      {/* Minimal Progress Steps */}
+      {/* Progress Steps */}
       <div className="bg-white border-b border-gray-100">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex items-center justify-between">
@@ -208,16 +381,12 @@ export default function AddAgreement() {
               const Icon = step.icon;
               const isActive = currentStep === step.num;
               const isCompleted = currentStep > step.num;
-              
+
               return (
                 <React.Fragment key={step.num}>
                   <div className="flex flex-col items-center flex-1">
                     <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium transition-all ${
-                      isActive 
-                        ? 'bg-emerald-500 text-white' 
-                        : isCompleted 
-                        ? 'bg-emerald-100 text-emerald-600' 
-                        : 'bg-gray-100 text-gray-400'
+                      isActive ? 'bg-emerald-500 text-white' : isCompleted ? 'bg-emerald-100 text-emerald-600' : 'bg-gray-100 text-gray-400'
                     }`}>
                       {isCompleted ? <Check className="w-5 h-5" /> : <Icon className="w-5 h-5" />}
                     </div>
@@ -226,9 +395,7 @@ export default function AddAgreement() {
                     </span>
                   </div>
                   {index < steps.length - 1 && (
-                    <div className={`flex-1 h-0.5 mx-4 transition-all ${
-                      currentStep > step.num ? 'bg-emerald-500' : 'bg-gray-200'
-                    }`} />
+                    <div className={`flex-1 h-0.5 mx-4 transition-all ${currentStep > step.num ? 'bg-emerald-500' : 'bg-gray-200'}`} />
                   )}
                 </React.Fragment>
               );
@@ -237,12 +404,36 @@ export default function AddAgreement() {
         </div>
       </div>
 
+      {/* Error Message */}
+      {error && (
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-medium text-red-800">Validation Error</p>
+              <p className="text-sm text-red-600 mt-1">{error}</p>
+            </div>
+            <button
+              onClick={() => setError('')}
+              className="ml-auto p-1 hover:bg-red-100 rounded transition-colors"
+            >
+              <X className="w-4 h-4 text-red-500" />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Main Form */}
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={(e) => {
+          e.preventDefault();
+          if (currentStep === 4) {
+            handleSubmit(e);
+          }
+        }}>
           {/* Step 1: Basic Information */}
           {currentStep === 1 && (
-            <div className="bg-white rounded-lg border border-gray-200 overflow-hidden animate-fadeIn">
+            <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
               <div className="px-8 py-6 border-b border-gray-100">
                 <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                   <FileText className="w-5 h-5 text-emerald-500" />
@@ -257,7 +448,10 @@ export default function AddAgreement() {
                   <input
                     type="text"
                     required
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all"
+                    value={agreementTitle}
+                    onChange={(e) => setAgreementTitle(e.target.value)}
+                    disabled={isLoading}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all disabled:bg-gray-100 disabled:cursor-not-allowed"
                     placeholder="Enter a descriptive title for the agreement"
                   />
                 </div>
@@ -266,11 +460,12 @@ export default function AddAgreement() {
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Agreement Type <span className="text-red-500">*</span>
                     </label>
-                    <select 
+                    <select
                       required
                       value={agreementType}
                       onChange={(e) => setAgreementType(e.target.value)}
-                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all bg-white"
+                      disabled={isLoading}
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all bg-white disabled:bg-gray-100 disabled:cursor-not-allowed"
                     >
                       <option value="">Select type</option>
                       <option>MoU</option>
@@ -281,26 +476,19 @@ export default function AddAgreement() {
                       <option>Other</option>
                     </select>
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Reference Number
-                    </label>
-                    <input
-                      type="text"
-                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all"
-                      placeholder="AUTO-GEN-001 or manual entry"
-                    />
-                  </div>
                 </div>
                 {agreementType === 'Other' && (
-                  <div className="animate-fadeIn">
+                  <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Please specify agreement type <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="text"
                       required
-                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all"
+                      value={customAgreementType}
+                      onChange={(e) => setCustomAgreementType(e.target.value)}
+                      disabled={isLoading}
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all disabled:bg-gray-100 disabled:cursor-not-allowed"
                       placeholder="Enter agreement type"
                     />
                   </div>
@@ -311,7 +499,7 @@ export default function AddAgreement() {
 
           {/* Step 2: Parties Involved */}
           {currentStep === 2 && (
-            <div className="space-y-6 animate-fadeIn">
+            <div className="space-y-6">
               <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
                 <div className="px-8 py-6 border-b border-gray-100 flex justify-between items-center">
                   <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
@@ -321,7 +509,8 @@ export default function AddAgreement() {
                   <button
                     type="button"
                     onClick={addParty}
-                    className="flex items-center gap-2 px-4 py-2 text-sm bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition-colors font-medium"
+                    disabled={isLoading}
+                    className="flex items-center gap-2 px-4 py-2 text-sm bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <Plus className="w-4 h-4" />
                     Add Party
@@ -344,7 +533,8 @@ export default function AddAgreement() {
                           <button
                             type="button"
                             onClick={() => removeParty(party.id)}
-                            className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-all"
+                            disabled={isLoading}
+                            className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             <X className="w-5 h-5" />
                           </button>
@@ -361,7 +551,8 @@ export default function AddAgreement() {
                             required
                             value={party.name}
                             onChange={(e) => updateParty(party.id, 'name', e.target.value)}
-                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all bg-white"
+                            disabled={isLoading}
+                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all bg-white disabled:bg-gray-100 disabled:cursor-not-allowed"
                             placeholder="Enter party name"
                           />
                         </div>
@@ -369,11 +560,12 @@ export default function AddAgreement() {
                           <label className="block text-sm font-medium text-gray-700 mb-2">
                             Party Type <span className="text-red-500">*</span>
                           </label>
-                          <select 
+                          <select
                             required
                             value={party.type}
                             onChange={(e) => updateParty(party.id, 'type', e.target.value)}
-                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all bg-white"
+                            disabled={isLoading}
+                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all bg-white disabled:bg-gray-100 disabled:cursor-not-allowed"
                           >
                             <option value="">Select type</option>
                             <option>Foundation</option>
@@ -392,7 +584,8 @@ export default function AddAgreement() {
                             required
                             value={party.email}
                             onChange={(e) => updateParty(party.id, 'email', e.target.value)}
-                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all bg-white"
+                            disabled={isLoading}
+                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all bg-white disabled:bg-gray-100 disabled:cursor-not-allowed"
                             placeholder="email@example.com"
                           />
                         </div>
@@ -405,26 +598,26 @@ export default function AddAgreement() {
                             required
                             value={party.phone}
                             onChange={(e) => updateParty(party.id, 'phone', e.target.value)}
-                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all bg-white"
+                            disabled={isLoading}
+                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all bg-white disabled:bg-gray-100 disabled:cursor-not-allowed"
                             placeholder="+91 XXXXX XXXXX"
                           />
                         </div>
                       </div>
 
-                      {/* Minimal Signature Section */}
+                      {/* Signature Section */}
                       <div className="bg-white rounded-lg border border-gray-200 p-6">
                         <label className="block text-sm font-medium text-gray-700 mb-4">
                           Signature <span className="text-red-500">*</span>
                         </label>
-                        
+
                         <div className="flex gap-2 mb-6">
                           <button
                             type="button"
                             onClick={() => handleSignatureTypeChange(party.id, 'upload')}
-                            className={`flex-1 py-2.5 px-4 rounded-lg text-sm font-medium transition-all ${
-                              party.signatureType === 'upload'
-                                ? 'bg-emerald-500 text-white'
-                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                            disabled={isLoading}
+                            className={`flex-1 py-2.5 px-4 rounded-lg text-sm font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
+                              party.signatureType === 'upload' ? 'bg-emerald-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                             }`}
                           >
                             <ImageIcon className="w-4 h-4 inline mr-2" />
@@ -433,10 +626,9 @@ export default function AddAgreement() {
                           <button
                             type="button"
                             onClick={() => handleSignatureTypeChange(party.id, 'draw')}
-                            className={`flex-1 py-2.5 px-4 rounded-lg text-sm font-medium transition-all ${
-                              party.signatureType === 'draw'
-                                ? 'bg-emerald-500 text-white'
-                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                            disabled={isLoading}
+                            className={`flex-1 py-2.5 px-4 rounded-lg text-sm font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
+                              party.signatureType === 'draw' ? 'bg-emerald-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                             }`}
                           >
                             ✍️ Draw Signature
@@ -447,22 +639,21 @@ export default function AddAgreement() {
                           <div>
                             <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-emerald-500 hover:bg-gray-50 transition-all cursor-pointer">
                               <Upload className="mx-auto w-10 h-10 text-gray-400 mb-3" />
-                              <p className="text-sm font-medium text-gray-700 mb-1">
-                                Upload signature image
-                              </p>
-                              <p className="text-xs text-gray-500 mb-4">
-                                PNG, JPG - Max 2MB
-                              </p>
+                              <p className="text-sm font-medium text-gray-700 mb-1">Upload signature image</p>
+                              <p className="text-xs text-gray-500 mb-4">PNG, JPG - Max 2MB</p>
                               <input
                                 type="file"
                                 accept="image/png,image/jpeg,image/jpg"
                                 onChange={(e) => handleSignatureFileUpload(party.id, e)}
+                                disabled={isLoading}
                                 className="hidden"
                                 id={`signature-upload-${party.id}`}
                               />
                               <label
                                 htmlFor={`signature-upload-${party.id}`}
-                                className="inline-block px-5 py-2 bg-emerald-500 text-white text-sm rounded-lg hover:bg-emerald-600 cursor-pointer transition-colors font-medium"
+                                className={`inline-block px-5 py-2 bg-emerald-500 text-white text-sm rounded-lg hover:bg-emerald-600 cursor-pointer transition-colors font-medium ${
+                                  isLoading ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''
+                                }`}
                               >
                                 Choose File
                               </label>
@@ -473,14 +664,13 @@ export default function AddAgreement() {
                                   <div className="w-8 h-8 bg-emerald-500 rounded-lg flex items-center justify-center">
                                     <Check className="w-5 h-5 text-white" />
                                   </div>
-                                  <span className="text-sm text-emerald-700 font-medium">
-                                    {party.signatureFile.name}
-                                  </span>
+                                  <span className="text-sm text-emerald-700 font-medium">{party.signatureFile.name}</span>
                                 </div>
                                 <button
                                   type="button"
                                   onClick={() => updateParty(party.id, 'signatureFile', null)}
-                                  className="p-1.5 text-red-500 hover:bg-red-100 rounded transition-all"
+                                  disabled={isLoading}
+                                  className="p-1.5 text-red-500 hover:bg-red-100 rounded transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                   <X className="w-4 h-4" />
                                 </button>
@@ -522,7 +712,8 @@ export default function AddAgreement() {
                               <button
                                 type="button"
                                 onClick={() => clearSignature(party.id)}
-                                className="px-4 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
+                                disabled={isLoading}
+                                className="px-4 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                               >
                                 Clear Signature
                               </button>
@@ -543,7 +734,7 @@ export default function AddAgreement() {
 
           {/* Step 3: Dates & Terms */}
           {currentStep === 3 && (
-            <div className="space-y-6 animate-fadeIn">
+            <div className="space-y-6">
               {/* Agreement Dates */}
               <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
                 <div className="px-8 py-6 border-b border-gray-100">
@@ -561,7 +752,10 @@ export default function AddAgreement() {
                       <input
                         type="date"
                         required
-                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all"
+                        value={dates.creationDate}
+                        onChange={(e) => setDates({ ...dates, creationDate: e.target.value })}
+                        disabled={isLoading}
+                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all disabled:bg-gray-100 disabled:cursor-not-allowed"
                       />
                     </div>
                     <div>
@@ -571,7 +765,10 @@ export default function AddAgreement() {
                       <input
                         type="date"
                         required
-                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all"
+                        value={dates.signingDate}
+                        onChange={(e) => setDates({ ...dates, signingDate: e.target.value })}
+                        disabled={isLoading}
+                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all disabled:bg-gray-100 disabled:cursor-not-allowed"
                       />
                     </div>
                     <div>
@@ -581,7 +778,10 @@ export default function AddAgreement() {
                       <input
                         type="date"
                         required
-                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all"
+                        value={dates.startDate}
+                        onChange={(e) => setDates({ ...dates, startDate: e.target.value })}
+                        disabled={isLoading}
+                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all disabled:bg-gray-100 disabled:cursor-not-allowed"
                       />
                     </div>
                     <div>
@@ -591,7 +791,10 @@ export default function AddAgreement() {
                       <input
                         type="date"
                         required
-                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all"
+                        value={dates.endDate}
+                        onChange={(e) => setDates({ ...dates, endDate: e.target.value })}
+                        disabled={isLoading}
+                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all disabled:bg-gray-100 disabled:cursor-not-allowed"
                       />
                     </div>
                   </div>
@@ -609,9 +812,12 @@ export default function AddAgreement() {
                       Purpose / Scope <span className="text-red-500">*</span>
                     </label>
                     <textarea
-                      rows="4"
+                      rows="3"
                       required
-                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all resize-none"
+                      value={scope}
+                      onChange={(e) => setScope(e.target.value)}
+                      disabled={isLoading}
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all resize-none disabled:bg-gray-100 disabled:cursor-not-allowed"
                       placeholder="Describe the purpose and scope of this agreement..."
                     />
                   </div>
@@ -622,7 +828,10 @@ export default function AddAgreement() {
                     <textarea
                       rows="4"
                       required
-                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all resize-none"
+                      value={keyTerms}
+                      onChange={(e) => setKeyTerms(e.target.value)}
+                      disabled={isLoading}
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all resize-none disabled:bg-gray-100 disabled:cursor-not-allowed"
                       placeholder="List key obligations and deliverables..."
                     />
                   </div>
@@ -631,9 +840,12 @@ export default function AddAgreement() {
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         Status <span className="text-red-500">*</span>
                       </label>
-                      <select 
+                      <select
                         required
-                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all bg-white"
+                        value={status}
+                        onChange={(e) => setStatus(e.target.value)}
+                        disabled={isLoading}
+                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all bg-white disabled:bg-gray-100 disabled:cursor-not-allowed"
                       >
                         <option value="">Select status</option>
                         <option>Draft</option>
@@ -649,7 +861,10 @@ export default function AddAgreement() {
                       </label>
                       <input
                         type="number"
-                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all"
+                        value={financialValue}
+                        onChange={(e) => setFinancialValue(e.target.value)}
+                        disabled={isLoading}
+                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all disabled:bg-gray-100 disabled:cursor-not-allowed"
                         placeholder="Enter amount"
                       />
                     </div>
@@ -661,7 +876,7 @@ export default function AddAgreement() {
 
           {/* Step 4: Documents */}
           {currentStep === 4 && (
-            <div className="space-y-6 animate-fadeIn">
+            <div className="space-y-6">
               <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
                 <div className="px-8 py-6 border-b border-gray-100">
                   <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
@@ -669,7 +884,7 @@ export default function AddAgreement() {
                     Document Upload
                   </h2>
                 </div>
-                
+
                 <div className="p-8 space-y-8">
                   {/* Signed Agreement Upload */}
                   <div>
@@ -678,22 +893,21 @@ export default function AddAgreement() {
                     </label>
                     <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-emerald-500 hover:bg-gray-50 transition-all cursor-pointer">
                       <Upload className="mx-auto w-10 h-10 text-gray-400 mb-3" />
-                      <p className="text-sm font-medium text-gray-700 mb-1">
-                        Upload Signed Agreement
-                      </p>
-                      <p className="text-xs text-gray-500 mb-4">
-                        PDF, DOCX - Max 10MB
-                      </p>
+                      <p className="text-sm font-medium text-gray-700 mb-1">Upload Signed Agreement</p>
+                      <p className="text-xs text-gray-500 mb-4">PDF, DOCX - Max 10MB</p>
                       <input
                         type="file"
                         accept=".pdf,.docx"
                         onChange={(e) => handleFileUpload('signed', e)}
+                        disabled={isLoading}
                         className="hidden"
                         id="signed-upload"
                       />
                       <label
                         htmlFor="signed-upload"
-                        className="inline-block px-5 py-2 bg-emerald-500 text-white text-sm rounded-lg hover:bg-emerald-600 cursor-pointer transition-colors font-medium"
+                        className={`inline-block px-5 py-2 bg-emerald-500 text-white text-sm rounded-lg hover:bg-emerald-600 cursor-pointer transition-colors font-medium ${
+                          isLoading ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''
+                        }`}
                       >
                         Choose File
                       </label>
@@ -714,7 +928,8 @@ export default function AddAgreement() {
                             <button
                               type="button"
                               onClick={() => removeFile('signed', index)}
-                              className="p-1.5 text-red-500 hover:bg-red-100 rounded transition-all"
+                              disabled={isLoading}
+                              className="p-1.5 text-red-500 hover:bg-red-100 rounded transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                               <X className="w-4 h-4" />
                             </button>
@@ -731,22 +946,21 @@ export default function AddAgreement() {
                     </label>
                     <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-emerald-500 hover:bg-gray-50 transition-all cursor-pointer">
                       <Upload className="mx-auto w-10 h-10 text-gray-400 mb-3" />
-                      <p className="text-sm font-medium text-gray-700 mb-1">
-                        Upload Supporting Documents
-                      </p>
-                      <p className="text-xs text-gray-500 mb-4">
-                        Multiple files allowed - Max 5MB each
-                      </p>
+                      <p className="text-sm font-medium text-gray-700 mb-1">Upload Supporting Documents</p>
+                      <p className="text-xs text-gray-500 mb-4">Multiple files allowed - Max 5MB each</p>
                       <input
                         type="file"
                         multiple
                         onChange={(e) => handleFileUpload('supporting', e)}
+                        disabled={isLoading}
                         className="hidden"
                         id="supporting-upload"
                       />
                       <label
                         htmlFor="supporting-upload"
-                        className="inline-block px-5 py-2 bg-emerald-500 text-white text-sm rounded-lg hover:bg-emerald-600 cursor-pointer transition-colors font-medium"
+                        className={`inline-block px-5 py-2 bg-emerald-500 text-white text-sm rounded-lg hover:bg-emerald-600 cursor-pointer transition-colors font-medium ${
+                          isLoading ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''
+                        }`}
                       >
                         Choose Files
                       </label>
@@ -767,7 +981,8 @@ export default function AddAgreement() {
                             <button
                               type="button"
                               onClick={() => removeFile('supporting', index)}
-                              className="p-1.5 text-red-500 hover:bg-red-100 rounded transition-all"
+                              disabled={isLoading}
+                              className="p-1.5 text-red-500 hover:bg-red-100 rounded transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                               <X className="w-4 h-4" />
                             </button>
@@ -784,22 +999,21 @@ export default function AddAgreement() {
                     </label>
                     <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-emerald-500 hover:bg-gray-50 transition-all cursor-pointer">
                       <Upload className="mx-auto w-10 h-10 text-gray-400 mb-3" />
-                      <p className="text-sm font-medium text-gray-700 mb-1">
-                        Upload Amendments
-                      </p>
-                      <p className="text-xs text-gray-500 mb-4">
-                        Multiple files allowed - Max 5MB each
-                      </p>
+                      <p className="text-sm font-medium text-gray-700 mb-1">Upload Amendments</p>
+                      <p className="text-xs text-gray-500 mb-4">Multiple files allowed - Max 5MB each</p>
                       <input
                         type="file"
                         multiple
                         onChange={(e) => handleFileUpload('amendments', e)}
+                        disabled={isLoading}
                         className="hidden"
                         id="amendments-upload"
                       />
                       <label
                         htmlFor="amendments-upload"
-                        className="inline-block px-5 py-2 bg-emerald-500 text-white text-sm rounded-lg hover:bg-emerald-600 cursor-pointer transition-colors font-medium"
+                        className={`inline-block px-5 py-2 bg-emerald-500 text-white text-sm rounded-lg hover:bg-emerald-600 cursor-pointer transition-colors font-medium ${
+                          isLoading ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''
+                        }`}
                       >
                         Choose Files
                       </label>
@@ -820,7 +1034,8 @@ export default function AddAgreement() {
                             <button
                               type="button"
                               onClick={() => removeFile('amendments', index)}
-                              className="p-1.5 text-red-500 hover:bg-red-100 rounded transition-all"
+                              disabled={isLoading}
+                              className="p-1.5 text-red-500 hover:bg-red-100 rounded transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                               <X className="w-4 h-4" />
                             </button>
@@ -834,42 +1049,51 @@ export default function AddAgreement() {
             </div>
           )}
 
-          {/* Improved Navigation Buttons */}
+          {/* Navigation Buttons */}
           <div className="flex justify-between items-center gap-4 pt-8 border-t border-gray-200">
             {currentStep > 1 ? (
               <button
                 type="button"
                 onClick={prevStep}
-                className="px-5 py-2.5 text-sm border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+                disabled={isLoading}
+                className="px-5 py-2.5 text-sm border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Previous
               </button>
             ) : (
               <div></div>
             )}
-            
+
             <div className="flex gap-3 ml-auto">
-              <button
-                type="button"
-                className="px-5 py-2.5 text-sm border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
-              >
-                Save as Draft
-              </button>
-              
               {currentStep < 4 ? (
                 <button
                   type="button"
-                  onClick={nextStep}
-                  className="px-6 py-2.5 text-sm bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition-colors font-medium"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    nextStep();
+                  }}
+                  disabled={isLoading}
+                  className="px-6 py-2.5 text-sm bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Next
                 </button>
               ) : (
                 <button
                   type="submit"
-                  className="px-6 py-2.5 text-sm bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition-colors font-medium"
+                  disabled={isLoading}
+                  className="px-6 py-2.5 text-sm bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                 >
-                  Submit Agreement
+                  {isLoading ? (
+                    <>
+                      <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Submitting...
+                    </>
+                  ) : (
+                    'Submit Agreement'
+                  )}
                 </button>
               )}
             </div>
@@ -877,7 +1101,7 @@ export default function AddAgreement() {
         </form>
       </div>
 
-      {/* Minimal Footer */}
+      {/* Footer */}
       <footer className="bg-white border-t border-gray-200 py-6 px-4 mt-16">
         <div className="max-w-5xl mx-auto text-center">
           <p className="text-xs text-gray-500">
