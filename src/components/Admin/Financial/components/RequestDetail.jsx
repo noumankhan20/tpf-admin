@@ -11,7 +11,6 @@ import { getMediaUrl } from '@/utils/media';
 export const RequestDetail = React.memo(({
     selectedForm: summaryForm, // Recieve summary from list
     onOpenGroundReport,
-    baseUrl
 }) => {
     // Fetch full details
     const { data: fullFormData, isLoading: isDetailsLoading } = useGetFormByIdQuery(summaryForm?._id, {

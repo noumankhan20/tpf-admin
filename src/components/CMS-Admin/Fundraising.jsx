@@ -36,7 +36,6 @@ export default function FundraisingCMS() {
   const [searchQuery, setSearchQuery] = useState("");
   const [editingCard, setEditingCard] = useState(null);
   const API_BASE = process.env.NEXT_PUBLIC_BACKEND_API || 'http://localhost:7000/api';
-  const IMAGE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:7000';
   const [formData, setFormData] = useState({
     category: "Emergency Aid",
     isUrgent: false,

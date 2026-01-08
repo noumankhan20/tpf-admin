@@ -9,6 +9,7 @@ import {
 } from '../../utils/slices/socialMediaApiSlice';
 import { toast } from 'react-toastify';
 import { useRouter } from 'next/navigation';
+import { getMediaUrl } from '@/utils/media';
 import NotificationBell from '../Common/NotificationBell';
 
 const formatDate = (dateStr) => {
@@ -20,15 +21,7 @@ const formatDate = (dateStr) => {
     });
 };
 
-const getImageUrl = (path) => {
-    if (!path) return '';
-    if (path.startsWith('http')) return path;
-    const baseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://api.anatech.fun';
-    // Ensure clean concatenation
-    const cleanPath = path.startsWith('/') ? path : `/${path}`;
-    const cleanBase = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
-    return `${cleanBase}${cleanPath}`;
-};
+const getImageUrl = (path) => getMediaUrl(path);
 
 // --- Sub-Components ---
 

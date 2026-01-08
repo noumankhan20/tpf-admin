@@ -1,7 +1,8 @@
 import React from 'react';
 import { Edit2, Trash2, Calendar, DollarSign } from 'lucide-react';
+import { getMediaUrl } from '@/utils/media';
 
-export default function CampaignList({ campaigns, categoryColors, imageUrl, onEdit, onDelete }) {
+export default function CampaignList({ campaigns, categoryColors, onEdit, onDelete }) {
   if (campaigns.length === 0) {
     return (
       <div className="bg-white rounded-xl border-2 border-gray-200 p-12 text-center">
@@ -25,17 +26,17 @@ export default function CampaignList({ campaigns, categoryColors, imageUrl, onEd
           <div className="relative h-48 bg-gray-100 overflow-hidden">
             {card.mediaType === "video" ? (
               <video
-                src={`${imageUrl}${card.videoUrl}`}
+                src={getMediaUrl(card.videoUrl)}
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
               />
             ) : (
               <img
-                src={`${imageUrl}${card.imageUrl}`}
+                src={getMediaUrl(card.imageUrl)}
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                 alt={card.title}
               />
             )}
-            
+
             {/* Category Badge */}
             <div className="absolute top-3 left-3">
               <span className={`px-3 py-1 rounded-full text-xs font-semibold ${categoryColors[card.category]}`}>
@@ -58,7 +59,7 @@ export default function CampaignList({ campaigns, categoryColors, imageUrl, onEd
             <h3 className="font-bold text-lg text-gray-900 mb-2 line-clamp-2 min-h-[3.5rem]">
               {card.title}
             </h3>
-            
+
             <p className="text-sm text-gray-600 mb-4 line-clamp-1">
               {card.organization}
             </p>

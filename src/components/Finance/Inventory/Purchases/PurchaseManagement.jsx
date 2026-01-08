@@ -23,6 +23,7 @@ import Pagination from '../Common/Pagination';
 import { useGetPurchasesQuery, useCreatePurchaseMutation, useDeletePurchaseMutation } from '../../../../utils/slices/InventoryAndAsset/purchaseApiSlice';
 import { useGetVendorsQuery } from '../../../../utils/slices/InventoryAndAsset/vendorApiSlice';
 import { useGetItemsQuery } from '../../../../utils/slices/InventoryAndAsset/itemApiSlice';
+import { getMediaUrl } from '../../../../utils/media';
 
 export default function PurchaseManagement() {
     const router = useRouter();
@@ -305,7 +306,7 @@ export default function PurchaseManagement() {
                                             </button>
                                             {po.bill?.fileUrl && (
                                                 <button
-                                                    onClick={() => window.open(process.env.NEXT_PUBLIC_BACKEND_URL + po.bill.fileUrl, '_blank')}
+                                                    onClick={() => window.open(getMediaUrl(po.bill.fileUrl), '_blank')}
                                                     className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
                                                     title="View Bill Proof"
                                                 >
@@ -619,7 +620,7 @@ export default function PurchaseManagement() {
                                     </div>
                                     {viewPurchase.bill?.fileUrl && (
                                         <button
-                                            onClick={() => window.open(process.env.NEXT_PUBLIC_BACKEND_URL + viewPurchase.bill.fileUrl, '_blank')}
+                                            onClick={() => window.open(getMediaUrl(viewPurchase.bill.fileUrl), '_blank')}
                                             className="px-4 py-2 bg-emerald-600 text-white text-xs font-bold rounded-xl hover:bg-emerald-700 transition-colors shadow-lg shadow-emerald-200"
                                         >
                                             View Proof

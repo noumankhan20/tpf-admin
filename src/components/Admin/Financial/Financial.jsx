@@ -16,7 +16,6 @@ import { GroundReportModal } from './components/GroundReportModal';
 
 export default function FinancialAidVerifyPage() {
    const router = useRouter();
-   const BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:7000';
 
    // Tab and selection state
    const [activeTab, setActiveTab] = useState('myself'); // 'myself' or 'other'
@@ -293,7 +292,6 @@ export default function FinancialAidVerifyPage() {
                <RequestDetail
                   selectedForm={selectedForm}
                   onOpenGroundReport={handleOpenGroundReport}
-                  baseUrl={BASE_URL}
                />
             </div>
          </main>

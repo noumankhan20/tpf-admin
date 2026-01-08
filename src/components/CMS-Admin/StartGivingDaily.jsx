@@ -10,7 +10,6 @@ import {
 import { getMediaUrl } from "@/utils/media";
 
 export default function StartGivingDaily() {
-  const BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
   const router = useRouter();
   const [showPreview, setShowPreview] = useState(true);
   const [hasChanges, setHasChanges] = useState(false);

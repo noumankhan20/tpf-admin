@@ -17,37 +17,37 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useGetTrustedByQuery,
-         useCreateTrustedByMutation,
-         useUpdateTrustedByMutation,
-         useDeleteTrustedByMutation
- } from "@/utils/slices/cms/trustedbyApi";
+import { getMediaUrl } from "@/utils/media";
+import {
+  useGetTrustedByQuery,
+  useCreateTrustedByMutation,
+  useUpdateTrustedByMutation,
+  useDeleteTrustedByMutation
+} from "@/utils/slices/cms/trustedbyApi";
 
 export default function PartnersCMS() {
   const [viewMode, setViewMode] = useState("overview");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedPartner, setSelectedPartner] = useState(null);
   const router = useRouter();
-  const API_URL = process.env.NEXT_PUBLIC_BACKEND_API;
-  const BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
 
- const {
-  data,
-  isLoading,
-  error,
-} = useGetTrustedByQuery();
+  const {
+    data,
+    isLoading,
+    error,
+  } = useGetTrustedByQuery();
 
-const [createTrustedBy] = useCreateTrustedByMutation();
-const [updateTrustedBy] = useUpdateTrustedByMutation();
-const [deleteTrustedBy] = useDeleteTrustedByMutation();
+  const [createTrustedBy] = useCreateTrustedByMutation();
+  const [updateTrustedBy] = useUpdateTrustedByMutation();
+  const [deleteTrustedBy] = useDeleteTrustedByMutation();
 
-const partners = (data?.trustedby ?? []).map((item, index) => ({
-  id: item._id,
-  name: item.title,
-  image: `${BASE_URL}${item.image}`,
-  lastUpdated: new Date(item.updatedAt).toLocaleString(),
-  order: index + 1,
-}));
+  const partners = (data?.trustedby ?? []).map((item, index) => ({
+    id: item._id,
+    name: item.title,
+    image: getMediaUrl(item.image),
+    lastUpdated: new Date(item.updatedAt).toLocaleString(),
+    order: index + 1,
+  }));
 
 
   const [partnerForm, setPartnerForm] = useState({
@@ -94,45 +94,45 @@ const partners = (data?.trustedby ?? []).map((item, index) => ({
   };
 
   const handleSavePartner = async () => {
-  if (!partnerForm.name.trim()) return alert("Name required");
+    if (!partnerForm.name.trim()) return alert("Name required");
 
-  const formData = new FormData();
-  formData.append("title", partnerForm.name);
+    const formData = new FormData();
+    formData.append("title", partnerForm.name);
 
-  if (partnerForm.image) {
-    formData.append("image", partnerForm.image);
-  }
-
-  try {
-    if (viewMode === "edit-partner") {
-      await updateTrustedBy({
-        id: selectedPartner.id,
-        formData,
-      }).unwrap();
-      alert("Partner updated successfully");
-    } else {
-      await createTrustedBy(formData).unwrap();
-      alert("Partner added successfully");
+    if (partnerForm.image) {
+      formData.append("image", partnerForm.image);
     }
 
-    setViewMode("overview");
-    setSelectedPartner(null);
-  } catch (err) {
-    alert(err?.data?.message || "Operation failed");
-  }
-};
+    try {
+      if (viewMode === "edit-partner") {
+        await updateTrustedBy({
+          id: selectedPartner.id,
+          formData,
+        }).unwrap();
+        alert("Partner updated successfully");
+      } else {
+        await createTrustedBy(formData).unwrap();
+        alert("Partner added successfully");
+      }
+
+      setViewMode("overview");
+      setSelectedPartner(null);
+    } catch (err) {
+      alert(err?.data?.message || "Operation failed");
+    }
+  };
 
 
   const handleDeletePartner = async (id) => {
-  if (!confirm("Delete this partner?")) return;
+    if (!confirm("Delete this partner?")) return;
 
-  try {
-    await deleteTrustedBy(id).unwrap();
-    alert("Partner deleted");
-  } catch {
-    alert("Failed to delete partner");
-  }
-};
+    try {
+      await deleteTrustedBy(id).unwrap();
+      alert("Partner deleted");
+    } catch {
+      alert("Failed to delete partner");
+    }
+  };
 
 
   const handleCancel = () => {
@@ -145,12 +145,12 @@ const partners = (data?.trustedby ?? []).map((item, index) => ({
   );
 
   if (error) {
-  return (
-    <div className="p-10 text-center text-red-500">
-      Failed to load trusted partners
-    </div>
-  );
-}
+    return (
+      <div className="p-10 text-center text-red-500">
+        Failed to load trusted partners
+      </div>
+    );
+  }
 
 
   return (

@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { Save, XCircle, Home, Menu, Upload, Edit2, ArrowLeft, Trash2, Plus, Search, Eye, EyeOff, Users, ArrowRight, Sparkles, Image as ImageIcon, CheckCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { getMediaUrl } from "@/utils/media";
 import NotificationBell from '../Common/NotificationBell';
 import axios from "axios";
 import {
@@ -10,7 +11,6 @@ import {
     useUpdateImpactStoryMutation,
     useDeleteImpactStoryMutation,
 } from "@/utils/slices/cms/impactApi";
-const IMAGE_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
 
 // Live Preview Component
 const StoryCardPreview = ({ story, darkMode = false }) => {
@@ -30,7 +30,7 @@ const StoryCardPreview = ({ story, darkMode = false }) => {
                     src={
                         story.image?.startsWith("data:")
                             ? story.image
-                            : `${IMAGE_URL}${story.image}`
+                            : getMediaUrl(story.image)
                     }
                     alt={story.title}
                     className="h-full w-full object-cover transition-all duration-700 group-hover:scale-110"
@@ -121,7 +121,7 @@ export default function StoryCardsCMS() {
                 title: campaign.title || "",
                 excerpt: campaign.about?.substring(0, 150) || "",
                 story: campaign.about || "",
-                imagePreview: campaign.imageUrl ? `${IMAGE_URL}${campaign.imageUrl}` : null,
+                imagePreview: campaign.imageUrl ? getMediaUrl(campaign.imageUrl) : null,
                 image: campaign.imageUrl || "",
                 taskId: campaign.taskId || "",
                 campaignId: campaign._id,
@@ -194,7 +194,7 @@ export default function StoryCardsCMS() {
             mediaLinks: card.mediaLinks || [],
             image: card.image,
             imageFile: null,
-            imagePreview: `${IMAGE_URL}${card.image}`,
+            imagePreview: getMediaUrl(card.image),
         });
         setViewMode("edit-card");
     };
@@ -417,7 +417,7 @@ export default function StoryCardsCMS() {
                                             <div key={card._id} className="group bg-white border-2 border-emerald-100 rounded-2xl overflow-hidden hover:shadow-xl hover:shadow-emerald-500/10 transition-all duration-300 hover:border-emerald-300">
                                                 <div className="relative h-48 overflow-hidden">
                                                     <img
-                                                        src={`${IMAGE_URL}${card.image}`}
+                                                        src={getMediaUrl(card.image)}
                                                         alt={card.title}
                                                         className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                                                     />

@@ -1,5 +1,6 @@
 "use client";
-import React, { useState, useEffect,useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
+import { getMediaUrl } from "@/utils/media";
 import {
     useGetCommunitiesQuery,
     useCreateCommunityMutation,
@@ -68,7 +69,7 @@ export default function CommunitiesMain() {
         return data.communities.map((item, index) => ({
             id: item._id,
             name: item.title,
-            image: `${process.env.NEXT_PUBLIC_BACKEND_URL}${item.image}`,
+            image: getMediaUrl(item.image),
             lastUpdated: new Date(item.updatedAt).toLocaleString(),
             order: index + 1,
         }));

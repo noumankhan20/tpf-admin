@@ -8,8 +8,8 @@ import {
   useUpdateBeforeFooterMutation,
 } from "@/utils/slices/cms/beforefooterApi";
 import { useRouter } from "next/navigation";
+import { getMediaUrl } from "@/utils/media";
 export default function StartFundraiserBannerCMS() {
-  const BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
   const router = useRouter();
 
   const [mode, setMode] = useState("create");
@@ -63,33 +63,33 @@ export default function StartFundraiserBannerCMS() {
   };
 
   const handleSave = async () => {
-  if (!formData.title.trim() || !formData.description.trim()) {
-    alert("All fields required");
-    return;
-  }
-
-  const form = new FormData();
-  form.append("title", formData.title);
-  form.append("description", formData.description);
-  if (imageFile) form.append("image", imageFile);
-
-  try {
-    if (mode === "create") {
-      await createBeforeFooter(form).unwrap();
-      alert("Created successfully!");
-    } else {
-      await updateBeforeFooter({
-        id: bannerData._id,
-        formData: form,
-      }).unwrap();
-      alert("Updated successfully!");
+    if (!formData.title.trim() || !formData.description.trim()) {
+      alert("All fields required");
+      return;
     }
 
-    setHasChanges(false);
-  } catch (err) {
-    alert(err?.data?.message || "Failed to save");
-  }
-};
+    const form = new FormData();
+    form.append("title", formData.title);
+    form.append("description", formData.description);
+    if (imageFile) form.append("image", imageFile);
+
+    try {
+      if (mode === "create") {
+        await createBeforeFooter(form).unwrap();
+        alert("Created successfully!");
+      } else {
+        await updateBeforeFooter({
+          id: bannerData._id,
+          formData: form,
+        }).unwrap();
+        alert("Updated successfully!");
+      }
+
+      setHasChanges(false);
+    } catch (err) {
+      alert(err?.data?.message || "Failed to save");
+    }
+  };
 
 
   const handleReset = () => {
@@ -101,7 +101,7 @@ export default function StartFundraiserBannerCMS() {
         description: bannerData.description,
         buttonText: "Create Fundraiser Now",
       });
-      setImagePreview(`${BASE_URL}${bannerData.image}`);
+      setImagePreview(getMediaUrl(bannerData.image));
     } else {
       setFormData({
         title: "",

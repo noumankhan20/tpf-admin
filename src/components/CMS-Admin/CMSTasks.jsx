@@ -14,6 +14,7 @@ import {
     useGetPhotographySubmissionsQuery,
     usePublishCampaignMutation
 } from '@/utils/slices/cmsApiSlice';
+import { getMediaUrl } from '@/utils/media';
 
 // Utility Functions
 const formatDate = (dateStr) => {
@@ -216,14 +217,10 @@ const PublishCampaignPage = ({ setActiveView, selectedTask }) => {
     const [publishCampaign, { isLoading: publishing }] = usePublishCampaignMutation();
 
     // Extract files from photography submissions
-    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL ||
-        process.env.NEXT_PUBLIC_BACKEND_API?.replace('/api', '') ||
-        'http://localhost:7000';
-
     const photographySubmissions = submissionsData?.data?.submissions?.flatMap(submission =>
         submission.files?.map((file, idx) => ({
             id: `${submission._id}-${idx}`,
-            url: backendUrl + file.url,
+            url: getMediaUrl(file.url),
             type: file.type,
             uploadedAt: submission.uploadedAt,
             originalName: file.originalName
@@ -722,7 +719,7 @@ const CMSTasksModule = () => {
     return (
         <div className="flex h-screen bg-[#F8FAFC] overflow-hidden">
             {/* IMPORTED SIDEBAR COMPONENT */}
-           
+
 
             {/* MAIN CONTENT AREA */}
             <div className="flex-1 flex flex-col overflow-hidden">

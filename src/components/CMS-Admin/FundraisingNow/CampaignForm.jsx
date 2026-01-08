@@ -9,6 +9,7 @@ import {
   Trash2,
   ImagePlus,
 } from 'lucide-react';
+import { getMediaUrl } from '@/utils/media';
 import MediaSelectorModal from './MediaSelectorModal';
 import CampaignPreview from './CampaignPreview';
 export default function CampaignForm({
@@ -20,7 +21,6 @@ export default function CampaignForm({
   readyCampaigns,
   selectedCampaign,
   setSelectedCampaign,
-  imageUrl,
   onSave,
   onCancel,
 }) {
@@ -121,10 +121,8 @@ export default function CampaignForm({
   const getImageUrl = (preview, isExisting) => {
     if (!preview) return null;
     if (isExisting) {
-      if (preview.startsWith("http")) return preview;
-      const baseUrl = imageUrl.replace(/\/$/, "");
-      const path = preview.replace(/^\//, "");
-      return `${baseUrl}/${path}`;
+      if (preview.startsWith("data:")) return preview;
+      return getMediaUrl(preview);
     }
     return preview;
   };
@@ -471,7 +469,6 @@ export default function CampaignForm({
         selectedUrl={formData.selectedImageUrl || formData.selectedVideoUrl}
         onSelect={handleMediaSelect}
         onUploadNew={handleMediaUpload}
-        imageUrl={imageUrl}
       />
     </>
   );

@@ -1,14 +1,14 @@
 import React from 'react';
 import { X, Check, Upload, Image as ImageIcon, Video } from 'lucide-react';
+import { getMediaUrl } from '@/utils/media';
 
-export default function MediaSelectorModal({ 
-  isOpen, 
-  onClose, 
-  media, 
-  selectedUrl, 
+export default function MediaSelectorModal({
+  isOpen,
+  onClose,
+  media,
+  selectedUrl,
   onSelect,
   onUploadNew,
-  imageUrl 
 }) {
   if (!isOpen) return null;
 
@@ -16,9 +16,7 @@ export default function MediaSelectorModal({
     if (!url) return null;
     if (isExisting) {
       if (url.startsWith("http")) return url;
-      const baseUrl = imageUrl.replace(/\/$/, "");
-      const path = url.replace(/^\//, "");
-      return `${baseUrl}/${path}`;
+      return getMediaUrl(url);
     }
     return url;
   };
@@ -70,11 +68,10 @@ export default function MediaSelectorModal({
                   <button
                     key={index}
                     onClick={() => onSelect(file)}
-                    className={`relative aspect-square rounded-xl overflow-hidden border-4 transition-all ${
-                      isSelected
-                        ? 'border-emerald-500 shadow-lg scale-105'
-                        : 'border-transparent hover:border-emerald-300 hover:shadow-md'
-                    }`}
+                    className={`relative aspect-square rounded-xl overflow-hidden border-4 transition-all ${isSelected
+                      ? 'border-emerald-500 shadow-lg scale-105'
+                      : 'border-transparent hover:border-emerald-300 hover:shadow-md'
+                      }`}
                   >
                     {/* Media Content */}
                     {isVideo ? (
@@ -92,9 +89,8 @@ export default function MediaSelectorModal({
 
                     {/* Type Badge */}
                     <div className="absolute top-2 left-2">
-                      <span className={`px-2 py-1 rounded-md text-xs font-semibold ${
-                        isVideo ? 'bg-purple-600 text-white' : 'bg-blue-600 text-white'
-                      }`}>
+                      <span className={`px-2 py-1 rounded-md text-xs font-semibold ${isVideo ? 'bg-purple-600 text-white' : 'bg-blue-600 text-white'
+                        }`}>
                         {isVideo ? <Video size={12} className="inline" /> : <ImageIcon size={12} className="inline" />}
                         <span className="ml-1">{isVideo ? 'Video' : 'Image'}</span>
                       </span>

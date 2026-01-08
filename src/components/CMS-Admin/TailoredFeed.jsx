@@ -24,7 +24,7 @@ import {
   LayoutGrid,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-const IMAGE_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
+import { getMediaUrl } from "@/utils/media";
 
 export default function TailoredFeedCMS() {
   const {
@@ -151,8 +151,8 @@ export default function TailoredFeedCMS() {
       title: item.title || "",
       route: item.route || "",
       mediaFile: null,
-      mediaPreview: item.image ? `${IMAGE_BASE_URL}${item.image}` : null,
-      mediaUrl: item.image ? `${IMAGE_BASE_URL}${item.image}` : "",
+      mediaPreview: item.image ? getMediaUrl(item.image) : null,
+      mediaUrl: item.image ? getMediaUrl(item.image) : "",
     });
     setViewMode("edit-item");
   };
@@ -378,7 +378,7 @@ export default function TailoredFeedCMS() {
                             <div className="relative h-52 bg-gradient-to-br from-gray-100 to-emerald-50 overflow-hidden">
                               {item.image ? (
                                 <img
-                                  src={`${IMAGE_BASE_URL}${item.image}`}
+                                  src={getMediaUrl(item.image)}
                                   alt={item.title}
                                   className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                                   onError={(e) => {

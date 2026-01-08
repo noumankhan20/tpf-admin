@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { getMediaUrl } from '@/utils/media';
 import NotificationBell from '../../Common/NotificationBell';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -459,14 +460,14 @@ function ActionModal({ task, onClose, refetch }) {
                                     {task.proofs?.map((proof, idx) => (
                                         <a
                                             key={idx}
-                                            href={`${(process.env.NEXT_PUBLIC_BACKEND_API || 'http://localhost:7000/api').replace(/\/api\/?$/, '')}${proof.fileUrl}`}
+                                            href={getMediaUrl(proof.fileUrl)}
                                             target="_blank"
                                             rel="noopener noreferrer"
                                             className="group relative aspect-square bg-gray-100 rounded-xl overflow-hidden border border-gray-200 hover:border-blue-500 transition-all shadow-sm flex flex-col items-center justify-center"
                                         >
                                             {proof.fileType?.startsWith('image') ? (
                                                 <img
-                                                    src={`${(process.env.NEXT_PUBLIC_BACKEND_API || 'http://localhost:7000/api').replace(/\/api\/?$/, '')}${proof.fileUrl}`}
+                                                    src={getMediaUrl(proof.fileUrl)}
                                                     className="w-full h-full object-cover group-hover:scale-110 transition-transform"
                                                     alt="Proof"
                                                 />

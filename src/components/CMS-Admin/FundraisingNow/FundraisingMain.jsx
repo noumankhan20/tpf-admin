@@ -25,7 +25,6 @@ export default function FundraisingCMS() {
   const [selectedCampaign, setSelectedCampaign] = useState(null);
 
   const API_BASE = process.env.NEXT_PUBLIC_BACKEND_API || 'http://localhost:7000/api';
-  const IMAGE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:7000';
 
   const categories = [
     "Emergency Aid",
@@ -302,7 +301,7 @@ export default function FundraisingCMS() {
             <CampaignList
               campaigns={filteredCards}
               categoryColors={categoryColors}
-              imageUrl={IMAGE_URL}
+              imageUrl={undefined}
               onEdit={handleEdit}
               onDelete={handleDelete}
             />
@@ -317,7 +316,7 @@ export default function FundraisingCMS() {
             readyCampaigns={readyCampaigns}
             selectedCampaign={selectedCampaign}
             setSelectedCampaign={setSelectedCampaign}
-            imageUrl={IMAGE_URL}
+            imageUrl={undefined}
             onSave={handleSave}
             onCancel={handleCancel}
           />

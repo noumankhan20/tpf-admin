@@ -1,12 +1,14 @@
 "use client"
 import React, { useState, useEffect } from "react";
-import { useGetInfluencersQuery,
-         useCreateInfluencerMutation,
-         useUpdateInfluencerMutation,
-         useDeleteInfluencerMutation,
- } from "@/utils/slices/cms/influencerApi";
-import { Save, XCircle, Home, Edit2,ArrowLeft, Trash2, Plus,ChevronUp, ChevronDown, GripVertical, Eye, Upload, Sparkles, Users, Image as ImageIcon, CheckCircle, EyeOff } from "lucide-react";
+import {
+  useGetInfluencersQuery,
+  useCreateInfluencerMutation,
+  useUpdateInfluencerMutation,
+  useDeleteInfluencerMutation,
+} from "@/utils/slices/cms/influencerApi";
+import { Save, XCircle, Home, Edit2, ArrowLeft, Trash2, Plus, ChevronUp, ChevronDown, GripVertical, Eye, Upload, Sparkles, Users, Image as ImageIcon, CheckCircle, EyeOff } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { getMediaUrl } from "@/utils/media";
 export default function InfluencerGalleryCMS() {
   const [viewMode, setViewMode] = useState("overview");
   const [searchQuery, setSearchQuery] = useState("");
@@ -14,27 +16,26 @@ export default function InfluencerGalleryCMS() {
   const [previewMode, setPreviewMode] = useState(false);
   const [imageForm, setImageForm] = useState({ imageFile: null, imagePreview: null, imageUrl: "" });
   const API_URL = process.env.NEXT_PUBLIC_BACKEND_API;
-  const BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
-  const router= useRouter();
+  const router = useRouter();
 
   const {
-  data,
-  isLoading,
-  error,
-} = useGetInfluencersQuery();
+    data,
+    isLoading,
+    error,
+  } = useGetInfluencersQuery();
 
-const [createInfluencer] = useCreateInfluencerMutation();
-const [updateInfluencer] = useUpdateInfluencerMutation();
-const [deleteInfluencer] = useDeleteInfluencerMutation();
+  const [createInfluencer] = useCreateInfluencerMutation();
+  const [updateInfluencer] = useUpdateInfluencerMutation();
+  const [deleteInfluencer] = useDeleteInfluencerMutation();
 
-const influencerImages =
-  data?.influencers?.map((item, index) => ({
-    id: item._id,
-    imageUrl: `${BASE_URL}${item.image}`,
-    imagePreview: `${BASE_URL}${item.image}`,
-    lastUpdated: new Date(item.updatedAt).toLocaleString(),
-    order: index + 1,
-  })) ?? [];
+  const influencerImages =
+    data?.influencers?.map((item, index) => ({
+      id: item._id,
+      imageUrl: getMediaUrl(item.image),
+      imagePreview: getMediaUrl(item.image),
+      lastUpdated: new Date(item.updatedAt).toLocaleString(),
+      order: index + 1,
+    })) ?? [];
 
 
   const handleImageUpload = (e) => {
@@ -47,40 +48,40 @@ const influencerImages =
   };
 
   const handleSaveImage = async () => {
-  if (!imageForm.imageFile) return alert("Please upload an image");
+    if (!imageForm.imageFile) return alert("Please upload an image");
 
-  const formData = new FormData();
-  formData.append("image", imageForm.imageFile);
+    const formData = new FormData();
+    formData.append("image", imageForm.imageFile);
 
-  try {
-    if (viewMode === "add-image") {
-      await createInfluencer(formData).unwrap();
-    } else {
-      await updateInfluencer({
-        id: selectedImage.id,
-        formData,
-      }).unwrap();
+    try {
+      if (viewMode === "add-image") {
+        await createInfluencer(formData).unwrap();
+      } else {
+        await updateInfluencer({
+          id: selectedImage.id,
+          formData,
+        }).unwrap();
+      }
+
+      alert("Saved successfully");
+      setViewMode("overview");
+    } catch (err) {
+      console.error(err);
+      alert("Failed to save image");
     }
-
-    alert("Saved successfully");
-    setViewMode("overview");
-  } catch (err) {
-    console.error(err);
-    alert("Failed to save image");
-  }
-};
+  };
 
   const handleDeleteImage = async (id) => {
-  if (!confirm("Delete this image?")) return;
+    if (!confirm("Delete this image?")) return;
 
-  try {
-    await deleteInfluencer(id).unwrap();
-    alert("Deleted successfully");
-  } catch (err) {
-    console.error(err);
-    alert("Delete failed");
-  }
-};
+    try {
+      await deleteInfluencer(id).unwrap();
+      alert("Deleted successfully");
+    } catch (err) {
+      console.error(err);
+      alert("Delete failed");
+    }
+  };
 
   const handleEditImage = (img) => {
     setSelectedImage(img);
@@ -152,8 +153,8 @@ const influencerImages =
                     <button
                       onClick={() => setPreviewMode(!previewMode)}
                       className={`px-5 py-2.5 rounded-xl font-semibold flex items-center gap-2 transition-all duration-300 ${previewMode
-                          ? 'bg-emerald-100 text-emerald-700 border-2 border-emerald-300'
-                          : 'bg-white text-emerald-600 border-2 border-emerald-200 hover:border-emerald-300 hover:bg-emerald-50'
+                        ? 'bg-emerald-100 text-emerald-700 border-2 border-emerald-300'
+                        : 'bg-white text-emerald-600 border-2 border-emerald-200 hover:border-emerald-300 hover:bg-emerald-50'
                         }`}
                     >
                       {previewMode ? <EyeOff size={18} /> : <Eye size={18} />}
