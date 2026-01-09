@@ -64,13 +64,54 @@ export const agreementApiSlice = apiSlice.injectEndpoints({
       invalidatesTags: ["Documentation"],
     }),
 
+    updatePartySignature: builder.mutation({
+      query: ({ agreementId, partyId, file }) => {
+        const formData = new FormData();
+        formData.append("signatures", file); // 👈 MUST MATCH multer field
+
+        return {
+          url: `/agreements/${agreementId}/parties/${partyId}/signature`,
+          method: "PUT",
+          body: formData,
+        };
+      },
+      invalidatesTags: (result, error, { agreementId }) => [
+        { type: "Documentation", id: agreementId },
+      ],
+    }),
+
+    updateAgreementDocuments: builder.mutation({
+      query: ({ id, files }) => {
+        const formData = new FormData();
+
+        Object.entries(files).forEach(([type, fileList]) => {
+          fileList.forEach((file) => {
+            formData.append(type, file);
+          });
+        });
+
+        return {
+          url: `/agreements/${id}/documents`,
+          method: "PUT",
+          body: formData,
+        };
+      },
+      invalidatesTags: (result, error, { id }) => [
+        { type: "Documentation", id },
+      ],
+    }),
+
+
+
   }),
 });
 
-export const{
-    useCreateAgreementMutation,
-    useGetAgreementsQuery,
-    useGetAgreementByIdQuery,
-    useUpdateAgreementMutation,
-    useDeleteAgreementMutation,
+export const {
+  useCreateAgreementMutation,
+  useGetAgreementsQuery,
+  useGetAgreementByIdQuery,
+  useUpdateAgreementMutation,
+  useDeleteAgreementMutation,
+  useUpdatePartySignatureMutation,
+  useUpdateAgreementDocumentsMutation,
 } = agreementApiSlice

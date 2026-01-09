@@ -2,16 +2,21 @@
 import React, { useState } from 'react';
 import { Plus, Search, Filter, Eye, Edit, Trash2, FileText, CheckCircle, XCircle, Clock, Download, TrendingUp, Calendar, Users } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useGetAgreementsQuery } from '@/utils/slices/documentationApiSlice';
-
+import { useGetAgreementsQuery, useDeleteAgreementMutation } from '@/utils/slices/documentationApiSlice';
+import Modal from "./PopModal"
 export default function Documentation() {
   const [showFilters, setShowFilters] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedAgreementId, setSelectedAgreementId] = useState(null);
+
   const router = useRouter();
-  
+
   // RTK Query hook
   const { data, isLoading, isError, error } = useGetAgreementsQuery();
-  
+  const [deleteAgreement, { isLoading: isDeleting }] =
+    useDeleteAgreementMutation();
+
   // Extract agreements from API response
   const agreements = data?.data || [];
 
@@ -63,18 +68,30 @@ export default function Documentation() {
   };
 
   const handleView = (id) => {
-    console.log('View agreement:', id);
+    setSelectedAgreementId(id);
+    setIsModalOpen(true);
   };
 
   const handleEdit = (id) => {
-    console.log('Edit agreement:', id);
+    router.push(`/documentation-management/edit/${id}`);
   };
 
-  const handleDelete = (id) => {
-    if (window.confirm('Are you sure you want to delete this agreement?')) {
-      console.log('Delete agreement:', id);
+
+  const handleDelete = async (id) => {
+    const confirmDelete = window.confirm(
+      'Are you sure?\nThis will permanently delete the agreement and all related files.'
+    );
+
+    if (!confirmDelete) return;
+
+    try {
+      await deleteAgreement(id).unwrap();
+    } catch (err) {
+      console.error('Delete failed:', err);
+      alert('Failed to delete agreement');
     }
   };
+
 
   const handleCreateNew = () => {
     router.push('/documentation-management/add-agreement');
@@ -113,10 +130,10 @@ export default function Documentation() {
                 </div>
               </div>
               <p className="text-emerald-50 max-w-2xl">
-                Centralized hub for managing agreements, contracts, and memorandums with tracking 
+                Centralized hub for managing agreements, contracts, and memorandums with tracking
               </p>
             </div>
-            
+
             <div className="flex flex-wrap gap-3">
               <button
                 onClick={handleCreateNew}
@@ -142,7 +159,7 @@ export default function Documentation() {
               >
                 {/* Gradient background on hover */}
                 <div className={`absolute inset-0 bg-gradient-to-br ${stat.color} opacity-0 group-hover:opacity-5 transition-opacity`}></div>
-                
+
                 <div className="relative z-10">
                   <div className="flex items-start justify-between mb-4">
                     <div className={`${stat.lightColor} p-3 rounded-xl group-hover:scale-110 transition-transform`}>
@@ -177,11 +194,10 @@ export default function Documentation() {
               </div>
               <button
                 onClick={() => setShowFilters(!showFilters)}
-                className={`flex items-center gap-2 px-6 py-3 border-2 rounded-xl transition-all font-medium ${
-                  showFilters 
-                    ? 'bg-emerald-50 border-emerald-500 text-emerald-600' 
-                    : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
-                }`}
+                className={`flex items-center gap-2 px-6 py-3 border-2 rounded-xl transition-all font-medium ${showFilters
+                  ? 'bg-emerald-50 border-emerald-500 text-emerald-600'
+                  : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
+                  }`}
               >
                 <Filter className="w-5 h-5" />
                 Filters
@@ -243,7 +259,7 @@ export default function Documentation() {
                 <button className="px-6 py-2 bg-emerald-500 text-white rounded-xl hover:bg-emerald-600 transition-all font-medium">
                   Apply Filters
                 </button>
-                <button 
+                <button
                   onClick={() => setShowFilters(false)}
                   className="px-6 py-2 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-all font-medium"
                 >
@@ -314,7 +330,7 @@ export default function Documentation() {
                         </div>
                         <p className="text-xl font-semibold text-gray-900 mb-2">No agreements found</p>
                         <p className="text-sm text-gray-500 mb-6">Create your first agreement to get started</p>
-                        <button 
+                        <button
                           onClick={handleCreateNew}
                           className="px-6 py-3 bg-emerald-500 text-white rounded-xl hover:bg-emerald-600 transition-all font-medium shadow-lg"
                         >
@@ -362,21 +378,22 @@ export default function Documentation() {
                         <div className="flex items-center gap-2">
                           <button
                             onClick={() => handleView(agreement.id)}
-                            className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all"
+                            className="p-2 text-emerald-600 cursor-pointer hover:bg-emerald-50 rounded-lg transition-all"
                             title="View"
                           >
                             <Eye className="w-5 h-5" />
                           </button>
                           <button
                             onClick={() => handleEdit(agreement.id)}
-                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                            className="p-2 text-blue-600 cursor-pointer hover:bg-blue-50 rounded-lg transition-all"
                             title="Edit"
                           >
                             <Edit className="w-5 h-5" />
                           </button>
                           <button
                             onClick={() => handleDelete(agreement.id)}
-                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                            disabled={isDeleting}
+                            className="p-2 text-red-600 cursor-pointer hover:bg-red-50 rounded-lg transition-all"
                             title="Delete"
                           >
                             <Trash2 className="w-5 h-5" />
@@ -430,6 +447,11 @@ export default function Documentation() {
           animation: slideDown 0.3s ease-out;
         }
       `}</style>
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        agreementId={selectedAgreementId}
+      />
     </div>
   );
 }
