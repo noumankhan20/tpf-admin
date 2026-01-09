@@ -1,6 +1,6 @@
 'use client';
 import React, { useState } from 'react';
-import { Plus, Search, Filter, Eye, Edit, Trash2, FileText, CheckCircle, XCircle, Clock, Download, TrendingUp, Calendar, Users } from 'lucide-react';
+import { Plus, Search, Filter, Eye, Edit, Trash2, FileText,ArrowLeft,CheckCircle, XCircle, Clock, Download, TrendingUp, Calendar, Users } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useGetAgreementsQuery, useDeleteAgreementMutation } from '@/utils/slices/documentationApiSlice';
 import Modal from "./PopModal"
@@ -117,6 +117,12 @@ export default function Documentation() {
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
             <div className="flex-1">
               <div className="flex items-center gap-3 mb-3">
+                <button
+                  onClick={() => router.push("/select-portal")}
+                  className="p-2.5 hover:bg-white/10 rounded-lg cursor-pointer transition-all text-white/80 hover:text-white"
+                >
+                  <ArrowLeft className="w-5 h-5" />
+                </button>
                 <div className="p-3 bg-white/20 backdrop-blur-sm rounded-xl">
                   <FileText className="w-8 h-8" />
                 </div>
@@ -129,7 +135,7 @@ export default function Documentation() {
                   </p>
                 </div>
               </div>
-              <p className="text-emerald-50 max-w-2xl">
+              <p className="text-emerald-50 text-right max-w-2xl">
                 Centralized hub for managing agreements, contracts, and memorandums with tracking
               </p>
             </div>
