@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect, useMemo } from 'react';
-import { Search, Filter, ChevronDown, ArrowLeft, ChevronLeft, Check,ChevronRight, X, Eye, Calendar, Mail, User, MessageSquare, Clock, TrendingUp, AlertCircle, FileText, Inbox } from 'lucide-react';
-import { useGetAllTicketsQuery,useMarkTicketAsResolvedMutation } from '@/utils/slices/ticketApiSlice';
+import { Search, Filter, ChevronDown, ArrowLeft, ChevronLeft, Check, ChevronRight, X, Eye, Calendar, Mail, User, MessageSquare, Clock, TrendingUp, AlertCircle, FileText, Inbox } from 'lucide-react';
+import { useGetAllTicketsQuery, useMarkTicketAsResolvedMutation } from '@/utils/slices/ticketApiSlice';
 
 // Helper function to format date and time
 const toISTDate = (dateString) => {
@@ -123,7 +123,15 @@ const AdminPanel = () => {
 
   // Query type badge colors
   const QUERY_BADGE_CLASS = () =>
-  "bg-slate-50 text-slate-700 border border-slate-200";
+    "bg-slate-50 text-slate-700 border border-slate-200";
+
+  const STATUS_BADGE_CLASSES = {
+    Unresolved: 'bg-blue-50 text-red-700 border-blue-200',
+    Resolved: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  };
+  const getStatusBadgeClass = (status) =>
+    STATUS_BADGE_CLASSES[status] ||
+    'bg-gray-50 text-gray-600 border-gray-200';
 
   // Handle mark as resolved
   const handleMarkAsResolved = async (ticketId) => {
@@ -154,14 +162,21 @@ const AdminPanel = () => {
             <h2 className="text-xl font-semibold text-slate-900">Message Details</h2>
           </div>
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => handleMarkAsResolved(ticket._id)}
-              disabled={isMarkingResolved}
-              className="px-4 py-2 bg-gradient-to-br from-emerald-500 to-teal-600 text-white rounded-xl hover:from-emerald-600 hover:to-teal-700 transition-all duration-200 font-medium text-sm flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <Check className="w-4 h-4" />
-              {isMarkingResolved ? 'Marking...' : 'Mark as Resolved'}
-            </button>
+            {ticket.status === 'Resolved' ? (
+              <span className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-100 text-slate-600 text-sm font-medium border border-slate-200">
+                <Check className="w-4 h-4 text-emerald-600" />
+                Resolved
+              </span>
+            ) : (
+              <button
+                onClick={() => handleMarkAsResolved(ticket._id)}
+                disabled={isMarkingResolved}
+                className="px-4 py-2 bg-gradient-to-br from-emerald-500 to-teal-600 text-white rounded-xl hover:from-emerald-600 hover:to-teal-700 transition-all duration-200 font-medium text-sm flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Check className="w-4 h-4" />
+                {isMarkingResolved ? 'Marking...' : 'Mark as Resolved'}
+              </button>
+            )}
             <button
               onClick={onClose}
               className="p-2 hover:bg-slate-200/50 rounded-xl transition-all duration-200 group"
@@ -405,7 +420,15 @@ const AdminPanel = () => {
                           <span className="capitalize">{ticket.queryType}</span>
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">{ticket.status}</td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span
+                          className={`inline-flex items-center px-3 py-1 rounded-lg text-xs font-medium border ${getStatusBadgeClass(
+                            ticket.status
+                          )}`}
+                        >
+                          {ticket.status}
+                        </span>
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">{formatDateShort(ticket.createdAt)}</td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <button
