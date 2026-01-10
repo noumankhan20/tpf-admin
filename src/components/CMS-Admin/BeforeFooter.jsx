@@ -21,18 +21,38 @@ export default function StartFundraiserBannerCMS() {
     buttonText: "Create Fundraiser Now",
   });
 
+
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState("");
   const [hasChanges, setHasChanges] = useState(false);
   const [showPreview, setShowPreview] = useState(true);
-  const { data, isLoading, error } = useGetBeforeFooterQuery();
+  const { data, isLoading, error,refetch } = useGetBeforeFooterQuery();
 
-  const [createBeforeFooter] = useCreateBeforeFooterMutation();
-  const [updateBeforeFooter] = useUpdateBeforeFooterMutation();
+  const [createBeforeFooter, { isLoading: isCreating }] = useCreateBeforeFooterMutation();
+  const [updateBeforeFooter, { isLoading: isUpdating }] = useUpdateBeforeFooterMutation();
+
+  const isSaving = isCreating || isUpdating;
+
 
   const section = data?.data?.[0] || null;
 
 
+  useEffect(() => {
+    if (section) {
+      setMode("edit");
+      setBannerData(section);
+
+      setFormData({
+        title: section.title || "",
+        description: section.description || "",
+        buttonText: "Create Fundraiser Now",
+      });
+
+      setImagePreview(section.image ? getMediaUrl(section.image) : "");
+      setImageFile(null);
+      setHasChanges(false);
+    }
+  }, [section]);
 
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
@@ -127,7 +147,6 @@ export default function StartFundraiserBannerCMS() {
         {/* Mobile Header */}
         <div className="md:hidden bg-white/80 backdrop-blur-md border-b border-emerald-100 px-4 py-3 flex items-center justify-between shadow-sm">
           <button
-            onClick={() => setSidebarOpen(true)}
             className="p-2 hover:bg-emerald-50 rounded-lg transition-colors"
           >
             <Menu size={24} className="text-emerald-700" />
@@ -288,13 +307,13 @@ export default function StartFundraiserBannerCMS() {
                 <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t-2 border-emerald-100">
                   <button
                     onClick={handleSave}
-                    disabled={!hasChanges || isLoading}
-                    className={`flex-1 px-6 py-3.5 rounded-xl font-bold flex items-center justify-center gap-2 transition-all duration-200 ${hasChanges && !isLoading
+                    disabled={!hasChanges || isSaving}
+                    className={`flex-1 px-6 py-3.5 rounded-xl font-bold flex items-center justify-center gap-2 transition-all duration-200 ${hasChanges && !isSaving
                       ? "bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg hover:shadow-xl transform hover:scale-105"
                       : "bg-gray-200 text-gray-400 cursor-not-allowed"
                       }`}
                   >
-                    {isLoading ? (
+                    {isSaving ? (
                       <>
                         <RefreshCw size={18} className="animate-spin" />
                         Saving...
@@ -309,8 +328,8 @@ export default function StartFundraiserBannerCMS() {
 
                   <button
                     onClick={handleReset}
-                    disabled={!hasChanges || isLoading}
-                    className={`flex-1 sm:flex-initial px-6 py-3.5 rounded-xl border-2 font-bold flex items-center justify-center gap-2 transition-all duration-200 ${hasChanges && !isLoading
+                    disabled={!hasChanges || isSaving}
+                    className={`flex-1 sm:flex-initial px-6 py-3.5 rounded-xl border-2 font-bold flex items-center justify-center gap-2 transition-all duration-200 ${hasChanges && !isSaving
                       ? "border-emerald-300 text-emerald-700 hover:bg-emerald-50"
                       : "border-gray-200 text-gray-400 cursor-not-allowed"
                       }`}
