@@ -43,6 +43,8 @@ const AdminManagement = () => {
         date: admin.createdAt,
         isSuperAdmin: admin.isSuperAdmin,
         lastActivity: "Account created",
+        department: admin.department || "",
+        position: admin.position || "",
     })) || [];
     const [addAdmin, { isLoading: isAddingAdmin }] = useAddAdminMutation();
     const [disableAdmin, { isLoading: isDisablingAdmin }] = useDisableAdminMutation();
@@ -69,9 +71,11 @@ const AdminManagement = () => {
         console.log("Admin:", admin);
         setSelectedAdmin({
             ...admin,
+            department: admin.department || "",
+            position: admin.position || "",
             mobileNo: admin.mobileNo || '',
         });
-        console.log("Selected Admin:", selectedAdmin);
+        // console.log("Selected Admin:", selectedAdmin);
         setIsEditModalOpen(true);
     };
 
@@ -167,7 +171,9 @@ const AdminManagement = () => {
             mobileNo: selectedAdmin?.mobileNo,
             fullName: selectedAdmin?.name,
             modules: selectedAdmin?.modules,
-            isSuperAdmin: selectedAdmin?.isSuperAdmin
+            isSuperAdmin: selectedAdmin?.isSuperAdmin,
+            department: selectedAdmin?.department,
+            position: selectedAdmin?.position,
         });
         // Create the updated data object matching backend expectations
         const updatedAdminData = {
@@ -176,6 +182,8 @@ const AdminManagement = () => {
             fullName: selectedAdmin.name, // Map frontend's 'name' to backend's 'fullName'
             modules: selectedAdmin.modules || [],
             isSuperAdmin: selectedAdmin.isSuperAdmin || false,
+            department: selectedAdmin.department || '',
+            position: selectedAdmin.position || '',
         };
 
         try {
@@ -194,17 +202,17 @@ const AdminManagement = () => {
     };
 
     // Handle toggle change for SuperAdmin
-  const handleSuperAdminToggle = () => {
-    setSelectedAdmin((prevState) => {
-      const newIsSuperAdmin = !prevState.isSuperAdmin;
-      return {
-        ...prevState,
-        isSuperAdmin: newIsSuperAdmin,
-        // If turned off, clear the modules array
-        modules: newIsSuperAdmin ? ADMIN_MODULES : [],
-      };
-    });
-  };
+    const handleSuperAdminToggle = () => {
+        setSelectedAdmin((prevState) => {
+            const newIsSuperAdmin = !prevState.isSuperAdmin;
+            return {
+                ...prevState,
+                isSuperAdmin: newIsSuperAdmin,
+                // If turned off, clear the modules array
+                modules: newIsSuperAdmin ? ADMIN_MODULES : [],
+            };
+        });
+    };
 
 
     if (isLoading) {
@@ -686,6 +694,44 @@ const AdminManagement = () => {
                                             />
                                         </div>
 
+                                        <div>
+                                            <label className="block text-sm font-semibold text-gray-700 mb-3">
+                                                Department
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={selectedAdmin.department}
+                                                onChange={(e) =>
+                                                    setSelectedAdmin({
+                                                        ...selectedAdmin,
+                                                        department: e.target.value,
+                                                    })
+                                                }
+                                                className="w-full px-4 py-3 border border-gray-200 rounded-xl
+      focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                                placeholder="e.g. IT, HR, Operations"
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-sm font-semibold text-gray-700 mb-3">
+                                                Position
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={selectedAdmin.position}
+                                                onChange={(e) =>
+                                                    setSelectedAdmin({
+                                                        ...selectedAdmin,
+                                                        position: e.target.value,
+                                                    })
+                                                }
+                                                className="w-full px-4 py-3 border border-gray-200 rounded-xl
+      focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                                placeholder="e.g. Manager, Executive"
+                                            />
+                                        </div>
+
                                         {/* SuperAdmin Toggle */}
                                         <div className="border-t border-gray-200 pt-4">
                                             <div className="flex items-center justify-between mb-3">
@@ -844,6 +890,8 @@ const AdminManagement = () => {
                             mobileNo: formData.contact,
                             modules: formData.modules,
                             isSuperAdmin: formData.isSuperAdmin,
+                            department: formData.department,
+                            position: formData.position,
                         }).unwrap();
 
                         showAlert(`Admin ${formData.fullname} created successfully!`, 'success');

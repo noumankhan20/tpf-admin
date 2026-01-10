@@ -11,6 +11,8 @@ const AddAdminModal = ({ isOpen, onClose, onSubmit }) => {
     contact: "",
     modules: [],
     isSuperAdmin: false,
+    department: "",
+    position: "",
   });
 
   if (!isOpen) return null;
@@ -39,6 +41,8 @@ const AddAdminModal = ({ isOpen, onClose, onSubmit }) => {
     formData.email.trim() &&
     formData.password.trim() &&
     formData.contact.trim() &&
+    formData.department.trim() &&
+    formData.position.trim() &&
     (formData.isSuperAdmin || formData.modules.length > 0);
 
   const handleSubmit = () => {
@@ -51,6 +55,8 @@ const AddAdminModal = ({ isOpen, onClose, onSubmit }) => {
       password: "",
       contact: "",
       modules: [],
+      department: "",
+      position: "",
       isSuperAdmin: false,
     });
   };
@@ -191,6 +197,57 @@ const AddAdminModal = ({ isOpen, onClose, onSubmit }) => {
                     onBlur={() => setFocusedField(null)}
                     className="w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 outline-none"
                     placeholder="+1 (555) 000-0000"
+                  />
+                </div>
+              </div>
+              {/* Department */}
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">
+                  Department <span className="text-red-500">*</span>
+                </label>
+                <div
+                  className={`relative transition-all duration-200 ${focusedField === "department" ? "scale-[1.01]" : ""
+                    }`}
+                >
+                  <Shield className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <input
+                    type="text"
+                    value={formData.department}
+                    onChange={(e) =>
+                      setFormData({ ...formData, department: e.target.value })
+                    }
+                    onFocus={() => setFocusedField("department")}
+                    onBlur={() => setFocusedField(null)}
+                    className="w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg
+        focus:ring-2 focus:ring-blue-500 focus:border-transparent
+        transition-all duration-200 outline-none"
+                    placeholder="e.g. Operations, IT, HR"
+                  />
+                </div>
+              </div>
+
+              {/* Position */}
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">
+                  Position <span className="text-red-500">*</span>
+                </label>
+                <div
+                  className={`relative transition-all duration-200 ${focusedField === "position" ? "scale-[1.01]" : ""
+                    }`}
+                >
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <input
+                    type="text"
+                    value={formData.position}
+                    onChange={(e) =>
+                      setFormData({ ...formData, position: e.target.value })
+                    }
+                    onFocus={() => setFocusedField("position")}
+                    onBlur={() => setFocusedField(null)}
+                    className="w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg
+        focus:ring-2 focus:ring-blue-500 focus:border-transparent
+        transition-all duration-200 outline-none"
+                    placeholder="e.g. Manager, Executive"
                   />
                 </div>
               </div>
