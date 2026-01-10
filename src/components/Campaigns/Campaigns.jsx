@@ -490,18 +490,10 @@ export default function CampaignAdminDashboard() {
 
                       <td className="px-6 py-4">
                         <div className="flex flex-wrap gap-1.5">
-                          {campaign.isActive && (
-                            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">
-                              Active
-                            </span>
-                          )}
-                          {campaign.isUrgent && (
-                            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-800 border border-red-200">
-                              Urgent
-                            </span>
-                          )}
-                          <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border ${getStatusColor(campaign.workflowStatus)}`}>
-                            {campaign.workflowStatus?.replace(/_/g, ' ') || 'Unknown'}
+                          <span
+                            className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border ${getStatusColor(campaign.campaignStatus)}`}
+                          >
+                            {campaign.campaignStatus?.replace(/_/g, ' ')}
                           </span>
                         </div>
                       </td>
