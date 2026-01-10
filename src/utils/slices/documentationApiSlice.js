@@ -19,9 +19,10 @@ export const agreementApiSlice = apiSlice.injectEndpoints({
        GET ALL AGREEMENTS
     ========================================= */
     getAgreements: builder.query({
-      query: () => ({
+      query: (params) => ({
         url: "/agreements/getall",
         method: "GET",
+        params, // 👈 this sends page, limit, filters
       }),
       providesTags: ["Documentation"],
       keepUnusedDataFor: 60,

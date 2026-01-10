@@ -1,6 +1,6 @@
 'use client';
 import React, { useState } from 'react';
-import { Plus, Search, Filter, Eye, Edit, Trash2, FileText,ArrowLeft,CheckCircle, XCircle, Clock, Download, TrendingUp, Calendar, Users } from 'lucide-react';
+import { Plus, Search, Filter, Eye, Edit, Trash2, FileText, ArrowLeft, CheckCircle, XCircle, Clock, Download, TrendingUp, Calendar, Users } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useGetAgreementsQuery, useDeleteAgreementMutation } from '@/utils/slices/documentationApiSlice';
 import Modal from "./PopModal"
@@ -9,17 +9,41 @@ export default function Documentation() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedAgreementId, setSelectedAgreementId] = useState(null);
+  const [page, setPage] = useState(1);
+  const limit = 50;
+  // Draft (UI-only)
+  const [draftStatus, setDraftStatus] = useState('');
+  const [draftAgreementType, setDraftAgreementType] = useState('');
+  const [draftFromDate, setDraftFromDate] = useState('');
+  const [draftToDate, setDraftToDate] = useState('');
+
+  // Applied (used in API)
+  const [appliedFilters, setAppliedFilters] = useState({
+    status: '',
+    agreementType: '',
+    fromDate: '',
+    toDate: '',
+  });
 
   const router = useRouter();
 
   // RTK Query hook
-  const { data, isLoading, isError, error } = useGetAgreementsQuery();
+  const { data, isLoading, isError, error } = useGetAgreementsQuery({
+    page,
+    limit,
+    status: appliedFilters.status,
+    agreementType: appliedFilters.agreementType,
+    fromDate: appliedFilters.fromDate,
+    toDate: appliedFilters.toDate,
+    search: searchQuery,
+  });
+
   const [deleteAgreement, { isLoading: isDeleting }] =
     useDeleteAgreementMutation();
 
   // Extract agreements from API response
   const agreements = data?.data || [];
-
+  const pagination = data?.pagination;
   const stats = [
     {
       title: 'Draft Agreements',
@@ -220,27 +244,36 @@ export default function Documentation() {
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
                     Agreement Type
                   </label>
-                  <select className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-50 transition-all bg-white">
-                    <option>All Types</option>
-                    <option>MoU</option>
-                    <option>Contract</option>
-                    <option>Service Agreement</option>
-                    <option>Partnership Agreement</option>
-                    <option>NDA</option>
+                  <select
+                    value={draftAgreementType}
+                    onChange={(e) => setDraftAgreementType(e.target.value)}
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl"
+                  >
+                    <option value="">All Types</option>
+                    <option value="MoU">MoU</option>
+                    <option value="Contract">Contract</option>
+                    <option value="Service Agreement">Service Agreement</option>
+                    <option value="Partnership Agreement">Partnership Agreement</option>
+                    <option value="NDA">NDA</option>
                   </select>
                 </div>
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
                     Status
                   </label>
-                  <select className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-50 transition-all bg-white">
-                    <option>All Statuses</option>
-                    <option>Draft</option>
-                    <option>Signed</option>
-                    <option>Active</option>
-                    <option>Expired</option>
-                    <option>Terminated</option>
+                  <select
+                    value={draftStatus}
+                    onChange={(e) => setDraftStatus(e.target.value)}
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl"
+                  >
+                    <option value="">All Statuses</option>
+                    <option value="Draft">Draft</option>
+                    <option value="Signed">Signed</option>
+                    <option value="Active">Active</option>
+                    <option value="Expired">Expired</option>
+                    <option value="Terminated">Terminated</option>
                   </select>
+
                 </div>
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -248,6 +281,8 @@ export default function Documentation() {
                   </label>
                   <input
                     type="date"
+                    value={draftFromDate}
+                    onChange={(e) => setDraftFromDate(e.target.value)}
                     className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-50 transition-all"
                   />
                 </div>
@@ -257,17 +292,48 @@ export default function Documentation() {
                   </label>
                   <input
                     type="date"
+                    value={draftToDate}
+                    onChange={(e) => setDraftToDate(e.target.value)}
                     className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-50 transition-all"
                   />
                 </div>
               </div>
               <div className="mt-4 flex gap-3">
-                <button className="px-6 py-2 bg-emerald-500 text-white rounded-xl hover:bg-emerald-600 transition-all font-medium">
+                <button
+                  onClick={() => {
+                    setAppliedFilters({
+                      status: draftStatus,
+                      agreementType: draftAgreementType,
+                      fromDate: draftFromDate,
+                      toDate: draftToDate,
+                    });
+                    setPage(1);          // reset pagination
+                    setShowFilters(false);
+                  }}
+                  className="px-6 py-2 bg-emerald-500 text-white rounded-xl"
+                >
                   Apply Filters
                 </button>
                 <button
-                  onClick={() => setShowFilters(false)}
-                  className="px-6 py-2 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-all font-medium"
+                  onClick={() => {
+                    // clear draft
+                    setDraftStatus('');
+                    setDraftAgreementType('');
+                    setDraftFromDate('');
+                    setDraftToDate('');
+
+                    // clear applied
+                    setAppliedFilters({
+                      status: '',
+                      agreementType: '',
+                      fromDate: '',
+                      toDate: '',
+                    });
+
+                    setPage(1);
+                    setShowFilters(false);
+                  }}
+                  className="px-6 py-2 bg-gray-100 text-gray-700 rounded-xl"
                 >
                   Clear All
                 </button>
@@ -418,18 +484,36 @@ export default function Documentation() {
         {agreements.length > 0 && (
           <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 bg-white rounded-xl p-4 shadow-sm border border-gray-100">
             <div className="text-sm text-gray-600 font-medium">
-              Showing <span className="text-emerald-600 font-bold">1</span> to{' '}
-              <span className="text-emerald-600 font-bold">{agreements.length}</span> of{' '}
-              <span className="text-emerald-600 font-bold">{agreements.length}</span> results
+              Showing{" "}
+              <span className="text-emerald-600 font-bold">
+                {(page - 1) * limit + 1}
+              </span>{" "}
+              to{" "}
+              <span className="text-emerald-600 font-bold">
+                {Math.min(page * limit, pagination?.totalRecords || 0)}
+              </span>{" "}
+              of{" "}
+              <span className="text-emerald-600 font-bold">
+                {pagination?.totalRecords || 0}
+              </span>{" "}
+              results
             </div>
             <div className="flex gap-2">
-              <button className="px-5 py-2.5 border-2 border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+              <button
+                disabled={page === 1}
+                onClick={() => setPage((p) => Math.max(p - 1, 1))}
+                className="px-5 py-2.5 border-2 border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+              >
                 Previous
               </button>
-              <button className="px-5 py-2.5 bg-emerald-500 text-white rounded-xl text-sm font-bold hover:bg-emerald-600 transition-all shadow-md">
-                1
+              <button className="px-5 py-2.5 bg-emerald-500 text-white rounded-xl text-sm font-bold">
+                {page}
               </button>
-              <button className="px-5 py-2.5 border-2 border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition-all">
+              <button
+                disabled={page === pagination?.totalPages}
+                onClick={() => setPage((p) => p + 1)}
+                className="px-5 py-2.5 border-2 border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+              >
                 Next
               </button>
             </div>
