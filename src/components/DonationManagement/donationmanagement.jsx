@@ -176,7 +176,7 @@ const DonationDetailsModal = ({ donation, onClose }) => {
                         </div>
                         <div>
                             <label className="text-xs sm:text-sm font-medium text-gray-500">Location</label>
-                              <p className="mt-1 text-sm sm:text-base text-gray-900 break-all">{donation.kycStatus}</p>
+                            <p className="mt-1 text-sm sm:text-base text-gray-900 break-all">{donation.kycStatus}</p>
                         </div>
                         <div>
                             <label className="text-xs sm:text-sm font-medium text-gray-500">Donation Date</label>
@@ -213,12 +213,19 @@ const DonationDetailsModal = ({ donation, onClose }) => {
 export default function DonationManagement() {
     const [searchQuery, setSearchQuery] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
-    const [sortField, setSortField] = useState('date');
-    const [sortOrder, setSortOrder] = useState('desc');
     const [selectedDonation, setSelectedDonation] = useState(null);
     const [showFilters, setShowFilters] = useState(false);
     const [showFilterModal, setShowFilterModal] = useState(false);
-    const [filters, setFilters] = useState({
+    // What user is editing in the modal
+    const [draftFilters, setDraftFilters] = useState({
+        startDate: '',
+        endDate: '',
+        minAmount: '',
+        maxAmount: '',
+    });
+
+    // What is actually applied to API
+    const [appliedFilters, setAppliedFilters] = useState({
         startDate: '',
         endDate: '',
         minAmount: '',
@@ -235,13 +242,14 @@ export default function DonationManagement() {
         };
 
         if (searchQuery) params.search = searchQuery;
-        if (filters.startDate) params.startDate = filters.startDate;
-        if (filters.endDate) params.endDate = filters.endDate;
-        if (filters.minAmount) params.minAmount = filters.minAmount;
-        if (filters.maxAmount) params.maxAmount = filters.maxAmount;
+        if (appliedFilters.startDate) params.startDate = appliedFilters.startDate;
+        if (appliedFilters.endDate) params.endDate = appliedFilters.endDate;
+        if (appliedFilters.minAmount) params.minAmount = appliedFilters.minAmount;
+        if (appliedFilters.maxAmount) params.maxAmount = appliedFilters.maxAmount;
 
         return params;
-    }, [currentPage, searchQuery, filters]);
+    }, [currentPage, searchQuery, appliedFilters]);
+
 
     // Fetch donations using RTK Query
     const { data, error, isLoading, isFetching } = useGetDonationsQuery(queryParams);
@@ -249,12 +257,13 @@ export default function DonationManagement() {
     // Reset to page 1 when filters or search changes
     useEffect(() => {
         setCurrentPage(1);
-    }, [searchQuery, filters]);
+    }, [searchQuery, appliedFilters]);
+
 
     // Extract donations and pagination from API response
     const donations = data?.donations || [];
     const pagination = data?.pagination || { currentPage: 1, totalPages: 1, totalDonations: 0 };
-    const totalAmount = data?.totalAmount || 0; 
+    const totalAmount = data?.totalAmount || 0;
 
     return (
         <div className="min-h-screen bg-gray-50">
@@ -299,7 +308,7 @@ export default function DonationManagement() {
                         onClick={() => router.push('/donation-management/offline-donation')}
                         className="bg-white rounded-lg cursor-pointer shadow p-3 sm:p-6 col-span-2 lg:col-span-1">
                         <p className="text-xs sm:text-sm font-medium text-gray-600">Offline Donations</p>
-                        <p className="mt-1 flex items-center gap-1 text-xs sm:text-sm font-medium text-gray-400">
+                        <p className="mt-1 flex items-center gap-1 text-xs sm:text-sm font-medium text-orange-400">
                             <span>Click here to view Offline Donations</span>
                             <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4" />
                         </p>
@@ -487,9 +496,10 @@ export default function DonationManagement() {
             {/* Filter Modal */}
             {showFilterModal && (
                 <FilterModal
-                    filters={filters}
-                    setFilters={setFilters}
+                    filters={draftFilters}
+                    setFilters={setDraftFilters}
                     onApply={() => {
+                        setAppliedFilters(draftFilters); // 🔥 THIS is the key
                         setCurrentPage(1);
                         setShowFilterModal(false);
                     }}
