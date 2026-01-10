@@ -23,6 +23,7 @@ export default function CampaignForm({
   setSelectedCampaign,
   onSave,
   onCancel,
+  isSaving,
 }) {
   const [showMediaModal, setShowMediaModal] = useState(false);
 
@@ -40,6 +41,7 @@ export default function CampaignForm({
       title: campaign.title || "",
       organization: campaign.organization || "",
       beneficiaryName: campaign.beneficiaryName || "",
+      campaignerName: campaign.campaignerName || "",
       requiredAmount: campaign.targetAmount || "",
       category: campaign.category || prev.category,
       about: campaign.about || "",
@@ -144,7 +146,7 @@ export default function CampaignForm({
               {!editingCard && (
                 <div>
                   <label className="block text-sm font-semibold text-gray-900 mb-2">
-                    Select Campaign for Publication <span className="text-red-500">*</span>
+                    Select Existing Campaign <span className="text-red-500">(optional for inhouse campaigns)</span>
                   </label>
                   <select
                     value={formData.campaignId}
@@ -159,7 +161,10 @@ export default function CampaignForm({
                     ))}
                   </select>
                   <p className="mt-2 text-xs text-gray-600">
-                    Campaigns with pending Create tasks are listed here
+                    • Select a campaign if it came via photography/workflow
+                  </p>
+                  <p className="mt-2 text-xs text-gray-600">
+                    • Leave empty to create an in-house campaign
                   </p>
                 </div>
               )}
@@ -289,6 +294,18 @@ export default function CampaignForm({
                   value={formData.beneficiaryName}
                   onChange={(e) => setFormData({ ...formData, beneficiaryName: e.target.value })}
                   placeholder="Enter beneficiary name..."
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 outline-none transition-all"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-900 mb-2">
+                  Campaigner Name
+                </label>
+                <input
+                  type="text"
+                  value={formData.campaignerName}
+                  onChange={(e) => setFormData({ ...formData, campaignerName: e.target.value })}
+                  placeholder="Enter campaigner name..."
                   className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 outline-none transition-all"
                 />
               </div>
@@ -435,11 +452,46 @@ export default function CampaignForm({
               <div className="flex gap-3 pt-4">
                 <button
                   onClick={onSave}
-                  className="flex-1 flex items-center justify-center gap-2 bg-emerald-600 text-white py-3.5 rounded-lg font-semibold hover:bg-emerald-700 transition-all shadow-sm hover:shadow-md"
+                  disabled={isSaving}
+                  className={`flex-1 flex items-center justify-center gap-2 py-3.5 rounded-lg font-semibold transition-all shadow-sm
+    ${isSaving
+                      ? "bg-emerald-400 cursor-not-allowed"
+                      : "bg-emerald-600 hover:bg-emerald-700 hover:shadow-md text-white"
+                    }
+  `}
                 >
-                  <Save size={20} />
-                  Save Campaign
+                  {isSaving ? (
+                    <>
+                      <svg
+                        className="animate-spin h-5 w-5 text-white"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        />
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                        />
+                      </svg>
+                      {editingCard ? "Updating Campaign..." : "Creating Campaign..."}
+                    </>
+                  ) : (
+                    <>
+                      <Save size={20} />
+                      Save Campaign
+                    </>
+                  )}
                 </button>
+
                 <button
                   onClick={onCancel}
                   className="px-6 py-3.5 bg-white border-2 border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 transition-colors"

@@ -32,6 +32,7 @@ export default function FundraisingCMS() {
     "Orphans",
     "Education",
     "Clean Water",
+    "Construction"
   ];
 
   const categoryColors = {
@@ -40,6 +41,7 @@ export default function FundraisingCMS() {
     Orphans: "bg-purple-100 text-purple-800",
     Education: "bg-amber-100 text-amber-800",
     "Clean Water": "bg-cyan-100 text-cyan-800",
+    "Construction": "bg-amber-100 text-amber-800",
   };
 
   const [formData, setFormData] = useState({
@@ -50,6 +52,7 @@ export default function FundraisingCMS() {
     title: "",
     organization: "",
     beneficiaryName: "",
+    campaignerName:" ",
     about: "",
     impactGoals: [""],
     requiredAmount: "",
@@ -82,6 +85,9 @@ export default function FundraisingCMS() {
   const [updateFundraiser, { isLoading: isUpdating }] =
     useUpdateFundraiserMutation();
 
+    const isSaving = isCreating || isUpdating;
+
+
   const [deleteFundraiser] = useDeleteFundraiserMutation();
 
   const fundraisingCards = fundraisersResponse?.data || [];
@@ -112,6 +118,7 @@ export default function FundraisingCMS() {
       title: card.title,
       organization: card.organization,
       beneficiaryName: card.beneficiaryName || "",
+      campaignerName: card.campaignerName || "",
       about: card.about || "",
       impactGoals: card.impactGoals?.length ? card.impactGoals : [""],
       requiredAmount: card.requiredAmount,
@@ -161,6 +168,7 @@ export default function FundraisingCMS() {
       form.append("taxBenefits", formData.taxBenefits);
       form.append("zakatVerified", formData.zakatVerified);
       form.append("beneficiaryName", formData.beneficiaryName);
+      form.append("campaignerName",formData.campaignerName );
       form.append("about", formData.about);
 
       formData.documents.forEach((file) => {
@@ -225,6 +233,7 @@ export default function FundraisingCMS() {
       title: "",
       organization: "",
       beneficiaryName: "",
+      campaignerName: "",
       about: "",
       impactGoals: [""],
       requiredAmount: "",
@@ -319,6 +328,8 @@ export default function FundraisingCMS() {
             imageUrl={undefined}
             onSave={handleSave}
             onCancel={handleCancel}
+            isSaving={isSaving}
+            
           />
         )}
       </div>
