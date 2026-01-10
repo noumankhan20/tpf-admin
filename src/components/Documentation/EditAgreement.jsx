@@ -127,19 +127,6 @@ export default function EditAgreement() {
         }
     };
 
-
-
-    if (isLoading) {
-        return (
-            <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50 flex items-center justify-center">
-                <div className="flex flex-col items-center">
-                    <Loader2 className="w-12 h-12 text-slate-700 animate-spin mb-4" />
-                    <p className="text-slate-600 font-medium">Loading agreement details...</p>
-                </div>
-            </div>
-        );
-    }
-
     const documentsByType = React.useMemo(() => {
         const map = {
             signed: [],
@@ -153,6 +140,19 @@ export default function EditAgreement() {
 
         return map;
     }, [agreement]);
+
+
+
+    if (isLoading) {
+        return (
+            <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50 flex items-center justify-center">
+                <div className="flex flex-col items-center">
+                    <Loader2 className="w-12 h-12 text-slate-700 animate-spin mb-4" />
+                    <p className="text-slate-600 font-medium">Loading agreement details...</p>
+                </div>
+            </div>
+        );
+    }
 
 
     if (isError) {
