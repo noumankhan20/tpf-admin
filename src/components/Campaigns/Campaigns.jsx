@@ -142,17 +142,11 @@ export default function CampaignAdminDashboard() {
               </div>
 
               <div className="flex flex-wrap gap-2">
-                {campaign.isActive && (
-                  <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">
-                    <span className="w-1.5 h-1.5 bg-emerald-600 rounded-full mr-2 animate-pulse"></span>
-                    Active
-                  </span>
-                )}
-                {campaign.isUrgent && (
-                  <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold bg-red-100 text-red-800 border border-red-200">
-                    Urgent
-                  </span>
-                )}
+                <span
+                  className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border ${getStatusColor(campaign.campaignStatus)}`}
+                >
+                  {campaign.campaignStatus?.replace(/_/g, ' ')}
+                </span>
                 <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold border ${getStatusColor(campaign.workflowStatus)}`}>
                   {campaign.workflowStatus?.replace(/_/g, ' ') || 'Unknown'}
                 </span>
@@ -581,16 +575,11 @@ export default function CampaignAdminDashboard() {
                     </div>
 
                     <div className="flex flex-wrap gap-1.5 mb-3">
-                      {campaign.isActive && (
-                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">
-                          Active
-                        </span>
-                      )}
-                      {campaign.isUrgent && (
-                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-800 border border-red-200">
-                          Urgent
-                        </span>
-                      )}
+                      <span
+                        className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border ${getStatusColor(campaign.campaignStatus)}`}
+                      >
+                        {campaign.campaignStatus?.replace(/_/g, ' ')}
+                      </span>
                       <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border ${getStatusColor(campaign.workflowStatus)}`}>
                         {campaign.workflowStatus?.replace(/_/g, ' ') || 'Unknown'}
                       </span>
