@@ -159,6 +159,10 @@ export default function TailoredFeedCMS() {
       showMessage("Title is required", "error");
       return;
     }
+    if (!itemForm.route.trim()) {
+      showMessage("Route is required", "error");
+      return;
+    }
 
     if (viewMode === "add-item" && !itemForm.mediaFile) {
       showMessage("Please upload an image", "error");
