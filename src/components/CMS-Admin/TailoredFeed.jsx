@@ -52,7 +52,6 @@ export default function TailoredFeedCMS() {
     route: "",
     mediaFile: null,
     mediaPreview: null,
-    mediaUrl: "",
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -125,7 +124,6 @@ export default function TailoredFeedCMS() {
         ...prev,
         mediaFile: file,
         mediaPreview: reader.result,
-        mediaUrl: reader.result,
       }));
     };
     reader.readAsDataURL(file);
@@ -138,7 +136,6 @@ export default function TailoredFeedCMS() {
       route: "",
       mediaFile: null,
       mediaPreview: null,
-      mediaUrl: "",
     });
     setSelectedItem(null);
     setViewMode("add-item");
@@ -152,7 +149,6 @@ export default function TailoredFeedCMS() {
       route: item.route || "",
       mediaFile: null,
       mediaPreview: item.image ? getMediaUrl(item.image) : null,
-      mediaUrl: item.image ? getMediaUrl(item.image) : "",
     });
     setViewMode("edit-item");
   };
@@ -198,7 +194,6 @@ export default function TailoredFeedCMS() {
         route: "",
         mediaFile: null,
         mediaPreview: null,
-        mediaUrl: "",
       });
     } catch (err) {
       showMessage(err?.data?.message || "Something went wrong", "error");
@@ -233,7 +228,6 @@ export default function TailoredFeedCMS() {
       route: "",
       mediaFile: null,
       mediaPreview: null,
-      mediaUrl: "",
     });
   };
 
