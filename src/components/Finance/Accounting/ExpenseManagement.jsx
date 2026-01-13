@@ -439,7 +439,7 @@ export default function ExpenseManagement() {
                                     {/* Conditional Fields Based on Expense Type */}
                                     {formData.expenseType === 'SALARY' && (
                                         <div>
-                                            <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">Select Admin *</label>
+                                            <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">Select Employee *</label>
                                             <div className="relative">
                                                 <User className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                                                 <select
@@ -538,7 +538,7 @@ export default function ExpenseManagement() {
 
                                             {formData.reimbursementType === 'ADMIN' ? (
                                                 <div>
-                                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">Select Admin *</label>
+                                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">Select Employee *</label>
                                                     <div className="relative">
                                                         <User className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                                                         <select
