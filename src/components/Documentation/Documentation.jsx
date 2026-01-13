@@ -70,8 +70,8 @@ export default function Documentation() {
       textColor: 'text-red-600',
     },
     {
-      title: 'Expired',
-      count: agreements.filter(a => a.status === 'Expired').length,
+      title: 'Completed',
+      count: agreements.filter(a => a.status === 'Completed').length,
       icon: Clock,
       color: 'from-orange-500 to-orange-600',
       lightColor: 'bg-orange-50',
@@ -83,7 +83,7 @@ export default function Documentation() {
     const statusStyles = {
       Draft: 'bg-blue-100 text-blue-700 border-blue-200',
       Active: 'bg-emerald-100 text-emerald-700 border-emerald-200',
-      Expired: 'bg-orange-100 text-orange-700 border-orange-200',
+      Completed: 'bg-orange-100 text-orange-700 border-orange-200',
       Terminated: 'bg-red-100 text-red-700 border-red-200',
       Signed: 'bg-purple-100 text-purple-700 border-purple-200',
       Cancelled: 'bg-gray-100 text-gray-700 border-gray-200'
@@ -270,7 +270,7 @@ export default function Documentation() {
                     <option value="Draft">Draft</option>
                     <option value="Signed">Signed</option>
                     <option value="Active">Active</option>
-                    <option value="Expired">Expired</option>
+                    <option value="Completed">Completed</option>
                     <option value="Terminated">Terminated</option>
                   </select>
 

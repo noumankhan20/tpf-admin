@@ -21,7 +21,7 @@ export default function Modal({ isOpen, onClose, agreementId }) {
         const statusStyles = {
             Draft: 'bg-blue-50 text-blue-700 border border-blue-200',
             Active: 'bg-emerald-50 text-emerald-700 border border-emerald-200',
-            Expired: 'bg-orange-50 text-orange-700 border border-orange-200',
+            Completed: 'bg-orange-50 text-orange-700 border border-orange-200',
             Terminated: 'bg-red-50 text-red-700 border border-red-200',
             Signed: 'bg-purple-50 text-purple-700 border border-purple-200',
             Cancelled: 'bg-gray-50 text-gray-700 border border-gray-200'

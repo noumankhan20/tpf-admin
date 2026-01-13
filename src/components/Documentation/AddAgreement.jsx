@@ -851,7 +851,7 @@ export default function AddAgreement() {
                         <option>Draft</option>
                         <option>Signed</option>
                         <option>Active</option>
-                        <option>Expired</option>
+                        <option>Completed</option>
                         <option>Terminated</option>
                       </select>
                     </div>
