@@ -54,6 +54,14 @@ export const donationApiSlice = apiSlice.injectEndpoints({
       }),
     }),
 
+    rejectOfflineDonations: builder.mutation({
+      query: ({donationId,remarks}) => ({
+        url: "offline-donations/reject",
+        method: "POST",
+        body: { donationId, remarks }, // Send the array of donation IDs to reject
+      }),
+    }),
+
     })
 })
 
@@ -65,4 +73,5 @@ export const {
     useGetAllDonorsQuery,
     useGetDonorDetailsQuery,
     useGetPendingCountQuery,
+    useRejectOfflineDonationsMutation,
 } = donationApiSlice

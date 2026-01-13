@@ -15,7 +15,7 @@ import {
   User,
   Filter,
 } from "lucide-react";
-import { useGetOfflineDonationsQuery, useApproveOfflineDonationsMutation } from '@/utils/slices/donationApiSlice';
+import { useGetOfflineDonationsQuery, useApproveOfflineDonationsMutation, useRejectOfflineDonationsMutation } from '@/utils/slices/donationApiSlice';
 
 // ==================== STATUS BADGE COMPONENT ====================
 const StatusBadge = ({ status }) => {
@@ -200,7 +200,7 @@ const FilterModal = ({ isOpen, onClose, filters, setFilters, onApply }) => {
 };
 
 // ==================== DETAILS MODAL ====================
-const OfflineDonationDetailsModal = ({ isOpen, onClose, donation, onApprove }) => {
+const OfflineDonationDetailsModal = ({ isOpen, onClose, donation, onApprove, onRejectClick, }) => {
   if (!isOpen || !donation) return null;
 
   const formatDate = (dateString) => {
@@ -213,7 +213,7 @@ const OfflineDonationDetailsModal = ({ isOpen, onClose, donation, onApprove }) =
 
   return (
     <div className="fixed inset-0 bg-black/20 backdrop-blur-sm  flex items-center justify-center z-50 p-4"
-     onClick={onClose}
+      onClick={onClose}
     >
       <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
@@ -377,23 +377,111 @@ const OfflineDonationDetailsModal = ({ isOpen, onClose, donation, onApprove }) =
           </button>
 
           {donation.status === "pending" && (
-            <button
-              onClick={() => {
-                onApprove(donation.id);
-                onClose();
-              }}
-              className="w-full sm:w-auto px-4 py-2 cursor-pointer bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center justify-center gap-2"
-            >
-              <CheckCircle className="w-4 h-4" />
-              Approve Donation
-            </button>
+            <>
+              <button
+                onClick={() => {
+                  onApprove(donation.id);
+                  onClose();
+                }}
+                className="w-full sm:w-auto px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2"
+              >
+                <CheckCircle className="w-4 h-4" />
+                Approve
+              </button>
+
+              <button
+                onClick={() => {
+                  onRejectClick(donation.id);
+                  onClose(); // close details modal
+                }}
+                className="w-full sm:w-auto px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center gap-2"
+              >
+                <XCircle className="w-4 h-4" />
+                Reject
+              </button>
+
+            </>
           )}
+
         </div>
 
       </div>
     </div>
   );
 };
+
+const RejectDonationModal = ({
+  isOpen,
+  onClose,
+  donationId,
+  onReject,
+  isLoading,
+}) => {
+  const [remarks, setRemarks] = useState("");
+
+  if (!isOpen) return null;
+
+  const handleSubmit = () => {
+    if (!remarks.trim()) {
+      alert("Remarks are required");
+      return;
+    }
+    onReject(donationId, remarks);
+  };
+
+  return (
+    <div
+      className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white rounded-lg shadow-xl max-w-md w-full"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="border-b px-6 py-4 flex items-center justify-between">
+          <h3 className="text-lg font-semibold text-gray-900">
+            Reject Donation
+          </h3>
+          <button onClick={onClose}>
+            <X className="w-5 h-5 text-gray-400 hover:text-gray-600" />
+          </button>
+        </div>
+
+        <div className="p-6 space-y-4">
+          <p className="text-sm text-gray-600">
+            Please provide a reason for rejecting this donation.
+          </p>
+
+          <textarea
+            rows={4}
+            value={remarks}
+            onChange={(e) => setRemarks(e.target.value)}
+            placeholder="Enter rejection remarks..."
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 text-sm"
+          />
+        </div>
+
+        <div className="border-t px-6 py-4 flex gap-3 justify-end">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+          >
+            Cancel
+          </button>
+
+          <button
+            onClick={handleSubmit}
+            disabled={isLoading}
+            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
+          >
+            {isLoading ? "Rejecting..." : "Reject Donation"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 
 // ==================== TABLE COMPONENT ====================
 const OfflineDonationTable = ({ donations, onView, onApprove }) => {
@@ -563,6 +651,12 @@ export default function OfflineDonationPage() {
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [selectedDonation, setSelectedDonation] = useState(null);
+  const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
+  const [rejectDonationId, setRejectDonationId] = useState(null);
+
+  const [rejectOfflineDonation, { isLoading: isRejecting }] =
+    useRejectOfflineDonationsMutation();
+
   const [filters, setFilters] = useState({
     startDate: '',
     endDate: '',
@@ -571,9 +665,9 @@ export default function OfflineDonationPage() {
     method: '',
     status: '',
   });
-  
+
   const [approveOfflineDonation] = useApproveOfflineDonationsMutation();
-  
+
   const queryParams = useMemo(() => {
     const params = {};
     if (filters.startDate) params.startDate = filters.startDate;
@@ -618,6 +712,32 @@ export default function OfflineDonationPage() {
   const handleApplyFilters = () => {
     refetch();
   };
+
+  const openRejectModal = (donationId) => {
+    setRejectDonationId(donationId);
+    setIsRejectModalOpen(true);
+  };
+
+
+
+  const handleReject = async (donationId, remarks) => {
+    try {
+      const res = await rejectOfflineDonation({
+        donationId,
+        remarks,
+      }).unwrap();
+
+      alert(res.message);
+      setIsRejectModalOpen(false);
+      setRejectDonationId(null);
+      refetch();
+    } catch (err) {
+      console.error(err);
+      alert(err?.data?.message || "Failed to reject donation");
+    }
+  };
+
+
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -751,6 +871,7 @@ export default function OfflineDonationPage() {
         onClose={() => setIsDetailsModalOpen(false)}
         donation={selectedDonation}
         onApprove={handleApprove}
+        onRejectClick={openRejectModal}
       />
 
       <FilterModal
@@ -760,6 +881,14 @@ export default function OfflineDonationPage() {
         setFilters={setFilters}
         onApply={handleApplyFilters}
       />
+      <RejectDonationModal
+        isOpen={isRejectModalOpen}
+        onClose={() => setIsRejectModalOpen(false)}
+        donationId={rejectDonationId}
+        onReject={handleReject}
+        isLoading={isRejecting}
+      />
+
     </div>
   );
 }
