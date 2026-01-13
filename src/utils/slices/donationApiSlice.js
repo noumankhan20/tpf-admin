@@ -47,6 +47,13 @@ export const donationApiSlice = apiSlice.injectEndpoints({
       }),
     }),
 
+     getPendingCount: builder.query({
+      query: () => ({
+        url: `offline-donations/pending-count`, // Your backend endpoint for individual donor details
+        method: 'GET',
+      }),
+    }),
+
     })
 })
 
@@ -56,5 +63,6 @@ export const {
     useGetOfflineDonationsQuery,
     useApproveOfflineDonationsMutation,
     useGetAllDonorsQuery,
-    useGetDonorDetailsQuery
+    useGetDonorDetailsQuery,
+    useGetPendingCountQuery,
 } = donationApiSlice
