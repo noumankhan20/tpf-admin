@@ -121,6 +121,10 @@ export default function Documentation() {
     router.push('/documentation-management/add-agreement');
   };
 
+  const handleViewBusiness = () => {
+    router.push('/documentation-management/view-business');
+  };
+
   // Format parties array to string
   const formatParties = (parties) => {
     if (!parties || parties.length === 0) return 'N/A';
@@ -163,10 +167,19 @@ export default function Documentation() {
                 Centralized hub for managing agreements, contracts, and memorandums with tracking
               </p>
             </div>
+            <div className="flex flex-wrap gap-3">
+              <button
+                onClick={handleViewBusiness}
+                className="flex items-center cursor-pointer gap-2 px-6 py-3 bg-white text-emerald-600 rounded-xl hover:bg-emerald-50 transition-all font-semibold shadow-xl hover:shadow-2xl hover:scale-105"
+              >
+                <Eye className="w-5 h-5" />
+                View Business Resolutions
+              </button>
+            </div>
 
             <div className="flex flex-wrap gap-3">
               <button
-                onClick={handleCreateNew}
+                onClick={handleViewBusiness}
                 className="flex items-center cursor-pointer gap-2 px-6 py-3 bg-white text-emerald-600 rounded-xl hover:bg-emerald-50 transition-all font-semibold shadow-xl hover:shadow-2xl hover:scale-105"
               >
                 <Plus className="w-5 h-5" />
