@@ -52,7 +52,7 @@ export default function FundraisingCMS() {
     title: "",
     organization: "",
     beneficiaryName: "",
-    campaignerName:" ",
+    campaignerName: " ",
     about: "",
     impactGoals: [""],
     requiredAmount: "",
@@ -72,6 +72,7 @@ export default function FundraisingCMS() {
     selectedImageUrl: "",
     selectedVideoUrl: "",
     taskId: "",
+    currentStatus: "",
   });
 
   const {
@@ -85,7 +86,7 @@ export default function FundraisingCMS() {
   const [updateFundraiser, { isLoading: isUpdating }] =
     useUpdateFundraiserMutation();
 
-    const isSaving = isCreating || isUpdating;
+  const isSaving = isCreating || isUpdating;
 
 
   const [deleteFundraiser] = useDeleteFundraiserMutation();
@@ -134,6 +135,7 @@ export default function FundraisingCMS() {
       isExistingVideo: !!card.videoUrl,
       existingDocuments: card.documents || [],
       documents: [],
+      currentStatus: card.currentStatus || "",
     });
     setViewMode("edit");
   };
@@ -168,8 +170,9 @@ export default function FundraisingCMS() {
       form.append("taxBenefits", formData.taxBenefits);
       form.append("zakatVerified", formData.zakatVerified);
       form.append("beneficiaryName", formData.beneficiaryName);
-      form.append("campaignerName",formData.campaignerName );
+      form.append("campaignerName", formData.campaignerName);
       form.append("about", formData.about);
+      form.append("currentStatus", formData.currentStatus);
 
       formData.documents.forEach((file) => {
         form.append("documents", file);
@@ -253,6 +256,7 @@ export default function FundraisingCMS() {
       selectedImageUrl: "",
       selectedVideoUrl: "",
       taskId: "",
+      currentStatus: "",
     });
     setSelectedCampaign(null);
   };
@@ -329,7 +333,7 @@ export default function FundraisingCMS() {
             onSave={handleSave}
             onCancel={handleCancel}
             isSaving={isSaving}
-            
+
           />
         )}
       </div>

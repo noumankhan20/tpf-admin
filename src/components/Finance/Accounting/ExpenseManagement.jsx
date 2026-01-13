@@ -31,6 +31,7 @@ import { useGetAdminListQuery } from '@/utils/slices/adminApiSlice';
 import { useGetCampaignListQuery } from '@/utils/slices/campaignSlice';
 import { useGetPurchasesQuery } from '@/utils/slices/InventoryAndAsset/purchaseApiSlice';
 import { useGetVendorsQuery } from '@/utils/slices/InventoryAndAsset/vendorApiSlice';
+import { useGetAgreementsQuery } from '@/utils/slices/documentationApiSlice';
 
 export default function ExpenseManagement() {
     const router = useRouter();
@@ -48,6 +49,7 @@ export default function ExpenseManagement() {
     const { data: campaignsResponse } = useGetCampaignListQuery();
     const { data: purchasesResponse } = useGetPurchasesQuery();
     const { data: vendorsResponse } = useGetVendorsQuery();
+    const { data: agreementsResponse } = useGetAgreementsQuery();
 
     const [createExpense, { isLoading: isCreating }] = useCreateExpenseMutation();
 
@@ -56,6 +58,7 @@ export default function ExpenseManagement() {
     const campaigns = campaignsResponse?.data || [];
     const purchases = purchasesResponse?.data || [];
     const vendors = vendorsResponse?.data || [];
+    const agreements = agreementsResponse?.data || [];
 
     // Form State
     const [formData, setFormData] = useState({
@@ -66,6 +69,7 @@ export default function ExpenseManagement() {
         campaignId: '',
         purchaseId: '',
         vendorId: '',
+        agreementId: '',
         paymentMethod: 'CASH',
         transactionId: '',
         notes: '',
@@ -83,6 +87,7 @@ export default function ExpenseManagement() {
         { value: 'PURCHASE', label: 'Purchase', color: 'purple' },
         { value: 'REIMBURSEMENT', label: 'Reimbursement', color: 'orange' },
         { value: 'OPERATIONAL', label: 'Operational', color: 'teal' },
+        { value: 'DOCUMENTATION_SERVICE', label: 'Documentation Service Payment', color: 'amber' },
         { value: 'OTHER', label: 'Other', color: 'gray' },
     ];
 
@@ -114,6 +119,9 @@ export default function ExpenseManagement() {
             }
             if (formData.vendorId) {
                 formDataToSend.append('vendorId', formData.vendorId);
+            }
+            if (formData.expenseType === 'DOCUMENTATION_SERVICE' && formData.agreementId) {
+                formDataToSend.append('agreementId', formData.agreementId);
             }
 
             if (formData.expenseType === 'REIMBURSEMENT') {
@@ -148,6 +156,7 @@ export default function ExpenseManagement() {
             campaignId: '',
             purchaseId: '',
             vendorId: '',
+            agreementId: '',
             paymentMethod: 'CASH',
             transactionId: '',
             notes: '',
@@ -291,6 +300,12 @@ export default function ExpenseManagement() {
                                                                 <span className="flex items-center gap-1 text-purple-600">
                                                                     <Building2 size={12} />
                                                                     {expense.vendorId.fullName}
+                                                                </span>
+                                                            )}
+                                                            {expense.agreementId && (
+                                                                <span className="flex items-center gap-1 text-amber-600">
+                                                                    <FileText size={12} />
+                                                                    {expense.agreementId.agreementTitle}
                                                                 </span>
                                                             )}
                                                             <span className="flex items-center gap-1 text-gray-400">
@@ -477,6 +492,28 @@ export default function ExpenseManagement() {
                                                     {purchases.map(purchase => (
                                                         <option key={purchase._id} value={purchase._id}>
                                                             {purchase.vendorId?.fullName} - ₹{purchase.totalAmount}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {formData.expenseType === 'DOCUMENTATION_SERVICE' && (
+                                        <div>
+                                            <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">Select Documentation Agreement *</label>
+                                            <div className="relative">
+                                                <FileText className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                                                <select
+                                                    required
+                                                    value={formData.agreementId}
+                                                    onChange={(e) => setFormData(p => ({ ...p, agreementId: e.target.value }))}
+                                                    className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all appearance-none"
+                                                >
+                                                    <option value="">Choose Agreement</option>
+                                                    {agreements.map(agreement => (
+                                                        <option key={agreement._id} value={agreement._id}>
+                                                            {agreement.title} - {agreement.parties?.[0]?.name}
                                                         </option>
                                                     ))}
                                                 </select>

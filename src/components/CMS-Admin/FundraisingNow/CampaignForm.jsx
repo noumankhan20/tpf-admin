@@ -56,6 +56,7 @@ export default function CampaignForm({
       imagePreview: campaign.imageUrl || null,
       videoPreview: campaign.videoUrl || null,
       mediaType: campaign.mediaType || "image",
+      currentStatus: campaign.currentStatus || "",
     }));
   };
 
@@ -320,6 +321,20 @@ export default function CampaignForm({
                   value={formData.about}
                   onChange={(e) => setFormData({ ...formData, about: e.target.value })}
                   placeholder="Describe the campaign in detail..."
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 outline-none transition-all resize-none"
+                />
+              </div>
+
+              {/* Current Status */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-900 mb-2">
+                  Current Status
+                </label>
+                <textarea
+                  rows={3}
+                  value={formData.currentStatus}
+                  onChange={(e) => setFormData({ ...formData, currentStatus: e.target.value })}
+                  placeholder="Describe the current status of the campaign..."
                   className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 outline-none transition-all resize-none"
                 />
               </div>
