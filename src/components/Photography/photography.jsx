@@ -174,21 +174,40 @@ const PhotographyDashboard = ({ activeView, setActiveView, userRole, assignments
                         <div key={upload.id} className="p-4 border rounded-lg bg-yellow-50 border-yellow-200">
                             <div className="flex flex-col sm:flex-row sm:items-start gap-3">
                                 <div className="w-16 h-16 md:w-20 md:h-20 flex-shrink-0">
-                                    <img
-                                        src={getImageUrl(upload.images[0])}
-                                        alt="Upload preview"
-                                        className="w-full h-full rounded-lg object-cover"
-                                    />
+                                    {upload.images?.[0] ? (
+                                        <img
+                                            src={getImageUrl(upload.images[0])}
+                                            alt="Upload preview"
+                                            className="w-full h-full rounded-lg object-cover"
+                                        />
+                                    ) : (
+                                        <div className="w-full h-full rounded-lg bg-gray-100 flex items-center justify-center">
+                                            <ImageIcon className="w-8 h-8 text-gray-400" />
+                                        </div>
+                                    )}
                                 </div>
                                 <div className="flex-1 min-w-0">
                                     <h3 className="font-semibold text-gray-800 text-sm md:text-base">{upload.campaignName}</h3>
                                     <p className="text-xs md:text-sm text-gray-600 mb-1">Beneficiary: {upload.beneficiaryName}</p>
                                     <p className="text-xs md:text-sm text-gray-600 mb-2">{upload.notes}</p>
-                                    <div className="flex items-center gap-4 text-xs text-gray-500">
+                                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-xs text-gray-500">
                                         <span>{formatDate(upload.uploadDate)}</span>
-                                        <span>{upload.images.length} images</span>
+                                        <span>{upload.images?.length || 0} images</span>
                                         <span className="text-yellow-600 font-medium">Under Review</span>
                                     </div>
+                                    {upload.driveLink && (
+                                        <div className="mt-3">
+                                            <a
+                                                href={upload.driveLink}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-100 text-blue-700 rounded-lg text-xs font-bold hover:bg-blue-200 transition-colors"
+                                            >
+                                                <Download className="w-3 h-3" />
+                                                Access Drive Files
+                                            </a>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -199,11 +218,17 @@ const PhotographyDashboard = ({ activeView, setActiveView, userRole, assignments
                         <div key={upload.id} className="p-4 border rounded-lg bg-green-50 border-green-200">
                             <div className="flex flex-col sm:flex-row sm:items-start gap-3">
                                 <div className="w-16 h-16 md:w-20 md:h-20 flex-shrink-0">
-                                    <img
-                                        src={getImageUrl(upload.images[0])}
-                                        alt="Upload preview"
-                                        className="w-full h-full rounded-lg object-cover"
-                                    />
+                                    {upload.images?.[0] ? (
+                                        <img
+                                            src={getImageUrl(upload.images[0])}
+                                            alt="Upload preview"
+                                            className="w-full h-full rounded-lg object-cover"
+                                        />
+                                    ) : (
+                                        <div className="w-full h-full rounded-lg bg-gray-100 flex items-center justify-center">
+                                            <ImageIcon className="w-8 h-8 text-gray-400" />
+                                        </div>
+                                    )}
                                 </div>
                                 <div className="flex-1 min-w-0">
                                     <h3 className="font-semibold text-gray-800 text-sm md:text-base">{upload.campaignName}</h3>
@@ -211,12 +236,25 @@ const PhotographyDashboard = ({ activeView, setActiveView, userRole, assignments
                                     <p className="text-xs md:text-sm text-gray-600 mb-2">{upload.notes}</p>
                                     <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-xs text-gray-500">
                                         <span>{formatDate(upload.uploadDate)}</span>
-                                        <span>{upload.images.length} images</span>
+                                        <span>{upload.images?.length || 0} images</span>
                                         <span className="text-green-600 font-medium flex items-center gap-1">
                                             <CheckCircle className="w-3 h-3" />
                                             Completed
                                         </span>
                                     </div>
+                                    {upload.driveLink && (
+                                        <div className="mt-3">
+                                            <a
+                                                href={upload.driveLink}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-100 text-blue-700 rounded-lg text-xs font-bold hover:bg-blue-200 transition-colors"
+                                            >
+                                                <Download className="w-3 h-3" />
+                                                Access Drive Files
+                                            </a>
+                                        </div>
+                                    )}
                                     {upload.adminFeedback && (
                                         <p className="text-xs text-green-700 mt-2 p-2 bg-green-100 rounded">
                                             <span className="font-medium">Admin:</span> {upload.adminFeedback}
@@ -266,6 +304,7 @@ const UploadPage = ({ setActiveView, selectedTask, assignments, onTaskSelect }) 
     // Use 'address' from assignment data, or fallback
     const [location, setLocation] = useState(selectedTask?.address || '');
     const [images, setImages] = useState([]);
+    const [driveLink, setDriveLink] = useState('');
     const [dragOver, setDragOver] = useState(false);
 
     const fileInputRef = useRef(null);
@@ -319,8 +358,8 @@ const UploadPage = ({ setActiveView, selectedTask, assignments, onTaskSelect }) 
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!images.length) {
-            alert('Please upload at least one image.');
+        if (!images.length && !driveLink) {
+            alert('Please upload at least one image or provide a drive link.');
             return;
         }
 
@@ -336,6 +375,7 @@ const UploadPage = ({ setActiveView, selectedTask, assignments, onTaskSelect }) 
             formData.append('campaignId', selectedTask.campaignId);
             formData.append('notes', notes);
             if (location) formData.append('location', location);
+            if (driveLink) formData.append('driveLink', driveLink);
 
             images.forEach((img) => {
                 formData.append('images', img.file);
@@ -405,6 +445,27 @@ const UploadPage = ({ setActiveView, selectedTask, assignments, onTaskSelect }) 
                             className="w-full p-3 text-sm md:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                             placeholder="Specific address or landmark (optional)"
                         />
+                    </div>
+
+                    {/* Drive Link */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Google Drive Link <span className="text-gray-400 font-normal">(Required if no images uploaded)</span>
+                        </label>
+                        <div className="relative">
+                            <FileText className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4 md:w-5 md:h-5" />
+                            <input
+                                type="url"
+                                value={driveLink}
+                                onChange={(e) => setDriveLink(e.target.value)}
+                                className="w-full pl-10 p-3 text-sm md:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                                placeholder="Paste Google Drive link for large videos/photos"
+                            />
+                        </div>
+                        <p className="text-[10px] md:text-xs text-blue-600 mt-1">
+                            <AlertCircle className="w-3 h-3 inline mr-1" />
+                            Recommended for files larger than 50MB (Videos, HD Photos)
+                        </p>
                     </div>
 
                     {/* Image Upload */}
