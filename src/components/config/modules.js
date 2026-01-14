@@ -200,10 +200,18 @@ export const MODULES = [
 
   {
     id: "Internal Communication",
-    name: "Internal Communication",
+    name: "Internal Chat",
     icon: MessageSquare,
     route: "/admin/communication",
-    category: "administration",
+    category: "communication",
     desc: "Admin-to-admin internal messaging system",
+  },
+  {
+    id: "Communication Audit",
+    name: "Communication Audit",
+    icon: Shield,
+    route: "/tpf-management/communication-audit",
+    category: "communication",
+    desc: "Monitor all internal admin conversations",
   },
 ];

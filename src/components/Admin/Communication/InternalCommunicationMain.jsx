@@ -1,7 +1,10 @@
 "use client";
 
 import React, { useState } from 'react';
-import { useGetCommunicationAdminsQuery } from '@/utils/slices/internalCommunicationApiSlice';
+import {
+    useGetCommunicationAdminsQuery,
+    useGetInternalMessagesQuery
+} from '@/utils/slices/internalCommunicationApiSlice';
 import { useSelector } from 'react-redux';
 import AdminList from './AdminList';
 import ChatWindow from './ChatWindow';
@@ -9,6 +12,7 @@ import { MessageSquare, Users, Globe } from 'lucide-react';
 
 export default function InternalCommunicationMain() {
     const { data: adminsData, isLoading: adminsLoading } = useGetCommunicationAdminsQuery();
+    const { data: messagesData } = useGetInternalMessagesQuery();
     const [selectedAdmin, setSelectedAdmin] = useState(null);
     const [isGlobalMode, setIsGlobalMode] = useState(false);
     const adminInfo = useSelector((state) => state.adminAuth.adminInfo);
@@ -16,6 +20,25 @@ export default function InternalCommunicationMain() {
     if (adminsLoading) return <div className="p-8 text-center text-gray-500">Loading admins...</div>;
 
     const admins = adminsData?.data || [];
+    const messages = messagesData?.data || [];
+    const currentUserId = adminInfo?._id || adminInfo?.id;
+
+    // Calculate unread counts per admin
+    const unreadCounts = messages.reduce((acc, m) => {
+        const senderId = m.sender?._id || m.sender?.id || m.sender;
+        if (!m.isGlobal && !m.readBy.includes(currentUserId) && senderId?.toString() !== currentUserId?.toString()) {
+            const sId = senderId?.toString();
+            acc[sId] = (acc[sId] || 0) + 1;
+        }
+        return acc;
+    }, {});
+
+    // Calculate global unread
+    const globalUnreadCount = messages.filter(m =>
+        m.isGlobal &&
+        !m.readBy.includes(currentUserId) &&
+        (m.sender?._id || m.sender?.id || m.sender)?.toString() !== currentUserId?.toString()
+    ).length;
 
     return (
         <div className="flex flex-col h-[calc(100vh-140px)] bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
@@ -35,16 +58,21 @@ export default function InternalCommunicationMain() {
                                 setIsGlobalMode(true);
                                 setSelectedAdmin(null);
                             }}
-                            className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all duration-200 mb-2 ${isGlobalMode
-                                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-200'
-                                    : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200 shadow-sm'
+                            className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all duration-200 mb-2 relative ${isGlobalMode
+                                ? 'bg-blue-600 text-white shadow-lg shadow-blue-200'
+                                : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200 shadow-sm'
                                 }`}
                         >
                             <Globe className="w-5 h-5" />
-                            <div className="text-left">
+                            <div className="text-left flex-1">
                                 <p className="font-bold text-sm">Global Message</p>
                                 <p className={`text-[10px] ${isGlobalMode ? 'text-blue-100' : 'text-gray-400'}`}>Message everyone</p>
                             </div>
+                            {globalUnreadCount > 0 && (
+                                <span className="bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm">
+                                    {globalUnreadCount}
+                                </span>
+                            )}
                         </button>
                     </div>
 
@@ -57,6 +85,7 @@ export default function InternalCommunicationMain() {
                             <AdminList
                                 admins={admins}
                                 selectedAdmin={selectedAdmin}
+                                unreadCounts={unreadCounts}
                                 onSelectAdmin={(admin) => {
                                     setSelectedAdmin(admin);
                                     setIsGlobalMode(false);

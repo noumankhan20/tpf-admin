@@ -18,5 +18,6 @@ export const ADMIN_MODULES = [
   "Tickets-Queries",
   "Disbursement-Tasks",
   "Photo-Editing",
-  "Internal Communication"
+  "Internal Communication",
+  "Communication Audit"
 ];

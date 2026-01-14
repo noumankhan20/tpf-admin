@@ -35,8 +35,9 @@ const AddAdminModal = ({ isOpen, onClose, onSubmit }) => {
     "Tickets-Queries",
     "Downloads",
     "Photo-Editing",
-    "Disbursement-Tasks",,
-    "Internal Communication"
+    "Disbursement-Tasks",
+    "Internal Communication",
+    "Communication Audit"
   ];
 
   const isFormValid =
