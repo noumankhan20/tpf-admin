@@ -42,7 +42,6 @@ export default function InternalCommunicationMain() {
 
     const admins = adminsData?.data || [];
     const messages = messagesData?.data || [];
-    const currentUserId = adminInfo?._id || adminInfo?.id;
 
     // Calculate last message timestamp for each admin to sort the list
     const lastMessageTimes = messages.reduce((acc, m) => {
