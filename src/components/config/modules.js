@@ -92,7 +92,6 @@ export const MODULES = [
     route: "/donation-management",
     category: "quick-access",
     desc: "Track donor details & activity",
-    standalone: true,
   },
   {
     id: "Finance & Accounting",
@@ -109,7 +108,6 @@ export const MODULES = [
     route: "/inventory",
     category: "quick-access",
     desc: "Asset and inventory tracking",
-    standalone: true,
   },
   {
     id: "Photography",
@@ -150,7 +148,6 @@ export const MODULES = [
     route: "/downloads",
     category: "quick-access",
     desc: "Export data to CSV/PDF",
-    standalone: true,
   },
   {
     id: "CMS-Admin",
