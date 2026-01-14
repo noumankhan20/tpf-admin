@@ -20,7 +20,6 @@ export default function InternalCommunicationMain() {
     const [isGlobalMode, setIsGlobalMode] = useState(false);
     const adminInfo = useSelector((state) => state.adminAuth.adminInfo);
 
-    const currentUserId = adminInfo?._id || adminInfo?.id;
 
     // Listen for new messages to update unread counts live
     useEffect(() => {
