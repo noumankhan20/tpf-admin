@@ -179,7 +179,7 @@ export default function Documentation() {
 
             <div className="flex flex-wrap gap-3">
               <button
-                onClick={handleViewBusiness}
+                onClick={handleCreateNew}
                 className="flex items-center cursor-pointer gap-2 px-6 py-3 bg-white text-emerald-600 rounded-xl hover:bg-emerald-50 transition-all font-semibold shadow-xl hover:shadow-2xl hover:scale-105"
               >
                 <Plus className="w-5 h-5" />
