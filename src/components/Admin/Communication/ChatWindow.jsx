@@ -20,20 +20,20 @@ export default function ChatWindow({ selectedAdmin, isGlobalMode, adminInfo }) {
     const messagesContainerRef = useRef(null);
     const { socket } = useSocket();
 
+    const currentUserId = adminInfo?._id || adminInfo?.id;
+    const selectedAdminId = selectedAdmin?._id || selectedAdmin?.id;
+
     const { data: messagesData, isFetching, refetch } = useGetInternalMessagesQuery({
-        otherAdminId: !isGlobalMode ? selectedAdmin?._id : undefined,
+        otherAdminId: !isGlobalMode ? selectedAdminId : undefined,
         isGlobal: isGlobalMode ? 'true' : undefined,
         page,
         limit: 20
     }, {
-        skip: !isGlobalMode && !selectedAdmin?._id
+        skip: !isGlobalMode && !selectedAdminId
     });
 
     const [sendMessage, { isLoading: isSending }] = useSendInternalMessageMutation();
     const [markAsRead] = useMarkMessagesAsReadMutation();
-
-    const currentUserId = adminInfo?._id || adminInfo?.id;
-    const selectedAdminId = selectedAdmin?._id || selectedAdmin?.id;
 
     // Reset when admin changes
     useEffect(() => {
@@ -43,8 +43,8 @@ export default function ChatWindow({ selectedAdmin, isGlobalMode, adminInfo }) {
 
     useEffect(() => {
         if (messagesData?.success) {
-            const newMessages = messagesData.data; // Changed from activeData.data
-            setHasMore(messagesData.pagination.hasMore); // Changed from activeData.pagination.hasMore
+            const newMessages = messagesData.data;
+            setHasMore(messagesData.pagination.hasMore);
 
             if (page === 1) {
                 setAllMessages(newMessages);
@@ -136,13 +136,12 @@ export default function ChatWindow({ selectedAdmin, isGlobalMode, adminInfo }) {
         if (!message.trim() || isSending) return;
 
         try {
-            const res = await sendMessage({
-                receiverId: selectedAdmin?._id,
+            await sendMessage({
+                receiverId: selectedAdminId,
                 content: message,
                 isGlobal: isGlobalMode
             }).unwrap();
 
-            // Message will be added via socket or manual append if socket fails
             setMessage('');
             scrollToBottom();
         } catch (err) {
@@ -178,14 +177,6 @@ export default function ChatWindow({ selectedAdmin, isGlobalMode, adminInfo }) {
                 ref={messagesContainerRef}
                 className="flex-1 overflow-y-auto p-6 space-y-4 bg-gray-50/30"
             >
-                {/* 48 Hour Deletion Notice */}
-                <div className="flex justify-center mb-4">
-                    <div className="flex items-center gap-2 px-4 py-2 bg-amber-50 border border-amber-100 rounded-full text-[10px] font-bold text-amber-600 uppercase tracking-widest shadow-sm">
-                        <div className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse"></div>
-                        Messages are automatically deleted after 48 hours
-                    </div>
-                </div>
-
                 {hasMore && (
                     <div className="flex justify-center pb-4">
                         <button
@@ -211,13 +202,18 @@ export default function ChatWindow({ selectedAdmin, isGlobalMode, adminInfo }) {
                 ) : (
                     allMessages.map((msg, i) => {
                         const senderId = msg.sender?._id || msg.sender;
-                        const isOwn = senderId === adminInfo._id;
+                        const isOwn = senderId?.toString() === currentUserId?.toString();
                         return (
                             <div key={msg._id} className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}>
                                 <div className={`flex flex-col max-w-[70%] ${isOwn ? 'items-end' : 'items-start'}`}>
                                     {!isOwn && (
-                                        <span className="text-[10px] font-bold text-gray-400 mb-1 ml-1 uppercase tracking-tight">
+                                        <span className="text-[10px] font-bold text-emerald-600 mb-1 ml-1 uppercase tracking-tight">
                                             {msg.sender?.fullName || 'Admin'}
+                                        </span>
+                                    )}
+                                    {isOwn && (
+                                        <span className="text-[10px] font-bold text-gray-300 mb-1 mr-1 uppercase tracking-tight">
+                                            {adminInfo?.fullName}
                                         </span>
                                     )}
                                     <div className={`p-3 rounded-2xl shadow-sm text-sm ${isOwn
@@ -238,6 +234,14 @@ export default function ChatWindow({ selectedAdmin, isGlobalMode, adminInfo }) {
                     })
                 )}
                 <div ref={messagesEndRef} />
+
+                {/* 48 Hour Deletion Notice Moved to Bottom */}
+                <div className="flex justify-center pt-4 sticky bottom-0 z-20">
+                    <div className="flex items-center gap-2 px-4 py-2 bg-amber-50/90 backdrop-blur-sm border border-amber-100 rounded-full text-[10px] font-bold text-amber-600 uppercase tracking-widest shadow-sm">
+                        <div className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse"></div>
+                        Messages are automatically deleted after 48 hours
+                    </div>
+                </div>
             </div>
 
             {/* Input Area */}

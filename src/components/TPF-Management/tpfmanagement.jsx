@@ -46,13 +46,6 @@ const ENTITIES = [
         icon: Building2,
         route: "/tpf-management/organizations",
     },
-    {
-        id: "communication-audit",
-        title: "Communication Audit",
-        desc: "Monitor all internal admin conversations and global broadcasts.",
-        icon: MessageSquare,
-        route: "/tpf-management/communication-audit",
-    },
 ];
 
 export default function TPFManagement() {
