@@ -21,7 +21,8 @@ export default function ChatWindow({ selectedAdmin, isGlobalMode, adminInfo }) {
     const { socket } = useSocket();
 
     const { data: messagesData, isFetching, refetch } = useGetInternalMessagesQuery({
-        otherAdminId: selectedAdmin?._id,
+        otherAdminId: !isGlobalMode ? selectedAdmin?._id : undefined,
+        isGlobal: isGlobalMode ? 'true' : undefined,
         page,
         limit: 20
     }, {
@@ -143,8 +144,8 @@ export default function ChatWindow({ selectedAdmin, isGlobalMode, adminInfo }) {
             <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-white/80 backdrop-blur-md sticky top-0 z-10">
                 <div className="flex items-center gap-3">
                     <div className={`w-10 h-10 rounded-2xl flex items-center justify-center font-bold text-white shadow-lg ${isGlobalMode
-                            ? 'bg-gradient-to-br from-indigo-500 to-purple-500'
-                            : 'bg-gradient-to-br from-blue-500 to-teal-500'
+                        ? 'bg-gradient-to-br from-indigo-500 to-purple-500'
+                        : 'bg-gradient-to-br from-blue-500 to-teal-500'
                         }`}>
                         {isGlobalMode ? <Globe className="w-5 h-5" /> : selectedAdmin?.fullName?.charAt(0)}
                     </div>
@@ -200,8 +201,8 @@ export default function ChatWindow({ selectedAdmin, isGlobalMode, adminInfo }) {
                                         </span>
                                     )}
                                     <div className={`p-3 rounded-2xl shadow-sm text-sm ${isOwn
-                                            ? 'bg-blue-600 text-white rounded-tr-none'
-                                            : 'bg-white border border-gray-100 text-gray-800 rounded-tl-none'
+                                        ? 'bg-blue-600 text-white rounded-tr-none'
+                                        : 'bg-white border border-gray-100 text-gray-800 rounded-tl-none'
                                         }`}>
                                         {msg.content}
                                     </div>
