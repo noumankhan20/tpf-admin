@@ -33,7 +33,8 @@ const AddAdminModal = ({ isOpen, onClose, onSubmit }) => {
     "Financial Aid",
     "KYC Verification",
     "Tickets-Queries",
-    "Downloads"
+    "Downloads",
+    "Photo-Editing"
   ];
 
   const isFormValid =

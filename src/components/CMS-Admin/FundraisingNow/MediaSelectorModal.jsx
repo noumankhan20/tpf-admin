@@ -60,56 +60,60 @@ export default function MediaSelectorModal({
           {/* Media Grid */}
           {media && media.length > 0 ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-              {media.map((file, index) => {
-                const isSelected = selectedUrl === file.url;
-                const isVideo = file.type === "video";
+              {[...media]
+                .sort((a, b) => (b.submissionType === 'EDITED' ? 1 : -1))
+                .map((file, index) => {
+                  const isSelected = selectedUrl === file.url;
+                  const isVideo = file.type === "video";
+                  const isEdited = file.submissionType === "EDITED";
 
-                return (
-                  <button
-                    key={index}
-                    onClick={() => onSelect(file)}
-                    className={`relative aspect-square rounded-xl overflow-hidden border-4 transition-all ${isSelected
-                      ? 'border-emerald-500 shadow-lg scale-105'
-                      : 'border-transparent hover:border-emerald-300 hover:shadow-md'
-                      }`}
-                  >
-                    {/* Media Content */}
-                    {isVideo ? (
-                      <video
-                        src={getImageUrl(file.url, true)}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <img
-                        src={getImageUrl(file.url, true)}
-                        className="w-full h-full object-cover"
-                        alt="Campaign media"
-                      />
-                    )}
+                  return (
+                    <button
+                      key={index}
+                      onClick={() => onSelect(file)}
+                      className={`relative aspect-square rounded-xl overflow-hidden border-4 transition-all ${isSelected
+                        ? 'border-emerald-500 shadow-lg scale-105'
+                        : 'border-transparent hover:border-emerald-300 hover:shadow-md'
+                        }`}
+                    >
+                      {/* Media Content */}
+                      {isVideo ? (
+                        <video
+                          src={getImageUrl(file.url, true)}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <img
+                          src={getImageUrl(file.url, true)}
+                          className="w-full h-full object-cover"
+                          alt="Campaign media"
+                        />
+                      )}
 
-                    {/* Type Badge */}
-                    <div className="absolute top-2 left-2">
-                      <span className={`px-2 py-1 rounded-md text-xs font-semibold ${isVideo ? 'bg-purple-600 text-white' : 'bg-blue-600 text-white'
-                        }`}>
-                        {isVideo ? <Video size={12} className="inline" /> : <ImageIcon size={12} className="inline" />}
-                        <span className="ml-1">{isVideo ? 'Video' : 'Image'}</span>
-                      </span>
-                    </div>
-
-                    {/* Selection Indicator */}
-                    {isSelected && (
-                      <div className="absolute inset-0 bg-emerald-500/20 flex items-center justify-center">
-                        <div className="bg-emerald-500 rounded-full p-3">
-                          <Check size={24} className="text-white" />
-                        </div>
+                      {/* Type Badge */}
+                      <div className="absolute top-2 left-2 flex flex-col gap-1">
+                        <span className={`px-2 py-1 rounded-md text-[10px] font-bold uppercase ${isEdited ? 'bg-amber-500 text-white' : 'bg-gray-600 text-white'}`}>
+                          {isEdited ? '✨ Edited' : 'Raw'}
+                        </span>
+                        <span className={`px-2 py-1 rounded-md text-[10px] font-bold uppercase ${isVideo ? 'bg-purple-600 text-white' : 'bg-blue-600 text-white'}`}>
+                          {isVideo ? 'Video' : 'Image'}
+                        </span>
                       </div>
-                    )}
 
-                    {/* Hover Overlay */}
-                    <div className="absolute inset-0 bg-black/0 hover:bg-black/10 transition-colors" />
-                  </button>
-                );
-              })}
+                      {/* Selection Indicator */}
+                      {isSelected && (
+                        <div className="absolute inset-0 bg-emerald-500/20 flex items-center justify-center">
+                          <div className="bg-emerald-500 rounded-full p-3">
+                            <Check size={24} className="text-white" />
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Hover Overlay */}
+                      <div className="absolute inset-0 bg-black/0 hover:bg-black/10 transition-colors" />
+                    </button>
+                  );
+                })}
             </div>
           ) : (
             <div className="text-center py-12">
