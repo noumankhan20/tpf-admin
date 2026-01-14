@@ -73,7 +73,7 @@ export default function SelectPanel() {
 
   const fullName = admin?.fullName || "";
   const adminModules = admin?.modules || [];
-
+  console.log("Admin modules:", adminModules);
 
   useEffect(() => {
     if (!admin) {

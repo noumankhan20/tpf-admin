@@ -3,6 +3,7 @@ import {
   TrendingUp,
   Settings,
   Shield,
+  CreditCard,
   Users,
   UserCheck,
   MapPin,
@@ -177,6 +178,14 @@ export const MODULES = [
     route: "/tickets-queries",
     category: "people",
     desc: "Respond to the Tickets and Queries of the Users",
+  },
+  {
+    id: 'Disbursement-Tasks',
+    name: 'Disbursement Tasks',
+    desc: 'Process beneficiary payments and transaction proofs',
+    icon: CreditCard,
+    category: 'operations',
+    route: '/finance/disbursement',
   },
 
 ];

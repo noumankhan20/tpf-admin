@@ -15,5 +15,6 @@ export const ADMIN_MODULES = [
   "Legal and Compliance",
   "Financial Aid",
   "KYC Verification",
-  "Tickets-Queries"
+  "Tickets-Queries",
+  "Disbursement-Tasks"
 ];
