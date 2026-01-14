@@ -152,7 +152,7 @@ export const MODULES = [
     name: "CMS",
     icon: Globe,
     route: "/cms-admin",
-    category: "documentation",
+    category: "operations",
     desc: "Manage content & pages",
   },
   {
@@ -168,7 +168,7 @@ export const MODULES = [
     name: "Financial Aid",
     icon: ShieldCheck,
     route: "/verify/financial",
-    category: "verify-forms",
+    category: "operations",
     desc: "Verify financial aid forms",
   },
   {
@@ -176,7 +176,7 @@ export const MODULES = [
     name: "KYC Verification",
     icon: Book,
     route: "/verify/kyc",
-    category: "verify-forms",
+    category: "operations",
     desc: "Verify user KYC documents",
   },
   {

@@ -3,7 +3,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { Search, ChevronDown, Eye, X, Filter, Menu, ArrowRight } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import FilterModal from '../lib/filters';
-import { useGetDonationsQuery } from '@/utils/slices/donationApiSlice';
+import { useGetDonationsQuery, useGetPendingCountQuery } from '@/utils/slices/donationApiSlice';
 
 // Purpose Badge Component
 const PurposeBadge = ({ purpose }) => {
@@ -253,6 +253,13 @@ export default function DonationManagement() {
 
     // Fetch donations using RTK Query
     const { data, error, isLoading, isFetching } = useGetDonationsQuery(queryParams);
+    const {
+        data: pendingCountData,
+        isLoading: isPendingCountLoading,
+        isError: isPendingCountError,
+    } = useGetPendingCountQuery();
+    const pendingCount = pendingCountData?.count ?? 0;
+
 
     // Reset to page 1 when filters or search changes
     useEffect(() => {
@@ -306,13 +313,25 @@ export default function DonationManagement() {
                     </div>
                     <div
                         onClick={() => router.push('/donation-management/offline-donation')}
-                        className="bg-white rounded-lg cursor-pointer shadow p-3 sm:p-6 col-span-2 lg:col-span-1">
-                        <p className="text-xs sm:text-sm font-medium text-gray-600">Offline Donations</p>
-                        <p className="mt-1 flex items-center gap-1 text-xs sm:text-sm font-medium text-orange-400">
+                        className="bg-white rounded-lg cursor-pointer shadow p-3 sm:p-6 col-span-2 lg:col-span-1 hover:shadow-md transition-shadow"
+                    >
+                        <div className="flex items-center justify-between">
+                            <p className="text-xs sm:text-sm font-medium text-gray-600">
+                                Offline Donations
+                            </p>
+
+                            {/* Pending Count Badge */}
+                            <span className="inline-flex items-center justify-center min-w-[24px] h-6 px-2 rounded-full text-xs font-bold bg-red-100 text-red-600">
+                                {isPendingCountLoading ? '…' : pendingCount}
+                            </span>
+                        </div>
+
+                        <p className="mt-2 flex items-center gap-1 text-xs sm:text-sm font-medium text-orange-400">
                             <span>Click here to view Offline Donations</span>
                             <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4" />
                         </p>
                     </div>
+
                 </div>
 
                 {/* Search and Filters */}

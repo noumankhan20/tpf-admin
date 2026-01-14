@@ -8,7 +8,7 @@ import {
     FileText,
     Calendar,
     Users,
-    DollarSign,
+    IndianRupee,
     FileCheck,
     Save,
     X,
@@ -280,7 +280,7 @@ export default function EditAgreement() {
                                         <option value="Draft">Draft</option>
                                         <option value="Signed">Signed</option>
                                         <option value="Active">Active</option>
-                                        <option value="Expired">Expired</option>
+                                        <option value="Completed">Completed</option>
                                         <option value="Terminated">Terminated</option>
                                         <option value="Cancelled">Cancelled</option>
                                     </select>
@@ -288,7 +288,7 @@ export default function EditAgreement() {
 
                                 <div className="lg:col-span-2">
                                     <label className="block text-sm font-semibold text-slate-700 mb-2 flex items-center gap-2">
-                                        <DollarSign className="w-4 h-4" />
+                                        <IndianRupee className="w-4 h-4" />
                                         Financial Value
                                     </label>
                                     <input
