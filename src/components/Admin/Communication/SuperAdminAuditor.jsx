@@ -18,22 +18,19 @@ function ConversationBlock({ conversation, searchTerm }) {
         ? 'Global'
         : `${conversation.participants[0].fullName} & ${conversation.participants[1].fullName}`;
 
-    const { data: messagesData, isFetching } = useGetInternalMessagesQuery({
-        otherAdminId: conversation.type === 'global' ? undefined : (conversation.participants[0]._id === conversation.lastMessage.sender._id ? conversation.participants[1]._id : conversation.participants[0]._id),
-        page,
-        limit: 10 // Smaller limit per block for scalability
-    }, {
-        // Only fetch if global or if we have otherAdminId logic (handled by backend or passing correct params)
-    });
+    const isGlobal = conversation.type === 'global';
 
-    // Special case for Global
-    const globalParams = conversation.type === 'global' ? { isGlobal: true, page, limit: 10 } : null;
-    const { data: globalData, isFetching: isGlobalFetching } = useGetInternalMessagesQuery(globalParams, {
-        skip: conversation.type !== 'global'
-    });
+    // Explicit params for audit
+    const queryParams = isGlobal
+        ? { isGlobal: 'true', page, limit: 10 }
+        : {
+            senderId: conversation.participants[0]._id,
+            receiverId: conversation.participants[1]._id,
+            page,
+            limit: 10
+        };
 
-    const activeData = conversation.type === 'global' ? globalData : messagesData;
-    const activeFetching = conversation.type === 'global' ? isGlobalFetching : isFetching;
+    const { data: activeData, isFetching: activeFetching } = useGetInternalMessagesQuery(queryParams);
 
     useEffect(() => {
         if (activeData?.success) {
@@ -56,8 +53,6 @@ function ConversationBlock({ conversation, searchTerm }) {
         !conversation.lastMessage.content.toLowerCase().includes(searchTerm.toLowerCase())) {
         return null;
     }
-
-    const isGlobal = conversation.type === 'global';
 
     return (
         <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all">
