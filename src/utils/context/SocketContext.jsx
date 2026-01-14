@@ -41,6 +41,9 @@ export const SocketProvider = ({ children }) => {
         socket.current.on('connect', () => {
             console.log('Global Socket Connected:', socket.current.id);
             setIsConnected(true);
+            if (admin?._id) {
+                socket.current.emit('join', admin._id);
+            }
         });
 
         socket.current.on('disconnect', () => {

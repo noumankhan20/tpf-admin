@@ -24,6 +24,7 @@ import {
   Calendar,
   Download,
   Edit,
+  MessageSquare,
 } from "lucide-react";
 
 export const MODULES = [
@@ -188,4 +189,12 @@ export const MODULES = [
     desc: "Respond to the Tickets and Queries of the Users",
   },
 
+  {
+    id: "Internal Communication",
+    name: "Internal Communication",
+    icon: MessageSquare,
+    route: "/admin/communication",
+    category: "administration",
+    desc: "Admin-to-admin internal messaging system",
+  },
 ];

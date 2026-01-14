@@ -38,6 +38,7 @@ import {
   LayoutDashboard,
 } from 'lucide-react';
 import LoginNotificationModal from '../Common/LoginNotificationModal';
+import NotificationDropdown from '../Admin/Communication/NotificationDropdown';
 
 const CATEGORIES = [
   { id: 'dashboard', name: 'Dashboard', icon: LayoutDashboard },
@@ -225,7 +226,7 @@ function Header({ isLoaded, handleLogout, fullName }) {
           </div>
 
           <div className="flex items-center space-x-4">
-
+            <NotificationDropdown />
 
             <div className="relative">
               <button
