@@ -212,7 +212,7 @@ export default function ChatWindow({ selectedAdmin, isGlobalMode, adminInfo }) {
                                         </span>
                                     )}
                                     {isOwn && (
-                                        <span className="text-[10px] font-bold text-gray-300 mb-1 mr-1 uppercase tracking-tight">
+                                        <span className="text-[10px] font-bold text-gray-500 mb-1 mr-1 uppercase tracking-tight">
                                             {adminInfo?.fullName}
                                         </span>
                                     )}
