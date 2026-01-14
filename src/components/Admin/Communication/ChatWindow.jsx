@@ -9,70 +9,12 @@ import {
 import { Send, Loader2, User, Globe, MessageCircle, ChevronUp } from 'lucide-react';
 import { useSocket } from '@/utils/context/SocketContext';
 import { format } from 'date-fns';
-import { useDispatch } from 'react-redux';
-import { internalCommunicationApiSlice } from '@/utils/slices/internalCommunicationApiSlice';
-
-const MessageItem = ({ msg, isOwn, adminInfo, onVisible }) => {
-    const itemRef = useRef(null);
-
-    useEffect(() => {
-        if (isOwn) return; // Don't track own messages
-
-        const observer = new IntersectionObserver(
-            ([entry]) => {
-                if (entry.isIntersecting) {
-                    onVisible(msg._id);
-                    observer.disconnect(); // Only track once
-                }
-            },
-            { threshold: 0.5 }
-        );
-
-        if (itemRef.current) {
-            observer.observe(itemRef.current);
-        }
-
-        return () => observer.disconnect();
-    }, [msg._id, isOwn, onVisible]);
-
-    return (
-        <div ref={itemRef} className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}>
-            <div className={`flex flex-col max-w-[70%] ${isOwn ? 'items-end' : 'items-start'}`}>
-                {!isOwn && (
-                    <span className="text-[10px] font-bold text-emerald-600 mb-1 ml-1 uppercase tracking-tight">
-                        {msg.sender?.fullName || 'Admin'}
-                    </span>
-                )}
-                {isOwn && (
-                    <span className="text-[10px] font-bold text-gray-500 mb-1 mr-1 uppercase tracking-tight">
-                        {adminInfo?.fullName}
-                    </span>
-                )}
-                <div className={`p-3 rounded-2xl shadow-sm text-sm ${isOwn
-                    ? 'bg-blue-600 text-white rounded-tr-none'
-                    : 'bg-white border border-gray-100 text-gray-800 rounded-tl-none'
-                    }`}>
-                    {msg.content}
-                </div>
-                <span className="text-[9px] text-gray-400 mt-1 flex items-center gap-1 uppercase font-bold tracking-tighter">
-                    {format(new Date(msg.createdAt), 'hh:mm a')}
-                    {isOwn && msg.readBy?.length > 0 && (
-                        <span className="text-blue-500 ml-1">Read</span>
-                    )}
-                </span>
-            </div>
-        </div>
-    );
-};
 
 export default function ChatWindow({ selectedAdmin, isGlobalMode, adminInfo }) {
-    const dispatch = useDispatch();
     const [message, setMessage] = useState('');
     const [page, setPage] = useState(1);
     const [allMessages, setAllMessages] = useState([]);
     const [hasMore, setHasMore] = useState(false);
-    const [typingAdmin, setTypingAdmin] = useState(null);
-    const typingTimeoutRef = useRef(null);
 
     const messagesEndRef = useRef(null);
     const messagesContainerRef = useRef(null);
@@ -97,28 +39,29 @@ export default function ChatWindow({ selectedAdmin, isGlobalMode, adminInfo }) {
     useEffect(() => {
         setPage(1);
         setAllMessages([]);
-        // The query params will naturally change and fetch new data
     }, [selectedAdminId, isGlobalMode]);
 
     useEffect(() => {
-        if (messagesData?.success && !isFetching) {
+        if (messagesData?.success) {
             const newMessages = messagesData.data;
             setHasMore(messagesData.pagination.hasMore);
 
             if (page === 1) {
                 setAllMessages(newMessages);
-                setTimeout(scrollToBottom, 300);
+                // Scroll to bottom on first load
+                setTimeout(scrollToBottom, 500);
             } else {
+                // Prepend previous messages
                 const container = messagesContainerRef.current;
                 const scrollHeightBefore = container.scrollHeight;
 
                 setAllMessages(prev => {
                     const existingIds = new Set(prev.map(m => m._id));
                     const uniqueNew = newMessages.filter(m => !existingIds.has(m._id));
-                    // uniqueNew is older page [M61...M80], prev is newer [M81...M100]
                     return [...uniqueNew, ...prev];
                 });
 
+                // Maintain scroll position after prepending
                 setTimeout(() => {
                     if (container) {
                         container.scrollTop = container.scrollHeight - scrollHeightBefore;
@@ -126,14 +69,18 @@ export default function ChatWindow({ selectedAdmin, isGlobalMode, adminInfo }) {
                 }, 0);
             }
         }
-    }, [messagesData, page, isFetching]);
+    }, [messagesData, page]);
 
     useEffect(() => {
         if (socket && currentUserId) {
             const handleNewMessage = (payload) => {
-                const pSenderId = (payload.sender?._id || payload.sender?.id || payload.sender)?.toString();
-                const pReceiverId = (payload.receiver?._id || payload.receiver?.id || payload.receiver)?.toString();
+                const payloadSenderId = payload.sender?._id || payload.sender?.id || payload.sender;
+                const payloadReceiverId = payload.receiver?._id || payload.receiver?.id || payload.receiver;
+
+                // Important: Convert all to strings for comparison
                 const sAdminId = selectedAdminId?.toString();
+                const pSenderId = payloadSenderId?.toString();
+                const pReceiverId = payloadReceiverId?.toString();
                 const cUserId = currentUserId?.toString();
 
                 const isRelevant = isGlobalMode
@@ -146,61 +93,34 @@ export default function ChatWindow({ selectedAdmin, isGlobalMode, adminInfo }) {
                         return [...prev, payload];
                     });
 
-                    // Optimization: Manual Cache Update
-                    dispatch(
-                        internalCommunicationApiSlice.util.updateQueryResult(
-                            'getInternalMessages',
-                            {
-                                otherAdminId: !isGlobalMode ? sAdminId : undefined,
-                                isGlobal: isGlobalMode ? 'true' : undefined,
-                                page: 1,
-                                limit: 20
-                            },
-                            (draft) => {
-                                if (draft?.success && Array.isArray(draft.data)) {
-                                    if (!draft.data.find(m => m._id === payload._id)) {
-                                        draft.data.push(payload);
-                                    }
-                                }
-                            }
-                        )
-                    );
-
+                    // If near bottom, scroll down
                     const container = messagesContainerRef.current;
-                    if (container && (container.scrollHeight - container.scrollTop - container.clientHeight < 300)) {
+                    if (container && (container.scrollHeight - container.scrollTop - container.clientHeight < 150)) {
                         setTimeout(scrollToBottom, 100);
                     }
                 }
             };
 
-            const handleTypingStart = (payload) => {
-                const sAdminId = selectedAdminId?.toString();
-                if (isGlobalMode && payload.isGlobal) {
-                    setTypingAdmin(payload.senderName);
-                } else if (!isGlobalMode && !payload.isGlobal && payload.senderId?.toString() === sAdminId) {
-                    setTypingAdmin(payload.senderName);
-                }
-            };
-
-            const handleTypingStop = (payload) => {
-                setTypingAdmin(null);
-            };
-
             socket.on('new_internal_message', handleNewMessage);
-            socket.on('typing_start', handleTypingStart);
-            socket.on('typing_stop', handleTypingStop);
-
-            return () => {
-                socket.off('new_internal_message', handleNewMessage);
-                socket.off('typing_start', handleTypingStart);
-                socket.off('typing_stop', handleTypingStop);
-            };
+            return () => socket.off('new_internal_message', handleNewMessage);
         }
-    }, [socket, selectedAdminId, currentUserId, isGlobalMode, dispatch]);
+    }, [socket, selectedAdminId, currentUserId]);
 
-    const handleVisible = (msgId) => {
-        markAsRead({ messageIds: [msgId] });
-    };
+    useEffect(() => {
+        if (allMessages.length > 0 && currentUserId) {
+            const cUserId = currentUserId.toString();
+            const unreadIds = allMessages
+                .filter(m => {
+                    const senderId = m.sender?._id || m.sender?.id || m.sender;
+                    return !m.readBy.includes(cUserId) && senderId?.toString() !== cUserId;
+                })
+                .map(m => m._id);
+
+            if (unreadIds.length > 0) {
+                markAsRead({ messageIds: unreadIds });
+            }
+        }
+    }, [allMessages, currentUserId, markAsRead]);
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -285,24 +205,35 @@ export default function ChatWindow({ selectedAdmin, isGlobalMode, adminInfo }) {
                         const senderId = msg.sender?._id || msg.sender;
                         const isOwn = senderId?.toString() === currentUserId?.toString();
                         return (
-                            <MessageItem
-                                key={msg._id}
-                                msg={msg}
-                                isOwn={isOwn}
-                                adminInfo={adminInfo}
-                                onVisible={handleVisible}
-                            />
+                            <div key={msg._id} className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}>
+                                <div className={`flex flex-col max-w-[70%] ${isOwn ? 'items-end' : 'items-start'}`}>
+                                    {!isOwn && (
+                                        <span className="text-[10px] font-bold text-emerald-600 mb-1 ml-1 uppercase tracking-tight">
+                                            {msg.sender?.fullName || 'Admin'}
+                                        </span>
+                                    )}
+                                    {isOwn && (
+                                        <span className="text-[10px] font-bold text-gray-500 mb-1 mr-1 uppercase tracking-tight">
+                                            {adminInfo?.fullName}
+                                        </span>
+                                    )}
+                                    <div className={`p-3 rounded-2xl shadow-sm text-sm ${isOwn
+                                        ? 'bg-blue-600 text-white rounded-tr-none'
+                                        : 'bg-white border border-gray-100 text-gray-800 rounded-tl-none'
+                                        }`}>
+                                        {msg.content}
+                                    </div>
+                                    <span className="text-[9px] text-gray-400 mt-1 flex items-center gap-1 uppercase font-bold tracking-tighter">
+                                        {format(new Date(msg.createdAt), 'hh:mm a')}
+                                        {isOwn && msg.readBy?.length > 0 && (
+                                            <span className="text-blue-500 ml-1">Read</span>
+                                        )}
+                                    </span>
+                                </div>
+                            </div>
                         )
                     })
                 )}
-
-                {typingAdmin && (
-                    <div className="flex items-center gap-2 text-[10px] text-gray-400 font-bold animate-pulse ml-1">
-                        <Loader2 className="w-3 h-3 animate-spin" />
-                        {typingAdmin} is typing...
-                    </div>
-                )}
-
                 <div ref={messagesEndRef} />
 
                 {/* 48 Hour Deletion Notice Moved to Bottom */}
@@ -320,26 +251,7 @@ export default function ChatWindow({ selectedAdmin, isGlobalMode, adminInfo }) {
                     <input
                         type="text"
                         value={message}
-                        onChange={(e) => {
-                            setMessage(e.target.value);
-                            // Typing indicator logic
-                            if (socket && (selectedAdminId || isGlobalMode)) {
-                                socket.emit("typing_start", {
-                                    receiverId: selectedAdminId,
-                                    isGlobal: isGlobalMode,
-                                    senderId: currentUserId,
-                                    senderName: adminInfo?.fullName || "Admin"
-                                });
-
-                                if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
-                                typingTimeoutRef.current = setTimeout(() => {
-                                    socket.emit("typing_stop", {
-                                        receiverId: selectedAdminId,
-                                        isGlobal: isGlobalMode
-                                    });
-                                }, 3000);
-                            }
-                        }}
+                        onChange={(e) => setMessage(e.target.value)}
                         placeholder={isGlobalMode ? "Send to all admins..." : "Type your message..."}
                         className="flex-1 bg-gray-50 border border-gray-200 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm transition-all"
                     />

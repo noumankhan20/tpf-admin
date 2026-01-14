@@ -3,72 +3,63 @@
 import React, { useState } from 'react';
 import {
     useGetCommunicationAdminsQuery,
-    useGetUnreadCountsQuery
+    useGetInternalMessagesQuery
 } from '@/utils/slices/internalCommunicationApiSlice';
-import { useSelector, useDispatch } from 'react-redux';
+import { useSelector } from 'react-redux';
 import AdminList from './AdminList';
 import ChatWindow from './ChatWindow';
 import { MessageSquare, Users, Globe } from 'lucide-react';
 import { useSocket } from '@/utils/context/SocketContext';
-import { useEffect } from 'react'; // Removed duplicate useState import
-import { internalCommunicationApiSlice } from '@/utils/slices/internalCommunicationApiSlice';
+import { useEffect } from 'react';
 
 export default function InternalCommunicationMain() {
     const { data: adminsData, isLoading: adminsLoading } = useGetCommunicationAdminsQuery();
-    const { data: unreadData } = useGetUnreadCountsQuery();
+    const { data: messagesData, refetch: refetchMessages } = useGetInternalMessagesQuery();
     const { socket } = useSocket();
     const [selectedAdmin, setSelectedAdmin] = useState(null);
     const [isGlobalMode, setIsGlobalMode] = useState(false);
     const adminInfo = useSelector((state) => state.adminAuth.adminInfo);
 
     const currentUserId = adminInfo?._id || adminInfo?.id;
-    const dispatch = useDispatch();
 
     // Listen for new messages to update unread counts live
     useEffect(() => {
         if (socket && currentUserId) {
             const handleUpdate = (payload) => {
                 const receiverId = payload.receiver?._id || payload.receiver?.id || payload.receiver;
-                const senderId = payload.sender?._id || payload.sender?.id || payload.sender;
-
-                // Don't update unread counts if we're already looking at this sender/channel
-                const currentSelectedAdminId = selectedAdmin?._id || selectedAdmin?.id;
-                if (payload.isGlobal && isGlobalMode) return;
-                if (!payload.isGlobal && !isGlobalMode && senderId?.toString() === currentSelectedAdminId?.toString()) return;
-
-                // Manual Cache Update for Unread Counts
+                // Update counts if I am the receiver or if it's a global message from someone else
                 if (payload.isGlobal || receiverId?.toString() === currentUserId.toString()) {
-                    dispatch(
-                        internalCommunicationApiSlice.util.updateQueryResult(
-                            'getUnreadCounts',
-                            undefined,
-                            (draft) => {
-                                if (draft?.success && draft.counts) {
-                                    if (payload.isGlobal) {
-                                        if (senderId?.toString() !== currentUserId.toString()) {
-                                            draft.counts.global = (draft.counts.global || 0) + 1;
-                                        }
-                                    } else {
-                                        const sId = senderId?.toString();
-                                        draft.counts.private[sId] = (draft.counts.private[sId] || 0) + 1;
-                                    }
-                                }
-                            }
-                        )
-                    );
+                    refetchMessages();
                 }
             };
 
             socket.on('new_internal_message', handleUpdate);
             return () => socket.off('new_internal_message', handleUpdate);
         }
-    }, [socket, currentUserId, dispatch, selectedAdmin, isGlobalMode]);
+    }, [socket, currentUserId, refetchMessages]);
 
     if (adminsLoading) return <div className="p-8 text-center text-gray-500">Loading admins...</div>;
 
     const admins = adminsData?.data || [];
-    const unreadCounts = unreadData?.counts?.private || {};
-    const globalUnreadCount = unreadData?.counts?.global || 0;
+    const messages = messagesData?.data || [];
+    const currentUserId = adminInfo?._id || adminInfo?.id;
+
+    // Calculate unread counts per admin
+    const unreadCounts = messages.reduce((acc, m) => {
+        const senderId = m.sender?._id || m.sender?.id || m.sender;
+        if (!m.isGlobal && !m.readBy.includes(currentUserId) && senderId?.toString() !== currentUserId?.toString()) {
+            const sId = senderId?.toString();
+            acc[sId] = (acc[sId] || 0) + 1;
+        }
+        return acc;
+    }, {});
+
+    // Calculate global unread
+    const globalUnreadCount = messages.filter(m =>
+        m.isGlobal &&
+        !m.readBy.includes(currentUserId) &&
+        (m.sender?._id || m.sender?.id || m.sender)?.toString() !== currentUserId?.toString()
+    ).length;
 
     return (
         <div className="flex flex-col h-[calc(100vh-140px)] bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">

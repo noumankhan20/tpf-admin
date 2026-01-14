@@ -31,7 +31,7 @@ export const internalCommunicationApiSlice = apiSlice.injectEndpoints({
                 method: "POST",
                 body: data,
             }),
-            invalidatesTags: ["UnreadCounts"],
+            invalidatesTags: ["InternalMessages"],
         }),
         getConversations: builder.query({
             query: () => ({
@@ -39,13 +39,6 @@ export const internalCommunicationApiSlice = apiSlice.injectEndpoints({
                 method: "GET",
             }),
             providesTags: ["InternalMessages"],
-        }),
-        getUnreadCounts: builder.query({
-            query: () => ({
-                url: "/admin/internal-communication/unread-counts",
-                method: "GET",
-            }),
-            providesTags: ["UnreadCounts"],
         }),
     }),
 });
@@ -56,5 +49,4 @@ export const {
     useSendInternalMessageMutation,
     useMarkMessagesAsReadMutation,
     useGetConversationsQuery,
-    useGetUnreadCountsQuery,
 } = internalCommunicationApiSlice;
