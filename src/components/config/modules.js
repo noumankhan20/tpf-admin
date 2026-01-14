@@ -24,6 +24,7 @@ import {
   LayoutGrid,
   Calendar,
   Download,
+  Edit,
 } from "lucide-react";
 
 export const MODULES = [
@@ -114,6 +115,14 @@ export const MODULES = [
     route: "/photography",
     category: "operations",
     desc: "Manage photography content",
+  },
+  {
+    id: "Photo-Editing",
+    name: "Photo Editing",
+    icon: Edit,
+    route: "/photo-editing",
+    category: "operations",
+    desc: "Process and edit campaign photos",
   },
   {
     id: "Campaign Management",

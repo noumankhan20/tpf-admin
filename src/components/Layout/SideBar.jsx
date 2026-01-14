@@ -13,6 +13,7 @@ import {
     ChevronLeft,
     ChevronRight,
     UserPlus,
+    Edit,
 } from 'lucide-react';
 
 const navLinks = [
@@ -21,6 +22,7 @@ const navLinks = [
     { icon: Users, label: "Donors", path: "/donors" },
     { icon: Settings, label: "Settings", path: "/settings" },
     { icon: UserPlus, label: "Add-Admin", path: "/add-admin" },
+    { icon: Edit, label: "Photo-Editing", path: "/photo-editing" },
 ];
 
 export default function Sidebar({

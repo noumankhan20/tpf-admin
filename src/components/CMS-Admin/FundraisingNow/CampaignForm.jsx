@@ -130,7 +130,9 @@ export default function CampaignForm({
     return preview;
   };
 
-  const availableMedia = selectedCampaign?.photographySubmissions?.flatMap(sub => sub.files || []) || [];
+  const availableMedia = selectedCampaign?.photographySubmissions?.flatMap(sub =>
+    (sub.files || []).map(file => ({ ...file, submissionType: sub.submissionType || 'RAW' }))
+  ) || [];
 
   return (
     <>
