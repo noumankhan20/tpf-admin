@@ -14,6 +14,7 @@ import {
     ChevronRight,
     UserPlus,
     Edit,
+    MessageSquare,
 } from 'lucide-react';
 
 const navLinks = [
@@ -23,6 +24,7 @@ const navLinks = [
     { icon: Settings, label: "Settings", path: "/settings" },
     { icon: UserPlus, label: "Add-Admin", path: "/add-admin" },
     { icon: Edit, label: "Photo-Editing", path: "/photo-editing" },
+    { icon: MessageSquare, label: "Communication", path: "/admin/communication" },
 ];
 
 export default function Sidebar({

@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from 'react';
-import { Search, Bell, Menu, X } from 'lucide-react';
+import { Search, Menu, X } from 'lucide-react';
+import NotificationDropdown from '../Admin/Communication/NotificationDropdown';
 
 export default function Navbar({ onMenuClick }) {
     const [isSearchExpanded, setIsSearchExpanded] = useState(false);
@@ -19,12 +20,9 @@ export default function Navbar({ onMenuClick }) {
 
 
                 {/* Right Section */}
-        <div className="flex items-center space-x-4 ml-auto">
-                    <button className="relative text-gray-700 hover:text-gray-900 p-2 rounded-lg hover:bg-gray-100 ">
-                        <Bell size={20} />
-                        <span className="absolute top-1 right-1 h-2 w-2 bg-red-500 rounded-full"></span>
-                    </button>
-                    
+                <div className="flex items-center space-x-4 ml-auto">
+                    <NotificationDropdown />
+
                     <div className="flex items-center space-x-3">
                         <div className="h-9 w-9 rounded-full bg-blue-600 flex items-center justify-center text-white font-semibold shadow-sm">
                             NK

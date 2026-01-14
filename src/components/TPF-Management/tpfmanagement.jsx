@@ -8,6 +8,7 @@ import {
     Building2,
     ArrowRight,
     ArrowLeft,
+    MessageSquare,
 } from "lucide-react";
 const ENTITIES = [
     {
@@ -44,6 +45,13 @@ const ENTITIES = [
         desc: "Organization details based on backend models.",
         icon: Building2,
         route: "/tpf-management/organizations",
+    },
+    {
+        id: "communication-audit",
+        title: "Communication Audit",
+        desc: "Monitor all internal admin conversations and global broadcasts.",
+        icon: MessageSquare,
+        route: "/tpf-management/communication-audit",
     },
 ];
 

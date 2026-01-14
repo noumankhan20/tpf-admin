@@ -17,5 +17,6 @@ export const ADMIN_MODULES = [
   "KYC Verification",
   "Tickets-Queries",
   "Disbursement-Tasks",
-  "Photo-Editing"
+  "Photo-Editing",
+  "Internal Communication"
 ];
