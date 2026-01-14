@@ -139,6 +139,10 @@ export default function SuperAdminAuditor() {
                             Security Audit Hub
                         </h2>
                         <p className="text-sm text-gray-500 mt-1">Real-time monitoring of all administrative communication channels.</p>
+                        <p className="text-[10px] font-bold text-amber-600 uppercase tracking-widest mt-2 flex items-center gap-2">
+                            <span className="w-1.5 h-1.5 bg-amber-500 rounded-full"></span>
+                            Auto-purge active: items deleted after 48 hours
+                        </p>
                     </div>
                     <div className="relative">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />

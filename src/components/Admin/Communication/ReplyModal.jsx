@@ -96,6 +96,12 @@ export default function ReplyModal({ isOpen, onClose, message, adminInfo }) {
                                     </p>
                                 </div>
                             </div>
+                            <div className="ml-[52px] mt-2">
+                                <p className="text-[9px] font-bold text-amber-600 uppercase tracking-tighter flex items-center gap-1">
+                                    <span className="w-1 h-1 bg-amber-500 rounded-full"></span>
+                                    This message will expire in 48 hours
+                                </p>
+                            </div>
                         </div>
 
                         {/* Reply Form */}

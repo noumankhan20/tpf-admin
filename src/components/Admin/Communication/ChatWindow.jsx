@@ -178,6 +178,14 @@ export default function ChatWindow({ selectedAdmin, isGlobalMode, adminInfo }) {
                 ref={messagesContainerRef}
                 className="flex-1 overflow-y-auto p-6 space-y-4 bg-gray-50/30"
             >
+                {/* 48 Hour Deletion Notice */}
+                <div className="flex justify-center mb-4">
+                    <div className="flex items-center gap-2 px-4 py-2 bg-amber-50 border border-amber-100 rounded-full text-[10px] font-bold text-amber-600 uppercase tracking-widest shadow-sm">
+                        <div className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse"></div>
+                        Messages are automatically deleted after 48 hours
+                    </div>
+                </div>
+
                 {hasMore && (
                     <div className="flex justify-center pb-4">
                         <button
