@@ -31,6 +31,11 @@ export default function InternalCommunicationMain() {
                 const receiverId = payload.receiver?._id || payload.receiver?.id || payload.receiver;
                 const senderId = payload.sender?._id || payload.sender?.id || payload.sender;
 
+                // Don't update unread counts if we're already looking at this sender/channel
+                const currentSelectedAdminId = selectedAdmin?._id || selectedAdmin?.id;
+                if (payload.isGlobal && isGlobalMode) return;
+                if (!payload.isGlobal && !isGlobalMode && senderId?.toString() === currentSelectedAdminId?.toString()) return;
+
                 // Manual Cache Update for Unread Counts
                 if (payload.isGlobal || receiverId?.toString() === currentUserId.toString()) {
                     dispatch(
@@ -57,7 +62,7 @@ export default function InternalCommunicationMain() {
             socket.on('new_internal_message', handleUpdate);
             return () => socket.off('new_internal_message', handleUpdate);
         }
-    }, [socket, currentUserId, dispatch]);
+    }, [socket, currentUserId, dispatch, selectedAdmin, isGlobalMode]);
 
     if (adminsLoading) return <div className="p-8 text-center text-gray-500">Loading admins...</div>;
 

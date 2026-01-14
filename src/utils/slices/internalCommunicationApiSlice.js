@@ -31,7 +31,7 @@ export const internalCommunicationApiSlice = apiSlice.injectEndpoints({
                 method: "POST",
                 body: data,
             }),
-            invalidatesTags: ["InternalMessages"],
+            invalidatesTags: ["UnreadCounts"],
         }),
         getConversations: builder.query({
             query: () => ({

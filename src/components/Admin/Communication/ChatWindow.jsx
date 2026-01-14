@@ -97,29 +97,28 @@ export default function ChatWindow({ selectedAdmin, isGlobalMode, adminInfo }) {
     useEffect(() => {
         setPage(1);
         setAllMessages([]);
+        // The query params will naturally change and fetch new data
     }, [selectedAdminId, isGlobalMode]);
 
     useEffect(() => {
-        if (messagesData?.success) {
+        if (messagesData?.success && !isFetching) {
             const newMessages = messagesData.data;
             setHasMore(messagesData.pagination.hasMore);
 
             if (page === 1) {
                 setAllMessages(newMessages);
-                // Scroll to bottom on first load
-                setTimeout(scrollToBottom, 500);
+                setTimeout(scrollToBottom, 300);
             } else {
-                // Prepend previous messages
                 const container = messagesContainerRef.current;
                 const scrollHeightBefore = container.scrollHeight;
 
                 setAllMessages(prev => {
                     const existingIds = new Set(prev.map(m => m._id));
                     const uniqueNew = newMessages.filter(m => !existingIds.has(m._id));
+                    // uniqueNew is older page [M61...M80], prev is newer [M81...M100]
                     return [...uniqueNew, ...prev];
                 });
 
-                // Maintain scroll position after prepending
                 setTimeout(() => {
                     if (container) {
                         container.scrollTop = container.scrollHeight - scrollHeightBefore;
@@ -127,18 +126,14 @@ export default function ChatWindow({ selectedAdmin, isGlobalMode, adminInfo }) {
                 }, 0);
             }
         }
-    }, [messagesData, page]);
+    }, [messagesData, page, isFetching]);
 
     useEffect(() => {
         if (socket && currentUserId) {
             const handleNewMessage = (payload) => {
-                const payloadSenderId = payload.sender?._id || payload.sender?.id || payload.sender;
-                const payloadReceiverId = payload.receiver?._id || payload.receiver?.id || payload.receiver;
-
-                // Important: Convert all to strings for comparison
+                const pSenderId = (payload.sender?._id || payload.sender?.id || payload.sender)?.toString();
+                const pReceiverId = (payload.receiver?._id || payload.receiver?.id || payload.receiver)?.toString();
                 const sAdminId = selectedAdminId?.toString();
-                const pSenderId = payloadSenderId?.toString();
-                const pReceiverId = payloadReceiverId?.toString();
                 const cUserId = currentUserId?.toString();
 
                 const isRelevant = isGlobalMode
@@ -152,31 +147,27 @@ export default function ChatWindow({ selectedAdmin, isGlobalMode, adminInfo }) {
                     });
 
                     // Optimization: Manual Cache Update
-                    // We update the RTK Query cache for the current view (page 1)
                     dispatch(
                         internalCommunicationApiSlice.util.updateQueryResult(
                             'getInternalMessages',
                             {
-                                otherAdminId: !isGlobalMode ? selectedAdminId : undefined,
+                                otherAdminId: !isGlobalMode ? sAdminId : undefined,
                                 isGlobal: isGlobalMode ? 'true' : undefined,
-                                page: 1, // Focus on updating the first page cache
+                                page: 1,
                                 limit: 20
                             },
                             (draft) => {
                                 if (draft?.success && Array.isArray(draft.data)) {
                                     if (!draft.data.find(m => m._id === payload._id)) {
-                                        // Since we reverse for display, we unshift or push based on retrieved order
-                                        // The backend usually returns newest first, so we unshift
-                                        draft.data.unshift(payload);
+                                        draft.data.push(payload);
                                     }
                                 }
                             }
                         )
                     );
 
-                    // If near bottom, scroll down
                     const container = messagesContainerRef.current;
-                    if (container && (container.scrollHeight - container.scrollTop - container.clientHeight < 150)) {
+                    if (container && (container.scrollHeight - container.scrollTop - container.clientHeight < 300)) {
                         setTimeout(scrollToBottom, 100);
                     }
                 }
