@@ -32,21 +32,24 @@ export default function ChatWindow({ selectedAdmin, isGlobalMode, adminInfo }) {
     const [sendMessage, { isLoading: isSending }] = useSendInternalMessageMutation();
     const [markAsRead] = useMarkMessagesAsReadMutation();
 
+    const currentUserId = adminInfo?._id || adminInfo?.id;
+    const selectedAdminId = selectedAdmin?._id || selectedAdmin?.id;
+
     // Reset when admin changes
     useEffect(() => {
         setPage(1);
         setAllMessages([]);
-    }, [selectedAdmin?._id, isGlobalMode]);
+    }, [selectedAdminId, isGlobalMode]);
 
     useEffect(() => {
         if (messagesData?.success) {
-            const newMessages = messagesData.data;
-            setHasMore(messagesData.pagination.hasMore);
+            const newMessages = messagesData.data; // Changed from activeData.data
+            setHasMore(messagesData.pagination.hasMore); // Changed from activeData.pagination.hasMore
 
             if (page === 1) {
                 setAllMessages(newMessages);
                 // Scroll to bottom on first load
-                setTimeout(scrollToBottom, 100);
+                setTimeout(scrollToBottom, 500);
             } else {
                 // Prepend previous messages
                 const container = messagesContainerRef.current;
@@ -69,16 +72,21 @@ export default function ChatWindow({ selectedAdmin, isGlobalMode, adminInfo }) {
     }, [messagesData, page]);
 
     useEffect(() => {
-        if (socket) {
+        if (socket && currentUserId) {
             const handleNewMessage = (payload) => {
+                const payloadSenderId = payload.sender?._id || payload.sender?.id || payload.sender;
+                const payloadReceiverId = payload.receiver?._id || payload.receiver?.id || payload.receiver;
+
+                // Important: Convert all to strings for comparison
+                const sAdminId = selectedAdminId?.toString();
+                const pSenderId = payloadSenderId?.toString();
+                const pReceiverId = payloadReceiverId?.toString();
+                const cUserId = currentUserId?.toString();
+
                 const isRelevant = payload.isGlobal ||
-                    payload.sender._id === selectedAdmin?._id ||
-                    payload.receiver?._id === selectedAdmin?._id ||
-                    payload.sender === selectedAdmin?._id ||
-                    payload.receiver === selectedAdmin?._id;
+                    (sAdminId && (pSenderId === sAdminId || pReceiverId === sAdminId));
 
                 if (isRelevant) {
-                    // If it's from the other person or it's a new message in current convo
                     setAllMessages(prev => {
                         if (prev.find(m => m._id === payload._id)) return prev;
                         return [...prev, payload];
@@ -86,7 +94,7 @@ export default function ChatWindow({ selectedAdmin, isGlobalMode, adminInfo }) {
 
                     // If near bottom, scroll down
                     const container = messagesContainerRef.current;
-                    if (container && (container.scrollHeight - container.scrollTop - container.clientHeight < 100)) {
+                    if (container && (container.scrollHeight - container.scrollTop - container.clientHeight < 150)) {
                         setTimeout(scrollToBottom, 100);
                     }
                 }
@@ -95,19 +103,23 @@ export default function ChatWindow({ selectedAdmin, isGlobalMode, adminInfo }) {
             socket.on('new_internal_message', handleNewMessage);
             return () => socket.off('new_internal_message', handleNewMessage);
         }
-    }, [socket, selectedAdmin?._id]);
+    }, [socket, selectedAdminId, currentUserId]);
 
     useEffect(() => {
-        if (allMessages.length > 0) {
+        if (allMessages.length > 0 && currentUserId) {
+            const cUserId = currentUserId.toString();
             const unreadIds = allMessages
-                .filter(m => !m.readBy.includes(adminInfo._id) && m.sender._id !== adminInfo._id)
+                .filter(m => {
+                    const senderId = m.sender?._id || m.sender?.id || m.sender;
+                    return !m.readBy.includes(cUserId) && senderId?.toString() !== cUserId;
+                })
                 .map(m => m._id);
 
             if (unreadIds.length > 0) {
                 markAsRead({ messageIds: unreadIds });
             }
         }
-    }, [allMessages, adminInfo._id, markAsRead]);
+    }, [allMessages, currentUserId, markAsRead]);
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });

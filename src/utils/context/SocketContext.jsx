@@ -27,7 +27,7 @@ export const SocketProvider = ({ children }) => {
         // Avoid reconnecting if already connected
         if (socket.current && socket.current.connected) return;
 
-        const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:7000';
+        const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
 
         // Initialize socket
         socket.current = io(backendUrl, {
@@ -38,11 +38,13 @@ export const SocketProvider = ({ children }) => {
             reconnectionDelay: 1000,
         });
 
+        const adminId = admin?._id || admin?.id;
+
         socket.current.on('connect', () => {
             console.log('Global Socket Connected:', socket.current.id);
             setIsConnected(true);
-            if (admin?._id) {
-                socket.current.emit('join', admin._id);
+            if (adminId) {
+                socket.current.emit('join', adminId.toString());
             }
         });
 
