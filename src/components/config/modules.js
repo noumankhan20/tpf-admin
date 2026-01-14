@@ -73,7 +73,7 @@ export const MODULES = [
     name: "Social Media",
     icon: Bell,
     route: "/social-media",
-    category: "people",
+    category: "operations",
     desc: "Manage Social-Media content",
   },
   {
@@ -89,8 +89,9 @@ export const MODULES = [
     name: "Donation Management",
     icon: HandHeart,
     route: "/donation-management",
-    category: "finance",
+    category: "quick-access",
     desc: "Track donor details & activity",
+    standalone: true,
   },
   {
     id: "Finance & Accounting",
@@ -105,8 +106,9 @@ export const MODULES = [
     name: "Inventory",
     icon: Package,
     route: "/inventory",
-    category: "finance",
+    category: "quick-access",
     desc: "Asset and inventory tracking",
+    standalone: true,
   },
   {
     id: "Photography",
@@ -145,8 +147,9 @@ export const MODULES = [
     name: "Downloads",
     icon: Download,
     route: "/downloads",
-    category: "documentation",
+    category: "quick-access",
     desc: "Export data to CSV/PDF",
+    standalone: true,
   },
   {
     id: "CMS-Admin",
@@ -185,7 +188,7 @@ export const MODULES = [
     name: "Tickets & Queries",
     icon: Book,
     route: "/tickets-queries",
-    category: "people",
+    category: "communication",
     desc: "Respond to the Tickets and Queries of the Users",
   },
   {

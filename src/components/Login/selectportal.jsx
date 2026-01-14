@@ -36,6 +36,8 @@ import {
   KeyRound,
   Layers,
   LayoutDashboard,
+  MessageSquare,
+  Zap,
 } from 'lucide-react';
 import LoginNotificationModal from '../Common/LoginNotificationModal';
 
@@ -47,6 +49,8 @@ const CATEGORIES = [
   { id: 'operations', name: 'Operations', icon: FolderKanban },
   { id: 'documentation', name: 'Documentation', icon: FileText },
   { id: 'verify-forms', name: 'Verify Forms', icon: Shield },
+  { id: 'communication', name: 'Communication', icon: MessageSquare },
+  { id: 'quick-access', name: 'Quick Access', icon: Zap },
 ];
 
 export default function SelectPanel() {
@@ -73,7 +77,6 @@ export default function SelectPanel() {
 
   const fullName = admin?.fullName || "";
   const adminModules = admin?.modules || [];
-  console.log("Admin modules:", adminModules);
 
   useEffect(() => {
     if (!admin) {
