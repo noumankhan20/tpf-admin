@@ -1,7 +1,10 @@
 "use client";
 
 import React, { useState } from 'react';
-import { useGetCommunicationAdminsQuery } from '@/utils/slices/internalCommunicationApiSlice';
+import {
+    useGetCommunicationAdminsQuery,
+    useGetInternalMessagesQuery
+} from '@/utils/slices/internalCommunicationApiSlice';
 import { useSelector } from 'react-redux';
 import AdminList from './AdminList';
 import ChatWindow from './ChatWindow';

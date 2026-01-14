@@ -87,11 +87,12 @@ export default function SelectPanel() {
 
 
   const allowedModules = useMemo(() => {
+    if (admin?.isSuperAdmin) return MODULES;
     return MODULES.filter((mod) =>
       adminModules.includes(mod.id) ||
       (adminModules.includes("Admin Dashboard") && mod.category === "dashboard")
     );
-  }, [adminModules]);
+  }, [adminModules, admin?.isSuperAdmin]);
 
 
 
