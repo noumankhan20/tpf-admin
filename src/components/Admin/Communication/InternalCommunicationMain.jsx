@@ -42,6 +42,31 @@ export default function InternalCommunicationMain() {
 
     const admins = adminsData?.data || [];
     const messages = messagesData?.data || [];
+    const currentUserId = adminInfo?._id || adminInfo?.id;
+
+    // Calculate last message timestamp for each admin to sort the list
+    const lastMessageTimes = messages.reduce((acc, m) => {
+        if (m.isGlobal) return acc;
+        const senderId = (m.sender?._id || m.sender).toString();
+        const receiverId = (m.receiver?._id || m.receiver).toString();
+
+        const otherId = senderId === currentUserId?.toString() ? receiverId : senderId;
+        const msgTime = new Date(m.createdAt).getTime();
+
+        if (!acc[otherId] || msgTime > acc[otherId]) {
+            acc[otherId] = msgTime;
+        }
+        return acc;
+    }, {});
+
+    // Sort admins: Recent message activity first, then alphabetical fallback
+    const sortedAdmins = [...admins].sort((a, b) => {
+        const timeA = lastMessageTimes[a._id.toString()] || 0;
+        const timeB = lastMessageTimes[b._id.toString()] || 0;
+
+        if (timeA !== timeB) return timeB - timeA;
+        return a.fullName.localeCompare(b.fullName);
+    });
 
     // Calculate unread counts per admin
     const unreadCounts = messages.reduce((acc, m) => {
@@ -103,7 +128,7 @@ export default function InternalCommunicationMain() {
                                 Admins List ({admins.length})
                             </h3>
                             <AdminList
-                                admins={admins}
+                                admins={sortedAdmins}
                                 selectedAdmin={selectedAdmin}
                                 unreadCounts={unreadCounts}
                                 onSelectAdmin={(admin) => {
