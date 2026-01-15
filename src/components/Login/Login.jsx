@@ -91,7 +91,7 @@ export default function AdminLogin() {
         className={`absolute inset-0 w-full h-full object-cover z-0 transition-opacity duration-700 ${videoReady ? 'opacity-100' : 'opacity-0'
           }`}
       >
-        <source src="/admin_bg.mp4" type="video/mp4" />
+        <source src="/admin_bg_trim.mp4" type="video/mp4" />
       </video>
 
 
