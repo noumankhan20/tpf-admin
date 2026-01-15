@@ -12,6 +12,8 @@ import { useSelector } from "react-redux";
 
 export default function AdminLogin() {
   const router = useRouter();
+  const [videoReady, setVideoReady] = useState(false);
+
   const [loginAdmin, { isLoading }] = useLoginAdminMutation();
   const admin = useSelector((state) => state.adminAuth.adminInfo);
 
@@ -74,7 +76,7 @@ export default function AdminLogin() {
 
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center p-4 relative overflow-hidden">
+    <div className="min-h-screen w-full flex items-center justify-center p-4 relative overflow-hidden bg-gradient-to-br from-emerald-950 via-emerald-900 to-emerald-800">
       <ToastContainer position="top-right" autoClose={3000} />
 
       {/* Background Video */}
@@ -83,10 +85,15 @@ export default function AdminLogin() {
         muted
         loop
         playsInline
-        className="absolute inset-0 w-full h-full object-cover z-0"
+        preload="metadata"
+        poster="/admin_video_image.webp"
+        onCanPlayThrough={() => setVideoReady(true)}
+        className={`absolute inset-0 w-full h-full object-cover z-0 transition-opacity duration-700 ${videoReady ? 'opacity-100' : 'opacity-0'
+          }`}
       >
         <source src="/admin_bg.mp4" type="video/mp4" />
       </video>
+
 
 
       {/* Subtle Background Pattern */}
