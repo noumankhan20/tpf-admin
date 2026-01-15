@@ -62,11 +62,11 @@ export default function FinancialAidVerifyPage() {
 
    // Stats & Tab Counts Calculation
    const stats = useMemo(() => {
-      if (!formsData?.data) return { pending: 0, approved: 0, rejected: 0 };
+      if (!formsData?.data) return { pending: 0, approved: 0, rejected: 0, clarification:0 };
       return formsData.data.reduce((acc, form) => {
          acc[form.status] = (acc[form.status] || 0) + 1;
          return acc;
-      }, { pending: 0, approved: 0, rejected: 0 });
+      }, { pending: 0, approved: 0, rejected: 0, clarification: 0 });
    }, [formsData]);
 
    const tabCounts = useMemo(() => {
@@ -172,7 +172,7 @@ export default function FinancialAidVerifyPage() {
 
    const handleSubmitGroundReport = async () => {
       if (!groundReportReason.trim()) {
-         alert("Please provide a reason for the ground report.");
+         alert("Please enter a message.");
          return;
       }
 
@@ -182,9 +182,11 @@ export default function FinancialAidVerifyPage() {
       formData.append('status', groundReportStatus);
       formData.append('groundReportReason', groundReportReason);
 
-      groundImages.forEach(image => {
-         formData.append('groundReportImages', image);
-      });
+      if (groundReportStatus !== 'clarification') {
+         groundImages.forEach(image => {
+            formData.append('groundReportImages', image);
+         });
+      }
 
       try {
          await updateFormStatus({ id: selectedForm._id, formData }).unwrap();

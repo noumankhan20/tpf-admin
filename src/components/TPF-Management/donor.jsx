@@ -12,7 +12,7 @@ export default function DonorModule() {
 
   // Fetch all donors data
   const { data: allDonorsData, isLoading: isLoadingAll, error: errorAll } = useGetAllDonorsQuery();
-  
+
   // Fetch selected donor details
   const { data: donorDetailsData, isLoading: isLoadingDetails, error: errorDetails } = useGetDonorDetailsQuery(
     selectedDonorId,
@@ -27,10 +27,13 @@ export default function DonorModule() {
   const donorsData = allDonorsData?.donors || [];
 
   // Filter donors based on search
-  const filteredDonors = donorsData.filter(donor =>
-    donor.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    donor.email.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredDonors = donorsData.filter(donor => {
+    const name = donor.fullName?.toLowerCase() || '';
+    const email = donor.email?.toLowerCase() || '';
+    const query = searchQuery.toLowerCase();
+
+    return name.includes(query) || email.includes(query);
+  });
 
   // Pagination
   const totalPages = Math.ceil(filteredDonors.length / itemsPerPage);

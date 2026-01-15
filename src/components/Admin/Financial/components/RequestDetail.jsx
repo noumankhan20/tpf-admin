@@ -1,7 +1,8 @@
 import React from 'react';
 import {
     CheckCircle, XCircle, X as XIcon, Camera, Printer, FileText,
-    Building, User, Phone, Mail, MapPin, Briefcase, CreditCard, Users
+    Building, User, Phone, Mail, MapPin, Briefcase, CreditCard, Users,
+    LucideMessageSquareWarning
 } from 'lucide-react';
 import { Badge } from './Badge';
 
@@ -266,6 +267,13 @@ export const RequestDetail = React.memo(({
                 {selectedForm.status === 'pending' && (
                     <div className="border-t border-gray-200 p-6 bg-white absolute bottom-0 w-full backdrop-blur-md z-20">
                         <div className="flex justify-end gap-4">
+                            <button
+                                onClick={() => onOpenGroundReport('clarification')}
+                                className="flex items-center gap-2 px-6 py-3 bg-amber-200 text-amber-600 hover:bg-amber-600 hover:text-white rounded-xl border border-red-200 transition-all font-semibold"
+                            >
+                                <LucideMessageSquareWarning size={18} />
+                                Clarification
+                            </button>
                             <button
                                 onClick={() => onOpenGroundReport('rejected')}
                                 className="flex items-center gap-2 px-6 py-3 bg-red-50 text-red-600 hover:bg-red-600 hover:text-white rounded-xl border border-red-200 transition-all font-semibold"

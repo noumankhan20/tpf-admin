@@ -39,7 +39,6 @@ const FINANCE_MODULES = [
 ];
 
 const CATEGORIES = [
-    { id: 'disbursements', name: 'Disbursements', icon: CreditCard },
     { id: 'expense', name: 'Expense', icon: TrendingDown },
 ];
 
