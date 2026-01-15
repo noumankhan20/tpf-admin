@@ -29,16 +29,16 @@ export default function AdminList({ admins, selectedAdmin, onSelectAdmin, unread
                         {/* Content */}
                         <div className="text-left min-w-0 flex-1">
                             <div className="flex justify-between items-baseline mb-0.5">
-                                <p className={`font-bold text-[14.5px] truncate ${isActive ? 'text-emerald-700' : 'text-gray-900'}`}>
+                                <p className={`font-bold text-[16px] truncate ${isActive ? 'text-emerald-700' : 'text-gray-900'}`}>
                                     {admin.fullName}
                                 </p>
                             </div>
                             <div className="flex justify-between items-center">
-                                <p className="text-[12px] text-gray-500 truncate font-medium">
+                                <p className="text-[13px] text-gray-500 truncate font-medium">
                                     {admin.isSuperAdmin ? 'Super Admin' : 'Administrator'}
                                 </p>
                                 {unreadCount > 0 && (
-                                    <span className="bg-emerald-600 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full min-w-[18px] text-center shadow-sm">
+                                    <span className="bg-emerald-600 text-white text-[11px] font-black px-1.5 py-0.5 rounded-full min-w-[20px] text-center shadow-sm">
                                         {unreadCount}
                                     </span>
                                 )}

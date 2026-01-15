@@ -54,10 +54,11 @@ export default function NotificationDropdown() {
             <button
                 onClick={() => setIsOpen(!isOpen)}
                 className={`relative text-gray-700 hover:text-gray-900 p-2 rounded-lg transition-colors ${isOpen ? 'bg-gray-100' : 'hover:bg-gray-100'}`}
+                title="Internal Messages"
             >
-                <Bell size={20} />
+                <MessageSquare size={20} />
                 {unreadMessages.length > 0 && (
-                    <span className="absolute top-1.5 right-1.5 h-4 w-4 bg-red-500 rounded-full text-[10px] text-white flex items-center justify-center font-bold border-2 border-white">
+                    <span className="absolute top-1.5 right-1.5 h-4 w-4 bg-emerald-600 rounded-full text-[10px] text-white flex items-center justify-center font-bold border-2 border-white">
                         {unreadMessages.length}
                     </span>
                 )}
@@ -74,8 +75,8 @@ export default function NotificationDropdown() {
                             className="absolute right-0 mt-3 w-80 bg-white rounded-2xl shadow-2xl border border-gray-100 z-50 overflow-hidden"
                         >
                             <div className="p-4 border-b border-gray-50 flex items-center justify-between bg-white/80 backdrop-blur-md">
-                                <h3 className="font-bold text-gray-900">Notifications</h3>
-                                <span className="text-[10px] bg-blue-50 text-blue-600 px-2 py-1 rounded-full font-bold uppercase tracking-wider">
+                                <h3 className="font-bold text-gray-900">Messages</h3>
+                                <span className="text-[10px] bg-emerald-50 text-emerald-600 px-2 py-1 rounded-full font-bold uppercase tracking-wider">
                                     {unreadMessages.length} New
                                 </span>
                             </div>

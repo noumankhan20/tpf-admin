@@ -100,7 +100,7 @@ export default function InternalCommunicationMain() {
     ).length;
 
     return (
-        <div className="flex h-screen w-full bg-[#f0f2f5] overflow-hidden">
+        <div className="flex h-screen w-full bg-[#f0f2f5] overflow-hidden" style={{ fontFamily: 'Arial, sans-serif' }}>
             {/* Sidebar */}
             <div className="w-[400px] flex flex-col bg-white border-r border-gray-200">
                 {/* Sidebar Header */}
@@ -119,7 +119,7 @@ export default function InternalCommunicationMain() {
                             </div>
                         </div>
                         <div className="flex items-center gap-2">
-                            <h2 className="text-lg font-bold text-gray-900">Chats</h2>
+                            <h2 className="text-xl font-bold text-gray-900">Chats</h2>
                         </div>
                     </div>
 
@@ -133,7 +133,7 @@ export default function InternalCommunicationMain() {
                             placeholder="Search or start new chat"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="block w-full pl-10 pr-3 py-2 bg-white border border-gray-300 focus:bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500 rounded-lg text-sm transition-all placeholder-gray-500"
+                            className="block w-full pl-10 pr-3 py-2 bg-white border border-gray-300 focus:bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500 rounded-lg text-base transition-all placeholder-gray-500"
                         />
                     </div>
                 </div>
@@ -156,11 +156,11 @@ export default function InternalCommunicationMain() {
                                 <Globe className="w-6 h-6" />
                             </div>
                             <div className="text-left flex-1 min-w-0">
-                                <p className={`font-bold text-sm ${isGlobalMode ? 'text-emerald-700' : 'text-gray-900'}`}>Global Message</p>
-                                <p className="text-[11px] text-gray-500 truncate">Broadcast to all administrators</p>
+                                <p className={`font-bold text-base ${isGlobalMode ? 'text-emerald-700' : 'text-gray-900'}`}>Global Message</p>
+                                <p className="text-[13px] text-gray-500 truncate">Broadcast to all administrators</p>
                             </div>
                             {globalUnreadCount > 0 && (
-                                <span className="bg-emerald-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm">
+                                <span className="bg-emerald-600 text-white text-xs font-bold px-2 py-0.5 rounded-full shadow-sm">
                                     {globalUnreadCount}
                                 </span>
                             )}
@@ -169,7 +169,7 @@ export default function InternalCommunicationMain() {
 
                     <div className="p-2">
                         <div className="px-4 py-2">
-                            <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2">
+                            <h3 className="text-[12px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2">
                                 Conversations ({sortedAdmins.length})
                             </h3>
                         </div>
@@ -202,11 +202,11 @@ export default function InternalCommunicationMain() {
                                 <MessageSquare className="w-16 h-16 text-emerald-500" />
                             </div>
                         </div>
-                        <h3 className="text-3xl font-extrabold text-gray-900 mb-3 tracking-tight">Internal Portal Messaging</h3>
-                        <p className="text-gray-500 max-w-md text-lg leading-relaxed mb-8">
+                        <h3 className="text-4xl font-extrabold text-gray-900 mb-3 tracking-tight">Internal Portal Messaging</h3>
+                        <p className="text-gray-500 max-w-md text-xl leading-relaxed mb-8">
                             Connected and encrypted channel for administrator communications. Please maintain professional decorum.
                         </p>
-                        <div className="flex items-center gap-2 text-xs font-medium text-gray-400 bg-white/50 px-4 py-2 rounded-full border border-gray-200">
+                        <div className="flex items-center gap-2 text-sm font-medium text-gray-400 bg-white/50 px-4 py-2 rounded-full border border-gray-200">
                             End-to-end connection active
                         </div>
                     </div>

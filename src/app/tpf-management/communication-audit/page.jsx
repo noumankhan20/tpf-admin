@@ -12,7 +12,7 @@ export default function CommunicationAuditPage() {
         <div className="p-4 md:p-8 bg-gray-50 min-h-screen">
             <div className="max-w-6xl mx-auto">
                  <button
-                                   onClick={() => router.push("/select-portal")}
+                                   onClick={() => router.push('/select-portal?category=communication')}
                                    className="flex items-center gap-2 mb-6 px-4 py-2 hover:bg-white rounded-xl transition-colors text-gray-500 hover:text-gray-900 font-medium text-sm border border-transparent hover:border-gray-200"
                                >
                                    <ArrowLeft className="w-4 h-4" />

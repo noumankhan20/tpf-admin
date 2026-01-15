@@ -46,14 +46,6 @@ export const MODULES = [
     desc: "Key metrics and recent transactions",
   },
   {
-    id: "Dashboard Calendar",
-    name: "Calendar",
-    icon: Calendar,
-    route: "/admin/dashboard/calendar",
-    category: "dashboard",
-    desc: "Activity and events calendar",
-  },
-  {
     id: "Security & Access",
     name: "Security & Access",
     icon: Shield,

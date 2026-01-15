@@ -7,6 +7,7 @@ import NotificationBell from '../Common/NotificationBell';
 import { useSocket } from '@/utils/context/SocketContext';
 import { getMediaUrl } from '@/utils/media';
 
+
 // Import API hooks
 import { useGetEditingAssignmentsQuery, useGetCompletedEditingAssignmentsQuery, useUploadEditedPhotoMutation, useCompleteTaskMutation } from '@/utils/slices/photoEditingApiSlice';
 
@@ -469,6 +470,7 @@ const UploadPage = ({ setActiveView, selectedTask }) => {
 const PhotoEditingModule = () => {
     const [activeView, setActiveView] = useState('dashboard');
     const [selectedTask, setSelectedTask] = useState(null);
+    const router= useRouter();
     const { socket } = useSocket();
 
     const {
@@ -503,6 +505,12 @@ const PhotoEditingModule = () => {
         <div className="min-h-screen bg-gray-50">
             <header className="flex items-center justify-between px-6 py-4 bg-white border-b border-gray-200 sticky top-0 z-40">
                 <div className="flex items-center gap-4">
+                      <button
+                                                onClick={() => router.push('/select-portal?category=operations')}
+                                                className="p-2 hover:bg-gray-100 rounded-full transition"
+                                            >
+                                                <ArrowLeft className="w-5 h-5 text-gray-600" />
+                                            </button>
                     <h1 className="text-xl font-bold text-gray-800">Photo Editing</h1>
                 </div>
                 <div className="flex items-center gap-4 relative">

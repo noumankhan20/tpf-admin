@@ -371,7 +371,7 @@ export default function CampaignAdminDashboard() {
           <div className="relative flex items-center justify-between flex-wrap gap-4">
             {/* Back Button (Left) */}
             <button
-              onClick={() => router.push("/select-portal")}
+            onClick={() => router.push('/select-portal?category=operations')}
               className="flex items-center cursor-pointer gap-2 px-4 py-2 rounded-xl text-sm font-medium text-gray-600 hover:text-gray-800 hover:bg-white transition-all border border-gray-300 shadow-sm"
             >
               <ArrowLeft className="w-4 h-4" />

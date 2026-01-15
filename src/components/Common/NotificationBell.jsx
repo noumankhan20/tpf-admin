@@ -87,7 +87,7 @@ const NotificationBell = ({ moduleFilter = null }) => {
                                 formType: 'KYC',
                                 title: `Pending Verification: KYC Request`,
                                 subtitle: (kyc.kycDetails?.fullLegalName || kyc.fullName || 'User'),
-                                time: kyc.createdAt || kyc.updatedAt,
+                                time: kyc.kycDetails.submittedAt,
                                 read: false,
                                 data: kyc
                             }));
@@ -198,7 +198,7 @@ const NotificationBell = ({ moduleFilter = null }) => {
                 default: break;
             }
         } else if (notification.type === 'FORM') {
-            if (notification.formType === 'KYC') router.push('/admin/kyc');
+            if (notification.formType === 'KYC') router.push('/verify/kyc');
             else router.push('/admin/verify-forms'); // Adjust path as needed
         }
     };

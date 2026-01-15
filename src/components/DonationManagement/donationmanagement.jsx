@@ -279,7 +279,7 @@ export default function DonationManagement() {
                 <div className="mb-4 sm:mb-8 relative">
                     {/* Back Button (left aligned) */}
                     <button
-                        onClick={() => window.history.back()}
+                       onClick={() => router.push('/select-portal?category=quick-access')}
                         className="absolute left-0 top-0 flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-100 active:bg-gray-200 transition-colors"
                     >
                         <ChevronDown className="w-3.5 h-3.5 sm:w-4 sm:h-4 rotate-90" />

@@ -243,17 +243,24 @@ const DonationTypeBreakdown = () => {
 export default function DashboardOverview() {
     const router = useRouter();
     return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6 lg:p-8">
-            <div className="max-w-[1800px] mx-auto">
-                <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-10">
-                    <button onClick={() => router.back()} className="group flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4 transition-colors">
-                        <div className="w-10 h-10 rounded-xl bg-white border-2 border-gray-200 group-hover:border-emerald-500 flex items-center justify-center transition-all shadow-sm group-hover:shadow-md">
-                            <ArrowLeft size={20} strokeWidth={2.5} className="group-hover:text-emerald-600" />
-                        </div>
-                        <span className="font-bold text-sm">Back</span>
+        <div className="min-h-screen bg-gray-50 font-sans flex flex-col" style={{ fontFamily: 'Arial, sans-serif' }}>
+            {/* Header like Financial.jsx */}
+            <header className="flex items-center justify-between px-6 py-4 bg-white border-b border-gray-200 shrink-0 shadow-sm">
+                <div className="flex items-center space-x-4">
+                    <button
+                        onClick={() => router.push('/select-portal?category=dashboard')}
+                        className="p-2 hover:bg-gray-100 rounded-full transition"
+                    >
+                        <ArrowLeft className="w-5 h-5 text-gray-600" />
                     </button>
-                    <h1 className="text-4xl font-black text-gray-900 mb-2">Dashboard Overview</h1>
-                    <p className="text-lg text-gray-600 font-semibold">Detailed charts and donation analytics</p>
+                    <h1 className="text-xl font-bold text-gray-800">Dashboard Overview</h1>
+                </div>
+            </header>
+
+            {/* Main Content Area */}
+            <main className="flex-1 p-6 max-w-[1600px] mx-auto w-full overflow-hidden flex flex-col">
+                <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
+                    <p className="text-base text-gray-600 font-medium">Detailed charts and donation analytics</p>
                 </motion.div>
 
                 <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
@@ -264,7 +271,7 @@ export default function DashboardOverview() {
                         <DonationTypeBreakdown />
                     </div>
                 </div>
-            </div>
+            </main>
         </div>
     );
 }

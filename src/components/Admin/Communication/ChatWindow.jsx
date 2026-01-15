@@ -218,11 +218,11 @@ export default function ChatWindow({ selectedAdmin, isGlobalMode, adminInfo }) {
                         {isGlobalMode ? <Globe className="w-6 h-6" /> : selectedAdmin?.fullName?.charAt(0)}
                     </div>
                     <div>
-                        <h3 className="font-extrabold text-[#111b21] text-base leading-tight">
+                        <h3 className="font-extrabold text-[#111b21] text-lg leading-tight">
                             {isGlobalMode ? 'Internal Global Channel' : selectedAdmin?.fullName}
                         </h3>
                         {typingUser && (
-                            <p className="text-[12px] text-emerald-600 font-bold italic animate-pulse">
+                            <p className="text-[14px] text-emerald-600 font-bold italic animate-pulse">
                                 {isGlobalMode ? `${typingUser} is typing...` : 'typing...'}
                             </p>
                         )}
@@ -249,7 +249,7 @@ export default function ChatWindow({ selectedAdmin, isGlobalMode, adminInfo }) {
                         <button
                             onClick={handleLoadMore}
                             disabled={isFetching}
-                            className="text-xs font-black text-white bg-emerald-600/80 hover:bg-emerald-600 px-5 py-2.5 rounded-full transition-all flex items-center gap-2 shadow-lg backdrop-blur-sm disabled:opacity-50 uppercase tracking-widest"
+                            className="text-[13px] font-black text-white bg-emerald-600/80 hover:bg-emerald-600 px-5 py-2.5 rounded-full transition-all flex items-center gap-2 shadow-lg backdrop-blur-sm disabled:opacity-50 uppercase tracking-widest"
                         >
                             {isFetching ? (
                                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -266,8 +266,8 @@ export default function ChatWindow({ selectedAdmin, isGlobalMode, adminInfo }) {
                         <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mb-4 shadow-xl">
                             <MessageCircle className="w-8 h-8 text-emerald-500" />
                         </div>
-                        <p className="text-sm font-black uppercase tracking-widest mb-1">Secure Channel Established</p>
-                        <p className="text-xs font-medium text-center">Start the conversation below.</p>
+                        <p className="text-base font-black uppercase tracking-widest mb-1">Secure Channel Established</p>
+                        <p className="text-[13px] font-medium text-center">Start the conversation below.</p>
                     </div>
                 ) : (
                     <div className="flex flex-col gap-2">
@@ -284,7 +284,7 @@ export default function ChatWindow({ selectedAdmin, isGlobalMode, adminInfo }) {
                                 <React.Fragment key={msg._id}>
                                     {showDate && (
                                         <div className="flex justify-center my-6">
-                                            <span className="px-4 py-1.5 bg-white/80 backdrop-blur-sm shadow-sm rounded-lg text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] border border-white/50">
+                                            <span className="px-4 py-1.5 bg-white/80 backdrop-blur-sm shadow-sm rounded-lg text-[11px] font-black text-gray-500 uppercase tracking-[0.2em] border border-white/50">
                                                 {isToday(new Date(msg.createdAt)) ? 'Today' :
                                                     isYesterday(new Date(msg.createdAt)) ? 'Yesterday' :
                                                         format(new Date(msg.createdAt), 'MMMM d, yyyy')}
@@ -292,7 +292,7 @@ export default function ChatWindow({ selectedAdmin, isGlobalMode, adminInfo }) {
                                         </div>
                                     )}
                                     <div className={`flex w-full mb-1 ${isOwn ? 'justify-end pl-12' : 'justify-start pr-12'}`}>
-                                        <div className={`relative px-3.5 py-2.5 shadow-sm min-w-[80px] group ${isOwn
+                                        <div className={`relative px-4 py-3 shadow-sm min-w-[80px] group ${isOwn
                                             ? 'bg-[#dcf8c6] rounded-l-xl rounded-br-xl rounded-tr-none'
                                             : 'bg-white rounded-r-xl rounded-bl-xl rounded-tl-none'
                                             }`}>
@@ -304,21 +304,21 @@ export default function ChatWindow({ selectedAdmin, isGlobalMode, adminInfo }) {
                                                 }`}></div>
 
                                             {isGlobalMode && !isOwn && (
-                                                <p className="text-[10px] font-black text-emerald-600 mb-1 leading-none">
+                                                <p className="text-[12px] font-black text-emerald-600 mb-1 leading-none">
                                                     {msg.sender?.fullName}
                                                 </p>
                                             )}
 
-                                            <p className="text-[14px] text-[#111b21] leading-relaxed break-words whitespace-pre-wrap">
+                                            <p className="text-[16px] text-[#111b21] leading-relaxed break-words whitespace-pre-wrap">
                                                 {msg.content}
                                             </p>
 
                                             <div className="flex items-center justify-end gap-1 mt-1">
-                                                <span className="text-[9px] text-gray-500 font-bold uppercase tracking-tight">
+                                                <span className="text-[11px] text-gray-500 font-bold uppercase tracking-tight">
                                                     {format(new Date(msg.createdAt), 'hh:mm a')}
                                                 </span>
                                                 {isOwn && (
-                                                    <span className={`text-[10px] font-bold ${msg.readBy?.length > 0 ? 'text-emerald-500' : 'text-gray-400'}`}>
+                                                    <span className={`text-[12px] font-bold ${msg.readBy?.length > 0 ? 'text-emerald-500' : 'text-gray-400'}`}>
                                                         {msg.readBy?.length > 0 ? '✓✓' : '✓'}
                                                     </span>
                                                 )}
@@ -344,7 +344,7 @@ export default function ChatWindow({ selectedAdmin, isGlobalMode, adminInfo }) {
                             value={message}
                             onChange={(e) => handleInputChange(e.target.value)}
                             placeholder={isGlobalMode ? "Send to all administrators..." : "Type a message"}
-                            className="w-full bg-white border-none py-2.5 px-5 rounded-full focus:outline-none focus:ring-0 text-[15px] shadow-sm placeholder-gray-500"
+                            className="w-full bg-white border-none py-2.5 px-5 rounded-full focus:outline-none focus:ring-0 text-base shadow-sm placeholder-gray-500"
                         />
                     </div>
 

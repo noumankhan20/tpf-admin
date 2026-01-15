@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { MODULES } from "../config/modules";
 import { useSelector } from 'react-redux';
+import { motion } from 'framer-motion';
 import {
   useLogoutAdminApiMutation,
   useLazyGetAdminMeQuery
@@ -41,6 +42,8 @@ import {
 } from 'lucide-react';
 import LoginNotificationModal from '../Common/LoginNotificationModal';
 import NotificationDropdown from '../Admin/Communication/NotificationDropdown';
+import NotificationBell from '../Common/NotificationBell';
+import { Calendar as CalendarIcon } from 'lucide-react';
 
 const CATEGORIES = [
   { id: 'dashboard', name: 'Dashboard', icon: LayoutDashboard },
@@ -65,6 +68,16 @@ export default function SelectPanel() {
   const [logoutAdmin] = useLogoutAdminApiMutation();
 
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // Handle auto-opening category from URL
+  useEffect(() => {
+    const categoryId = searchParams.get('category');
+    if (categoryId) {
+      setOpenCategories([categoryId]);
+      setHasSelectedCategory(true);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     setIsLoaded(true);
@@ -90,7 +103,8 @@ export default function SelectPanel() {
     if (admin?.isSuperAdmin) return MODULES;
     return MODULES.filter((mod) =>
       adminModules.includes(mod.id) ||
-      (adminModules.includes("Admin Dashboard") && mod.category === "dashboard")
+      (adminModules.includes("Admin Dashboard") && mod.category === "dashboard") ||
+      mod.id === "Internal Communication"
     );
   }, [adminModules, admin?.isSuperAdmin]);
 
@@ -194,12 +208,37 @@ export default function SelectPanel() {
           />
         )}
       </main>
+
+      {/* Floating Internal Chat Button */}
+      <motion.button
+        initial={{ scale: 0, opacity: 0, y: 20 }}
+        animate={{ scale: 1, opacity: 1, y: 0 }}
+        whileHover={{ scale: 1.1 }}
+        whileTap={{ scale: 0.9 }}
+        onClick={() => router.push('/admin/communication')}
+        className="fixed bottom-8 right-8 z-[60] group flex items-center gap-3"
+      >
+        {/* Tooltip on hover */}
+        <span className="bg-gray-900 text-white text-[12px] font-bold px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-xl">
+          Internal Chat
+        </span>
+        <div className="w-16 h-16 bg-emerald-600 rounded-full flex items-center justify-center text-white shadow-2xl relative overflow-hidden group-hover:bg-emerald-500 transition-colors">
+          <div className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity" />
+          <MessageSquare className="w-8 h-8" />
+
+          {/* Heartbeat pulse effect */}
+          <span className="absolute -top-1 -right-1 flex h-4 w-4">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-4 w-4 bg-emerald-500 border-2 border-white"></span>
+          </span>
+        </div>
+      </motion.button>
     </div>
   );
 }
 
 function Header({ isLoaded, handleLogout, fullName }) {
-
+  const router = useRouter();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const getInitials = (fullName) => {
     if (!fullName) return "AD";
@@ -229,49 +268,62 @@ function Header({ isLoaded, handleLogout, fullName }) {
             </div>
           </div>
 
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-3">
             <NotificationDropdown />
+            <NotificationBell />
 
-            <div className="relative">
-              <button
-                onClick={() => setDropdownOpen(!dropdownOpen)}
-                className="flex items-center space-x-3 px-3 py-2 hover:bg-gray-50 rounded-lg transition-colors"
-              >
-                <div className="w-10 h-10 rounded-full bg-emerald-600 flex items-center justify-center text-white font-bold">
-                  {getInitials(fullName)}
-                </div>
+            <div className="h-8 w-px bg-gray-200 mx-2"></div>
 
-                <div className="hidden sm:block text-left">
-                  <p className="text-sm font-semibold text-gray-900">
-                    {fullName || "Admin"}
-                  </p>
-                </div>
-                <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${dropdownOpen ? 'rotate-180' : ''}`} />
-              </button>
-
-              {dropdownOpen && (
-                <>
-                  <div
-                    className="fixed inset-0 z-10"
-                    onClick={() => setDropdownOpen(false)}
-                  ></div>
-                  <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-xl border border-gray-200 py-1 z-20">
-                    <div className="px-4 py-3 border-b border-gray-100">
-                      <p className="text-xs text-gray-500 mt-0.5">Signed in as {fullName} </p>
-                    </div>
-
-                    <div className="py-1">
-                      <button
-                        onClick={handleLogout}
-                        className="w-full flex items-center space-x-3 px-4 py-2 text-red-600 hover:bg-red-50 transition-colors"
-                      >
-                        <LogOut className="w-4 h-4" />
-                        <span className="text-sm font-medium">Logout</span>
-                      </button>
-                    </div>
+            <div className="flex items-center space-x-3">
+              <div className="relative">
+                <button
+                  onClick={() => setDropdownOpen(!dropdownOpen)}
+                  className="flex items-center space-x-3 px-3 py-2 hover:bg-gray-50 rounded-lg transition-colors"
+                >
+                  <div className="w-10 h-10 rounded-full bg-emerald-600 flex items-center justify-center text-white font-bold">
+                    {getInitials(fullName)}
                   </div>
-                </>
-              )}
+
+                  <div className="hidden sm:block text-left">
+                    <p className="text-sm font-semibold text-gray-900">
+                      {fullName || "Admin"}
+                    </p>
+                  </div>
+                  <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${dropdownOpen ? 'rotate-180' : ''}`} />
+                </button>
+
+                {dropdownOpen && (
+                  <>
+                    <div
+                      className="fixed inset-0 z-10"
+                      onClick={() => setDropdownOpen(false)}
+                    ></div>
+                    <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-xl border border-gray-200 py-1 z-20">
+                      <div className="px-4 py-3 border-b border-gray-100">
+                        <p className="text-xs text-gray-500 mt-0.5">Signed in as {fullName} </p>
+                      </div>
+
+                      <div className="py-1">
+                        <button
+                          onClick={handleLogout}
+                          className="w-full flex items-center space-x-3 px-4 py-2 text-red-600 hover:bg-red-50 transition-colors"
+                        >
+                          <LogOut className="w-4 h-4" />
+                          <span className="text-sm font-medium">Logout</span>
+                        </button>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+
+              <button
+                onClick={() => router.push('/admin/dashboard/calendar')}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-600 border border-gray-100 shadow-sm"
+                title="Activity Calendar"
+              >
+                <CalendarIcon className="w-5 h-5" />
+              </button>
             </div>
           </div>
         </div>

@@ -2,6 +2,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Search, Filter, ChevronDown, ArrowLeft, ChevronLeft, Check, ChevronRight, X, Eye, Calendar, Mail, User, MessageSquare, Clock, TrendingUp, AlertCircle, FileText, Inbox } from 'lucide-react';
 import { useGetAllTicketsQuery, useMarkTicketAsResolvedMutation } from '@/utils/slices/ticketApiSlice';
+import { useRouter } from 'next/navigation';
+
 
 // Helper function to format date and time
 const toISTDate = (dateString) => {
@@ -61,6 +63,7 @@ const formatDateShort = (dateString) => {
 
 
 const AdminPanel = () => {
+  const router = useRouter();
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
@@ -297,7 +300,7 @@ const AdminPanel = () => {
         {/* Back Button */}
         <div className="px-4 lg:px-8 pt-6">
           <button
-            onClick={() => window.history.back()}
+           onClick={() => router.push('/select-portal?category=communication')}
             className="flex items-center cursor-pointer gap-2 px-4 py-2 rounded-xl text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-white transition-all border border-slate-200 hover:border-slate-300 hover:shadow-sm"
           >
             <ArrowLeft className="w-4 h-4" />
@@ -311,7 +314,7 @@ const AdminPanel = () => {
             {/* Title */}
             <div className="mb-8 text-center">
               <h1 className="text-3xl sm:text-4xl font-semibold text-slate-900 mb-2">
-                Ticket & Queries Management
+                Tickets & Queries Management
               </h1>
               <p className="text-base text-slate-500">Manage and respond to customer inquiries</p>
             </div>
