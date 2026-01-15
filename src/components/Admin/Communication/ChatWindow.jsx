@@ -6,9 +6,9 @@ import {
     useSendInternalMessageMutation,
     useMarkMessagesAsReadMutation
 } from '@/utils/slices/internalCommunicationApiSlice';
-import { Send, Loader2, User, Globe, MessageCircle, ChevronUp } from 'lucide-react';
+import { Send, Loader2, User, Globe, MessageCircle, ChevronUp, MoreVertical, Paperclip, Smile } from 'lucide-react';
 import { useSocket } from '@/utils/context/SocketContext';
-import { format } from 'date-fns';
+import { format, isToday, isYesterday } from 'date-fns';
 
 export default function ChatWindow({ selectedAdmin, isGlobalMode, adminInfo }) {
     const [message, setMessage] = useState('');
@@ -20,6 +20,9 @@ export default function ChatWindow({ selectedAdmin, isGlobalMode, adminInfo }) {
     const messagesContainerRef = useRef(null);
     const { socket } = useSocket();
 
+    const [typingUser, setTypingUser] = useState(null);
+    const typingTimeoutRef = useRef(null);
+
     const currentUserId = adminInfo?._id || adminInfo?.id;
     const selectedAdminId = selectedAdmin?._id || selectedAdmin?.id;
 
@@ -27,7 +30,7 @@ export default function ChatWindow({ selectedAdmin, isGlobalMode, adminInfo }) {
         otherAdminId: !isGlobalMode ? selectedAdminId : undefined,
         isGlobal: isGlobalMode ? 'true' : undefined,
         page,
-        limit: 20
+        limit: 30
     }, {
         skip: !isGlobalMode && !selectedAdminId
     });
@@ -39,6 +42,7 @@ export default function ChatWindow({ selectedAdmin, isGlobalMode, adminInfo }) {
     useEffect(() => {
         setPage(1);
         setAllMessages([]);
+        setTypingUser(null);
     }, [selectedAdminId, isGlobalMode]);
 
     useEffect(() => {
@@ -48,10 +52,8 @@ export default function ChatWindow({ selectedAdmin, isGlobalMode, adminInfo }) {
 
             if (page === 1) {
                 setAllMessages(newMessages);
-                // Scroll to bottom on first load
-                setTimeout(scrollToBottom, 500);
+                setTimeout(scrollToBottom, 300);
             } else {
-                // Prepend previous messages
                 const container = messagesContainerRef.current;
                 const scrollHeightBefore = container.scrollHeight;
 
@@ -61,7 +63,6 @@ export default function ChatWindow({ selectedAdmin, isGlobalMode, adminInfo }) {
                     return [...uniqueNew, ...prev];
                 });
 
-                // Maintain scroll position after prepending
                 setTimeout(() => {
                     if (container) {
                         container.scrollTop = container.scrollHeight - scrollHeightBefore;
@@ -77,7 +78,6 @@ export default function ChatWindow({ selectedAdmin, isGlobalMode, adminInfo }) {
                 const payloadSenderId = payload.sender?._id || payload.sender?.id || payload.sender;
                 const payloadReceiverId = payload.receiver?._id || payload.receiver?.id || payload.receiver;
 
-                // Important: Convert all to strings for comparison
                 const sAdminId = selectedAdminId?.toString();
                 const pSenderId = payloadSenderId?.toString();
                 const pReceiverId = payloadReceiverId?.toString();
@@ -93,18 +93,41 @@ export default function ChatWindow({ selectedAdmin, isGlobalMode, adminInfo }) {
                         return [...prev, payload];
                     });
 
-                    // If near bottom, scroll down
                     const container = messagesContainerRef.current;
-                    if (container && (container.scrollHeight - container.scrollTop - container.clientHeight < 150)) {
+                    if (container && (container.scrollHeight - container.scrollTop - container.clientHeight < 250)) {
                         setTimeout(scrollToBottom, 100);
                     }
                 }
             };
 
+            const handleTyping = (payload) => {
+                const payloadSenderId = payload.senderId?.toString();
+                const payloadReceiverId = payload.receiverId?.toString();
+                const sAdminId = selectedAdminId?.toString();
+                const cUserId = currentUserId?.toString();
+
+                if (payloadSenderId === cUserId) return;
+
+                const isRelevant = isGlobalMode
+                    ? payload.isGlobal
+                    : (!payload.isGlobal && payloadSenderId === sAdminId && payloadReceiverId === cUserId);
+
+                if (isRelevant) {
+                    setTypingUser(payload.senderName);
+                    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+                    typingTimeoutRef.current = setTimeout(() => setTypingUser(null), 3000);
+                }
+            };
+
             socket.on('new_internal_message', handleNewMessage);
-            return () => socket.off('new_internal_message', handleNewMessage);
+            socket.on('typing_internal', handleTyping);
+
+            return () => {
+                socket.off('new_internal_message', handleNewMessage);
+                socket.off('typing_internal', handleTyping);
+            };
         }
-    }, [socket, selectedAdminId, currentUserId]);
+    }, [socket, selectedAdminId, currentUserId, isGlobalMode]);
 
     useEffect(() => {
         if (allMessages.length > 0 && currentUserId) {
@@ -132,138 +155,232 @@ export default function ChatWindow({ selectedAdmin, isGlobalMode, adminInfo }) {
         }
     };
 
+    const handleInputChange = (value) => {
+        setMessage(value);
+        if (socket && currentUserId) {
+            socket.emit('typing_internal', {
+                senderId: currentUserId,
+                senderName: adminInfo?.fullName,
+                receiverId: isGlobalMode ? null : selectedAdminId,
+                isGlobal: isGlobalMode
+            });
+        }
+    };
+
     const handleSend = async (e) => {
         e.preventDefault();
         if (!message.trim() || isSending) return;
 
         try {
+            const tempMessage = {
+                _id: Date.now().toString(),
+                content: message,
+                sender: adminInfo,
+                createdAt: new Date().toISOString(),
+                readBy: [],
+                isGlobal: isGlobalMode
+            };
+
+            // Optimistic update for better UX
+            setAllMessages(prev => [...prev, tempMessage]);
+            const currentMsg = message;
+            setMessage('');
+            scrollToBottom();
+
             await sendMessage({
                 receiverId: selectedAdminId,
-                content: message,
+                content: currentMsg,
                 isGlobal: isGlobalMode
             }).unwrap();
 
-            setMessage('');
-            scrollToBottom();
         } catch (err) {
             console.error("Failed to send message:", err);
+            // Revert on error? Or show error indicator
         }
     };
 
+    const formatMessageDate = (date) => {
+        const d = new Date(date);
+        if (isToday(d)) return format(d, 'hh:mm a');
+        if (isYesterday(d)) return `Yesterday, ${format(d, 'hh:mm a')}`;
+        return format(d, 'MMM d, hh:mm a');
+    };
+
     return (
-        <div className="flex flex-col h-full bg-white relative">
+        <div className="flex flex-col h-full bg-[#e5ddd5] relative">
             {/* Header */}
-            <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-white/80 backdrop-blur-md sticky top-0 z-10">
+            <header className="p-3 border-b border-gray-200 flex items-center justify-between bg-white shadow-sm z-20 min-h-[70px]">
                 <div className="flex items-center gap-3">
-                    <div className={`w-10 h-10 rounded-2xl flex items-center justify-center font-bold text-white shadow-lg ${isGlobalMode
-                        ? 'bg-gradient-to-br from-indigo-500 to-purple-500'
-                        : 'bg-gradient-to-br from-blue-500 to-teal-500'
+                    <div className={`w-11 h-11 rounded-full flex items-center justify-center font-bold text-white shadow-md transition-transform hover:scale-105 cursor-pointer ${isGlobalMode
+                        ? 'bg-gradient-to-br from-emerald-500 to-teal-600'
+                        : 'bg-gradient-to-br from-emerald-500 to-teal-500'
                         }`}>
-                        {isGlobalMode ? <Globe className="w-5 h-5" /> : selectedAdmin?.fullName?.charAt(0)}
+                        {isGlobalMode ? <Globe className="w-6 h-6" /> : selectedAdmin?.fullName?.charAt(0)}
                     </div>
                     <div>
-                        <h3 className="font-bold text-gray-900 leading-tight">
-                            {isGlobalMode ? 'Global Channel' : selectedAdmin?.fullName}
+                        <h3 className="font-extrabold text-[#111b21] text-base leading-tight">
+                            {isGlobalMode ? 'Internal Global Channel' : selectedAdmin?.fullName}
                         </h3>
-                        <p className="text-xs text-emerald-600 font-medium flex items-center gap-1">
-                            <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
-                            Active Now
-                        </p>
+                        {typingUser && (
+                            <p className="text-[12px] text-emerald-600 font-bold italic animate-pulse">
+                                {isGlobalMode ? `${typingUser} is typing...` : 'typing...'}
+                            </p>
+                        )}
                     </div>
                 </div>
-            </div>
+                <div className="flex items-center gap-4 text-gray-500">
+                    <button className="p-2 hover:bg-gray-100 rounded-full transition-colors"><MoreVertical className="w-5 h-5" /></button>
+                </div>
+            </header>
 
-            {/* Messages Area */}
+            {/* Messages Area with WhatsApp Background Pattern */}
             <div
                 ref={messagesContainerRef}
-                className="flex-1 overflow-y-auto p-6 space-y-4 bg-gray-50/30"
+                className="flex-1 overflow-y-auto p-4 md:p-8 space-y-4 relative custom-scrollbar"
+                style={{
+                    backgroundImage: `url("https://w0.peakpx.com/wallpaper/818/148/HD-wallpaper-whatsapp-background-whatsapp-theme-dot-pattern-light-background.jpg")`,
+                    backgroundSize: '400px',
+                    backgroundRepeat: 'repeat',
+                    backgroundBlendMode: 'soft-light'
+                }}
             >
                 {hasMore && (
-                    <div className="flex justify-center pb-4">
+                    <div className="flex justify-center pb-6">
                         <button
                             onClick={handleLoadMore}
                             disabled={isFetching}
-                            className="text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 px-4 py-2 rounded-full transition-all flex items-center gap-2 border border-blue-100 shadow-sm disabled:opacity-50"
+                            className="text-xs font-black text-white bg-emerald-600/80 hover:bg-emerald-600 px-5 py-2.5 rounded-full transition-all flex items-center gap-2 shadow-lg backdrop-blur-sm disabled:opacity-50 uppercase tracking-widest"
                         >
                             {isFetching ? (
-                                <Loader2 className="w-3 h-3 animate-spin" />
+                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
                             ) : (
-                                <ChevronUp className="w-3 h-3" />
+                                <ChevronUp className="w-3.5 h-3.5" />
                             )}
-                            Load previous messages
+                            Previous Messages
                         </button>
                     </div>
                 )}
 
                 {allMessages.length === 0 && !isFetching ? (
-                    <div className="flex flex-col items-center justify-center h-full opacity-40">
-                        <MessageCircle className="w-12 h-12 mb-2" />
-                        <p className="text-sm font-medium">No messages yet. Say hi!</p>
+                    <div className="flex flex-col items-center justify-center h-full text-gray-500 bg-white/20 backdrop-blur-[2px] rounded-3xl p-10 mx-auto max-w-sm border border-white/30">
+                        <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mb-4 shadow-xl">
+                            <MessageCircle className="w-8 h-8 text-emerald-500" />
+                        </div>
+                        <p className="text-sm font-black uppercase tracking-widest mb-1">Secure Channel Established</p>
+                        <p className="text-xs font-medium text-center">Start the conversation below.</p>
                     </div>
                 ) : (
-                    allMessages.map((msg, i) => {
-                        const senderId = msg.sender?._id || msg.sender;
-                        const isOwn = senderId?.toString() === currentUserId?.toString();
-                        return (
-                            <div key={msg._id} className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}>
-                                <div className={`flex flex-col max-w-[70%] ${isOwn ? 'items-end' : 'items-start'}`}>
-                                    {!isOwn && (
-                                        <span className="text-[10px] font-bold text-emerald-600 mb-1 ml-1 uppercase tracking-tight">
-                                            {msg.sender?.fullName || 'Admin'}
-                                        </span>
-                                    )}
-                                    {isOwn && (
-                                        <span className="text-[10px] font-bold text-gray-500 mb-1 mr-1 uppercase tracking-tight">
-                                            {adminInfo?.fullName}
-                                        </span>
-                                    )}
-                                    <div className={`p-3 rounded-2xl shadow-sm text-sm ${isOwn
-                                        ? 'bg-blue-600 text-white rounded-tr-none'
-                                        : 'bg-white border border-gray-100 text-gray-800 rounded-tl-none'
-                                        }`}>
-                                        {msg.content}
-                                    </div>
-                                    <span className="text-[9px] text-gray-400 mt-1 flex items-center gap-1 uppercase font-bold tracking-tighter">
-                                        {format(new Date(msg.createdAt), 'hh:mm a')}
-                                        {isOwn && msg.readBy?.length > 0 && (
-                                            <span className="text-blue-500 ml-1">Read</span>
-                                        )}
-                                    </span>
-                                </div>
-                            </div>
-                        )
-                    })
-                )}
-                <div ref={messagesEndRef} />
+                    <div className="flex flex-col gap-2">
+                        {allMessages.map((msg, i) => {
+                            const senderId = msg.sender?._id || msg.sender?.id || msg.sender;
+                            const isOwn = senderId?.toString() === currentUserId?.toString();
 
-                {/* 48 Hour Deletion Notice Moved to Bottom */}
-                <div className="flex justify-center pt-4 sticky bottom-0 z-20">
-                    <div className="flex items-center gap-2 px-4 py-2 bg-amber-50/90 backdrop-blur-sm border border-amber-100 rounded-full text-[10px] font-bold text-amber-600 uppercase tracking-widest shadow-sm">
-                        <div className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse"></div>
-                        Messages are automatically deleted after 48 hours
+                            // Check if date header needed
+                            const showDate = i === 0 ||
+                                format(new Date(allMessages[i - 1].createdAt), 'yyyy-MM-dd') !==
+                                format(new Date(msg.createdAt), 'yyyy-MM-dd');
+
+                            return (
+                                <React.Fragment key={msg._id}>
+                                    {showDate && (
+                                        <div className="flex justify-center my-6">
+                                            <span className="px-4 py-1.5 bg-white/80 backdrop-blur-sm shadow-sm rounded-lg text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] border border-white/50">
+                                                {isToday(new Date(msg.createdAt)) ? 'Today' :
+                                                    isYesterday(new Date(msg.createdAt)) ? 'Yesterday' :
+                                                        format(new Date(msg.createdAt), 'MMMM d, yyyy')}
+                                            </span>
+                                        </div>
+                                    )}
+                                    <div className={`flex w-full mb-1 ${isOwn ? 'justify-end pl-12' : 'justify-start pr-12'}`}>
+                                        <div className={`relative px-3.5 py-2.5 shadow-sm min-w-[80px] group ${isOwn
+                                            ? 'bg-[#dcf8c6] rounded-l-xl rounded-br-xl rounded-tr-none'
+                                            : 'bg-white rounded-r-xl rounded-bl-xl rounded-tl-none'
+                                            }`}>
+
+                                            {/* Triangle tip for bubble */}
+                                            <div className={`absolute top-0 w-2 h-2 ${isOwn
+                                                ? '-right-1.5 bg-[#dcf8c6] [clip-path:polygon(0_0,0_100%,100%_0)]'
+                                                : '-left-1.5 bg-white [clip-path:polygon(100%_0,0_0,100%_100%)]'
+                                                }`}></div>
+
+                                            {isGlobalMode && !isOwn && (
+                                                <p className="text-[10px] font-black text-emerald-600 mb-1 leading-none">
+                                                    {msg.sender?.fullName}
+                                                </p>
+                                            )}
+
+                                            <p className="text-[14px] text-[#111b21] leading-relaxed break-words whitespace-pre-wrap">
+                                                {msg.content}
+                                            </p>
+
+                                            <div className="flex items-center justify-end gap-1 mt-1">
+                                                <span className="text-[9px] text-gray-500 font-bold uppercase tracking-tight">
+                                                    {format(new Date(msg.createdAt), 'hh:mm a')}
+                                                </span>
+                                                {isOwn && (
+                                                    <span className={`text-[10px] font-bold ${msg.readBy?.length > 0 ? 'text-emerald-500' : 'text-gray-400'}`}>
+                                                        {msg.readBy?.length > 0 ? '✓✓' : '✓'}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </React.Fragment>
+                            )
+                        })}
                     </div>
-                </div>
+                )}
+                <div ref={messagesEndRef} className="h-4" />
             </div>
 
             {/* Input Area */}
-            <div className="p-4 bg-white border-t border-gray-100">
-                <form onSubmit={handleSend} className="flex gap-2">
-                    <input
-                        type="text"
-                        value={message}
-                        onChange={(e) => setMessage(e.target.value)}
-                        placeholder={isGlobalMode ? "Send to all admins..." : "Type your message..."}
-                        className="flex-1 bg-gray-50 border border-gray-200 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm transition-all"
-                    />
+            <footer className="p-3 bg-[#f0f2f5] border-t border-gray-200">
+                <form onSubmit={handleSend} className="flex items-center gap-3 max-w-4xl mx-auto">
+
+
+                    <div className="flex-1 relative flex items-center">
+                        <input
+                            type="text"
+                            value={message}
+                            onChange={(e) => handleInputChange(e.target.value)}
+                            placeholder={isGlobalMode ? "Send to all administrators..." : "Type a message"}
+                            className="w-full bg-white border-none py-2.5 px-5 rounded-full focus:outline-none focus:ring-0 text-[15px] shadow-sm placeholder-gray-500"
+                        />
+                    </div>
+
                     <button
                         type="submit"
                         disabled={!message.trim() || isSending}
-                        className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white p-3 rounded-xl shadow-lg shadow-blue-200 transition-all active:scale-95 flex items-center justify-center min-w-[50px]"
+                        className={`w-12 h-12 flex items-center justify-center rounded-full transition-all shadow-lg active:scale-90 ${!message.trim() ? 'bg-gray-300 cursor-not-allowed' : 'bg-[#00a884] hover:bg-[#008f72] text-white shadow-[#00a884]/20'
+                            }`}
                     >
-                        {isSending ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
+                        {isSending ? <Loader2 className="w-6 h-6 animate-spin" /> : <Send className="w-6 h-6" />}
                     </button>
                 </form>
+            </footer>
+
+            {/* 48 Hour Deletion Pulse */}
+            <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-30 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="bg-black/70 backdrop-blur-md text-[#ffffff] text-[9px] font-bold px-4 py-2 rounded-full uppercase tracking-widest border border-white/20">
+                    Ephemeral Channel: 48h Auto-Delete active
+                </div>
             </div>
+
+            <style jsx>{`
+                .custom-scrollbar::-webkit-scrollbar {
+                    width: 6px;
+                }
+                .custom-scrollbar::-webkit-scrollbar-track {
+                    background: transparent;
+                }
+                .custom-scrollbar::-webkit-scrollbar-thumb {
+                    background: rgba(0,0,0,0.1);
+                    border-radius: 10px;
+                }
+                .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+                    background: rgba(0,0,0,0.2);
+                }
+            `}</style>
         </div>
     );
 }
