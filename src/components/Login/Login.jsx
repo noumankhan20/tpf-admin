@@ -74,15 +74,27 @@ export default function AdminLogin() {
 
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center p-4 bg-gradient-to-br from-gray-50 via-emerald-50/30 to-gray-50 relative overflow-hidden">
+    <div className="min-h-screen w-full flex items-center justify-center p-4 relative overflow-hidden">
       <ToastContainer position="top-right" autoClose={3000} />
 
+      {/* Background Video */}
+      <video
+        autoPlay
+        muted
+        loop
+        playsInline
+        className="absolute inset-0 w-full h-full object-cover z-0"
+      >
+        <source src="/admin_bg.mp4" type="video/mp4" />
+      </video>
+
+
       {/* Subtle Background Pattern */}
-      <div className="absolute inset-0 opacity-40">
+      {/* <div className="absolute inset-0 opacity-40">
         <div className="absolute top-0 left-0 w-96 h-96 bg-emerald-100 rounded-full filter blur-3xl"></div>
         <div className="absolute bottom-0 right-0 w-96 h-96 bg-emerald-200 rounded-full filter blur-3xl"></div>
         <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-emerald-50 rounded-full filter blur-3xl"></div>
-      </div>
+      </div> */}
 
       {/* Islamic Geometric Pattern Overlay */}
       <div className="absolute inset-0 opacity-[0.03]">
@@ -102,7 +114,7 @@ export default function AdminLogin() {
 
       {/* Login Card */}
       <div className="relative z-10 w-full max-w-[420px]">
-        <div className="bg-white rounded-2xl shadow-xl border border-gray-200/50 p-6 sm:p-8 backdrop-blur-sm">
+        <div className="bg-white/95 rounded-2xl shadow-2xl border border-gray-200/60 p-6 sm:p-8 backdrop-blur-md">
           {/* Logo and Header */}
           <div className="text-center mb-6">
             {/* Assalamu Alaikum Greeting */}
@@ -114,7 +126,7 @@ export default function AdminLogin() {
                 className="w-8 h-8 object-contain"
               />
             </div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Admin Dashboard</h1>
+            <h1 className="text-2xl sm:text-[28px] font-semibold tracking-tight text-gray-900 mb-1">Admin Dashboard</h1>
 
 
             {/* Islamic Quote */}
@@ -147,14 +159,14 @@ export default function AdminLogin() {
                   <User className="h-5 w-5 text-gray-400" />
                 </div>
                 <input
-                  type="text"
+                  type="email"
                   id="email"
                   name="email"
                   value={formData.email}
                   onChange={handleInputChange}
                   placeholder="admin@example.com"
                   disabled={isLoading}
-                  className="w-full pl-10 pr-4 py-2.5 bg-white border-2 border-gray-200 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all disabled:bg-gray-50 disabled:cursor-not-allowed text-sm"
+                  className="w-full pl-10 pr-4 py-2.5 bg-white border-2 border-gray-200 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 focus:border-transparent transition-all disabled:bg-gray-50 disabled:cursor-not-allowed text-sm"
                   required
                 />
               </div>
@@ -182,7 +194,7 @@ export default function AdminLogin() {
                   }}
                   placeholder="Enter your password"
                   disabled={isLoading}
-                  className="w-full pl-10 pr-11 py-2.5 bg-white border-2 border-gray-200 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all disabled:bg-gray-50 disabled:cursor-not-allowed text-sm"
+                  className="w-full pl-10 pr-11 py-2.5 bg-white border-2 border-gray-200 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 focus:border-transparent transition-all disabled:bg-gray-50 disabled:cursor-not-allowed text-sm"
                   required
                 />
                 <button
@@ -204,7 +216,7 @@ export default function AdminLogin() {
             <button
               onClick={handleSubmit}
               disabled={isLoading}
-              className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed text-white font-semibold py-2.5 px-4 rounded-lg transition-all duration-200 transform hover:scale-[1.01] active:scale-[0.99] focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 shadow-md hover:shadow-lg mt-6"
+              className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed text-white font-semibold py-2.5 px-4 rounded-lg transition-all duration-200 transform hover:scale-[1.01] active:scale-[0.99] focus:outline-none focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 focus:ring-offset-2 shadow-md hover:shadow-lg mt-6"
             >
               {isLoading ? (
                 <span className="flex items-center justify-center">
