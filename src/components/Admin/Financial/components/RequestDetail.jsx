@@ -257,6 +257,21 @@ export const RequestDetail = React.memo(({
                                 {selectedForm.supportingDocumentsPaths?.map((path, idx) => (
                                     <DocLink key={idx} label={`Supporting Doc ${idx + 1}`} url={path} />
                                 ))}
+
+                                {selectedForm.clarificationDocuments?.length > 0 && (
+                                    <>
+                                        <div className="col-span-full mt-4 mb-2">
+                                            <div className="flex items-center gap-2 text-purple-600">
+                                                <FileText className="w-4 h-4" />
+                                                <p className="text-sm font-bold uppercase tracking-wider">Clarification Documents</p>
+                                            </div>
+                                            <div className="h-px bg-purple-200 mt-2"></div>
+                                        </div>
+                                        {selectedForm.clarificationDocuments.map((path, idx) => (
+                                            <DocLink key={`clarification-${idx}`} label={`Clarification Doc ${idx + 1}`} url={path} />
+                                        ))}
+                                    </>
+                                )}
                             </div>
                         </DetailSection>
                     </div>

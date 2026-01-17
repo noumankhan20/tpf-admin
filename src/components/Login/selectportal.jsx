@@ -43,6 +43,7 @@ import {
 import LoginNotificationModal from '../Common/LoginNotificationModal';
 import NotificationDropdown from '../Admin/Communication/NotificationDropdown';
 import NotificationBell from '../Common/NotificationBell';
+import LoadingScreen from '../Common/LoadingScreen';
 import { Calendar as CalendarIcon } from 'lucide-react';
 
 const CATEGORIES = [
@@ -63,6 +64,7 @@ export default function SelectPanel() {
   const [openCategories, setOpenCategories] = useState([]);
   const [hasSelectedCategory, setHasSelectedCategory] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [showLoading, setShowLoading] = useState(true);
 
 
   const [logoutAdmin] = useLogoutAdminApiMutation();
@@ -85,6 +87,12 @@ export default function SelectPanel() {
 
   useEffect(() => {
     setMounted(true);
+    // Hide loading screen after 3 seconds
+    const timer = setTimeout(() => {
+      setShowLoading(false);
+    }, 3000);
+
+    return () => clearTimeout(timer);
   }, []);
 
   const admin = useSelector((state) => state.adminAuth.adminInfo);
@@ -161,17 +169,9 @@ export default function SelectPanel() {
     );
   }
 
-
-
-  if (!mounted) {
-    return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
-        </div>
-      </div>
-    );
+  // Show loading screen animation
+  if (showLoading) {
+    return <LoadingScreen onComplete={() => setShowLoading(false)} />;
   }
 
   return (

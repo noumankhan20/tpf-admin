@@ -34,15 +34,28 @@ const NotificationBell = ({ moduleFilter = null }) => {
                 let allInitial = [];
 
                 if (taskResult.success && taskResult.data) {
-                    const taskNotifications = taskResult.data.map(task => ({
-                        id: task._id,
-                        type: 'TASK',
-                        module: task.module,
-                        title: `Pending: ${task.taskType.replace(/_/g, ' ')}`,
-                        time: task.createdAt,
-                        read: false, // Show red dot for pending work
-                        data: task
-                    }));
+                    // Map task modules to admin permissions
+                    const TASK_PERMISSION_MAP = {
+                        'PHOTO_TASK': ['Photography', 'Photo-Editing'],
+                        'CMS_TASK': ['CMS-Admin'],
+                        'SOCIAL_TASK': ['Social-Media'],
+                        'FINANCE_TASK': ['Finance & Accounting', 'Donation Management', 'Disbursement-Tasks'],
+                    };
+
+                    const taskNotifications = taskResult.data
+                        .filter(task => {
+                            const requiredModules = TASK_PERMISSION_MAP[task.module];
+                            return admin?.isSuperAdmin || (requiredModules && requiredModules.some(m => admin?.modules?.includes(m)));
+                        })
+                        .map(task => ({
+                            id: task._id,
+                            type: 'TASK',
+                            module: task.module,
+                            title: `Pending: ${task.taskType.replace(/_/g, ' ')}`,
+                            time: task.createdAt,
+                            read: false, // Show red dot for pending work
+                            data: task
+                        }));
                     allInitial = [...taskNotifications];
                 }
 
@@ -51,7 +64,11 @@ const NotificationBell = ({ moduleFilter = null }) => {
                 const isFinancialAidFilter = moduleFilter === 'FINANCIAL_AID';
                 const isKYCFilter = moduleFilter === 'KYC';
 
-                if (isVerifyModule || isFinancialAidFilter) {
+                // Permission checks
+                const hasFinancialAidAccess = admin?.isSuperAdmin || admin?.modules?.includes('Financial Aid');
+                const hasKYCAccess = admin?.isSuperAdmin || admin?.modules?.includes('KYC Verification');
+
+                if ((isVerifyModule || isFinancialAidFilter) && hasFinancialAidAccess) {
                     // Fetch Financial Aid Forms
                     const formRes = await fetch(`${apiBase}/admin/verify/forms?status=pending`, {
                         credentials: 'include'
@@ -73,7 +90,7 @@ const NotificationBell = ({ moduleFilter = null }) => {
                     }
                 }
 
-                if (isVerifyModule || isKYCFilter) {
+                if ((isVerifyModule || isKYCFilter) && hasKYCAccess) {
                     // Fetch KYC Requests
                     try {
                         const kycRes = await fetch(`${apiBase}/admin/kyc/requests?status=pending`, {
@@ -118,8 +135,20 @@ const NotificationBell = ({ moduleFilter = null }) => {
 
         const handleTaskAssigned = (data) => {
             const adminId = admin?._id || admin?.id;
-            // Check if this task is for the current admin
-            if (data.assignedAdminId === adminId) {
+
+            // Map task modules to admin permissions
+            const TASK_PERMISSION_MAP = {
+                'PHOTO_TASK': ['Photography', 'Photo-Editing'],
+                'CMS_TASK': ['CMS-Admin'],
+                'SOCIAL_TASK': ['Social-Media'],
+                'FINANCE_TASK': ['Finance & Accounting', 'Donation Management', 'Disbursement-Tasks'],
+            };
+
+            const requiredModules = TASK_PERMISSION_MAP[data.module];
+            const hasModuleAccess = admin?.isSuperAdmin || (requiredModules && requiredModules.some(m => admin?.modules?.includes(m)));
+
+            // Check if this task is for the current admin AND they have module access
+            if (data.assignedAdminId === adminId && hasModuleAccess) {
                 const newNotification = {
                     id: data.taskId,
                     type: 'TASK',
@@ -157,7 +186,12 @@ const NotificationBell = ({ moduleFilter = null }) => {
             const isFinancialAidFilter = moduleFilter === 'FINANCIAL_AID' && data.type !== 'KYC';
             const isKYCFilter = moduleFilter === 'KYC' && data.type === 'KYC';
 
-            if (isVerifyModule || isFinancialAidFilter || isKYCFilter) {
+            // Permission checks
+            const hasFinancialAidAccess = admin?.isSuperAdmin || admin?.modules?.includes('Financial Aid');
+            const hasKYCAccess = admin?.isSuperAdmin || admin?.modules?.includes('KYC Verification');
+            const isRelevantForm = (data.type === 'KYC' && hasKYCAccess) || (data.type !== 'KYC' && hasFinancialAidAccess);
+
+            if ((isVerifyModule || isFinancialAidFilter || isKYCFilter) && isRelevantForm) {
                 setNotifications(prev => [newNotification, ...prev]);
                 setUnreadCount(prev => prev + 1);
                 toast.info(newNotification.title);
