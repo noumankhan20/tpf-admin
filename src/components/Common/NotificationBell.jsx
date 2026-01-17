@@ -199,7 +199,7 @@ const NotificationBell = ({ moduleFilter = null }) => {
             }
         } else if (notification.type === 'FORM') {
             if (notification.formType === 'KYC') router.push('/verify/kyc');
-            else router.push('/admin/verify-forms'); // Adjust path as needed
+            else router.push('/verify/financial'); // Adjust path as needed
         }
     };
 
