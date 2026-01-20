@@ -228,9 +228,7 @@ export default function ChatWindow({ selectedAdmin, isGlobalMode, adminInfo }) {
                         )}
                     </div>
                 </div>
-                <div className="flex items-center gap-4 text-gray-500">
-                    <button className="p-2 hover:bg-gray-100 rounded-full transition-colors"><MoreVertical className="w-5 h-5" /></button>
-                </div>
+              
             </header>
 
             {/* Messages Area with WhatsApp Background Pattern */}
