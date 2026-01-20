@@ -228,7 +228,7 @@ export default function ChatWindow({ selectedAdmin, isGlobalMode, adminInfo }) {
                         )}
                     </div>
                 </div>
-              
+
             </header>
 
             {/* Messages Area with WhatsApp Background Pattern */}
@@ -329,6 +329,14 @@ export default function ChatWindow({ selectedAdmin, isGlobalMode, adminInfo }) {
                     </div>
                 )}
                 <div ref={messagesEndRef} className="h-4" />
+            </div>
+
+            {/* Notice about 48h deletion */}
+            <div className="bg-[#f0f2f5] px-4 py-2 flex items-center justify-center border-t border-gray-100">
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
+                    Messages automatically get deleted in 48 hours
+                </p>
             </div>
 
             {/* Input Area */}

@@ -503,6 +503,14 @@ function MiniChatWindow({ selectedAdmin, isGlobalMode, adminInfo }) {
                 <div ref={messagesEndRef} className="h-2" />
             </div>
 
+            {/* Notice about 48h deletion */}
+            <div className="bg-white px-4 py-1.5 flex items-center justify-center border-t border-gray-100">
+                <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                    <span className="w-1 h-1 bg-emerald-500 rounded-full animate-pulse"></span>
+                    Messages automatically deleted in 48 hours
+                </p>
+            </div>
+
             <form onSubmit={handleSend} className="p-3 bg-white border-t border-gray-100 flex gap-2 shadow-[0_-10px_30px_rgba(0,0,0,0.03)] z-20">
                 <input
                     type="text"
