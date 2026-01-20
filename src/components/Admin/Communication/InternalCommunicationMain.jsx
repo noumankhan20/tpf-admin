@@ -204,7 +204,7 @@ export default function InternalCommunicationMain() {
                         </div>
                         <h3 className="text-4xl font-extrabold text-gray-900 mb-3 tracking-tight">Internal Portal Messaging</h3>
                         <p className="text-gray-500 max-w-md text-xl leading-relaxed mb-8">
-                            Connected and encrypted channel for administrator communications. Please maintain professional decorum.
+                            Connected channel for administrator communications. Please maintain professional decorum.
                         </p>
                         <div className="flex items-center gap-2 text-sm font-medium text-gray-400 bg-white/50 px-4 py-2 rounded-full border border-gray-200">
                             End-to-end connection active

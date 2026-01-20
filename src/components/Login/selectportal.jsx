@@ -46,6 +46,8 @@ import NotificationBell from '../Common/NotificationBell';
 import LoadingScreen from '../Common/LoadingScreen';
 import { Calendar as CalendarIcon } from 'lucide-react';
 
+
+
 const CATEGORIES = [
   { id: 'dashboard', name: 'Dashboard', icon: LayoutDashboard },
   { id: 'administration', name: 'Administration', icon: Settings },
@@ -209,30 +211,6 @@ export default function SelectPanel() {
         )}
       </main>
 
-      {/* Floating Internal Chat Button */}
-      <motion.button
-        initial={{ scale: 0, opacity: 0, y: 20 }}
-        animate={{ scale: 1, opacity: 1, y: 0 }}
-        whileHover={{ scale: 1.1 }}
-        whileTap={{ scale: 0.9 }}
-        onClick={() => router.push('/admin/communication')}
-        className="fixed bottom-8 right-8 z-[60] group flex items-center gap-3"
-      >
-        {/* Tooltip on hover */}
-        <span className="bg-gray-900 text-white text-[12px] font-bold px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-xl">
-          Internal Chat
-        </span>
-        <div className="w-16 h-16 bg-emerald-600 rounded-full flex items-center justify-center text-white shadow-2xl relative overflow-hidden group-hover:bg-emerald-500 transition-colors">
-          <div className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity" />
-          <MessageSquare className="w-8 h-8" />
-
-          {/* Heartbeat pulse effect */}
-          <span className="absolute -top-1 -right-1 flex h-4 w-4">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-4 w-4 bg-emerald-500 border-2 border-white"></span>
-          </span>
-        </div>
-      </motion.button>
     </div>
   );
 }

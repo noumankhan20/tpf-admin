@@ -12,6 +12,9 @@ import {
 import { useRouter } from "next/navigation";
 import { adminApiSlice } from "@/utils/slices/adminApiSlice";
 
+import { SocketProvider } from "@/utils/context/SocketContext";
+import QuickChatPopup from "@/components/Admin/Communication/QuickChatPopup";
+
 function AdminBootstrap({ children }) {
   const dispatch = useDispatch();
   const pathname = usePathname();
@@ -67,22 +70,24 @@ function AdminBootstrap({ children }) {
     );
   }
 
-  return children;
+  return (
+    <SocketProvider>
+      {children}
+      {!PUBLIC_ROUTES.includes(pathname) && <QuickChatPopup />}
+    </SocketProvider>
+  );
 }
 
 
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-import { SocketProvider } from "@/utils/context/SocketContext";
 
 export default function Providers({ children }) {
   return (
     <ReduxProvider store={store}>
       <AdminBootstrap>
-        <SocketProvider>
-          {children}
-        </SocketProvider>
+        {children}
         <ToastContainer />
       </AdminBootstrap>
     </ReduxProvider>

@@ -318,16 +318,7 @@ const NotificationBell = ({ moduleFilter = null }) => {
                             )}
                         </div>
 
-                        {notifications.length > 0 && (
-                            <div className="px-4 py-2 border-t border-gray-50 bg-gray-50/50">
-                                <button
-                                    onClick={() => setNotifications([])}
-                                    className="w-full text-center text-xs text-gray-500 hover:text-red-500 transition-colors py-1"
-                                >
-                                    Clear all
-                                </button>
-                            </div>
-                        )}
+                       
                     </motion.div>
                 )}
             </AnimatePresence>
