@@ -19,6 +19,7 @@ export default function StartFundraiserBannerCMS() {
     title: "",
     description: "",
     buttonText: "Create Fundraiser Now",
+    buttonRoute: "/my-profile",
   });
 
 
@@ -26,7 +27,7 @@ export default function StartFundraiserBannerCMS() {
   const [imagePreview, setImagePreview] = useState("");
   const [hasChanges, setHasChanges] = useState(false);
   const [showPreview, setShowPreview] = useState(true);
-  const { data, isLoading, error,refetch } = useGetBeforeFooterQuery();
+  const { data, isLoading, error, refetch } = useGetBeforeFooterQuery();
 
   const [createBeforeFooter, { isLoading: isCreating }] = useCreateBeforeFooterMutation();
   const [updateBeforeFooter, { isLoading: isUpdating }] = useUpdateBeforeFooterMutation();
@@ -45,7 +46,9 @@ export default function StartFundraiserBannerCMS() {
       setFormData({
         title: section.title || "",
         description: section.description || "",
-        buttonText: "Create Fundraiser Now",
+        buttonText: section.buttonText || "Create Fundraiser Now",
+        buttonRoute: section.buttonRoute || "/my-profile",
+
       });
 
       setImagePreview(section.image ? getMediaUrl(section.image) : "");
@@ -91,6 +94,8 @@ export default function StartFundraiserBannerCMS() {
     const form = new FormData();
     form.append("title", formData.title);
     form.append("description", formData.description);
+    form.append("buttonText", formData.buttonText);
+    form.append("buttonRoute", formData.buttonRoute);
     if (imageFile) form.append("image", imageFile);
 
     try {
@@ -119,7 +124,8 @@ export default function StartFundraiserBannerCMS() {
       setFormData({
         title: bannerData.title,
         description: bannerData.description,
-        buttonText: "Create Fundraiser Now",
+        buttonText: bannerData.buttonText || "Create Fundraiser Now",
+        buttonRoute: bannerData.buttonRoute || "/my-profile"
       });
       setImagePreview(getMediaUrl(bannerData.image));
     } else {
@@ -127,6 +133,7 @@ export default function StartFundraiserBannerCMS() {
         title: "",
         description: "",
         buttonText: "Create Fundraiser Now",
+        buttonRoute: "/my-profile",
       });
       setImagePreview("");
     }
@@ -302,6 +309,38 @@ export default function StartFundraiserBannerCMS() {
                     className="w-full px-4 py-3.5 border-2 border-gray-200 rounded-xl focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 outline-none transition-all duration-200 resize-none font-medium"
                   />
                 </div>
+
+                {/* Button Text */}
+                <div>
+                  <label className="block mb-3 text-sm font-bold text-gray-900">
+                    Button Text
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.buttonText}
+                    onChange={(e) => handleInputChange("buttonText", e.target.value)}
+                    placeholder="Create Fundraiser Now"
+                    className="w-full px-4 py-3.5 border-2 border-gray-200 rounded-xl focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 outline-none transition-all duration-200 font-medium"
+                  />
+                </div>
+
+                {/* Button Route */}
+                <div>
+                  <label className="block mb-3 text-sm font-bold text-gray-900">
+                    Button Route
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.buttonRoute}
+                    onChange={(e) => handleInputChange("buttonRoute", e.target.value)}
+                    placeholder="/my-profile"
+                    className="w-full px-4 py-3.5 border-2 border-gray-200 rounded-xl focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 outline-none transition-all duration-200 font-medium"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Enter frontend route only. eg: <code>/my-profile</code>
+                  </p>
+                </div>
+
 
                 {/* Action Buttons */}
                 <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t-2 border-emerald-100">

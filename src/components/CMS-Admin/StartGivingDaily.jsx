@@ -21,6 +21,7 @@ export default function StartGivingDaily() {
     title: "",
     description: "",
     buttonText: "Start Giving Daily",
+    buttonRoute: "/my-profile",
   });
 
   const [imageFile, setImageFile] = useState(null);
@@ -45,7 +46,8 @@ export default function StartGivingDaily() {
       setFormData({
         title: section.title,
         description: section.description,
-        buttonText: "Start Giving Daily",
+        buttonText: section.buttonText || "Start Giving Daily",
+        buttonRoute: section.buttonRoute || "/my-profile",
       });
 
       setImagePreview(getMediaUrl(section.image));
@@ -82,6 +84,9 @@ export default function StartGivingDaily() {
     const form = new FormData();
     form.append("title", formData.title);
     form.append("description", formData.description);
+    form.append("buttonText", formData.buttonText);
+    form.append("buttonRoute", formData.buttonRoute);
+
     if (imageFile) form.append("image", imageFile);
 
     try {
@@ -106,6 +111,9 @@ export default function StartGivingDaily() {
     const form = new FormData();
     form.append("title", formData.title);
     form.append("description", formData.description);
+    form.append("buttonText", formData.buttonText);
+    form.append("buttonRoute", formData.buttonRoute);
+
     if (imageFile) form.append("image", imageFile);
 
     try {
@@ -128,7 +136,8 @@ export default function StartGivingDaily() {
       setFormData({
         title: bannerData.title,
         description: bannerData.description,
-        buttonText: "Start Giving Daily",
+        buttonText: bannerData.buttonText || "Start Giving Daily",
+        buttonRoute: bannerData.buttonRoute || "/my-profile",
       });
 
       setImagePreview(getMediaUrl(bannerData.image));
@@ -138,6 +147,7 @@ export default function StartGivingDaily() {
         title: "",
         description: "",
         buttonText: "Start Giving Daily",
+        buttonRoute: "/my-profile"
       });
       setImagePreview("");
       setImageFile(null);
@@ -393,6 +403,38 @@ export default function StartGivingDaily() {
                       {formData.description.length} characters • Describe your call-to-action clearly
                     </p>
                   </div>
+                  {/* Button Text */}
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-900 mb-2">
+                      Button Text
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.buttonText}
+                      onChange={(e) => handleInputChange("buttonText", e.target.value)}
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl"
+                      placeholder="Start Giving Daily"
+                    />
+                  </div>
+
+                  {/* Button Route */}
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-900 mb-2">
+                      Button Route
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.buttonRoute}
+                      onChange={(e) => handleInputChange("buttonRoute", e.target.value)}
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl"
+                      placeholder="/donate or /start-giving"
+                    />
+                    <p className="text-xs text-slate-500 mt-1">
+                      Enter frontend route only. eg: <code>/my-profile</code>
+                    </p>
+
+                  </div>
+
 
                   {/* Status Indicator */}
                   {hasChanges && (

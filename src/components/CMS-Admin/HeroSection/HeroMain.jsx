@@ -32,7 +32,7 @@ export default function HeroSection() {
         title: "",
         description: "",
         buttonText: "",
-        buttonLink: "",
+        buttonRoute: "",
     });
     const [existingHeros, setExistingHeros] = useState([]);
     const [selectedHero, setSelectedHero] = useState(null);
@@ -64,7 +64,7 @@ export default function HeroSection() {
                 title: heroWithUrl.title || "",
                 description: heroWithUrl.description || "",
                 buttonText: heroWithUrl.buttonText || "",
-                buttonLink: heroWithUrl.buttonLink || "",
+                buttonRoute: heroWithUrl.buttonRoute || "",
             });
 
             setViewMode("edit");
@@ -110,7 +110,8 @@ export default function HeroSection() {
             const formData = new FormData();
             formData.append("title", heroForm.title);
             formData.append("description", heroForm.description);
-
+            formData.append("buttonText", heroForm.buttonText);
+            formData.append("buttonRoute", heroForm.buttonRoute);
             if (heroForm.image) {
                 formData.append("image", heroForm.image);
             }

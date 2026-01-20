@@ -2,12 +2,12 @@
 import React from "react";
 import { Upload, Save, ImageIcon, Edit2, CheckCircle, AlertCircle, Info } from "lucide-react";
 
-export default function HeroForm({ 
-    heroForm, 
-    setHeroForm, 
-    handleImageUpload, 
-    handleSave, 
-    isEditMode 
+export default function HeroForm({
+    heroForm,
+    setHeroForm,
+    handleImageUpload,
+    handleSave,
+    isEditMode
 }) {
     return (
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
@@ -36,8 +36,8 @@ export default function HeroForm({
                         Hero Image {!isEditMode && "*"}
                     </label>
                     <p className="text-xs text-gray-500 mb-3">
-                        {isEditMode 
-                            ? "Recommended: 1920x1080px (2049x665px for wide displays)" 
+                        {isEditMode
+                            ? "Recommended: 1920x1080px (2049x665px for wide displays)"
                             : "Recommended: 1920x1080px, JPG/PNG format"}
                     </p>
 
@@ -104,6 +104,41 @@ export default function HeroForm({
                         }
                     />
                 </div>
+                {/* BUTTON TEXT */}
+                <div>
+                    <label className="block text-sm font-semibold text-gray-800 mb-2">
+                        Button Text
+                    </label>
+                    <input
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg
+               focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all"
+                        placeholder="Get Started"
+                        value={heroForm.buttonText}
+                        onChange={(e) =>
+                            setHeroForm((prev) => ({ ...prev, buttonText: e.target.value }))
+                        }
+                    />
+                </div>
+
+                {/* BUTTON ROUTE */}
+                <div>
+                    <label className="block text-sm font-semibold text-gray-800 mb-2">
+                        Button Route
+                    </label>
+                    <input
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg
+               focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all"
+                        placeholder="/my-profile"
+                        value={heroForm.buttonRoute}
+                        onChange={(e) =>
+                            setHeroForm((prev) => ({ ...prev, buttonRoute: e.target.value }))
+                        }
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                        Enter frontend route only. eg: <code>/my-profile</code>
+                    </p>
+                </div>
+
 
                 {/* SAVE BUTTON */}
                 <div className="pt-4">
