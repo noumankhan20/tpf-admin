@@ -8,10 +8,12 @@ import {
   FileText,
   Trash2,
   ImagePlus,
+  Star,
 } from 'lucide-react';
 import { getMediaUrl } from '@/utils/media';
 import MediaSelectorModal from './MediaSelectorModal';
 import CampaignPreview from './CampaignPreview';
+
 export default function CampaignForm({
   formData,
   setFormData,
@@ -57,43 +59,74 @@ export default function CampaignForm({
       videoPreview: campaign.videoUrl || null,
       mediaType: campaign.mediaType || "image",
       currentStatus: campaign.currentStatus || "",
+      imageGallery: campaign.imageGallery || [],
+      images: [],
     }));
   };
 
   const handleMediaSelect = (file) => {
     const isVideo = file.type === "video";
     const url = file.url;
-    setFormData(prev => ({
-      ...prev,
-      mediaType: isVideo ? "video" : "image",
-      selectedImageUrl: isVideo ? "" : url,
-      selectedVideoUrl: isVideo ? url : "",
-      imagePreview: isVideo ? null : url,
-      videoPreview: isVideo ? url : null,
-      isExistingImage: !isVideo,
-      isExistingVideo: isVideo,
-    }));
+    
+    if (isVideo) {
+      setFormData(prev => ({
+        ...prev,
+        mediaType: "video",
+        selectedImageUrl: "",
+        selectedVideoUrl: url,
+        imagePreview: null,
+        videoPreview: url,
+        isExistingVideo: true,
+        imageGallery: [],
+        images: [],
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        mediaType: "image",
+        selectedImageUrl: url,
+        imagePreview: url,
+        isExistingImage: true,
+        imageGallery: prev.imageGallery.includes(url) ? prev.imageGallery : [...prev.imageGallery, url],
+      }));
+    }
     setShowMediaModal(false);
   };
 
-  const handleMediaUpload = (e) => {
+  const handleMultipleImageUpload = (e) => {
+    const files = Array.from(e.target.files);
+    if (!files.length) return;
+
+    const imageFiles = files.filter(f => f.type.startsWith('image/'));
+    
+    setFormData((prev) => ({
+      ...prev,
+      mediaType: "image",
+      images: [...prev.images, ...imageFiles],
+      imagePreview: prev.imagePreview || URL.createObjectURL(imageFiles[0]),
+      selectedImageUrl: prev.selectedImageUrl || "",
+    }));
+  };
+
+  const handleVideoUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    const isVideo = file.type.startsWith('video/');
     const reader = new FileReader();
-
     reader.onloadend = () => {
       setFormData((prev) => ({
         ...prev,
-        mediaType: isVideo ? "video" : "image",
-        [isVideo ? 'video' : 'image']: file,
-        [isVideo ? 'videoPreview' : 'imagePreview']: reader.result,
-        [isVideo ? 'isExistingVideo' : 'isExistingImage']: false,
+        mediaType: "video",
+        video: file,
+        videoPreview: reader.result,
+        isExistingVideo: false,
+        selectedVideoUrl: "",
+        imageGallery: [],
+        images: [],
+        imagePreview: null,
+        selectedImageUrl: "",
       }));
-      setShowMediaModal(false);
     };
-
     reader.readAsDataURL(file);
   };
 
@@ -121,6 +154,34 @@ export default function CampaignForm({
     }
   };
 
+  const removeImage = (index, isFromGallery) => {
+    if (isFromGallery) {
+      const urlToRemove = formData.imageGallery[index];
+      setFormData((prev) => ({
+        ...prev,
+        imageGallery: prev.imageGallery.filter((_, i) => i !== index),
+        selectedImageUrl: prev.selectedImageUrl === urlToRemove ? (prev.imageGallery[0] || "") : prev.selectedImageUrl,
+        imagePreview: prev.selectedImageUrl === urlToRemove ? (prev.imageGallery[0] || null) : prev.imagePreview,
+      }));
+    } else {
+      const fileToRemove = formData.images[index];
+      const urlToRemove = URL.createObjectURL(fileToRemove);
+      setFormData((prev) => ({
+        ...prev,
+        images: prev.images.filter((_, i) => i !== index),
+        imagePreview: prev.imagePreview === urlToRemove ? (prev.images[0] ? URL.createObjectURL(prev.images[0]) : null) : prev.imagePreview,
+      }));
+    }
+  };
+
+  const setPrimaryImage = (url, isFromGallery) => {
+    setFormData((prev) => ({
+      ...prev,
+      selectedImageUrl: isFromGallery ? url : "",
+      imagePreview: url,
+    }));
+  };
+
   const getImageUrl = (preview, isExisting) => {
     if (!preview) return null;
     if (isExisting) {
@@ -133,6 +194,11 @@ export default function CampaignForm({
   const availableMedia = selectedCampaign?.photographySubmissions?.flatMap(sub =>
     (sub.files || []).map(file => ({ ...file, submissionType: sub.submissionType || 'RAW' }))
   ) || [];
+
+  const allImages = [
+    ...formData.imageGallery.map((url, i) => ({ url, isFromGallery: true, index: i })),
+    ...formData.images.map((file, i) => ({ url: URL.createObjectURL(file), isFromGallery: false, index: i }))
+  ];
 
   return (
     <>
@@ -172,50 +238,166 @@ export default function CampaignForm({
                 </div>
               )}
 
-              {/* Media Selection */}
+              {/* Media Type Selection */}
               <div>
                 <label className="block text-sm font-semibold text-gray-900 mb-2">
-                  Campaign Media <span className="text-red-500">*</span>
+                  Media Type <span className="text-red-500">*</span>
                 </label>
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setFormData(prev => ({ ...prev, mediaType: "image" }))}
+                    className={`flex-1 py-3 rounded-lg font-semibold transition-all ${
+                      formData.mediaType === "image"
+                        ? "bg-emerald-600 text-white"
+                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                    }`}
+                  >
+                    <ImageIcon size={20} className="inline mr-2" />
+                    Images
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFormData(prev => ({ ...prev, mediaType: "video" }))}
+                    className={`flex-1 py-3 rounded-lg font-semibold transition-all ${
+                      formData.mediaType === "video"
+                        ? "bg-emerald-600 text-white"
+                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                    }`}
+                  >
+                    <Play size={20} className="inline mr-2" />
+                    Video
+                  </button>
+                </div>
+              </div>
 
-                {formData.imagePreview || formData.videoPreview ? (
-                  <div className="relative rounded-lg overflow-hidden border-2 border-gray-200">
-                    {formData.mediaType === "video" ? (
+              {/* Media Upload */}
+              {formData.mediaType === "image" ? (
+                <div>
+                  <label className="block text-sm font-semibold text-gray-900 mb-2">
+                    Campaign Images <span className="text-red-500">*</span>
+                  </label>
+                  
+                  <div className="space-y-3">
+                    {/* Upload Button */}
+                    <label className="border-2 border-dashed border-gray-300 rounded-lg p-6 block text-center cursor-pointer hover:border-emerald-500 hover:bg-emerald-50 transition-all">
+                      <input
+                        type="file"
+                        multiple
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleMultipleImageUpload}
+                      />
+                      <Upload size={32} className="mx-auto text-gray-400 mb-2" />
+                      <p className="text-sm font-medium text-gray-900">Upload Images</p>
+                      <p className="text-xs text-gray-600">Select multiple images</p>
+                    </label>
+
+                    {/* Select from Photography */}
+                    <button
+                      type="button"
+                      onClick={() => setShowMediaModal(true)}
+                      className="w-full border-2 border-gray-300 rounded-lg p-4 hover:border-emerald-500 hover:bg-emerald-50 transition-all"
+                    >
+                      <ImagePlus size={32} className="mx-auto text-gray-400 mb-2" />
+                      <p className="text-sm font-medium text-gray-900">Select from Photography Team</p>
+                    </button>
+
+                    {/* Image Gallery */}
+                    {allImages.length > 0 && (
+                      <div className="grid grid-cols-2 gap-3">
+                        {allImages.map((img) => {
+                          const displayUrl = img.isFromGallery ? getImageUrl(img.url, true) : img.url;
+                          const isPrimary = formData.imagePreview === (img.isFromGallery ? getImageUrl(img.url, true) : img.url) ||
+                                          formData.selectedImageUrl === img.url;
+                          
+                          return (
+                            <div key={`${img.isFromGallery}-${img.index}`} className="relative group">
+                              <img
+                                src={displayUrl}
+                                className={`w-full h-32 object-cover rounded-lg border-2 ${
+                                  isPrimary ? "border-emerald-500" : "border-gray-200"
+                                }`}
+                                alt="Campaign"
+                              />
+                              {isPrimary && (
+                                <div className="absolute top-2 left-2 bg-emerald-500 text-white px-2 py-1 rounded text-xs font-semibold flex items-center gap-1">
+                                  <Star size={12} fill="white" />
+                                  Primary
+                                </div>
+                              )}
+                              <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center gap-2">
+                                {!isPrimary && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setPrimaryImage(img.isFromGallery ? img.url : displayUrl, img.isFromGallery)}
+                                    className="bg-white text-gray-900 px-3 py-1.5 rounded text-xs font-semibold hover:bg-emerald-500 hover:text-white transition-colors"
+                                  >
+                                    Set Primary
+                                  </button>
+                                )}
+                                <button
+                                  type="button"
+                                  onClick={() => removeImage(img.index, img.isFromGallery)}
+                                  className="bg-red-500 text-white p-1.5 rounded hover:bg-red-600 transition-colors"
+                                >
+                                  <Trash2 size={14} />
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <label className="block text-sm font-semibold text-gray-900 mb-2">
+                    Campaign Video <span className="text-red-500">*</span>
+                  </label>
+                  
+                  {formData.videoPreview ? (
+                    <div className="relative rounded-lg overflow-hidden border-2 border-gray-200">
                       <video
                         src={getImageUrl(formData.videoPreview, formData.isExistingVideo)}
                         className="w-full h-48 object-cover"
                         controls
                       />
-                    ) : (
-                      <img
-                        src={getImageUrl(formData.imagePreview, formData.isExistingImage)}
-                        className="w-full h-48 object-cover"
-                        alt="Preview"
-                      />
-                    )}
-                    <button
-                      onClick={() => setShowMediaModal(true)}
-                      className="absolute inset-0 bg-black/50 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center"
-                    >
-                      <div className="bg-white px-4 py-2 rounded-lg font-semibold text-gray-900 flex items-center gap-2">
-                        <ImagePlus size={20} />
-                        Change Media
-                      </div>
-                    </button>
-                  </div>
-                ) : (
-                  <button
-                    onClick={() => setShowMediaModal(true)}
-                    className="w-full border-2 border-dashed border-gray-300 rounded-lg p-8 hover:border-emerald-500 hover:bg-emerald-50 transition-all"
-                  >
-                    <Upload size={40} className="mx-auto text-gray-400 mb-3" />
-                    <p className="font-semibold text-gray-900 mb-1">Select Media</p>
-                    <p className="text-sm text-gray-600">
-                      Choose from photography team or upload new
-                    </p>
-                  </button>
-                )}
-              </div>
+                      <button
+                        type="button"
+                        onClick={() => setFormData(prev => ({ ...prev, video: null, videoPreview: null, selectedVideoUrl: "" }))}
+                        className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-lg hover:bg-red-600 transition-colors"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <label className="border-2 border-dashed border-gray-300 rounded-lg p-6 block text-center cursor-pointer hover:border-emerald-500 hover:bg-emerald-50 transition-all">
+                        <input
+                          type="file"
+                          accept="video/*"
+                          className="hidden"
+                          onChange={handleVideoUpload}
+                        />
+                        <Upload size={32} className="mx-auto text-gray-400 mb-2" />
+                        <p className="text-sm font-medium text-gray-900">Upload Video</p>
+                        <p className="text-xs text-gray-600">MP4, MOV, etc.</p>
+                      </label>
+
+                      <button
+                        type="button"
+                        onClick={() => setShowMediaModal(true)}
+                        className="w-full border-2 border-gray-300 rounded-lg p-4 hover:border-emerald-500 hover:bg-emerald-50 transition-all"
+                      >
+                        <Play size={32} className="mx-auto text-gray-400 mb-2" />
+                        <p className="text-sm font-medium text-gray-900">Select from Photography Team</p>
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Category */}
               <div>
@@ -470,12 +652,11 @@ export default function CampaignForm({
                 <button
                   onClick={onSave}
                   disabled={isSaving}
-                  className={`flex-1 flex items-center justify-center gap-2 py-3.5 rounded-lg font-semibold transition-all shadow-sm
-    ${isSaving
+                  className={`flex-1 flex items-center justify-center gap-2 py-3.5 rounded-lg font-semibold transition-all shadow-sm ${
+                    isSaving
                       ? "bg-emerald-400 cursor-not-allowed"
                       : "bg-emerald-600 hover:bg-emerald-700 hover:shadow-md text-white"
-                    }
-  `}
+                  }`}
                 >
                   {isSaving ? (
                     <>
@@ -537,7 +718,7 @@ export default function CampaignForm({
         media={availableMedia}
         selectedUrl={formData.selectedImageUrl || formData.selectedVideoUrl}
         onSelect={handleMediaSelect}
-        onUploadNew={handleMediaUpload}
+        onUploadNew={handleMultipleImageUpload}
       />
     </>
   );

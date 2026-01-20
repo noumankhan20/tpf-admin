@@ -43,7 +43,8 @@ export default function HeroPreview({ heroForm }) {
                         </p>
 
                         <button className="px-6 py-3 bg-emerald-600 text-white rounded-lg font-semibold hover:bg-emerald-700 transition-all shadow-lg">
-                            Get Started
+                            {heroForm.buttonText || "Get Started"}
+
                         </button>
                     </div>
                 </div>

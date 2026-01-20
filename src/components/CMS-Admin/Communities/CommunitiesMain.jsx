@@ -47,6 +47,7 @@ export default function CommunitiesMain() {
         name: "",
         image: null,
         imagePreview: null,
+        route:"",
     });
 
     useEffect(() => {
@@ -69,6 +70,7 @@ export default function CommunitiesMain() {
         return data.communities.map((item, index) => ({
             id: item._id,
             name: item.title,
+            route:item.route || "",
             image: getMediaUrl(item.image),
             lastUpdated: new Date(item.updatedAt).toLocaleString(),
             order: index + 1,
@@ -95,6 +97,7 @@ export default function CommunitiesMain() {
             name: "",
             image: null,
             imagePreview: null,
+            route:"",
         });
         setSelectedCommunity(null);
         setViewMode("add-community");
@@ -106,6 +109,7 @@ export default function CommunitiesMain() {
             name: community.name,
             image: null,
             imagePreview: community.image,
+            route:community.route || "",
         });
         setViewMode("edit-community");
     };
@@ -129,6 +133,7 @@ export default function CommunitiesMain() {
         const formData = new FormData();
         formData.append("title", communityForm.name);
         formData.append("image", communityForm.image);
+        formData.append("route", communityForm.route);
 
         try {
             await createCommunity(formData).unwrap();
@@ -148,7 +153,7 @@ export default function CommunitiesMain() {
 
         const formData = new FormData();
         formData.append("title", communityForm.name);
-
+        formData.append("route", communityForm.route);
         if (communityForm.image) {
             formData.append("image", communityForm.image);
         }

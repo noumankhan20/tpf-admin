@@ -2,13 +2,13 @@
 import React from "react";
 import { Upload, Save, Image, Edit2, CheckCircle, Info, XCircle } from "lucide-react";
 
-export default function CommunityForm({ 
-    communityForm, 
-    setCommunityForm, 
-    handleImageUpload, 
+export default function CommunityForm({
+    communityForm,
+    setCommunityForm,
+    handleImageUpload,
     handleSave,
     handleCancel,
-    isEditMode 
+    isEditMode
 }) {
     return (
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
@@ -87,6 +87,25 @@ export default function CommunityForm({
                         }
                     />
                 </div>
+                {/* COMMUNITY ROUTE */}
+                <div>
+                    <label className="block text-sm font-semibold text-gray-800 mb-2">
+                        Community Route
+                    </label>
+                    <input
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg
+               focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all"
+                        placeholder="/communities/education"
+                        value={communityForm.route}
+                        onChange={(e) =>
+                            setCommunityForm((prev) => ({ ...prev, route: e.target.value }))
+                        }
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                        Frontend route only. eg: <code>/communities/education</code>
+                    </p>
+                </div>
+
 
                 {/* ACTION BUTTONS */}
                 <div className="pt-4 space-y-3">
@@ -97,7 +116,7 @@ export default function CommunityForm({
                         <Save size={18} />
                         {isEditMode ? "Save Changes" : "Add Community"}
                     </button>
-                    
+
                     <button
                         onClick={handleCancel}
                         className="w-full bg-white border-2 border-gray-300 text-gray-700 py-3 rounded-lg font-semibold hover:bg-gray-50 transition-all flex items-center justify-center gap-2"
@@ -115,8 +134,8 @@ export default function CommunityForm({
                             {isEditMode ? "Update Information" : "Getting Started"}
                         </p>
                         <p className="text-xs text-blue-700">
-                            {isEditMode 
-                                ? "Changes will be reflected immediately after saving" 
+                            {isEditMode
+                                ? "Changes will be reflected immediately after saving"
                                 : "Fill in all required fields to add a new community"}
                         </p>
                     </div>
