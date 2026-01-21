@@ -16,6 +16,7 @@ import {
 import FundraisingHeader from "./FundraisingHeader";
 import CampaignList from "./CampaignList";
 import CampaignForm from "./CampaignForm";
+
 export default function FundraisingCMS() {
   const router = useRouter();
   const [viewMode, setViewMode] = useState("view");
@@ -58,7 +59,7 @@ export default function FundraisingCMS() {
     requiredAmount: "",
     deadline: "",
     mediaType: "image",
-    image: null,
+    images: [],
     imagePreview: null,
     video: null,
     videoPreview: null,
@@ -73,6 +74,7 @@ export default function FundraisingCMS() {
     selectedVideoUrl: "",
     taskId: "",
     currentStatus: "",
+    imageGallery: [],
   });
 
   const {
@@ -87,7 +89,6 @@ export default function FundraisingCMS() {
     useUpdateFundraiserMutation();
 
   const isSaving = isCreating || isUpdating;
-
 
   const [deleteFundraiser] = useDeleteFundraiserMutation();
 
@@ -108,7 +109,6 @@ export default function FundraisingCMS() {
     }
   };
 
-
   const handleEdit = (card) => {
     setEditingCard(card);
     setFormData({
@@ -125,7 +125,7 @@ export default function FundraisingCMS() {
       requiredAmount: card.requiredAmount,
       deadline: card.deadline?.split("T")[0],
       mediaType: card.mediaType || "image",
-      image: null,
+      images: [],
       imagePreview: card.imageUrl,
       video: null,
       videoPreview: card.videoUrl,
@@ -136,6 +136,9 @@ export default function FundraisingCMS() {
       existingDocuments: card.documents || [],
       documents: [],
       currentStatus: card.currentStatus || "",
+      selectedImageUrl: card.imageUrl || "",
+      selectedVideoUrl: card.videoUrl || "",
+      imageGallery: card.imageGallery || [],
     });
     setViewMode("edit");
   };
@@ -182,8 +185,17 @@ export default function FundraisingCMS() {
         formData.impactGoals.filter(g => g.trim() !== "")
       ));
 
-      if (formData.mediaType === "image" && formData.image instanceof File) {
-        form.append("image", formData.image);
+      if (formData.mediaType === "image") {
+        formData.images.forEach((file) => {
+          form.append("image", file);
+        });
+      }
+
+      if (editingCard) {
+        form.append(
+          "imageGallery",
+          JSON.stringify(formData.imageGallery)
+        );
       }
 
       if (formData.mediaType === "video" && formData.video instanceof File) {
@@ -193,8 +205,6 @@ export default function FundraisingCMS() {
       form.append("campaignId", formData.campaignId);
       if (formData.selectedImageUrl) form.append("selectedImageUrl", formData.selectedImageUrl);
       if (formData.selectedVideoUrl) form.append("selectedVideoUrl", formData.selectedVideoUrl);
-
-      let res;
 
       if (editingCard) {
         await updateFundraiser({
@@ -242,7 +252,7 @@ export default function FundraisingCMS() {
       requiredAmount: "",
       deadline: "",
       mediaType: "image",
-      image: null,
+      images: [],
       imagePreview: null,
       video: null,
       videoPreview: null,
@@ -257,6 +267,7 @@ export default function FundraisingCMS() {
       selectedVideoUrl: "",
       taskId: "",
       currentStatus: "",
+      imageGallery: [],
     });
     setSelectedCampaign(null);
   };
@@ -283,7 +294,6 @@ export default function FundraisingCMS() {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Back Button */}
         <button
           onClick={() => router.push('/cms-admin')}
           className="mb-6 flex items-center gap-2 text-gray-600 hover:text-emerald-600 transition-colors font-medium"
@@ -333,7 +343,6 @@ export default function FundraisingCMS() {
             onSave={handleSave}
             onCancel={handleCancel}
             isSaving={isSaving}
-
           />
         )}
       </div>

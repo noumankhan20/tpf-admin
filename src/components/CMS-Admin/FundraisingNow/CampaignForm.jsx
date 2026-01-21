@@ -67,7 +67,7 @@ export default function CampaignForm({
   const handleMediaSelect = (file) => {
     const isVideo = file.type === "video";
     const url = file.url;
-    
+
     if (isVideo) {
       setFormData(prev => ({
         ...prev,
@@ -98,7 +98,7 @@ export default function CampaignForm({
     if (!files.length) return;
 
     const imageFiles = files.filter(f => f.type.startsWith('image/'));
-    
+
     setFormData((prev) => ({
       ...prev,
       mediaType: "image",
@@ -156,31 +156,37 @@ export default function CampaignForm({
 
   const removeImage = (index, isFromGallery) => {
     if (isFromGallery) {
-      const urlToRemove = formData.imageGallery[index];
+      const updatedGallery = formData.imageGallery.filter((_, i) => i !== index);
+
       setFormData((prev) => ({
         ...prev,
-        imageGallery: prev.imageGallery.filter((_, i) => i !== index),
-        selectedImageUrl: prev.selectedImageUrl === urlToRemove ? (prev.imageGallery[0] || "") : prev.selectedImageUrl,
-        imagePreview: prev.selectedImageUrl === urlToRemove ? (prev.imageGallery[0] || null) : prev.imagePreview,
-      }));
-    } else {
-      const fileToRemove = formData.images[index];
-      const urlToRemove = URL.createObjectURL(fileToRemove);
-      setFormData((prev) => ({
-        ...prev,
-        images: prev.images.filter((_, i) => i !== index),
-        imagePreview: prev.imagePreview === urlToRemove ? (prev.images[0] ? URL.createObjectURL(prev.images[0]) : null) : prev.imagePreview,
+        imageGallery: updatedGallery,
+        imageGalleryChanged: true,
+
+        // ✅ FIX: use updatedGallery (not prev.imageGallery)
+        selectedImageUrl:
+          prev.selectedImageUrl === prev.imageGallery[index]
+            ? updatedGallery[0] || ""
+            : prev.selectedImageUrl,
+
+        imagePreview:
+          prev.selectedImageUrl === prev.imageGallery[index]
+            ? updatedGallery[0] || null
+            : prev.imagePreview,
       }));
     }
   };
 
-  const setPrimaryImage = (url, isFromGallery) => {
+
+  const setPrimaryImage = (url) => {
     setFormData((prev) => ({
       ...prev,
-      selectedImageUrl: isFromGallery ? url : "",
+      selectedImageUrl: url,
       imagePreview: url,
+      // 🚫 DO NOT touch imageGallery here
     }));
   };
+
 
   const getImageUrl = (preview, isExisting) => {
     if (!preview) return null;
@@ -247,11 +253,10 @@ export default function CampaignForm({
                   <button
                     type="button"
                     onClick={() => setFormData(prev => ({ ...prev, mediaType: "image" }))}
-                    className={`flex-1 py-3 rounded-lg font-semibold transition-all ${
-                      formData.mediaType === "image"
-                        ? "bg-emerald-600 text-white"
-                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                    }`}
+                    className={`flex-1 py-3 rounded-lg font-semibold transition-all ${formData.mediaType === "image"
+                      ? "bg-emerald-600 text-white"
+                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                      }`}
                   >
                     <ImageIcon size={20} className="inline mr-2" />
                     Images
@@ -259,11 +264,10 @@ export default function CampaignForm({
                   <button
                     type="button"
                     onClick={() => setFormData(prev => ({ ...prev, mediaType: "video" }))}
-                    className={`flex-1 py-3 rounded-lg font-semibold transition-all ${
-                      formData.mediaType === "video"
-                        ? "bg-emerald-600 text-white"
-                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                    }`}
+                    className={`flex-1 py-3 rounded-lg font-semibold transition-all ${formData.mediaType === "video"
+                      ? "bg-emerald-600 text-white"
+                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                      }`}
                   >
                     <Play size={20} className="inline mr-2" />
                     Video
@@ -277,7 +281,7 @@ export default function CampaignForm({
                   <label className="block text-sm font-semibold text-gray-900 mb-2">
                     Campaign Images <span className="text-red-500">*</span>
                   </label>
-                  
+
                   <div className="space-y-3">
                     {/* Upload Button */}
                     <label className="border-2 border-dashed border-gray-300 rounded-lg p-6 block text-center cursor-pointer hover:border-emerald-500 hover:bg-emerald-50 transition-all">
@@ -309,15 +313,14 @@ export default function CampaignForm({
                         {allImages.map((img) => {
                           const displayUrl = img.isFromGallery ? getImageUrl(img.url, true) : img.url;
                           const isPrimary = formData.imagePreview === (img.isFromGallery ? getImageUrl(img.url, true) : img.url) ||
-                                          formData.selectedImageUrl === img.url;
-                          
+                            formData.selectedImageUrl === img.url;
+
                           return (
                             <div key={`${img.isFromGallery}-${img.index}`} className="relative group">
                               <img
                                 src={displayUrl}
-                                className={`w-full h-32 object-cover rounded-lg border-2 ${
-                                  isPrimary ? "border-emerald-500" : "border-gray-200"
-                                }`}
+                                className={`w-full h-32 object-cover rounded-lg border-2 ${isPrimary ? "border-emerald-500" : "border-gray-200"
+                                  }`}
                                 alt="Campaign"
                               />
                               {isPrimary && (
@@ -356,7 +359,7 @@ export default function CampaignForm({
                   <label className="block text-sm font-semibold text-gray-900 mb-2">
                     Campaign Video <span className="text-red-500">*</span>
                   </label>
-                  
+
                   {formData.videoPreview ? (
                     <div className="relative rounded-lg overflow-hidden border-2 border-gray-200">
                       <video
@@ -652,11 +655,10 @@ export default function CampaignForm({
                 <button
                   onClick={onSave}
                   disabled={isSaving}
-                  className={`flex-1 flex items-center justify-center gap-2 py-3.5 rounded-lg font-semibold transition-all shadow-sm ${
-                    isSaving
-                      ? "bg-emerald-400 cursor-not-allowed"
-                      : "bg-emerald-600 hover:bg-emerald-700 hover:shadow-md text-white"
-                  }`}
+                  className={`flex-1 flex items-center justify-center gap-2 py-3.5 rounded-lg font-semibold transition-all shadow-sm ${isSaving
+                    ? "bg-emerald-400 cursor-not-allowed"
+                    : "bg-emerald-600 hover:bg-emerald-700 hover:shadow-md text-white"
+                    }`}
                 >
                   {isSaving ? (
                     <>
