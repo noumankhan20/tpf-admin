@@ -416,6 +416,20 @@ export default function CampaignForm({
                     <option key={cat} value={cat}>{cat}</option>
                   ))}
                 </select>
+                {/* 🆕 OTHER CATEGORY INPUT */}
+                {formData.category === "Other" && (
+                  <input
+                    type="text"
+                    placeholder="Please specify category..."
+                    value={formData.customCategory}
+                    onChange={(e) =>
+                      setFormData({ ...formData, customCategory: e.target.value })
+                    }
+                    className="mt-3 w-full px-4 py-3 border-2 border-gray-200 rounded-lg
+                 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100
+                 outline-none transition-all"
+                  />
+                )}
               </div>
 
               {/* Badges */}

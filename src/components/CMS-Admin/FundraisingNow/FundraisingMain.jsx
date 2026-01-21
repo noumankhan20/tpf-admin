@@ -30,11 +30,19 @@ export default function FundraisingCMS() {
   const categories = [
     "Emergency Aid",
     "Medical Aid",
-    "Orphans",
+    "Disaster Relief",
+    "Orphans & Children",
     "Education",
+    "Women Empowerment",
     "Clean Water",
-    "Construction"
+    "Food Distribution",
+    "Healthcare",
+    "Elderly Care",
+    "Animal Welfare",
+    "Environment",
+    "Other",
   ];
+
 
   const categoryColors = {
     "Emergency Aid": "bg-red-100 text-red-800",
@@ -47,6 +55,7 @@ export default function FundraisingCMS() {
 
   const [formData, setFormData] = useState({
     category: "Emergency Aid",
+    customCategory: "",
     isUrgent: false,
     taxBenefits: false,
     zakatVerified: false,
@@ -113,6 +122,7 @@ export default function FundraisingCMS() {
     setEditingCard(card);
     setFormData({
       category: card.category,
+      customCategory: card.customCategory || "",
       isUrgent: card.isUrgent,
       taxBenefits: card.taxBenefits,
       zakatVerified: card.zakatVerified,
@@ -158,6 +168,12 @@ export default function FundraisingCMS() {
       alert("Failed to delete campaign");
     }
   };
+  const finalCategory =
+    formData.category === "Other" && formData.customCategory.trim()
+      ? formData.customCategory.trim()
+      : formData.category;
+
+
 
   const handleSave = async () => {
     try {
@@ -165,7 +181,7 @@ export default function FundraisingCMS() {
 
       form.append("title", formData.title);
       form.append("organization", formData.organization);
-      form.append("category", formData.category);
+      form.append("category", finalCategory);
       form.append("requiredAmount", formData.requiredAmount);
       form.append("deadline", formData.deadline);
       form.append("mediaType", formData.mediaType);
@@ -240,6 +256,7 @@ export default function FundraisingCMS() {
   const resetForm = () => {
     setFormData({
       category: "Emergency Aid",
+      customCategory: "",
       isUrgent: false,
       taxBenefits: false,
       zakatVerified: false,
