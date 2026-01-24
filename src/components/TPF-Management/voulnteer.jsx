@@ -35,6 +35,7 @@ import {
 import { toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
+import { getMediaUrl } from '@/utils/media';
 
 export default function VolunteerModule() {
     const router = useRouter();
@@ -337,16 +338,12 @@ export default function VolunteerModule() {
                                             <p className="text-xs text-gray-500 font-bold uppercase mb-2">Proof Image</p>
                                             <div className="rounded-xl overflow-hidden border border-gray-200 bg-gray-900 group relative">
                                                 <img
-                                                    src={selectedVoucher.proofDocument.fileUrl.startsWith('http')
-                                                        ? selectedVoucher.proofDocument.fileUrl
-                                                        : `${process.env.NEXT_PUBLIC_BACKEND_URL || ''}${selectedVoucher.proofDocument.fileUrl.startsWith('/') ? '' : '/'}${selectedVoucher.proofDocument.fileUrl}`}
+                                                    src={getMediaUrl(selectedVoucher.proofDocument.fileUrl)}
                                                     alt="Voucher Proof"
                                                     className="w-full h-auto max-h-[400px] object-contain mx-auto"
                                                 />
                                                 <a
-                                                    href={selectedVoucher.proofDocument.fileUrl.startsWith('http')
-                                                        ? selectedVoucher.proofDocument.fileUrl
-                                                        : `${process.env.NEXT_PUBLIC_BACKEND_URL || ''}${selectedVoucher.proofDocument.fileUrl.startsWith('/') ? '' : '/'}${selectedVoucher.proofDocument.fileUrl}`}
+                                                    href={getMediaUrl(selectedVoucher.proofDocument.fileUrl)}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
                                                     className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
