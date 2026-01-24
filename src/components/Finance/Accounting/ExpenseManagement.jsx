@@ -57,21 +57,6 @@ export default function ExpenseManagement() {
 
     const [createExpense, { isLoading: isCreating }] = useCreateExpenseMutation();
 
-    const { data: volunteersResponse } = useGetVolunteersQuery();
-    const { data: vouchersResponse } = useGetApprovedVouchersQuery(formData.volunteerId, {
-        skip: !formData.volunteerId
-    });
-
-    const volunteers = volunteersResponse?.data || [];
-    const approvedVouchers = vouchersResponse?.data || [];
-
-    const expenses = expensesResponse?.data || [];
-    const admins = adminsResponse?.data || [];
-    const campaigns = campaignsResponse?.data || [];
-    const purchases = purchasesResponse?.data || [];
-    const vendors = vendorsResponse?.data || [];
-    const agreements = agreementsResponse?.data || [];
-
     // Form State
     const [formData, setFormData] = useState({
         expenseType: 'SALARY',
@@ -93,6 +78,22 @@ export default function ExpenseManagement() {
         voucherId: '',
         proofFile: null
     });
+
+    const { data: volunteersResponse } = useGetVolunteersQuery();
+    const { data: vouchersResponse } = useGetApprovedVouchersQuery(formData.volunteerId, {
+        skip: !formData.volunteerId
+    });
+
+    const volunteers = volunteersResponse?.data || [];
+    const approvedVouchers = vouchersResponse?.data || [];
+
+    const expenses = expensesResponse?.data || [];
+    const admins = adminsResponse?.data || [];
+    const campaigns = campaignsResponse?.data || [];
+    const purchases = purchasesResponse?.data || [];
+    const vendors = vendorsResponse?.data || [];
+    const agreements = agreementsResponse?.data || [];
+
 
     const expenseTypes = [
         { value: 'ALL', label: 'All Expenses', color: 'gray' },
