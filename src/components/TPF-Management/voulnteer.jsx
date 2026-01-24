@@ -154,7 +154,7 @@ export default function VolunteerModule() {
 
     if (isLoadingVolunteers && !volunteersData.length) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC]">
+            <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC]" style={{ fontFamily: 'Arial, sans-serif' }}>
                 <div className="text-center">
                     <Loader2 className="animate-spin text-emerald-600 mx-auto mb-4" size={48} />
                     <p className="text-gray-500 font-medium">Loading volunteers...</p>
@@ -169,7 +169,7 @@ export default function VolunteerModule() {
         );
 
         return (
-            <div className="min-h-screen bg-[#F8FAFC]">
+            <div className="min-h-screen bg-[#F8FAFC]" style={{ fontFamily: 'Arial, sans-serif' }}>
                 {/* Header */}
                 <header className="bg-white border-b border-gray-200 sticky top-0 z-40">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center gap-4">
@@ -337,12 +337,16 @@ export default function VolunteerModule() {
                                             <p className="text-xs text-gray-500 font-bold uppercase mb-2">Proof Image</p>
                                             <div className="rounded-xl overflow-hidden border border-gray-200 bg-gray-900 group relative">
                                                 <img
-                                                    src={selectedVoucher.proofDocument.fileUrl.startsWith('http') ? selectedVoucher.proofDocument.fileUrl : `${process.env.NEXT_PUBLIC_API_URL}${selectedVoucher.proofDocument.fileUrl}`}
+                                                    src={selectedVoucher.proofDocument.fileUrl.startsWith('http')
+                                                        ? selectedVoucher.proofDocument.fileUrl
+                                                        : `${process.env.NEXT_PUBLIC_BACKEND_URL || ''}${selectedVoucher.proofDocument.fileUrl.startsWith('/') ? '' : '/'}${selectedVoucher.proofDocument.fileUrl}`}
                                                     alt="Voucher Proof"
                                                     className="w-full h-auto max-h-[400px] object-contain mx-auto"
                                                 />
                                                 <a
-                                                    href={selectedVoucher.proofDocument.fileUrl.startsWith('http') ? selectedVoucher.proofDocument.fileUrl : `${process.env.NEXT_PUBLIC_API_URL}${selectedVoucher.proofDocument.fileUrl}`}
+                                                    href={selectedVoucher.proofDocument.fileUrl.startsWith('http')
+                                                        ? selectedVoucher.proofDocument.fileUrl
+                                                        : `${process.env.NEXT_PUBLIC_BACKEND_URL || ''}${selectedVoucher.proofDocument.fileUrl.startsWith('/') ? '' : '/'}${selectedVoucher.proofDocument.fileUrl}`}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
                                                     className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
@@ -423,7 +427,7 @@ export default function VolunteerModule() {
     }
 
     return (
-        <div className="min-h-screen bg-[#F8FAFC]">
+        <div className="min-h-screen bg-[#F8FAFC]" style={{ fontFamily: 'Arial, sans-serif' }}>
             {/* Header */}
             <header className="bg-white border-b border-gray-200 sticky top-0 z-40">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center gap-4">
