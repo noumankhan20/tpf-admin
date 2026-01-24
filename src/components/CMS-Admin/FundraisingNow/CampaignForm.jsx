@@ -666,6 +666,37 @@ export default function CampaignForm({
                 )}
               </div>
 
+              {/* Social Media Links (Optional) */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-900 mb-2">
+                  Social Media Promotion Links <span className="text-gray-400">(optional)</span>
+                </label>
+
+                {["instagram", "facebook", "youtube", "twitter", "linkedin", "other"].map(
+                  (platform) => (
+                    <input
+                      key={platform}
+                      type="url"
+                      placeholder={`Enter ${platform} link`}
+                      value={formData.socialLinks?.[platform] || ""}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          socialLinks: {
+                            ...prev.socialLinks,
+                            [platform]: e.target.value,
+                          },
+                        }))
+                      }
+                      className="mb-2 w-full px-4 py-2.5 border-2 border-gray-200 rounded-lg
+        focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100
+        outline-none transition-all"
+                    />
+                  )
+                )}
+              </div>
+
+
               {/* Action Buttons */}
               <div className="flex gap-3 pt-4">
                 <button

@@ -85,6 +85,14 @@ export default function FundraisingCMS() {
     taskId: "",
     currentStatus: "",
     imageGallery: [],
+    socialLinks: {
+      instagram: "",
+      facebook: "",
+      youtube: "",
+      twitter: "",
+      linkedin: "",
+      other: "",
+    },
   });
 
   const {
@@ -119,8 +127,40 @@ export default function FundraisingCMS() {
     }
   };
 
-  const handleEdit = (card) => {
+  const fetchCampaignByFundraiser = async (fundraiserId) => {
+    try {
+      const res = await axios.get(
+        `${API_BASE}/campaigns/by-fundraiser/${fundraiserId}`,
+        { withCredentials: true }
+      );
+
+      return res.data?.data || null;
+    } catch (err) {
+      console.error("Failed to fetch campaign:", err);
+      return null;
+    }
+  };
+
+
+  const handleEdit = async (card) => {
     setEditingCard(card);
+    const campaign = await fetchCampaignByFundraiser(card._id);
+
+    // ✅ TAKE LATEST SOCIAL MEDIA SUBMISSION
+    const latestSocialLinks =
+      campaign?.socialMediaSubmissions?.length
+        ? campaign.socialMediaSubmissions[
+          campaign.socialMediaSubmissions.length - 1
+        ].links
+        : {
+          instagram: "",
+          facebook: "",
+          youtube: "",
+          twitter: "",
+          linkedin: "",
+          other: "",
+        };
+
     setFormData({
       category: card.category,
       customCategory: card.customCategory || "",
@@ -151,6 +191,7 @@ export default function FundraisingCMS() {
       selectedImageUrl: card.imageUrl || "",
       selectedVideoUrl: card.videoUrl || "",
       imageGallery: card.imageGallery || [],
+      socialLinks: latestSocialLinks,
     });
     setViewMode("edit");
   };
@@ -195,6 +236,14 @@ export default function FundraisingCMS() {
       form.append("campaignerName", formData.campaignerName);
       form.append("about", formData.about);
       form.append("currentStatus", formData.currentStatus);
+      if (
+        formData.socialLinks &&
+        Object.values(formData.socialLinks).some(
+          (v) => typeof v === "string" && v.trim() !== ""
+        )
+      ) {
+        form.append("socialLinks", JSON.stringify(formData.socialLinks));
+      }
 
       formData.documents.forEach((file) => {
         form.append("documents", file);
@@ -289,6 +338,15 @@ export default function FundraisingCMS() {
       taskId: "",
       currentStatus: "",
       imageGallery: [],
+      socialLinks: {
+        instagram: "",
+        facebook: "",
+        youtube: "",
+        twitter: "",
+        linkedin: "",
+        other: "",
+      },
+
     });
     setSelectedCampaign(null);
   };
