@@ -59,6 +59,7 @@ export default function FundraisingCMS() {
     isUrgent: false,
     taxBenefits: false,
     zakatVerified: false,
+    ribaEligible: false,
     title: "",
     organization: "",
     beneficiaryName: "",
@@ -126,6 +127,7 @@ export default function FundraisingCMS() {
       isUrgent: card.isUrgent,
       taxBenefits: card.taxBenefits,
       zakatVerified: card.zakatVerified,
+      ribaEligible: card.ribaEligible,
       title: card.title,
       organization: card.organization,
       beneficiaryName: card.beneficiaryName || "",
@@ -188,6 +190,7 @@ export default function FundraisingCMS() {
       form.append("isUrgent", formData.isUrgent);
       form.append("taxBenefits", formData.taxBenefits);
       form.append("zakatVerified", formData.zakatVerified);
+      form.append("ribaEligible", formData.ribaEligible);
       form.append("beneficiaryName", formData.beneficiaryName);
       form.append("campaignerName", formData.campaignerName);
       form.append("about", formData.about);
@@ -260,6 +263,7 @@ export default function FundraisingCMS() {
       isUrgent: false,
       taxBenefits: false,
       zakatVerified: false,
+      ribaEligible: false,
       title: "",
       organization: "",
       beneficiaryName: "",

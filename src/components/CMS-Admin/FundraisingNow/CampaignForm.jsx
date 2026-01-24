@@ -51,6 +51,7 @@ export default function CampaignForm({
       isUrgent: !!campaign.isUrgent,
       taxBenefits: !!campaign.taxBenefits,
       zakatVerified: !!campaign.zakatVerified,
+      ribaEligible: !!campaign.ribaEligible,
       deadline: campaign.deadline ? campaign.deadline.split('T')[0] : "",
       taskId: campaign.taskId || "",
       selectedImageUrl: campaign.imageUrl || "",
@@ -442,6 +443,7 @@ export default function CampaignForm({
                     { key: 'isUrgent', label: 'Mark as Urgent' },
                     { key: 'taxBenefits', label: 'Tax Benefits Available' },
                     { key: 'zakatVerified', label: 'Zakat Verified' },
+                    { key: 'ribaEligible', label: 'Riba Eligible' },
                   ].map(({ key, label }) => (
                     <label key={key} className="flex items-center gap-3 cursor-pointer group">
                       <input
