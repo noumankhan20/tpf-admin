@@ -169,6 +169,12 @@ export default function VolunteerModule() {
             voucher => voucherFilter === "all" || voucher.status === voucherFilter
         );
 
+        const voucherCounts = (selectedVolunteer.vouchers || []).reduce((acc, v) => {
+            acc[v.status] = (acc[v.status] || 0) + 1;
+            acc.all = (acc.all || 0) + 1;
+            return acc;
+        }, { all: 0, pending: 0, approved: 0, clarification: 0, rejected: 0 });
+
         return (
             <div className="min-h-screen bg-[#F8FAFC]" style={{ fontFamily: 'Arial, sans-serif' }}>
                 {/* Header */}
@@ -246,18 +252,22 @@ export default function VolunteerModule() {
                             <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
                                 <div className="p-6 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                                     <h3 className="text-lg font-bold text-gray-900">Expense Vouchers</h3>
-                                    <div className="flex gap-1 bg-gray-100 p-1 rounded-lg">
-                                        {['all', 'pending', 'approved', 'rejected'].map((f) => (
+                                    <div className="flex flex-wrap gap-1 bg-gray-100 p-1 rounded-lg">
+                                        {['all', 'pending', 'approved', 'clarification', 'rejected'].map((f) => (
                                             <button
                                                 key={f}
                                                 onClick={() => setVoucherFilter(f)}
-                                                className={`px-3 py-1.5 rounded-md text-xs font-bold capitalize transition-all ${voucherFilter === f ? 'bg-white text-emerald-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                                                className={`px-3 py-1.5 rounded-md text-xs font-bold capitalize transition-all flex items-center gap-1.5 ${voucherFilter === f ? 'bg-white text-emerald-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
                                             >
-                                                {f}
+                                                <span>{f}</span>
+                                                <span className={`px-1.5 py-0.5 rounded-full text-[10px] ${voucherFilter === f ? 'bg-emerald-50 text-emerald-600' : 'bg-gray-200 text-gray-500'}`}>
+                                                    {voucherCounts[f] || 0}
+                                                </span>
                                             </button>
                                         ))}
                                     </div>
                                 </div>
+
 
                                 <div className="divide-y divide-gray-100">
                                     {filteredVouchers.length > 0 ? (
