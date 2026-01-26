@@ -81,7 +81,7 @@ export const MODULES = [
     id: "Finance & Accounting",
     name: "Finance & Accounting",
     icon: Calculator,
-    route: "/finance",
+    route: "/finance/expenses",
     category: "finance",
     desc: "Budgets and expense reporting",
   },
