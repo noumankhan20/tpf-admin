@@ -20,14 +20,6 @@ import {
 import NotificationBell from '../../Common/NotificationBell';
 
 const FINANCE_MODULES = [
-    // {
-    //     id: 'disbursement-tasks',
-    //     name: 'Disbursement Tasks',
-    //     desc: 'Process beneficiary payments and transaction proofs',
-    //     icon: CreditCard,
-    //     category: 'disbursements',
-    //     route: '/finance/disbursement',
-    // },
     {
         id: 'expense-mgmt',
         name: 'Expense Management',
