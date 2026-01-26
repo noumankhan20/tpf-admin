@@ -2,7 +2,11 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageSquare, X, ArrowLeft, Search, Globe, Send, Loader2, Sparkles, User, ShieldCheck, Maximize2 } from 'lucide-react';
+import {
+    MessageSquare, X, Search, Globe, Send, Loader2,
+    User, ShieldCheck, Maximize2, MoreHorizontal, Minimize2,
+    Paperclip, Image as ImageIcon, Smile
+} from 'lucide-react';
 import { useSelector } from 'react-redux';
 import { usePathname, useRouter } from 'next/navigation';
 import { useSocket } from '@/utils/context/SocketContext';
@@ -14,12 +18,15 @@ import {
 } from '@/utils/slices/internalCommunicationApiSlice';
 import { format } from 'date-fns';
 
+/**
+ * LinkedIn-Style Quick Chat Popup
+ * - Messaging list stays on the right
+ * - Active chats open as separate windows to the left
+ */
 export default function QuickChatPopup() {
     const [isOpen, setIsOpen] = useState(false);
-    const [selectedAdmin, setSelectedAdmin] = useState(null);
-    const [isGlobalMode, setIsGlobalMode] = useState(false);
+    const [activeChats, setActiveChats] = useState([]); // Array of { id, admin, isGlobal }
     const [searchQuery, setSearchQuery] = useState('');
-    const containerRef = useRef(null);
 
     const adminInfo = useSelector((state) => state.adminAuth.adminInfo);
     const pathname = usePathname();
@@ -68,241 +75,207 @@ export default function QuickChatPopup() {
 
     const togglePopup = () => setIsOpen(!isOpen);
 
+    const openChat = (admin, isGlobal = false) => {
+        const chatId = isGlobal ? 'global' : admin._id;
+        if (!activeChats.find(chat => chat.id === chatId)) {
+            // Add new chat to the stack (up to 3)
+            setActiveChats(prev => [{ id: chatId, admin, isGlobal }, ...prev].slice(0, 3));
+        }
+    };
+
+    const closeChat = (chatId) => {
+        setActiveChats(prev => prev.filter(chat => chat.id !== chatId));
+    };
+
     const filteredAdmins = admins.filter(admin =>
         admin.fullName.toLowerCase().includes(searchQuery.toLowerCase()) &&
         admin._id !== currentUserId
     );
 
-    // Click outside to close
-    useEffect(() => {
-        const handleClickOutside = (event) => {
-            if (containerRef.current && !containerRef.current.contains(event.target)) {
-                setIsOpen(false);
-            }
-        };
-
-        if (isOpen) {
-            document.addEventListener("mousedown", handleClickOutside);
-        }
-        return () => {
-            document.removeEventListener("mousedown", handleClickOutside);
-        };
-    }, [isOpen]);
-
     if (pathname === '/admin/communication') return null;
 
     return (
-        <div ref={containerRef} className="fixed bottom-8 right-8 z-[100]" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
-            <AnimatePresence>
-                {isOpen && (
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.95, y: 20, transformOrigin: 'bottom right' }}
-                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                        className="absolute bottom-24 right-0 w-[400px] bg-white rounded-3xl shadow-[0_-10px_40px_-5px_rgba(0,0,0,0.1),0_20px_50px_-10px_rgba(0,0,0,0.2)] border border-gray-100 flex flex-col overflow-hidden"
-                        style={{ height: 'min(680px, calc(100vh - 140px))' }}
-                    >
-                        {/* Popup Header - Light Professional Header */}
-                        <div className="p-6 bg-white border-b border-gray-100 flex items-center justify-between relative overflow-hidden">
-                            <div className="flex items-center gap-4 relative z-10 w-full pr-10">
-                                <AnimatePresence mode="wait">
-                                    {(selectedAdmin || isGlobalMode) ? (
-                                        <motion.button
-                                            key="back"
-                                            initial={{ x: -10, opacity: 0 }}
-                                            animate={{ x: 0, opacity: 1 }}
-                                            exit={{ x: -10, opacity: 0 }}
-                                            onClick={() => { setSelectedAdmin(null); setIsGlobalMode(false); }}
-                                            className="p-2 hover:bg-gray-50 rounded-lg transition-all active:scale-95 group/back text-slate-500"
-                                        >
-                                            <ArrowLeft className="w-5 h-5 group-hover/back:-translate-x-0.5 transition-transform" />
-                                        </motion.button>
-                                    ) : (
-                                        <motion.div
-                                            key="icon"
-                                            initial={{ scale: 0.8, opacity: 0 }}
-                                            animate={{ scale: 1, opacity: 1 }}
-                                            className="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center shrink-0 border border-emerald-100"
-                                        >
-                                            <MessageSquare className="w-5 h-5" />
-                                        </motion.div>
+        <div className="fixed bottom-0 right-8 z-[100] flex flex-row-reverse items-end gap-3 pointer-events-none" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
+
+            {/* 1. MAIN MESSAGING LIST (LINKEDIN STYLE) */}
+            <div className="flex flex-col items-end pointer-events-auto">
+                <AnimatePresence>
+                    {isOpen && (
+                        <motion.div
+                            initial={{ opacity: 1, y: 520 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 1, y: 520 }}
+                            transition={{ duration: 0.2 }}
+                            className="w-[300px] sm:w-[320px] bg-white rounded-t-xl shadow-[0_0_15px_rgba(0,0,0,0.1)] border border-gray-200 flex flex-col overflow-hidden"
+                            style={{ height: '520px' }}
+                        >
+                            {/* List Header */}
+                            <div className="px-3 py-2 border-b border-gray-200 flex items-center justify-between bg-white">
+                                <div className="flex items-center gap-2">
+                                    <div className="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center text-white font-bold text-xs">
+                                        {adminInfo?.fullName?.charAt(0)}
+                                    </div>
+                                    <span className="font-bold text-[14px] text-gray-800">Messaging</span>
+                                </div>
+                                <div className="flex items-center gap-0.5">
+                                    <button className="p-1.5 hover:bg-gray-100 rounded-full transition-colors text-gray-500">
+                                        <MoreHorizontal size={16} />
+                                    </button>
+                                    <button className="p-1.5 hover:bg-gray-100 rounded-full transition-colors text-gray-500">
+                                        <Maximize2 size={16} onClick={() => router.push('/admin/communication')} />
+                                    </button>
+                                    <button onClick={togglePopup} className="p-1.5 hover:bg-gray-100 rounded-full transition-colors text-gray-500">
+                                        <Minimize2 size={18} />
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Search Messages */}
+                            <div className="p-2.5">
+                                <div className="relative">
+                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 font-bold" />
+                                    <input
+                                        type="text"
+                                        placeholder="Search messages"
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                        className="w-full pl-9 pr-3 py-1.5 bg-gray-100 border-none rounded-md text-sm placeholder:text-gray-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Focused / Other Tabs */}
+                            <div className="flex border-b border-gray-200">
+                                <button className="flex-1 py-2 text-sm font-bold text-emerald-700 border-b-2 border-emerald-700">Focused</button>
+                                <button className="flex-1 py-3 text-sm font-semibold text-gray-500 hover:bg-gray-50">Other</button>
+                            </div>
+
+                            {/* Chat List Content */}
+                            <div className="flex-1 overflow-y-auto custom-scrollbar">
+                                {/* Global Channel Section */}
+                                <button
+                                    onClick={() => openChat(null, true)}
+                                    className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors border-b border-gray-50"
+                                >
+                                    <div className="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-600 shrink-0">
+                                        <Globe size={24} />
+                                    </div>
+                                    <div className="flex-1 text-left min-w-0">
+                                        <p className="font-bold text-[14px] text-gray-900">Global Channel</p>
+                                        <p className="text-xs text-gray-500 truncate mt-0.5">Team-wide messages</p>
+                                    </div>
+                                    {globalUnreadCount > 0 && (
+                                        <div className="bg-red-500 text-white text-[10px] font-bold h-5 w-5 flex items-center justify-center rounded-full shrink-0">
+                                            {globalUnreadCount}
+                                        </div>
                                     )}
-                                </AnimatePresence>
-
-                                <div className="min-w-0 flex-1">
-                                    <h3 className="font-bold text-lg tracking-tight leading-none mb-1 truncate text-slate-800">
-                                        {isGlobalMode ? 'Global Team' : selectedAdmin ? selectedAdmin.fullName : 'Messages'}
-                                    </h3>
-                                    <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-[0.1em] flex items-center gap-1.5 mt-0.5">
-                                        {selectedAdmin ? <><User className="w-3 h-3 text-emerald-500" /> Direct Messaging</> : isGlobalMode ? <><Globe className="w-3 h-3 text-emerald-500" /> Global Channel</> : <><ShieldCheck className="w-3 h-3 text-emerald-500" /> Internal Communication</>}
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div className="absolute top-6 right-5 z-20 flex items-center gap-1">
-                                <button
-                                    onClick={() => {
-                                        router.push('/admin/communication');
-                                        setIsOpen(false);
-                                    }}
-                                    className="p-2 hover:bg-gray-50 rounded-lg transition-all text-slate-400 hover:text-slate-600"
-                                    title="View Full Screen"
-                                >
-                                    <Maximize2 className="w-4 h-4" />
                                 </button>
-                                <button
-                                    onClick={togglePopup}
-                                    className="p-2 hover:bg-gray-50 rounded-lg transition-all text-slate-400 hover:text-slate-600"
-                                >
-                                    <X className="w-5 h-5" />
-                                </button>
-                            </div>
-                        </div>
 
-                        {/* Content Area */}
-                        <div className="flex-1 overflow-hidden relative flex flex-col bg-white">
-                            {selectedAdmin || isGlobalMode ? (
-                                <MiniChatWindow
-                                    selectedAdmin={selectedAdmin}
-                                    isGlobalMode={isGlobalMode}
-                                    adminInfo={adminInfo}
-                                />
-                            ) : (
-                                <div className="flex flex-col h-full">
-                                    {/* Search */}
-                                    <div className="px-5 py-4 bg-white border-b border-gray-50">
-                                        <div className="relative group">
-                                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-emerald-500 transition-colors" />
-                                            <input
-                                                type="text"
-                                                placeholder="Search members..."
-                                                value={searchQuery}
-                                                onChange={(e) => setSearchQuery(e.target.value)}
-                                                className="w-full pl-11 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500/10 focus:border-emerald-500/30 focus:bg-white transition-all text-slate-700"
-                                            />
-                                        </div>
-                                    </div>
+                                {/* Direct Admin Chats */}
+                                {filteredAdmins.map((admin) => {
+                                    const latestMsg = messages.filter(m =>
+                                        !m.isGlobal && (
+                                            (m.sender?._id || m.sender) === admin._id ||
+                                            (m.receiver?._id || m.receiver) === admin._id
+                                        )
+                                    ).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
 
-                                    {/* Chat List */}
-                                    <div className="flex-1 overflow-y-auto pt-2 pb-3 custom-scrollbar">
-                                        {/* Global Chat Item - Emerald Light Style */}
-                                        <div className="px-3 mb-4">
-                                            <button
-                                                onClick={() => setIsGlobalMode(true)}
-                                                className="w-full flex items-center gap-4 p-4 rounded-2xl bg-emerald-50 border border-emerald-100 hover:bg-emerald-100/60 transition-all duration-300 group shadow-sm"
-                                            >
-                                                <div className="w-12 h-12 bg-emerald-500 rounded-xl flex items-center justify-center text-white shrink-0 shadow-lg shadow-emerald-500/20">
-                                                    <Globe className="w-6 h-6" />
-                                                </div>
-                                                <div className="flex-1 text-left min-w-0">
-                                                    <p className="font-bold text-emerald-900 text-[15px]">Global Channel</p>
-                                                    <p className="text-[11px] text-emerald-600 font-medium truncate mt-0.5">Communicate with all administrators</p>
-                                                </div>
-                                                {globalUnreadCount > 0 && (
-                                                    <span className="bg-emerald-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
-                                                        {globalUnreadCount}
+                                    return (
+                                        <button
+                                            key={admin._id}
+                                            onClick={() => openChat(admin)}
+                                            className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors border-b border-gray-100 group"
+                                        >
+                                            <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center text-gray-500 font-bold shrink-0 overflow-hidden border border-gray-200">
+                                                {admin.fullName.charAt(0)}
+                                            </div>
+                                            <div className="flex-1 text-left min-w-0">
+                                                <div className="flex justify-between items-center mb-0.5">
+                                                    <p className="font-bold text-[14px] text-gray-900 truncate group-hover:text-emerald-700">{admin.fullName}</p>
+                                                    <span className="text-[10px] text-gray-400">
+                                                        {latestMsg ? format(new Date(latestMsg.createdAt), 'MMM d') : ''}
                                                     </span>
-                                                )}
-                                            </button>
-                                        </div>
-
-                                        <div className="px-5 py-2 mb-2 flex items-center gap-3">
-                                            <h4 className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.1em]">Direct Messages</h4>
-                                            <div className="h-px bg-gray-100 flex-1"></div>
-                                        </div>
-
-                                        {adminsLoading ? (
-                                            <div className="flex flex-col items-center justify-center py-12 gap-3">
-                                                <Loader2 className="w-6 h-6 text-emerald-500 animate-spin" />
-                                                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Loading Chats</p>
+                                                </div>
+                                                <p className="text-xs text-gray-500 truncate line-clamp-1">
+                                                    {latestMsg?.content || 'Say hello!'}
+                                                </p>
                                             </div>
-                                        ) : (
-                                            <div className="px-3 space-y-1">
-                                                {filteredAdmins.map((admin) => (
-                                                    <button
-                                                        key={admin._id}
-                                                        onClick={() => setSelectedAdmin(admin)}
-                                                        className="w-full flex items-center gap-4 p-3.5 rounded-2xl hover:bg-slate-50 transition-all group border border-transparent"
-                                                    >
-                                                        <div className="relative">
-                                                            <div className="w-11 h-11 bg-gray-100 rounded-xl flex items-center justify-center text-slate-500 font-bold text-base transition-colors group-hover:bg-white group-hover:text-emerald-600 border border-transparent group-hover:border-emerald-100">
-                                                                {admin.fullName.charAt(0)}
-                                                            </div>
-                                                        </div>
-                                                        <div className="flex-1 text-left overflow-hidden">
-                                                            <div className="flex items-center justify-between mb-0.5">
-                                                                <p className="font-semibold text-slate-700 truncate group-hover:text-slate-900 transition-colors text-[14px]">{admin.fullName}</p>
-                                                                {unreadCounts[admin._id] > 0 && (
-                                                                    <span className="bg-emerald-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
-                                                                        {unreadCounts[admin._id]}
-                                                                    </span>
-                                                                )}
-                                                            </div>
-                                                            <p className="text-[11px] text-slate-400 font-medium truncate">
-                                                                {admin.isSuperAdmin ? 'Super Administrator' : 'System Administrator'}
-                                                            </p>
-                                                        </div>
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    {/* Footer Info */}
-                                    <div className="p-3 bg-gray-50 flex items-center justify-center gap-2 border-t border-gray-100">
-                                        <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
-                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Secure Internal Messaging</p>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
-
-            {/* Floating Toggle Button - Clean Professional Logic */}
-            <div className="relative group">
-                <motion.button
-                    whileHover={{ scale: 1.05, y: -2 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={togglePopup}
-                    className={`w-16 h-16 rounded-2xl flex items-center justify-center text-white shadow-2xl transition-all duration-300 relative ${isOpen ? 'bg-emerald-600 shadow-emerald-600/20' : 'bg-emerald-500 hover:bg-emerald-500/90 shadow-emerald-500/20 shadow-xl'
-                        }`}
-                >
-                    {isOpen ? (
-                        <X className="w-6 h-6" />
-                    ) : (
-                        <MessageSquare className="w-6 h-6" />
+                                            {unreadCounts[admin._id] > 0 && (
+                                                <div className="bg-red-500 text-white text-[10px] font-bold h-5 w-5 flex items-center justify-center rounded-full shrink-0">
+                                                    {unreadCounts[admin._id]}
+                                                </div>
+                                            )}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </motion.div>
                     )}
-                </motion.button>
+                </AnimatePresence>
 
-                {/* Unread Badge - Floating Effect - Moved OUTSIDE overflow-hidden button */}
-                {totalUnreadCount > 0 && !isOpen && (
-                    <motion.span
-                        initial={{ scale: 0, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        className="absolute -top-2 -left-2 bg-red-500 text-white text-[11px] font-bold w-6 h-6 flex items-center justify-center rounded-lg border-2 border-white shadow-lg z-20"
-                    >
-                        {totalUnreadCount > 9 ? '9+' : totalUnreadCount}
-                    </motion.span>
-                )}
+                {/* Bottom Toggle Bar */}
+                <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={togglePopup}
+                    className={`w-[300px] sm:w-[320px] h-[48px] rounded-t-lg flex items-center justify-between px-4 bg-white border border-gray-200 shadow-[0_-2px_10px_rgba(0,0,0,0.05)] transition-all duration-300 pointer-events-auto`}
+                >
+                    <div className="flex items-center gap-2">
+                        <div className="w-7 h-7 rounded-full bg-emerald-500 flex items-center justify-center text-white font-bold text-[10px] ring-2 ring-emerald-50">
+                            {adminInfo?.fullName?.charAt(0)}
+                        </div>
+                        <span className="font-bold text-sm text-gray-800">Messaging</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        {totalUnreadCount > 0 && (
+                            <span className="bg-red-500 text-white text-[10px] font-extrabold px-1.5 py-0.5 rounded-full">
+                                {totalUnreadCount}
+                            </span>
+                        )}
+                        <MoreHorizontal size={18} className="text-gray-500" />
+                        <Maximize2 size={16} className="text-gray-500" />
+                        <X size={20} className="text-gray-500" />
+                    </div>
+                </motion.button>
+            </div>
+
+            {/* 2. TABBED CHAT WINDOWS (OPENS TO LEFT) */}
+            <div className="flex flex-row-reverse items-end gap-3 pointer-events-none pr-2">
+                <AnimatePresence>
+                    {activeChats.map((chat) => (
+                        <motion.div
+                            key={chat.id}
+                            initial={{ opacity: 0, scale: 0.95, y: 50 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: 50 }}
+                            className="w-[320px] sm:w-[340px] pointer-events-auto"
+                        >
+                            <MiniChatWindow
+                                chat={chat}
+                                adminInfo={adminInfo}
+                                onClose={() => closeChat(chat.id)}
+                            />
+                        </motion.div>
+                    ))}
+                </AnimatePresence>
             </div>
         </div>
     );
 }
 
-function MiniChatWindow({ selectedAdmin, isGlobalMode, adminInfo }) {
+function MiniChatWindow({ chat, adminInfo, onClose }) {
     const [message, setMessage] = useState('');
     const [allMessages, setAllMessages] = useState([]);
     const [typingUser, setTypingUser] = useState(null);
-    const typingTimeoutRef = useRef(null);
     const messagesEndRef = useRef(null);
+    const typingTimeoutRef = useRef(null);
     const { socket } = useSocket();
 
+    const { admin: selectedAdmin, isGlobal: isGlobalMode } = chat;
     const currentUserId = adminInfo?._id || adminInfo?.id;
     const selectedAdminId = selectedAdmin?._id || selectedAdmin?.id;
 
-    const { data: messagesData, isFetching } = useGetInternalMessagesQuery({
+    const { data: messagesData } = useGetInternalMessagesQuery({
         otherAdminId: !isGlobalMode ? selectedAdminId : undefined,
         isGlobal: isGlobalMode ? 'true' : undefined,
         limit: 50
@@ -314,7 +287,7 @@ function MiniChatWindow({ selectedAdmin, isGlobalMode, adminInfo }) {
     useEffect(() => {
         if (messagesData?.success) {
             setAllMessages(messagesData.data);
-            setTimeout(scrollToBottom, 500);
+            setTimeout(scrollToBottom, 300);
         }
     }, [messagesData]);
 
@@ -324,7 +297,6 @@ function MiniChatWindow({ selectedAdmin, isGlobalMode, adminInfo }) {
                 const sAdminId = selectedAdminId?.toString();
                 const pSenderId = (payload.sender?._id || payload.sender?.id || payload.sender)?.toString();
                 const pReceiverId = (payload.receiver?._id || payload.receiver?.id || payload.receiver)?.toString();
-                const cUserId = currentUserId?.toString();
 
                 const isRelevant = isGlobalMode
                     ? payload.isGlobal
@@ -339,41 +311,17 @@ function MiniChatWindow({ selectedAdmin, isGlobalMode, adminInfo }) {
                 }
             };
 
-            const handleTyping = (payload) => {
-                const payloadSenderId = payload.senderId?.toString();
-                const payloadReceiverId = payload.receiverId?.toString();
-                const sAdminId = selectedAdminId?.toString();
-                const cUserId = currentUserId?.toString();
-
-                if (payloadSenderId === cUserId) return;
-
-                const isRelevant = isGlobalMode
-                    ? payload.isGlobal
-                    : (!payload.isGlobal && payloadSenderId === sAdminId && payloadReceiverId === cUserId);
-
-                if (isRelevant) {
-                    setTypingUser(payload.senderName);
-                    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
-                    typingTimeoutRef.current = setTimeout(() => setTypingUser(null), 3000);
-                }
-            };
-
             socket.on('new_internal_message', handleNewMessage);
-            socket.on('typing_internal', handleTyping);
-            return () => {
-                socket.off('new_internal_message', handleNewMessage);
-                socket.off('typing_internal', handleTyping);
-            };
+            return () => socket.off('new_internal_message', handleNewMessage);
         }
     }, [socket, selectedAdminId, currentUserId, isGlobalMode]);
 
     useEffect(() => {
         if (allMessages.length > 0 && currentUserId) {
-            const cUserId = currentUserId.toString();
             const unreadIds = allMessages
                 .filter(m => {
-                    const senderId = m.sender?._id || m.sender?.id || m.sender;
-                    return !m.readBy.includes(cUserId) && senderId?.toString() !== cUserId;
+                    const sId = (m.sender?._id || m.sender)?.toString();
+                    return !m.readBy.includes(currentUserId.toString()) && sId !== currentUserId.toString();
                 })
                 .map(m => m._id);
 
@@ -383,21 +331,7 @@ function MiniChatWindow({ selectedAdmin, isGlobalMode, adminInfo }) {
         }
     }, [allMessages, currentUserId]);
 
-    const scrollToBottom = () => {
-        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    };
-
-    const handleInputChange = (value) => {
-        setMessage(value);
-        if (socket && currentUserId) {
-            socket.emit('typing_internal', {
-                senderId: currentUserId,
-                senderName: adminInfo?.fullName,
-                receiverId: isGlobalMode ? null : selectedAdminId,
-                isGlobal: isGlobalMode
-            });
-        }
-    };
+    const scrollToBottom = () => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
 
     const handleSend = async (e) => {
         e.preventDefault();
@@ -413,105 +347,85 @@ function MiniChatWindow({ selectedAdmin, isGlobalMode, adminInfo }) {
             }).unwrap();
             scrollToBottom();
         } catch (err) {
-            console.error("Failed to send message:", err);
+            console.error(err);
         }
     };
 
     return (
-        <div className="flex flex-col h-full bg-slate-50 overflow-hidden" style={{ fontFamily: 'Inter, sans-serif' }}>
-            {/* Typing Indicator Bar */}
-            <div className="h-8 bg-white px-4 flex items-center border-b border-gray-100 z-10 transition-all">
-                {typingUser ? (
-                    <motion.div
-                        initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }}
-                        className="flex items-center gap-2"
-                    >
-                        <div className="flex gap-0.5">
-                            <span className="w-1 h-1 bg-emerald-500 rounded-full animate-bounce"></span>
-                            <span className="w-1 h-1 bg-emerald-500 rounded-full animate-bounce [animation-delay:0.2s]"></span>
-                            <span className="w-1 h-1 bg-emerald-500 rounded-full animate-bounce [animation-delay:0.4s]"></span>
+        <div className="flex flex-col h-[400px] bg-white rounded-t-xl shadow-[0_0_15px_rgba(0,0,0,0.15)] border border-gray-200 overflow-hidden">
+            {/* Window Header */}
+            <div className="px-3 py-2 border-b border-gray-200 flex items-center justify-between bg-white shrink-0">
+                <div className="flex items-center gap-2">
+                    <div className="relative">
+                        <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 font-bold text-xs ring-1 ring-gray-100">
+                            {isGlobalMode ? <Globe size={14} /> : selectedAdmin?.fullName?.charAt(0)}
                         </div>
-                        <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest">
-                            {isGlobalMode ? `${typingUser.split(' ')[0]} typing` : 'typing...'}
-                        </p>
-                    </motion.div>
-                ) : (
-                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.2em] w-full text-center">
-                        End-to-End Encrypted Secure Channel
-                    </p>
-                )}
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar bg-slate-50/50">
-                <div className="flex flex-col gap-2 pb-2">
-                    {allMessages.map((msg, i) => {
-                        const senderId = msg.sender?._id || msg.sender?.id || msg.sender;
-                        const isOwn = senderId?.toString() === currentUserId?.toString();
-                        const isContinuation = i > 0 && (allMessages[i - 1].sender?._id || allMessages[i - 1].sender?.id || allMessages[i - 1].sender)?.toString() === senderId?.toString();
-
-                        return (
-                            <motion.div
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                key={msg._id || i}
-                                className={`flex ${isOwn ? 'justify-end' : 'justify-start'} ${isContinuation ? 'mt-0.5' : 'mt-3'}`}
-                            >
-                                <div className={`max-w-[85%] px-4 py-2.5 shadow-sm relative ${isOwn
-                                    ? 'bg-emerald-500 text-white rounded-2xl rounded-tr-sm'
-                                    : 'bg-white text-slate-800 rounded-2xl rounded-tl-sm border border-gray-100'
-                                    }`}>
-                                    {isGlobalMode && !isOwn && !isContinuation && (
-                                        <p className="text-[10px] font-bold text-emerald-500 mb-1 uppercase tracking-tight">
-                                            {msg.sender?.fullName}
-                                        </p>
-                                    )}
-                                    <p className="text-[14px] leading-relaxed break-words font-medium">{msg.content}</p>
-                                    <div className="flex items-center justify-end gap-1.5 mt-1.5 opacity-40">
-                                        <span className="text-[9px] font-bold uppercase">
-                                            {format(new Date(msg.createdAt), 'HH:mm')}
-                                        </span>
-                                        {isOwn && (
-                                            <ShieldCheck className={`w-2.5 h-2.5 ${msg.readBy?.length > 0 ? 'text-white' : 'text-white/40'}`} />
-                                        )}
-                                    </div>
-                                </div>
-                            </motion.div>
-                        );
-                    })}
-                </div>
-                <div ref={messagesEndRef} className="h-2" />
-            </div>
-
-            <div className="bg-white border-t border-gray-100 flex flex-col pt-1 pb-3 px-3 gap-2">
-                {/* Notice about 48h deletion */}
-                <div className="flex items-center justify-center py-1">
-                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                        <span className="w-1 h-1 bg-amber-400 rounded-full animate-pulse"></span>
-                        Auto-delete active: 48 hours
-                    </p>
-                </div>
-
-                <form onSubmit={handleSend} className="flex gap-2">
-                    <div className="flex-1 relative">
-                        <input
-                            type="text"
-                            value={message}
-                            onChange={(e) => handleInputChange(e.target.value)}
-                            placeholder="Type internal message..."
-                            className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500/10 focus:border-emerald-500/30 focus:bg-white transition-all placeholder:text-slate-400"
-                        />
+                        <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 border-2 border-white rounded-full"></div>
                     </div>
-                    <motion.button
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
+                    <div className="max-w-[150px]">
+                        <p className="font-bold text-sm text-gray-800 truncate">
+                            {isGlobalMode ? 'Global Team' : selectedAdmin?.fullName}
+                        </p>
+                    </div>
+                </div>
+                <div className="flex items-center gap-1">
+                    <button className="p-1.5 hover:bg-gray-100 rounded-full transition-colors text-gray-500"><MoreHorizontal size={16} /></button>
+                    <button className="p-1.5 hover:bg-gray-100 rounded-full transition-colors text-gray-500"><Maximize2 size={16} /></button>
+                    <button onClick={onClose} className="p-1.5 hover:bg-gray-100 rounded-full transition-colors text-gray-500"><X size={18} /></button>
+                </div>
+            </div>
+
+            {/* Messages Area */}
+            <div className="flex-1 overflow-y-auto p-3 space-y-3 bg-[#f4f2ee]/30 custom-scrollbar">
+                {allMessages.map((msg, i) => {
+                    const isOwn = (msg.sender?._id || msg.sender)?.toString() === currentUserId?.toString();
+                    return (
+                        <div key={msg._id || i} className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}>
+                            {!isOwn && (
+                                <div className="w-7 h-7 rounded-full bg-gray-200 mr-2 flex-shrink-0 flex items-center justify-center text-[10px] font-bold">
+                                    {msg.sender?.fullName?.charAt(0)}
+                                </div>
+                            )}
+                            <div className={`max-w-[80%] rounded-lg px-3 py-2 text-sm shadow-sm ${isOwn ? 'bg-emerald-600 text-white' : 'bg-white text-gray-800'
+                                }`}>
+                                {isGlobalMode && !isOwn && <p className="text-[10px] font-bold text-emerald-600 mb-0.5">{msg.sender?.fullName}</p>}
+                                <p className="leading-relaxed">{msg.content}</p>
+                                <p className={`text-[9px] mt-1 text-right ${isOwn ? 'text-white/60' : 'text-gray-400'}`}>
+                                    {format(new Date(msg.createdAt), 'h:mm a')}
+                                </p>
+                            </div>
+                        </div>
+                    );
+                })}
+                <div ref={messagesEndRef} />
+            </div>
+
+            {/* LinkedIn Style Input Footer */}
+            <form onSubmit={handleSend} className="p-2.5 bg-white border-t border-gray-200">
+                <div className="bg-gray-50 rounded-lg p-2 mb-2 min-h-[60px]">
+                    <textarea
+                        value={message}
+                        onChange={(e) => setMessage(e.target.value)}
+                        placeholder="Write a message..."
+                        className="w-full bg-transparent border-none text-sm focus:ring-0 resize-none placeholder:text-gray-500"
+                        rows={2}
+                    />
+                </div>
+                <div className="flex items-center justify-between border-t border-gray-100 pt-2">
+                    <div className="flex items-center gap-1">
+                        <button type="button" className="p-2 hover:bg-gray-50 rounded-full text-gray-500 transition-colors"><ImageIcon size={18} /></button>
+                        <button type="button" className="p-2 hover:bg-gray-50 rounded-full text-gray-500 transition-colors"><Paperclip size={18} /></button>
+                        <button type="button" className="p-2 hover:bg-gray-50 rounded-full text-gray-500 transition-colors"><Smile size={18} /></button>
+                    </div>
+                    <button
                         type="submit"
                         disabled={!message.trim() || isSending}
-                        className="px-5 bg-emerald-500 text-white rounded-xl flex items-center justify-center disabled:opacity-50 disabled:grayscale shadow-lg shadow-emerald-500/20 active:bg-emerald-600 transition-all"
+                        className="px-4 py-1 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:bg-gray-300 text-white rounded-full font-bold text-sm transition-all"
                     >
-                        {isSending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                    </motion.button>
-                </form>
-            </div>
+                        Send
+                    </button>
+                </div>
+            </form>
         </div>
     );
 }
