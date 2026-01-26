@@ -218,8 +218,99 @@ export default function CampaignForm({
             </h2>
 
             <div className="space-y-6">
-              {/* Campaign Selector */}
+              {/* Campaign Source Selection */}
               {!editingCard && (
+                <div>
+                  <label className="block text-sm font-semibold text-gray-900 mb-2">
+                    Campaign Source <span className="text-red-500">*</span>
+                  </label>
+                  <div className="flex gap-3 mb-4">
+                    <button
+                      type="button"
+                      onClick={() => setFormData(prev => ({ ...prev, source: "INTERNAL", permanentType: "Other" }))}
+                      className={`flex-1 py-3 rounded-lg font-semibold transition-all ${formData.source !== "FOUNDATION"
+                        ? "bg-emerald-600 text-white"
+                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                        }`}
+                    >
+                      Public Campaign
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFormData(prev => ({
+                          ...prev,
+                          source: "FOUNDATION",
+                          organization: "True Path Foundation",
+                          campaignerName: "True Path Foundation",
+                          beneficiaryName: "Multiple Beneficiaries",
+                          permanentType: "Zakat Campaign",
+                          allowedDonationTypes: ["Zakat"],
+                          zakatVerified: true,
+                          ribaEligible: false,
+                        }));
+                      }}
+                      className={`flex-1 py-3 rounded-lg font-semibold transition-all ${formData.source === "FOUNDATION"
+                        ? "bg-emerald-600 text-white"
+                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                        }`}
+                    >
+                      Foundation (Permanent)
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Permanent Campaign Type Selection (Only for Foundation) */}
+              {formData.source === "FOUNDATION" && (
+                <div className="p-4 bg-emerald-50 rounded-xl border-2 border-emerald-100 mb-6">
+                  <label className="block text-sm font-bold text-emerald-800 mb-2">
+                    Permanent Campaign Type
+                  </label>
+                  <select
+                    value={formData.permanentType}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      let allowed = [];
+                      let zakat = false;
+                      let riba = false;
+                      if (val === "Zakat Campaign") {
+                        allowed = ["Zakat"];
+                        zakat = true;
+                      } else if (val === "Bank Interest (Riba)") {
+                        allowed = ["Riba"];
+                        riba = true;
+                      } else if (val === "Emergency Funds") {
+                        allowed = ["Sadaqah", "Lillah"];
+                      }
+
+                      setFormData(prev => ({
+                        ...prev,
+                        permanentType: val,
+                        allowedDonationTypes: allowed,
+                        zakatVerified: zakat,
+                        ribaEligible: riba,
+                        title: val,
+                      }));
+                    }}
+                    className="w-full px-4 py-2 bg-white border-2 border-emerald-200 rounded-lg focus:border-emerald-500 outline-none font-semibold text-emerald-900"
+                  >
+                    <option value="Zakat Campaign">Zakat Campaign</option>
+                    <option value="Bank Interest (Riba)">Bank Interest (Riba)</option>
+                    <option value="Emergency Funds">Emergency Funds</option>
+                  </select>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {formData.allowedDonationTypes.map(type => (
+                      <span key={type} className="px-2 py-1 bg-emerald-100 text-emerald-700 rounded-md text-xs font-bold uppercase">
+                        Accepts: {type}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Campaign Selector */}
+              {!editingCard && formData.source !== "FOUNDATION" && (
                 <div>
                   <label className="block text-sm font-semibold text-gray-900 mb-2">
                     Select Existing Campaign <span className="text-red-500">(optional for inhouse campaigns)</span>
@@ -434,31 +525,33 @@ export default function CampaignForm({
               </div>
 
               {/* Badges */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-900 mb-3">
-                  Campaign Badges
-                </label>
-                <div className="space-y-3">
-                  {[
-                    { key: 'isUrgent', label: 'Mark as Urgent' },
-                    { key: 'taxBenefits', label: 'Tax Benefits Available' },
-                    { key: 'zakatVerified', label: 'Zakat Verified' },
-                    { key: 'ribaEligible', label: 'Riba Eligible' },
-                  ].map(({ key, label }) => (
-                    <label key={key} className="flex items-center gap-3 cursor-pointer group">
-                      <input
-                        type="checkbox"
-                        checked={formData[key]}
-                        onChange={(e) => setFormData({ ...formData, [key]: e.target.checked })}
-                        className="w-5 h-5 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
-                      />
-                      <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900 transition-colors">
-                        {label}
-                      </span>
-                    </label>
-                  ))}
+              {formData.source !== "FOUNDATION" && (
+                <div>
+                  <label className="block text-sm font-semibold text-gray-900 mb-3">
+                    Campaign Badges
+                  </label>
+                  <div className="space-y-3">
+                    {[
+                      { key: 'isUrgent', label: 'Mark as Urgent' },
+                      { key: 'taxBenefits', label: 'Tax Benefits Available' },
+                      { key: 'zakatVerified', label: 'Zakat Verified' },
+                      { key: 'ribaEligible', label: 'Riba Eligible' },
+                    ].map(({ key, label }) => (
+                      <label key={key} className="flex items-center gap-3 cursor-pointer group">
+                        <input
+                          type="checkbox"
+                          checked={formData[key]}
+                          onChange={(e) => setFormData({ ...formData, [key]: e.target.checked })}
+                          className="w-5 h-5 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                        />
+                        <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900 transition-colors">
+                          {label}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Title */}
               <div>
@@ -470,7 +563,8 @@ export default function CampaignForm({
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                   placeholder="Enter campaign title..."
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 outline-none transition-all"
+                  disabled={formData.source === "FOUNDATION"}
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 outline-none transition-all disabled:bg-gray-50"
                 />
               </div>
 
@@ -484,7 +578,8 @@ export default function CampaignForm({
                   value={formData.organization}
                   onChange={(e) => setFormData({ ...formData, organization: e.target.value })}
                   placeholder="Enter organization name..."
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 outline-none transition-all"
+                  disabled={formData.source === "FOUNDATION"}
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 outline-none transition-all disabled:bg-gray-50"
                 />
               </div>
 
@@ -498,7 +593,8 @@ export default function CampaignForm({
                   value={formData.beneficiaryName}
                   onChange={(e) => setFormData({ ...formData, beneficiaryName: e.target.value })}
                   placeholder="Enter beneficiary name..."
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 outline-none transition-all"
+                  disabled={formData.source === "FOUNDATION"}
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 outline-none transition-all disabled:bg-gray-50"
                 />
               </div>
               <div>
@@ -510,7 +606,8 @@ export default function CampaignForm({
                   value={formData.campaignerName}
                   onChange={(e) => setFormData({ ...formData, campaignerName: e.target.value })}
                   placeholder="Enter campaigner name..."
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 outline-none transition-all"
+                  disabled={formData.source === "FOUNDATION"}
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 outline-none transition-all disabled:bg-gray-50"
                 />
               </div>
 
@@ -585,32 +682,52 @@ export default function CampaignForm({
                 </button>
               </div>
 
-              {/* Required Amount */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-900 mb-2">
-                  Required Amount (₹) <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="number"
-                  value={formData.requiredAmount}
-                  onChange={(e) => setFormData({ ...formData, requiredAmount: e.target.value })}
-                  placeholder="50000"
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 outline-none transition-all"
-                />
-              </div>
+              {/* Required Amount / Funds Disbursed */}
+              {formData.source === "FOUNDATION" ? (
+                <div>
+                  <label className="block text-sm font-semibold text-emerald-700 mb-2">
+                    Total Funds Disbursed (₹)
+                  </label>
+                  <input
+                    type="number"
+                    value={formData.fundsDisbursed}
+                    onChange={(e) => setFormData({ ...formData, fundsDisbursed: e.target.value })}
+                    placeholder="Enter total funds disbursed so far..."
+                    className="w-full px-4 py-3 border-2 border-emerald-200 rounded-lg focus:border-emerald-500 outline-none font-bold text-emerald-900"
+                  />
+                  <p className="mt-2 text-xs text-gray-500">
+                    This tracks how much the foundation has given for this cause.
+                  </p>
+                </div>
+              ) : (
+                <div>
+                  <label className="block text-sm font-semibold text-gray-900 mb-2">
+                    Required Amount (₹) <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    value={formData.requiredAmount}
+                    onChange={(e) => setFormData({ ...formData, requiredAmount: e.target.value })}
+                    placeholder="50000"
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 outline-none transition-all"
+                  />
+                </div>
+              )}
 
-              {/* Deadline */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-900 mb-2">
-                  Campaign Deadline <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="date"
-                  value={formData.deadline}
-                  onChange={(e) => setFormData({ ...formData, deadline: e.target.value })}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 outline-none transition-all"
-                />
-              </div>
+              {/* Deadline (Only for Public) */}
+              {formData.source !== "FOUNDATION" && (
+                <div>
+                  <label className="block text-sm font-semibold text-gray-900 mb-2">
+                    Campaign Deadline <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="date"
+                    value={formData.deadline}
+                    onChange={(e) => setFormData({ ...formData, deadline: e.target.value })}
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 outline-none transition-all"
+                  />
+                </div>
+              )}
 
               {/* Documents */}
               <div>

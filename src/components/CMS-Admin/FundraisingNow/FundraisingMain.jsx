@@ -56,6 +56,10 @@ export default function FundraisingCMS() {
   const [formData, setFormData] = useState({
     category: "Emergency Aid",
     customCategory: "",
+    source: "INTERNAL",
+    permanentType: "Other", // Zakat Campaign, Bank Interest (Riba), Emergency Funds
+    fundsDisbursed: 0,
+    allowedDonationTypes: [],
     isUrgent: false,
     taxBenefits: false,
     zakatVerified: false,
@@ -63,7 +67,7 @@ export default function FundraisingCMS() {
     title: "",
     organization: "",
     beneficiaryName: "",
-    campaignerName: " ",
+    campaignerName: "",
     about: "",
     impactGoals: [""],
     requiredAmount: "",
@@ -164,6 +168,9 @@ export default function FundraisingCMS() {
     setFormData({
       category: card.category,
       customCategory: card.customCategory || "",
+      source: card.source || "INTERNAL",
+      fundsDisbursed: card.fundsDisbursed || 0,
+      allowedDonationTypes: card.allowedDonationTypes || [],
       isUrgent: card.isUrgent,
       taxBenefits: card.taxBenefits,
       zakatVerified: card.zakatVerified,
@@ -225,8 +232,14 @@ export default function FundraisingCMS() {
       form.append("title", formData.title);
       form.append("organization", formData.organization);
       form.append("category", finalCategory);
-      form.append("requiredAmount", formData.requiredAmount);
-      form.append("deadline", formData.deadline);
+      form.append("source", formData.source);
+      form.append("fundsDisbursed", formData.fundsDisbursed);
+      form.append("allowedDonationTypes", JSON.stringify(formData.allowedDonationTypes));
+
+      if (formData.source !== "FOUNDATION") {
+        form.append("requiredAmount", formData.requiredAmount);
+        form.append("deadline", formData.deadline);
+      }
       form.append("mediaType", formData.mediaType);
       form.append("isUrgent", formData.isUrgent);
       form.append("taxBenefits", formData.taxBenefits);
