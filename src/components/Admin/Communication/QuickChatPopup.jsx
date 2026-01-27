@@ -20,13 +20,15 @@ import { format } from 'date-fns';
 
 /**
  * LinkedIn-Style Quick Chat Popup
- * - Messaging list stays on the right
- * - Active chats open as separate windows to the left
+ * - Floating button to toggle messaging list
+ * - Tabs for Admins and Super Admins
+ * - Draggable chat windows
  */
 export default function QuickChatPopup() {
     const [isOpen, setIsOpen] = useState(false);
     const [activeChats, setActiveChats] = useState([]); // Array of { id, admin, isGlobal }
     const [searchQuery, setSearchQuery] = useState('');
+    const [activeTab, setActiveTab] = useState('admins'); // 'admins' or 'superadmins'
 
     const adminInfo = useSelector((state) => state.adminAuth.adminInfo);
     const pathname = usePathname();
@@ -87,51 +89,48 @@ export default function QuickChatPopup() {
         setActiveChats(prev => prev.filter(chat => chat.id !== chatId));
     };
 
-    const filteredAdmins = admins.filter(admin =>
-        admin.fullName.toLowerCase().includes(searchQuery.toLowerCase()) &&
-        admin._id !== currentUserId
-    );
+    const filteredAdmins = admins.filter(admin => {
+        const matchesSearch = admin.fullName.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesTab = activeTab === 'superadmins' ? admin.isSuperAdmin : !admin.isSuperAdmin;
+        return matchesSearch && matchesTab && admin._id !== currentUserId;
+    });
 
     if (pathname === '/admin/communication') return null;
 
     return (
-        <div className="fixed bottom-0 right-8 z-[100] flex flex-row-reverse items-end gap-3 pointer-events-none" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
+        <div className="fixed bottom-8 right-8 z-[100] flex flex-col items-end gap-4 pointer-events-none" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
 
             {/* 1. MAIN MESSAGING LIST (LINKEDIN STYLE) */}
             <div className="flex flex-col items-end pointer-events-auto">
                 <AnimatePresence>
                     {isOpen && (
                         <motion.div
-                            initial={{ opacity: 1, y: 520 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 1, y: 520 }}
-                            transition={{ duration: 0.2 }}
-                            className="w-[300px] sm:w-[320px] bg-white rounded-t-xl shadow-[0_0_15px_rgba(0,0,0,0.1)] border border-gray-200 flex flex-col overflow-hidden"
+                            initial={{ opacity: 0, scale: 0.95, y: 20, transformOrigin: 'bottom right' }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                            className="mb-4 w-[300px] sm:w-[320px] bg-white rounded-2xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.2)] border border-gray-200 flex flex-col overflow-hidden"
                             style={{ height: '520px' }}
                         >
                             {/* List Header */}
-                            <div className="px-3 py-2 border-b border-gray-200 flex items-center justify-between bg-white">
+                            <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between bg-white">
                                 <div className="flex items-center gap-2">
-                                    <div className="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center text-white font-bold text-xs">
+                                    <div className="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center text-white font-bold text-xs shadow-sm">
                                         {adminInfo?.fullName?.charAt(0)}
                                     </div>
-                                    <span className="font-bold text-[14px] text-gray-800">Messaging</span>
+                                    <span className="font-bold text-[15px] text-gray-800">Messaging</span>
                                 </div>
                                 <div className="flex items-center gap-0.5">
-                                    <button className="p-1.5 hover:bg-gray-100 rounded-full transition-colors text-gray-500">
-                                        <MoreHorizontal size={16} />
-                                    </button>
                                     <button className="p-1.5 hover:bg-gray-100 rounded-full transition-colors text-gray-500">
                                         <Maximize2 size={16} onClick={() => router.push('/admin/communication')} />
                                     </button>
                                     <button onClick={togglePopup} className="p-1.5 hover:bg-gray-100 rounded-full transition-colors text-gray-500">
-                                        <Minimize2 size={18} />
+                                        <X size={20} />
                                     </button>
                                 </div>
                             </div>
 
                             {/* Search Messages */}
-                            <div className="p-2.5">
+                            <div className="p-3">
                                 <div className="relative">
                                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 font-bold" />
                                     <input
@@ -139,15 +138,25 @@ export default function QuickChatPopup() {
                                         placeholder="Search messages"
                                         value={searchQuery}
                                         onChange={(e) => setSearchQuery(e.target.value)}
-                                        className="w-full pl-9 pr-3 py-1.5 bg-gray-100 border-none rounded-md text-sm placeholder:text-gray-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                                        className="w-full pl-9 pr-3 py-2 bg-gray-100 border-none rounded-lg text-sm placeholder:text-gray-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 transition-all"
                                     />
                                 </div>
                             </div>
 
-                            {/* Focused / Other Tabs */}
-                            <div className="flex border-b border-gray-200">
-                                <button className="flex-1 py-2 text-sm font-bold text-emerald-700 border-b-2 border-emerald-700">Focused</button>
-                                <button className="flex-1 py-3 text-sm font-semibold text-gray-500 hover:bg-gray-50">Other</button>
+                            {/* Role-based Tabs */}
+                            <div className="flex border-b border-gray-200 px-2">
+                                <button
+                                    onClick={() => setActiveTab('admins')}
+                                    className={`flex-1 py-2.5 text-xs font-bold uppercase tracking-wider transition-all border-b-2 ${activeTab === 'admins' ? 'text-emerald-700 border-emerald-700' : 'text-gray-400 border-transparent hover:text-gray-600'}`}
+                                >
+                                    Admins
+                                </button>
+                                <button
+                                    onClick={() => setActiveTab('superadmins')}
+                                    className={`flex-1 py-2.5 text-xs font-bold uppercase tracking-wider transition-all border-b-2 ${activeTab === 'superadmins' ? 'text-emerald-700 border-emerald-700' : 'text-gray-400 border-transparent hover:text-gray-600'}`}
+                                >
+                                    Super Admins
+                                </button>
                             </div>
 
                             {/* Chat List Content */}
@@ -155,17 +164,17 @@ export default function QuickChatPopup() {
                                 {/* Global Channel Section */}
                                 <button
                                     onClick={() => openChat(null, true)}
-                                    className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors border-b border-gray-50"
+                                    className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors border-b border-gray-50 bg-emerald-50/30"
                                 >
-                                    <div className="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-600 shrink-0">
-                                        <Globe size={24} />
+                                    <div className="w-11 h-11 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-600 shrink-0 shadow-sm">
+                                        <Globe size={22} />
                                     </div>
                                     <div className="flex-1 text-left min-w-0">
                                         <p className="font-bold text-[14px] text-gray-900">Global Channel</p>
-                                        <p className="text-xs text-gray-500 truncate mt-0.5">Team-wide messages</p>
+                                        <p className="text-[11px] text-gray-500 truncate mt-0.5">Team-wide messages</p>
                                     </div>
                                     {globalUnreadCount > 0 && (
-                                        <div className="bg-red-500 text-white text-[10px] font-bold h-5 w-5 flex items-center justify-center rounded-full shrink-0">
+                                        <div className="bg-red-500 text-white text-[10px] font-bold h-5 w-5 flex items-center justify-center rounded-full shrink-0 shadow-sm">
                                             {globalUnreadCount}
                                         </div>
                                     )}
@@ -186,22 +195,22 @@ export default function QuickChatPopup() {
                                             onClick={() => openChat(admin)}
                                             className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors border-b border-gray-100 group"
                                         >
-                                            <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center text-gray-500 font-bold shrink-0 overflow-hidden border border-gray-200">
+                                            <div className="w-11 h-11 bg-gray-100 rounded-full flex items-center justify-center text-gray-500 font-bold shrink-0 overflow-hidden border border-gray-200">
                                                 {admin.fullName.charAt(0)}
                                             </div>
                                             <div className="flex-1 text-left min-w-0">
                                                 <div className="flex justify-between items-center mb-0.5">
-                                                    <p className="font-bold text-[14px] text-gray-900 truncate group-hover:text-emerald-700">{admin.fullName}</p>
+                                                    <p className="font-bold text-[14px] text-gray-900 truncate group-hover:text-emerald-700 transition-colors">{admin.fullName}</p>
                                                     <span className="text-[10px] text-gray-400">
                                                         {latestMsg ? format(new Date(latestMsg.createdAt), 'MMM d') : ''}
                                                     </span>
                                                 </div>
-                                                <p className="text-xs text-gray-500 truncate line-clamp-1">
-                                                    {latestMsg?.content || 'Say hello!'}
+                                                <p className="text-[11px] text-gray-500 truncate line-clamp-1">
+                                                    {latestMsg?.content || 'No messages yet'}
                                                 </p>
                                             </div>
                                             {unreadCounts[admin._id] > 0 && (
-                                                <div className="bg-red-500 text-white text-[10px] font-bold h-5 w-5 flex items-center justify-center rounded-full shrink-0">
+                                                <div className="bg-red-500 text-white text-[10px] font-bold h-5 w-5 flex items-center justify-center rounded-full shrink-0 shadow-sm">
                                                     {unreadCounts[admin._id]}
                                                 </div>
                                             )}
@@ -213,50 +222,62 @@ export default function QuickChatPopup() {
                     )}
                 </AnimatePresence>
 
-                {/* Bottom Toggle Bar */}
+                {/* Floating Main Button */}
                 <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
                     onClick={togglePopup}
-                    className={`w-[300px] sm:w-[320px] h-[48px] rounded-t-lg flex items-center justify-between px-4 bg-white border border-gray-200 shadow-[0_-2px_10px_rgba(0,0,0,0.05)] transition-all duration-300 pointer-events-auto`}
+                    className={`w-14 h-14 rounded-2xl flex items-center justify-center text-white shadow-2xl transition-all duration-300 relative pointer-events-auto ${isOpen ? 'bg-gray-800' : 'bg-emerald-600'}`}
                 >
-                    <div className="flex items-center gap-2">
-                        <div className="w-7 h-7 rounded-full bg-emerald-500 flex items-center justify-center text-white font-bold text-[10px] ring-2 ring-emerald-50">
-                            {adminInfo?.fullName?.charAt(0)}
+                    {isOpen ? <X size={24} /> : (
+                        <div className="relative">
+                            <MessageSquare size={24} />
+                            {totalUnreadCount > 0 && (
+                                <span className="absolute -top-3 -right-3 bg-red-500 text-white text-[10px] font-bold w-6 h-6 flex items-center justify-center rounded-lg border-2 border-white shadow-lg">
+                                    {totalUnreadCount > 9 ? '9+' : totalUnreadCount}
+                                </span>
+                            )}
                         </div>
-                        <span className="font-bold text-sm text-gray-800">Messaging</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        {totalUnreadCount > 0 && (
-                            <span className="bg-red-500 text-white text-[10px] font-extrabold px-1.5 py-0.5 rounded-full">
-                                {totalUnreadCount}
-                            </span>
-                        )}
-                        <MoreHorizontal size={18} className="text-gray-500" />
-                        <Maximize2 size={16} className="text-gray-500" />
-                        <X size={20} className="text-gray-500" />
-                    </div>
+                    )}
                 </motion.button>
             </div>
 
-            {/* 2. TABBED CHAT WINDOWS (OPENS TO LEFT) */}
-            <div className="flex flex-row-reverse items-end gap-3 pointer-events-none pr-2">
+            {/* 2. DRAGGABLE CHAT WINDOWS */}
+            <div className="fixed inset-0 pointer-events-none z-[110]">
                 <AnimatePresence>
-                    {activeChats.map((chat) => (
-                        <motion.div
-                            key={chat.id}
-                            initial={{ opacity: 0, scale: 0.95, y: 50 }}
-                            animate={{ opacity: 1, scale: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.95, y: 50 }}
-                            className="w-[320px] sm:w-[340px] pointer-events-auto"
-                        >
-                            <MiniChatWindow
-                                chat={chat}
-                                adminInfo={adminInfo}
-                                onClose={() => closeChat(chat.id)}
-                            />
-                        </motion.div>
-                    ))}
+                    {activeChats.map((chat, index) => {
+                        // LinkedIn vibe: Stack to the left of the messaging list
+                        // List is at right-8 (32px), width 320px. Left edge is at innerWidth - 352.
+                        // We want chat windows to start from there, going left.
+                        const listLeftEdge = typeof window !== 'undefined' ? window.innerWidth - 352 : 0;
+                        const chatWidth = 340;
+                        const gap = 12;
+                        const startX = listLeftEdge - (index + 1) * (chatWidth + gap);
+                        const startY = typeof window !== 'undefined' ? window.innerHeight - 410 : 0;
+
+                        return (
+                            <motion.div
+                                key={chat.id}
+                                drag
+                                dragMomentum={false}
+                                initial={{ opacity: 0, scale: 0.9, x: startX, y: startY }}
+                                animate={{ opacity: 1, scale: 1, x: startX, y: startY }}
+                                // We use animate with startX/Y only for the first render to position them.
+                                // Framer motion drag will take over after that.
+                                // Actually, if we want them to STAY where they are after drag, we shouldn't 
+                                // keep startX/Y in 'animate' if it's dynamic.
+                                // But here startX/Y depends on 'index'. If a chat is closed, indices change.
+                                // To keep the "LinkedIn vibe" of stacking, we'll let them re-stack if one is closed.
+                                className="absolute w-[320px] sm:w-[340px] pointer-events-auto shadow-[0_20px_50px_-12px_rgba(0,0,0,0.25)] rounded-xl overflow-hidden"
+                            >
+                                <MiniChatWindow
+                                    chat={chat}
+                                    adminInfo={adminInfo}
+                                    onClose={() => closeChat(chat.id)}
+                                />
+                            </motion.div>
+                        );
+                    })}
                 </AnimatePresence>
             </div>
         </div>
@@ -311,8 +332,31 @@ function MiniChatWindow({ chat, adminInfo, onClose }) {
                 }
             };
 
+            const handleTyping = (payload) => {
+                const payloadSenderId = payload.senderId?.toString();
+                const payloadReceiverId = payload.receiverId?.toString();
+                const sAdminId = selectedAdminId?.toString();
+                const cUserId = currentUserId?.toString();
+
+                if (payloadSenderId === cUserId) return;
+
+                const isRelevant = isGlobalMode
+                    ? payload.isGlobal
+                    : (!payload.isGlobal && payloadSenderId === sAdminId && payloadReceiverId === cUserId);
+
+                if (isRelevant) {
+                    setTypingUser(payload.senderName);
+                    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+                    typingTimeoutRef.current = setTimeout(() => setTypingUser(null), 3000);
+                }
+            };
+
             socket.on('new_internal_message', handleNewMessage);
-            return () => socket.off('new_internal_message', handleNewMessage);
+            socket.on('typing_internal', handleTyping);
+            return () => {
+                socket.off('new_internal_message', handleNewMessage);
+                socket.off('typing_internal', handleTyping);
+            };
         }
     }, [socket, selectedAdminId, currentUserId, isGlobalMode]);
 
@@ -333,6 +377,18 @@ function MiniChatWindow({ chat, adminInfo, onClose }) {
 
     const scrollToBottom = () => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
 
+    const handleInputChange = (value) => {
+        setMessage(value);
+        if (socket && currentUserId) {
+            socket.emit('typing_internal', {
+                senderId: currentUserId,
+                senderName: adminInfo?.fullName,
+                receiverId: isGlobalMode ? null : selectedAdminId,
+                isGlobal: isGlobalMode
+            });
+        }
+    };
+
     const handleSend = async (e) => {
         e.preventDefault();
         if (!message.trim() || isSending) return;
@@ -352,9 +408,9 @@ function MiniChatWindow({ chat, adminInfo, onClose }) {
     };
 
     return (
-        <div className="flex flex-col h-[400px] bg-white rounded-t-xl shadow-[0_0_15px_rgba(0,0,0,0.15)] border border-gray-200 overflow-hidden">
-            {/* Window Header */}
-            <div className="px-3 py-2 border-b border-gray-200 flex items-center justify-between bg-white shrink-0">
+        <div className="flex flex-col h-[400px] bg-white border border-gray-200 overflow-hidden">
+            {/* Window Header - Draggable Handle */}
+            <div className="px-3 py-2 border-b border-gray-200 flex items-center justify-between bg-white shrink-0 cursor-move">
                 <div className="flex items-center gap-2">
                     <div className="relative">
                         <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 font-bold text-xs ring-1 ring-gray-100">
@@ -369,11 +425,23 @@ function MiniChatWindow({ chat, adminInfo, onClose }) {
                     </div>
                 </div>
                 <div className="flex items-center gap-1">
-                    <button className="p-1.5 hover:bg-gray-100 rounded-full transition-colors text-gray-500"><MoreHorizontal size={16} /></button>
-                    <button className="p-1.5 hover:bg-gray-100 rounded-full transition-colors text-gray-500"><Maximize2 size={16} /></button>
                     <button onClick={onClose} className="p-1.5 hover:bg-gray-100 rounded-full transition-colors text-gray-500"><X size={18} /></button>
                 </div>
             </div>
+
+            {/* Typing Indicator */}
+            {typingUser && (
+                <div className="px-3 py-1.5 bg-white border-b border-gray-100 flex items-center gap-2">
+                    <div className="flex gap-0.5">
+                        <span className="w-1 h-1 bg-emerald-500 rounded-full animate-bounce"></span>
+                        <span className="w-1 h-1 bg-emerald-500 rounded-full animate-bounce [animation-delay:0.2s]"></span>
+                        <span className="w-1 h-1 bg-emerald-500 rounded-full animate-bounce [animation-delay:0.4s]"></span>
+                    </div>
+                    <p className="text-[10px] font-bold text-emerald-600">
+                        {isGlobalMode ? `${typingUser.split(' ')[0]} is typing...` : 'typing...'}
+                    </p>
+                </div>
+            )}
 
             {/* Messages Area */}
             <div className="flex-1 overflow-y-auto p-3 space-y-3 bg-[#f4f2ee]/30 custom-scrollbar">
@@ -402,20 +470,25 @@ function MiniChatWindow({ chat, adminInfo, onClose }) {
 
             {/* LinkedIn Style Input Footer */}
             <form onSubmit={handleSend} className="p-2.5 bg-white border-t border-gray-200">
+                {/* 48-hour Auto-delete Notice */}
+                <div className="flex items-center justify-center py-1 mb-2">
+                    <p className="text-[9px] font-bold text-amber-500 uppercase tracking-widest flex items-center gap-2">
+                        <span className="w-1 h-1 bg-amber-400 rounded-full animate-pulse"></span>
+                        Messages auto-delete in 48 hours
+                    </p>
+                </div>
                 <div className="bg-gray-50 rounded-lg p-2 mb-2 min-h-[60px]">
                     <textarea
                         value={message}
-                        onChange={(e) => setMessage(e.target.value)}
+                        onChange={(e) => handleInputChange(e.target.value)}
                         placeholder="Write a message..."
-                        className="w-full bg-transparent border-none text-sm focus:ring-0 resize-none placeholder:text-gray-500"
+                        className="w-full bg-transparent border-none text-sm focus:ring-0 focus:outline-none resize-none placeholder:text-gray-500"
                         rows={2}
                     />
                 </div>
                 <div className="flex items-center justify-between border-t border-gray-100 pt-2">
                     <div className="flex items-center gap-1">
-                        <button type="button" className="p-2 hover:bg-gray-50 rounded-full text-gray-500 transition-colors"><ImageIcon size={18} /></button>
-                        <button type="button" className="p-2 hover:bg-gray-50 rounded-full text-gray-500 transition-colors"><Paperclip size={18} /></button>
-                        <button type="button" className="p-2 hover:bg-gray-50 rounded-full text-gray-500 transition-colors"><Smile size={18} /></button>
+
                     </div>
                     <button
                         type="submit"
