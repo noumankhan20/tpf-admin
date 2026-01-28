@@ -22,6 +22,7 @@ import {
   Layers,
   ArrowBigLeft,
   ArrowLeft,
+  Bell,
 } from 'lucide-react';
 import { useLogoutAdminApiMutation } from '@/utils/slices/adminApiSlice';
 // CMS Modules Configuration
@@ -97,6 +98,14 @@ const CMS_MODULES = [
     icon: Image,
     category: 'banners',
     route: '/cms-admin/before-footer',
+  },
+   {
+    id: 'notices',
+    name: 'Notices',
+    desc: 'Manage Notices on the Websites',
+    icon: Bell,
+    category: 'content',
+    route: '/cms-admin/notices',
   },
 ];
 
