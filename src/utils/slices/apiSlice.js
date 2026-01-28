@@ -23,7 +23,8 @@ export const apiSlice = createApi({
     'InternalCommunicationAdmins',
     'InternalMessages',
     'Vouchers',
-    'Volunteers'
+    'Volunteers',
+    'Notices',
   ],
   endpoints: () => ({})
 });
