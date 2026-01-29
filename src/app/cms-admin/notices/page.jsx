@@ -1,5 +1,5 @@
 import React from 'react'
-import AdminNoticesPage from "@/components/Notices/Notices"
+import AdminNoticesPage from "@/components/CMS-Admin/Notices"
 const page = () => {
   return (
     <div>
