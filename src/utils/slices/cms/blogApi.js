@@ -34,8 +34,8 @@ export const blogApi = apiSlice.injectEndpoints({
             ? undefined
             : { "Content-Type": "application/json" },
       }),
+      invalidatesTags: ["Blog"], // ✅ ADD THIS
     }),
-
 
     deleteBlog: builder.mutation({
       query: (id) => ({
