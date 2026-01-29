@@ -8,7 +8,8 @@ import {
     useUpdateNoticeMutation,
     useDeleteNoticeMutation,
 } from "@/utils/slices/noticesApiSlice";
-
+import { ArrowLeft } from "lucide-react";
+import { useRouter } from "next/navigation";
 // ============================================
 // UTILITY: Format Date
 // ============================================
@@ -86,8 +87,8 @@ function Alert({ type, message, onClose }) {
                 </div>
                 <p className={`text-sm font-medium ${currentStyle.text}`}>{message}</p>
             </div>
-            <button 
-                onClick={onClose} 
+            <button
+                onClick={onClose}
                 className={`${currentStyle.text} hover:opacity-70 transition-opacity ml-4`}
                 aria-label="Close alert"
             >
@@ -647,7 +648,7 @@ function NoticesTable({ notices, isLoading, onView, onEdit, onDelete }) {
 export default function AdminNoticesPage() {
     const { data, isLoading, isError, error } = useGetAllNoticesQuery();
     const notices = Array.isArray(data?.data) ? data.data : [];
-
+    const router= useRouter();
     const [viewModalOpen, setViewModalOpen] = useState(false);
     const [formModalOpen, setFormModalOpen] = useState(false);
     const [deleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -696,6 +697,15 @@ export default function AdminNoticesPage() {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
                 {/* Header */}
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 sm:gap-6 mb-8">
+                    {/* Back Button */}
+                    <div className="px-4 lg:px-8 pt-6">
+                        <button
+                            onClick={() => router.push("/cms-admin")}
+                            className="flex cursor-pointer items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-gray-600 hover:text-gray-800 hover:bg-white transition-all border border-gray-300 shadow-sm"
+                        >
+                            <ArrowLeft className="w-4 h-4" />
+                        </button>
+                    </div>
                     <div>
                         <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-2 bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-700">
                             Manage Notices
