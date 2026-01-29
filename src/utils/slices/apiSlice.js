@@ -21,7 +21,8 @@ export const apiSlice = createApi({
     'Items',
     'AuditLog',
     'InternalCommunicationAdmins',
-    'InternalMessages'
+    'InternalMessages',
+    'Blog'
   ],
   endpoints: () => ({})
 });
