@@ -44,25 +44,25 @@ export default function BlogStats({ data, isLoading }) {
   ];
 
   return (
-    <div className="mb-6 sm:mb-8">
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+    <div className="mb-4 sm:mb-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
         {stats.map((stat, index) => {
           const Icon = stat.icon;
           return (
             <div
               key={index}
-              className="bg-white rounded-2xl border border-slate-200/60 p-4 sm:p-5 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1 group"
+              className="bg-white rounded-xl border border-slate-200/60 p-3 sm:p-4 shadow-sm hover:shadow transition-shadow duration-200"
             >
-              <div className="flex items-start justify-between mb-3">
-                <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl ${stat.bgColor} flex items-center justify-center group-hover:scale-110 transition-transform duration-300`}>
-                  <Icon className={`w-5 h-5 sm:w-6 sm:h-6 ${stat.iconColor}`} />
+              <div className="flex items-center justify-between mb-2">
+                <div className={`w-8 h-8 sm:w-9 sm:h-9 rounded-lg ${stat.bgColor} flex items-center justify-center`}>
+                  <Icon className={`w-4 h-4 sm:w-5 sm:h-5 ${stat.iconColor}`} />
                 </div>
               </div>
               <div>
-                <p className="text-2xl sm:text-3xl font-bold text-slate-900 mb-1">
+                <p className="text-xl sm:text-2xl font-bold text-slate-900 mb-0.5">
                   {stat.value}
                 </p>
-                <p className="text-xs sm:text-sm text-slate-500 font-medium uppercase tracking-wide">
+                <p className="text-[10px] sm:text-xs text-slate-500 font-medium uppercase tracking-wider">
                   {stat.label}
                 </p>
               </div>

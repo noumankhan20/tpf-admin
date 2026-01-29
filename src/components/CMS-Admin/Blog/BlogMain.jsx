@@ -14,7 +14,6 @@ import {
 } from "@/utils/slices/cms/blogApi";
 import BlogList from "./BlogList";
 import BlogForm from "./BlogForm";
-import BlogPreview from "./BlogPreview";
 import BlogStats from "./BlogStats";
 
 export default function BlogMain() {
@@ -181,7 +180,6 @@ export default function BlogMain() {
               )}
 
               {(viewMode === "create" || viewMode === "edit") && (
-                <div className="grid lg:grid-cols-2 gap-4 sm:gap-6">
                   <BlogForm
                     selectedBlog={selectedBlog}
                     isEditMode={viewMode === "edit"}
@@ -189,10 +187,7 @@ export default function BlogMain() {
                     onError={handleError}
                     onCancel={handleCancel}
                   />
-                  <div className="hidden lg:block">
-                    <BlogPreview />
-                  </div>
-                </div>
+                  
               )}
             </div>
           </main>

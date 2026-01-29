@@ -13,6 +13,11 @@ import {
   FileText,
   Video,
   Tag as TagIcon,
+  HelpCircle,
+  BookOpen,
+  Hash,
+  List,
+  Type,
 } from "lucide-react";
 import {
   useCreateBlogMutation,
@@ -29,10 +34,10 @@ export default function BlogForm({
 }) {
   const [createBlog, { isLoading: isCreating }] = useCreateBlogMutation();
   const [updateBlog, { isLoading: isUpdating }] = useUpdateBlogMutation();
+  const [showFormattingGuide, setShowFormattingGuide] = useState(false);
 
   const [formData, setFormData] = useState({
     title: "",
-    slug: "",
     excerpt: "",
     content: "",
     coverImage: null,
@@ -42,23 +47,18 @@ export default function BlogForm({
     status: "draft",
     author: {
       name: "",
-      email: "",
+      info: "",
     },
     tags: [],
-    seo: {
-      title: "",
-      description: "",
-      keywords: "",
-    },
   });
 
   const [tagInput, setTagInput] = useState("");
+  const EXCERPT_LIMIT = 300;
 
   useEffect(() => {
     if (isEditMode && selectedBlog) {
       setFormData({
         title: selectedBlog.title || "",
-        slug: selectedBlog.slug || "",
         excerpt: selectedBlog.excerpt || "",
         content: selectedBlog.content || "",
         coverImage: null,
@@ -72,20 +72,22 @@ export default function BlogForm({
         status: selectedBlog.status || "draft",
         author: {
           name: selectedBlog.author?.name || "",
-          email: selectedBlog.author?.email || "",
+          info: selectedBlog.author?.info || "",
         },
         tags: selectedBlog.tags || [],
-        seo: {
-          title: selectedBlog.seo?.title || "",
-          description: selectedBlog.seo?.description || "",
-          keywords: selectedBlog.seo?.keywords || "",
-        },
       });
     }
   }, [selectedBlog, isEditMode]);
 
   const handleChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleExcerptChange = (value) => {
+    // Limit excerpt to 300 characters
+    if (value.length <= EXCERPT_LIMIT) {
+      handleChange("excerpt", value);
+    }
   };
 
   const handleNestedChange = (parent, field, value) => {
@@ -127,23 +129,11 @@ export default function BlogForm({
       return;
     }
 
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setFormData((prev) => ({
-        ...prev,
-        video: file,
-        videoPreview: reader.result,
-      }));
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const generateSlug = () => {
-    const slug = formData.title
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/(^-|-$)/g, "");
-    handleChange("slug", slug);
+    setFormData((prev) => ({
+      ...prev,
+      video: file,
+      videoPreview: URL.createObjectURL(file),
+    }));
   };
 
   const addTag = () => {
@@ -164,435 +154,572 @@ export default function BlogForm({
   };
 
   const handleSubmit = async () => {
-    // Validation
-    if (!formData.title.trim()) {
-      onError("Title is required");
+    if (!formData.title || !formData.content || !formData.author.name) {
+      onError("Please fill in all required fields");
       return;
     }
-    if (!formData.slug.trim()) {
-      onError("Slug is required");
-      return;
-    }
-    if (!formData.content.trim()) {
-      onError("Content is required");
-      return;
-    }
-    if (!formData.author.name.trim()) {
-      onError("Author name is required");
-      return;
-    }
+
     if (!isEditMode && !formData.coverImage) {
-      onError("Cover image is required");
+      onError("Please upload a cover image");
       return;
+    }
+
+    const data = new FormData();
+    data.append("title", formData.title);
+    data.append("excerpt", formData.excerpt);
+    data.append("content", formData.content);
+    data.append("status", formData.status);
+    data.append("author[name]", formData.author.name);
+    if (formData.author.info) {
+      data.append("author[info]", formData.author.info);
+    }
+
+    formData.tags.forEach((tag) => {
+      data.append("tags[]", tag);
+    });
+
+    if (formData.coverImage) {
+      data.append("coverImage", formData.coverImage);
+    }
+
+    if (formData.video) {
+      data.append("video", formData.video);
     }
 
     try {
-      const submitData = new FormData();
-      submitData.append("title", formData.title);
-      submitData.append("slug", formData.slug);
-      submitData.append("excerpt", formData.excerpt);
-      submitData.append("content", formData.content);
-      submitData.append("status", formData.status);
-      submitData.append("author", JSON.stringify(formData.author));
-      submitData.append("tags", JSON.stringify(formData.tags));
-      submitData.append("seo", JSON.stringify(formData.seo));
-
-      if (formData.coverImage) {
-        submitData.append("coverImage", formData.coverImage);
-      }
-      if (formData.video) {
-        submitData.append("video", formData.video);
-      }
-
       if (isEditMode) {
-        await updateBlog({
-          slug: selectedBlog.slug,
-          formData: submitData,
-        }).unwrap();
+        await updateBlog({ id: selectedBlog._id, data }).unwrap();
         onSuccess("Blog updated successfully!");
       } else {
-        await createBlog(submitData).unwrap();
+        await createBlog(data).unwrap();
         onSuccess("Blog created successfully!");
       }
-    } catch (err) {
-      console.error("Submit error:", err);
-      onError(err?.data?.message || "Operation failed");
+    } catch (error) {
+      onError(error?.data?.message || "Failed to save blog");
     }
   };
 
   const isLoading = isCreating || isUpdating;
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-slate-200/60 overflow-hidden sticky top-24 max-h-[calc(100vh-7rem)] overflow-y-auto">
-      <div className="bg-gradient-to-r from-indigo-50 via-violet-50 to-purple-50 p-6 border-b border-slate-200 sticky top-0 z-10 backdrop-blur-sm bg-opacity-90">
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-white shadow-sm flex items-center justify-center">
-              {isEditMode ? (
-                <Edit2 className="w-5 h-5 text-indigo-600" />
-              ) : (
-                <FileText className="w-5 h-5 text-indigo-600" />
-              )}
+    <>
+      {/* Formatting Guide Modal */}
+      {showFormattingGuide && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+            {/* Modal Header */}
+            <div className="bg-gradient-to-r from-indigo-600 to-violet-600 p-6 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
+                  <BookOpen className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-white">
+                    Content Formatting Rules
+                  </h3>
+                  <p className="text-sm text-indigo-100">
+                    Learn how to format your blog content
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowFormattingGuide(false)}
+                className="p-2 hover:bg-white/20 rounded-xl transition-all"
+              >
+                <X className="w-5 h-5 text-white" />
+              </button>
             </div>
-            <div>
-              <h2 className="text-xl font-bold text-slate-900">
-                {isEditMode ? "Edit Blog Post" : "Create New Post"}
-              </h2>
-              <p className="text-sm text-slate-600">
-                {isEditMode ? "Update your blog content" : "Share your thoughts with the world"}
+
+            {/* Modal Content */}
+            <div className="p-6 overflow-y-auto flex-1">
+              <div className="space-y-6">
+                {/* Headings */}
+                <div className="bg-slate-50 rounded-xl p-5 border border-slate-200">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Hash className="w-5 h-5 text-indigo-600" />
+                    <h4 className="font-bold text-slate-900">1. Headings</h4>
+                  </div>
+                  <div className="space-y-3">
+                    <div>
+                      <div className="font-mono text-sm bg-slate-900 text-emerald-400 p-3 rounded-lg mb-2">
+                        # Main Heading (H1)
+                      </div>
+                      <p className="text-sm text-slate-600">
+                        Use for main titles • Extra large, bold
+                      </p>
+                    </div>
+                    <div>
+                      <div className="font-mono text-sm bg-slate-900 text-emerald-400 p-3 rounded-lg mb-2">
+                        ## Sub Heading (H2)
+                      </div>
+                      <p className="text-sm text-slate-600">
+                        Use for major sections • Large, bold
+                      </p>
+                    </div>
+                    <div>
+                      <div className="font-mono text-sm bg-slate-900 text-emerald-400 p-3 rounded-lg mb-2">
+                        ### Small Heading (H3)
+                      </div>
+                      <p className="text-sm text-slate-600">
+                        Use for subsections • Medium, bold
+                      </p>
+                    </div>
+                  </div>
+                  <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg flex gap-2">
+                    <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                    <p className="text-xs text-amber-800">
+                      <strong>Important:</strong> Always leave ONE blank line before
+                      and after headings!
+                    </p>
+                  </div>
+                </div>
+
+                {/* ALL CAPS */}
+                <div className="bg-slate-50 rounded-xl p-5 border border-slate-200">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Type className="w-5 h-5 text-indigo-600" />
+                    <h4 className="font-bold text-slate-900">
+                      2. ALL CAPS Headings
+                    </h4>
+                  </div>
+                  <div className="font-mono text-sm bg-slate-900 text-emerald-400 p-3 rounded-lg mb-2">
+                    BUILDING TOMORROW TODAY
+                  </div>
+                  <p className="text-sm text-slate-600 mb-2">
+                    Write in ALL CAPITAL LETTERS (max 100 characters)
+                  </p>
+                  <p className="text-sm text-slate-600">
+                    Will appear as: Large bold heading
+                  </p>
+                </div>
+
+                {/* Paragraphs */}
+                <div className="bg-slate-50 rounded-xl p-5 border border-slate-200">
+                  <div className="flex items-center gap-2 mb-4">
+                    <FileText className="w-5 h-5 text-indigo-600" />
+                    <h4 className="font-bold text-slate-900">3. Paragraphs</h4>
+                  </div>
+                  <div className="font-mono text-sm bg-slate-900 text-emerald-400 p-3 rounded-lg mb-2 whitespace-pre-wrap">
+                    {`This is the first paragraph.
+
+This is the second paragraph.`}
+                  </div>
+                  <p className="text-sm text-slate-600">
+                    Separate paragraphs with ONE blank line
+                  </p>
+                </div>
+
+                {/* Bullet Lists */}
+                <div className="bg-slate-50 rounded-xl p-5 border border-slate-200">
+                  <div className="flex items-center gap-2 mb-4">
+                    <List className="w-5 h-5 text-indigo-600" />
+                    <h4 className="font-bold text-slate-900">
+                      4. Bullet Point Lists
+                    </h4>
+                  </div>
+                  <div className="font-mono text-sm bg-slate-900 text-emerald-400 p-3 rounded-lg mb-2 whitespace-pre-wrap">
+                    {`- First bullet point
+- Second bullet point
+- Third bullet point`}
+                  </div>
+                  <p className="text-sm text-slate-600">
+                    Start with <code className="bg-slate-200 px-1.5 py-0.5 rounded">-</code> (dash) + ONE space
+                  </p>
+                </div>
+
+                {/* Numbered Lists */}
+                <div className="bg-slate-50 rounded-xl p-5 border border-slate-200">
+                  <div className="flex items-center gap-2 mb-4">
+                    <List className="w-5 h-5 text-indigo-600" />
+                    <h4 className="font-bold text-slate-900">
+                      5. Numbered Lists
+                    </h4>
+                  </div>
+                  <div className="font-mono text-sm bg-slate-900 text-emerald-400 p-3 rounded-lg mb-2 whitespace-pre-wrap">
+                    {`1. First numbered item
+2. Second numbered item
+3. Third numbered item`}
+                  </div>
+                  <p className="text-sm text-slate-600">
+                    Start with number + <code className="bg-slate-200 px-1.5 py-0.5 rounded">.</code> + ONE space
+                  </p>
+                </div>
+
+                {/* Quick Tips */}
+                <div className="bg-gradient-to-br from-indigo-50 to-violet-50 rounded-xl p-5 border-2 border-indigo-200">
+                  <h4 className="font-bold text-slate-900 mb-3 flex items-center gap-2">
+                    <CheckCircle className="w-5 h-5 text-emerald-600" />
+                    Quick Tips
+                  </h4>
+                  <ul className="space-y-2 text-sm text-slate-700">
+                    <li className="flex items-start gap-2">
+                      <span className="text-indigo-600 mt-0.5">•</span>
+                      <span>Always add blank lines between different sections</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-indigo-600 mt-0.5">•</span>
+                      <span>Use <code className="bg-white px-1.5 py-0.5 rounded">#</code> with a space: <code className="bg-white px-1.5 py-0.5 rounded"># Heading</code> not <code className="bg-white px-1.5 py-0.5 rounded">#Heading</code></span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-indigo-600 mt-0.5">•</span>
+                      <span>Leave blank lines before and after lists</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-indigo-600 mt-0.5">•</span>
+                      <span>Keep ALL CAPS sections under 100 characters</span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-6 border-t border-slate-200 bg-slate-50">
+              <button
+                onClick={() => setShowFormattingGuide(false)}
+                className="w-full px-6 py-3 bg-gradient-to-r from-indigo-600 to-violet-600 text-white rounded-xl font-semibold hover:from-indigo-700 hover:to-violet-700 transition-all shadow-lg"
+              >
+                Got it, thanks!
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Main Form */}
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-200/60 overflow-hidden sticky top-24 max-h-[calc(100vh-7rem)] overflow-y-auto">
+        <div className="bg-gradient-to-r from-indigo-50 via-violet-50 to-purple-50 p-6 border-b border-slate-200 sticky top-0 z-10 backdrop-blur-sm bg-opacity-90">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-white shadow-sm flex items-center justify-center">
+                {isEditMode ? (
+                  <Edit2 className="w-5 h-5 text-indigo-600" />
+                ) : (
+                  <FileText className="w-5 h-5 text-indigo-600" />
+                )}
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-slate-900">
+                  {isEditMode ? "Edit Blog Post" : "Create New Post"}
+                </h2>
+                <p className="text-sm text-slate-600">
+                  {isEditMode
+                    ? "Update your blog content"
+                    : "Share your thoughts with the world"}
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={onCancel}
+              className="p-2 hover:bg-white/50 rounded-xl transition-all"
+            >
+              <X className="w-5 h-5 text-slate-600" />
+            </button>
+          </div>
+        </div>
+
+        <div className="p-6 space-y-6">
+          {/* Cover Image */}
+          <div>
+            <label className="block text-sm font-semibold text-slate-800 mb-2">
+              Cover Image {!isEditMode && "*"}
+            </label>
+            <label className="border-2 border-dashed border-slate-300 rounded-xl p-6 block text-center cursor-pointer hover:border-indigo-500 hover:bg-indigo-50/30 transition-all group">
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleImageUpload}
+              />
+              {formData.coverImagePreview ? (
+                <div className="relative">
+                  <img
+                    src={formData.coverImagePreview}
+                    className="max-h-48 mx-auto rounded-xl mb-3 shadow-lg"
+                    alt="Preview"
+                  />
+                  <div className="absolute top-2 right-2 bg-emerald-500 text-white p-1.5 rounded-full shadow-lg">
+                    <CheckCircle size={16} />
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <Upload
+                    size={40}
+                    className="mx-auto text-slate-400 group-hover:text-indigo-500 transition"
+                  />
+                  <p className="text-sm text-slate-700 font-medium">
+                    Click to upload cover image
+                  </p>
+                  <p className="text-xs text-slate-500">
+                    Recommended: 1200x630px, Max 5MB
+                  </p>
+                </div>
+              )}
+            </label>
+          </div>
+
+          {/* Video Upload (Optional) */}
+          <div>
+            <label className="block text-sm font-semibold text-slate-800 mb-2">
+              Video (Optional)
+            </label>
+            <label className="border-2 border-dashed border-slate-300 rounded-xl p-6 block text-center cursor-pointer hover:border-violet-500 hover:bg-violet-50/30 transition-all group">
+              <input
+                type="file"
+                accept="video/*"
+                className="hidden"
+                onChange={handleVideoUpload}
+              />
+              {formData.videoPreview ? (
+                <div className="relative">
+                  <div className="flex items-center justify-center gap-2 text-violet-600">
+                    <Video className="w-5 h-5" />
+                    <span className="text-sm font-medium">Video attached</span>
+                    <CheckCircle size={16} className="text-emerald-500" />
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <Video
+                    size={36}
+                    className="mx-auto text-slate-400 group-hover:text-violet-500 transition"
+                  />
+                  <p className="text-sm text-slate-700 font-medium">
+                    Click to upload video
+                  </p>
+                  <p className="text-xs text-slate-500">Max 50MB</p>
+                </div>
+              )}
+            </label>
+          </div>
+
+          {/* Title */}
+          <div>
+            <label className="block text-sm font-semibold text-slate-800 mb-2">
+              Title *
+            </label>
+            <input
+              className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
+              placeholder="Enter an engaging title..."
+              value={formData.title}
+              onChange={(e) => handleChange("title", e.target.value)}
+            />
+          </div>
+
+          {/* Excerpt with Character Counter */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-sm font-semibold text-slate-800">
+                Excerpt / Summary
+              </label>
+              <span
+                className={`text-xs font-semibold ${
+                  formData.excerpt.length >= EXCERPT_LIMIT
+                    ? "text-red-600"
+                    : formData.excerpt.length >= EXCERPT_LIMIT * 0.9
+                    ? "text-amber-600"
+                    : "text-slate-500"
+                }`}
+              >
+                {formData.excerpt.length}/{EXCERPT_LIMIT}
+              </span>
+            </div>
+            <textarea
+              rows={3}
+              className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all resize-none"
+              placeholder="Brief summary for previews (max 300 characters)..."
+              value={formData.excerpt}
+              onChange={(e) => handleExcerptChange(e.target.value)}
+              maxLength={EXCERPT_LIMIT}
+            />
+            <p className="text-xs text-slate-500 mt-1">
+              A short description that appears in blog previews and search results
+            </p>
+          </div>
+
+          {/* Content with Formatting Guide Button */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-sm font-semibold text-slate-800">
+                Content *
+              </label>
+              <button
+                type="button"
+                onClick={() => setShowFormattingGuide(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-lg text-xs font-semibold hover:bg-indigo-100 transition-all"
+              >
+                <HelpCircle size={14} />
+                Formatting Guide
+              </button>
+            </div>
+            <textarea
+              rows={12}
+              className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all resize-none font-mono text-sm"
+              placeholder="Write your blog content here... (Click 'Formatting Guide' to learn how to add headings, lists, etc.)"
+              value={formData.content}
+              onChange={(e) => handleChange("content", e.target.value)}
+            />
+            <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-xs text-blue-800 flex items-start gap-2">
+                <Info className="w-4 h-4 shrink-0 mt-0.5" />
+                <span>
+                  Use markdown-style formatting: <code className="bg-white px-1.5 py-0.5 rounded mx-1">#</code> for headings, 
+                  <code className="bg-white px-1.5 py-0.5 rounded mx-1">-</code> for bullets, etc. Click the Formatting Guide for details.
+                </span>
               </p>
             </div>
           </div>
-          <button
-            onClick={onCancel}
-            className="p-2 hover:bg-white/50 rounded-xl transition-all"
-          >
-            <X className="w-5 h-5 text-slate-600" />
-          </button>
-        </div>
-      </div>
 
-      <div className="p-6 space-y-6">
-        {/* Cover Image */}
-        <div>
-          <label className="block text-sm font-semibold text-slate-800 mb-2">
-            Cover Image {!isEditMode && "*"}
-          </label>
-          <label className="border-2 border-dashed border-slate-300 rounded-xl p-6 block text-center cursor-pointer hover:border-indigo-500 hover:bg-indigo-50/30 transition-all group">
-            <input
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={handleImageUpload}
-            />
-            {formData.coverImagePreview ? (
-              <div className="relative">
-                <img
-                  src={formData.coverImagePreview}
-                  className="max-h-48 mx-auto rounded-xl mb-3 shadow-lg"
-                  alt="Preview"
-                />
-                <div className="absolute top-2 right-2 bg-emerald-500 text-white p-1.5 rounded-full shadow-lg">
-                  <CheckCircle size={16} />
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                <Upload
-                  size={40}
-                  className="mx-auto text-slate-400 group-hover:text-indigo-500 transition"
-                />
-                <p className="text-sm text-slate-700 font-medium">
-                  Click to upload cover image
-                </p>
-                <p className="text-xs text-slate-500">
-                  Recommended: 1200x630px, Max 5MB
-                </p>
-              </div>
-            )}
-          </label>
-        </div>
-
-        {/* Video Upload (Optional) */}
-        <div>
-          <label className="block text-sm font-semibold text-slate-800 mb-2">
-            Video (Optional)
-          </label>
-          <label className="border-2 border-dashed border-slate-300 rounded-xl p-6 block text-center cursor-pointer hover:border-violet-500 hover:bg-violet-50/30 transition-all group">
-            <input
-              type="file"
-              accept="video/*"
-              className="hidden"
-              onChange={handleVideoUpload}
-            />
-            {formData.videoPreview ? (
-              <div className="relative">
-                <div className="flex items-center justify-center gap-2 text-violet-600">
-                  <Video className="w-5 h-5" />
-                  <span className="text-sm font-medium">Video attached</span>
-                  <CheckCircle size={16} className="text-emerald-500" />
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                <Video
-                  size={36}
-                  className="mx-auto text-slate-400 group-hover:text-violet-500 transition"
-                />
-                <p className="text-sm text-slate-700 font-medium">
-                  Click to upload video
-                </p>
-                <p className="text-xs text-slate-500">Max 50MB</p>
-              </div>
-            )}
-          </label>
-        </div>
-
-        {/* Title */}
-        <div>
-          <label className="block text-sm font-semibold text-slate-800 mb-2">
-            Title *
-          </label>
-          <input
-            className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
-            placeholder="Enter an engaging title..."
-            value={formData.title}
-            onChange={(e) => handleChange("title", e.target.value)}
-          />
-        </div>
-
-        {/* Slug */}
-        <div>
-          <label className="block text-sm font-semibold text-slate-800 mb-2">
-            Slug *
-          </label>
-          <div className="flex gap-2">
-            <input
-              className="flex-1 px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all font-mono text-sm"
-              placeholder="blog-post-slug"
-              value={formData.slug}
-              onChange={(e) => handleChange("slug", e.target.value)}
-            />
-            <button
-              onClick={generateSlug}
-              className="px-4 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-semibold transition-all active:scale-95"
-              type="button"
-            >
-              Generate
-            </button>
+          {/* Author Info */}
+          <div className="grid sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-semibold text-slate-800 mb-2">
+                Author Name *
+              </label>
+              <input
+                className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
+                placeholder="John Doe"
+                value={formData.author.name}
+                onChange={(e) =>
+                  handleNestedChange("author", "name", e.target.value)
+                }
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-slate-800 mb-2">
+                Author Email
+              </label>
+              <input
+                type="email"
+                className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
+                placeholder="john@example.com"
+                value={formData.author.info}
+                onChange={(e) =>
+                  handleNestedChange("author", "info", e.target.value)
+                }
+              />
+            </div>
           </div>
-          <p className="text-xs text-slate-500 mt-1">
-            URL-friendly version of the title
-          </p>
-        </div>
 
-        {/* Excerpt */}
-        <div>
-          <label className="block text-sm font-semibold text-slate-800 mb-2">
-            Excerpt
-          </label>
-          <textarea
-            rows={3}
-            className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all resize-none"
-            placeholder="Brief summary for previews..."
-            value={formData.excerpt}
-            onChange={(e) => handleChange("excerpt", e.target.value)}
-          />
-        </div>
-
-        {/* Content */}
-        <div>
-          <label className="block text-sm font-semibold text-slate-800 mb-2">
-            Content *
-          </label>
-          <textarea
-            rows={8}
-            className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all resize-none font-mono text-sm"
-            placeholder="Write your blog content here..."
-            value={formData.content}
-            onChange={(e) => handleChange("content", e.target.value)}
-          />
-        </div>
-
-        {/* Author Info */}
-        <div className="grid sm:grid-cols-2 gap-4">
+          {/* Tags */}
           <div>
             <label className="block text-sm font-semibold text-slate-800 mb-2">
-              Author Name *
+              Tags
             </label>
-            <input
-              className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
-              placeholder="John Doe"
-              value={formData.author.name}
-              onChange={(e) =>
-                handleNestedChange("author", "name", e.target.value)
-              }
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-semibold text-slate-800 mb-2">
-              Author Email
-            </label>
-            <input
-              type="email"
-              className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
-              placeholder="john@example.com"
-              value={formData.author.email}
-              onChange={(e) =>
-                handleNestedChange("author", "email", e.target.value)
-              }
-            />
-          </div>
-        </div>
-
-        {/* Tags */}
-        <div>
-          <label className="block text-sm font-semibold text-slate-800 mb-2">
-            Tags
-          </label>
-          <div className="flex gap-2 mb-3">
-            <input
-              className="flex-1 px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
-              placeholder="Enter tag..."
-              value={tagInput}
-              onChange={(e) => setTagInput(e.target.value)}
-              onKeyPress={(e) => e.key === "Enter" && (e.preventDefault(), addTag())}
-            />
-            <button
-              onClick={addTag}
-              className="px-4 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-semibold transition-all active:scale-95"
-              type="button"
-            >
-              <Plus className="w-5 h-5" />
-            </button>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {formData.tags.map((tag, idx) => (
-              <span
-                key={idx}
-                className="px-3 py-1.5 bg-slate-100 text-slate-700 rounded-lg text-sm font-medium flex items-center gap-2 group hover:bg-slate-200 transition-all"
+            <div className="flex gap-2 mb-3">
+              <input
+                className="flex-1 px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
+                placeholder="Enter tag..."
+                value={tagInput}
+                onChange={(e) => setTagInput(e.target.value)}
+                onKeyPress={(e) =>
+                  e.key === "Enter" && (e.preventDefault(), addTag())
+                }
+              />
+              <button
+                onClick={addTag}
+                className="px-4 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-semibold transition-all active:scale-95"
+                type="button"
               >
-                <TagIcon className="w-3.5 h-3.5" />
-                {tag}
-                <button
-                  onClick={() => removeTag(tag)}
-                  className="ml-1 hover:text-rose-600 transition-colors"
-                  type="button"
+                <Plus className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {formData.tags.map((tag, idx) => (
+                <span
+                  key={idx}
+                  className="px-3 py-1.5 bg-slate-100 text-slate-700 rounded-lg text-sm font-medium flex items-center gap-2 group hover:bg-slate-200 transition-all"
                 >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              </span>
-            ))}
-          </div>
-        </div>
-
-        {/* Status */}
-        <div>
-          <label className="block text-sm font-semibold text-slate-800 mb-2">
-            Status
-          </label>
-          <div className="flex gap-3">
-            <button
-              onClick={() => handleChange("status", "draft")}
-              className={`flex-1 px-4 py-3 rounded-xl font-semibold transition-all ${
-                formData.status === "draft"
-                  ? "bg-amber-600 text-white shadow-lg shadow-amber-500/30"
-                  : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-              }`}
-              type="button"
-            >
-              Draft
-            </button>
-            <button
-              onClick={() => handleChange("status", "published")}
-              className={`flex-1 px-4 py-3 rounded-xl font-semibold transition-all ${
-                formData.status === "published"
-                  ? "bg-emerald-600 text-white shadow-lg shadow-emerald-500/30"
-                  : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-              }`}
-              type="button"
-            >
-              Published
-            </button>
-          </div>
-        </div>
-
-        {/* SEO Section */}
-        <div className="border-t border-slate-200 pt-6">
-          <h3 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
-            <Info className="w-5 h-5 text-indigo-600" />
-            SEO Settings
-          </h3>
-          
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-semibold text-slate-800 mb-2">
-                SEO Title
-              </label>
-              <input
-                className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
-                placeholder="Title for search engines..."
-                value={formData.seo.title}
-                onChange={(e) =>
-                  handleNestedChange("seo", "title", e.target.value)
-                }
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-semibold text-slate-800 mb-2">
-                SEO Description
-              </label>
-              <textarea
-                rows={3}
-                className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all resize-none"
-                placeholder="Meta description for search engines..."
-                value={formData.seo.description}
-                onChange={(e) =>
-                  handleNestedChange("seo", "description", e.target.value)
-                }
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-semibold text-slate-800 mb-2">
-                SEO Keywords
-              </label>
-              <input
-                className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
-                placeholder="keyword1, keyword2, keyword3"
-                value={formData.seo.keywords}
-                onChange={(e) =>
-                  handleNestedChange("seo", "keywords", e.target.value)
-                }
-              />
+                  <TagIcon className="w-3.5 h-3.5" />
+                  {tag}
+                  <button
+                    onClick={() => removeTag(tag)}
+                    className="ml-1 hover:text-rose-600 transition-colors"
+                    type="button"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </span>
+              ))}
             </div>
           </div>
-        </div>
 
-        {/* Action Buttons */}
-        <div className="flex gap-3 pt-6 border-t border-slate-200">
-          <button
-            onClick={onCancel}
-            className="flex-1 px-6 py-3 bg-slate-100 text-slate-700 rounded-xl font-semibold hover:bg-slate-200 transition-all active:scale-95"
-            disabled={isLoading}
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleSubmit}
-            disabled={isLoading}
-            className="flex-1 bg-gradient-to-r from-indigo-600 to-violet-600 text-white py-3 rounded-xl font-semibold hover:from-indigo-700 hover:to-violet-700 transition-all shadow-lg shadow-indigo-500/30 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed active:scale-95"
-          >
-            {isLoading ? (
-              <>
-                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                {isEditMode ? "Updating..." : "Creating..."}
-              </>
-            ) : (
-              <>
-                <Save size={18} />
-                {isEditMode ? "Update Post" : "Create Post"}
-              </>
-            )}
-          </button>
-        </div>
-
-        {/* Info Alert */}
-        <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl flex items-start gap-3">
-          <Info className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
+          {/* Status */}
           <div>
-            <p className="text-sm font-semibold text-blue-900 mb-1">
-              {isEditMode ? "Update Information" : "Publishing Tips"}
-            </p>
-            <p className="text-xs text-blue-700">
-              {isEditMode
-                ? "Changes will be reflected immediately after saving"
-                : "Make sure all required fields are filled before publishing"}
-            </p>
+            <label className="block text-sm font-semibold text-slate-800 mb-2">
+              Status
+            </label>
+            <div className="flex gap-3">
+              <button
+                onClick={() => handleChange("status", "draft")}
+                className={`flex-1 px-4 py-3 rounded-xl font-semibold transition-all ${
+                  formData.status === "draft"
+                    ? "bg-amber-600 text-white shadow-lg shadow-amber-500/30"
+                    : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                }`}
+                type="button"
+              >
+                Draft
+              </button>
+              <button
+                onClick={() => handleChange("status", "published")}
+                className={`flex-1 px-4 py-3 rounded-xl font-semibold transition-all ${
+                  formData.status === "published"
+                    ? "bg-emerald-600 text-white shadow-lg shadow-emerald-500/30"
+                    : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                }`}
+                type="button"
+              >
+                Published
+              </button>
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex gap-3 pt-6 border-t border-slate-200">
+            <button
+              onClick={onCancel}
+              className="flex-1 px-6 py-3 bg-slate-100 text-slate-700 rounded-xl font-semibold hover:bg-slate-200 transition-all active:scale-95"
+              disabled={isLoading}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSubmit}
+              disabled={isLoading}
+              className="flex-1 bg-gradient-to-r from-indigo-600 to-violet-600 text-white py-3 rounded-xl font-semibold hover:from-indigo-700 hover:to-violet-700 transition-all shadow-lg shadow-indigo-500/30 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed active:scale-95"
+            >
+              {isLoading ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                  {isEditMode ? "Updating..." : "Creating..."}
+                </>
+              ) : (
+                <>
+                  <Save size={18} />
+                  {isEditMode ? "Update Post" : "Create Post"}
+                </>
+              )}
+            </button>
+          </div>
+
+          {/* Info Alert */}
+          <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl flex items-start gap-3">
+            <Info className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-semibold text-blue-900 mb-1">
+                {isEditMode ? "Update Information" : "Publishing Tips"}
+              </p>
+              <p className="text-xs text-blue-700">
+                {isEditMode
+                  ? "Changes will be reflected immediately after saving"
+                  : "Make sure all required fields are filled before publishing"}
+              </p>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }

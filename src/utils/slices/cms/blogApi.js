@@ -3,47 +3,39 @@ import { apiSlice } from "../apiSlice";
 export const blogApi = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
 
-    // 🔹 GET ALL BLOGS (Admin CMS)
     getBlogs: builder.query({
       query: (params) => ({
-        url: "/cms/blog/get",
-        params, // { status, tag, search, page, limit }
+        url: "/blogs",
+        params,
       }),
       providesTags: ["Blog"],
     }),
 
-    // 🔹 GET SINGLE BLOG BY SLUG
     getBlogBySlug: builder.query({
-      query: (slug) => `/cms/blog/get/${slug}`,
-      providesTags: (result, error, slug) => [
-        { type: "Blog", id: slug },
-      ],
+      query: (slug) => `/blogs/${slug}`,
     }),
 
-    // 🔹 CREATE BLOG
     createBlog: builder.mutation({
       query: (formData) => ({
-        url: "/cms/blog/add",
+        url: "/blogs",
         method: "POST",
         body: formData,
       }),
       invalidatesTags: ["Blog"],
     }),
 
-    // 🔹 UPDATE BLOG
     updateBlog: builder.mutation({
-      query: ({ slug, formData }) => ({
-        url: `/cms/blog/update/${slug}`,
+      query: ({ id, formData }) => ({
+        url: `/blogs/${id}`,
         method: "PUT",
         body: formData,
       }),
       invalidatesTags: ["Blog"],
     }),
 
-    // 🔹 DELETE BLOG
     deleteBlog: builder.mutation({
-      query: (slug) => ({
-        url: `/cms/blog/delete/${slug}`,
+      query: (id) => ({
+        url: `/blogs/${id}`,
         method: "DELETE",
       }),
       invalidatesTags: ["Blog"],
