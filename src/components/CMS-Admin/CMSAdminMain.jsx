@@ -23,6 +23,8 @@ import {
   ArrowBigLeft,
   ArrowLeft,
   Bell,
+  FileTextIcon,
+  PenLine,
 } from 'lucide-react';
 import { useLogoutAdminApiMutation } from '@/utils/slices/adminApiSlice';
 // CMS Modules Configuration
@@ -106,6 +108,13 @@ const CMS_MODULES = [
     icon: Bell,
     category: 'content',
     route: '/cms-admin/notices',
+  },  {
+    id: 'blogs',
+    name: 'Blogs',
+    desc: 'Manage Blogs on the Websites',
+    icon: PenLine,
+    category: 'content',
+    route: '/cms-admin/blogs',
   },
 ];
 
