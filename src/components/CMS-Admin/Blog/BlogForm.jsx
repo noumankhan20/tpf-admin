@@ -44,7 +44,7 @@ export default function BlogForm({
     coverImagePreview: null,
     video: null,
     videoPreview: null,
-    status: "draft",
+    status: "DRAFT",
     author: {
       name: "",
       info: "",
@@ -69,7 +69,7 @@ export default function BlogForm({
         videoPreview: selectedBlog.video?.url
           ? getMediaUrl(selectedBlog.video.url)
           : null,
-        status: selectedBlog.status || "draft",
+        status: selectedBlog.status || "DRAFT",
         author: {
           name: selectedBlog.author?.name || "",
           info: selectedBlog.author?.info || "",
@@ -652,9 +652,9 @@ This is the second paragraph.`}
             </label>
             <div className="flex gap-3">
               <button
-                onClick={() => handleChange("status", "draft")}
+                onClick={() => handleChange("status", "DRAFT")}
                 className={`flex-1 px-4 py-3 rounded-xl font-semibold transition-all ${
-                  formData.status === "draft"
+                  formData.status === "DRAFT"
                     ? "bg-amber-600 text-white shadow-lg shadow-amber-500/30"
                     : "bg-slate-100 text-slate-700 hover:bg-slate-200"
                 }`}
@@ -663,9 +663,9 @@ This is the second paragraph.`}
                 Draft
               </button>
               <button
-                onClick={() => handleChange("status", "published")}
+                onClick={() => handleChange("status", "PUBLISHED")}
                 className={`flex-1 px-4 py-3 rounded-xl font-semibold transition-all ${
-                  formData.status === "published"
+                  formData.status === "PUBLISHED"
                     ? "bg-emerald-600 text-white shadow-lg shadow-emerald-500/30"
                     : "bg-slate-100 text-slate-700 hover:bg-slate-200"
                 }`}
