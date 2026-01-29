@@ -25,13 +25,17 @@ export const blogApi = apiSlice.injectEndpoints({
     }),
 
     updateBlog: builder.mutation({
-      query: ({ id, formData }) => ({
+      query: ({ id, data }) => ({
         url: `/blogs/${id}`,
         method: "PUT",
-        body: formData,
+        body: data,
+        headers:
+          data instanceof FormData
+            ? undefined
+            : { "Content-Type": "application/json" },
       }),
-      invalidatesTags: ["Blog"],
     }),
+
 
     deleteBlog: builder.mutation({
       query: (id) => ({

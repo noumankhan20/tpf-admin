@@ -159,45 +159,78 @@ export default function BlogForm({
       return;
     }
 
-    if (!isEditMode && !formData.coverImage) {
-      onError("Please upload a cover image");
-      return;
-    }
-
-    const data = new FormData();
-    data.append("title", formData.title);
-    data.append("excerpt", formData.excerpt);
-    data.append("content", formData.content);
-    data.append("status", formData.status);
-    data.append("author[name]", formData.author.name);
-    if (formData.author.info) {
-      data.append("author[info]", formData.author.info);
-    }
-
-    formData.tags.forEach((tag) => {
-      data.append("tags[]", tag);
-    });
-
-    if (formData.coverImage) {
-      data.append("coverImage", formData.coverImage);
-    }
-
-    if (formData.video) {
-      data.append("video", formData.video);
-    }
-
     try {
-      if (isEditMode) {
-        await updateBlog({ id: selectedBlog._id, data }).unwrap();
-        onSuccess("Blog updated successfully!");
-      } else {
+      // --------------------
+      // CREATE (always multipart)
+      // --------------------
+      if (!isEditMode) {
+        if (!formData.coverImage) {
+          onError("Please upload a cover image");
+          return;
+        }
+
+        const data = new FormData();
+        data.append("title", formData.title);
+        data.append("excerpt", formData.excerpt);
+        data.append("content", formData.content);
+        data.append("status", formData.status);
+        data.append("author[name]", formData.author.name);
+        data.append("author[info]", formData.author.info || "");
+
+        formData.tags.forEach(tag => data.append("tags[]", tag));
+
+        data.append("coverImage", formData.coverImage);
+        if (formData.video) data.append("video", formData.video);
+
         await createBlog(data).unwrap();
         onSuccess("Blog created successfully!");
+        return;
       }
+
+      // --------------------
+      // UPDATE
+      // --------------------
+
+      const hasFiles = formData.coverImage || formData.video;
+
+      let payload;
+
+      if (hasFiles) {
+        // multipart ONLY if files changed
+        payload = new FormData();
+        payload.append("title", formData.title);
+        payload.append("excerpt", formData.excerpt);
+        payload.append("content", formData.content);
+        payload.append("status", formData.status);
+        payload.append("author[name]", formData.author.name);
+        payload.append("author[info]", formData.author.info || "");
+        formData.tags.forEach(tag => payload.append("tags[]", tag));
+
+        if (formData.coverImage) payload.append("coverImage", formData.coverImage);
+        if (formData.video) payload.append("video", formData.video);
+      } else {
+        // JSON payload (THIS FIXES UPDATE)
+        payload = {
+          title: formData.title,
+          excerpt: formData.excerpt,
+          content: formData.content,
+          status: formData.status,
+          author: formData.author,
+          tags: formData.tags,
+        };
+      }
+
+      await updateBlog({
+        id: selectedBlog._id,
+        data: payload,
+      }).unwrap();
+
+      onSuccess("Blog updated successfully!");
     } catch (error) {
       onError(error?.data?.message || "Failed to save blog");
     }
   };
+
 
   const isLoading = isCreating || isUpdating;
 
@@ -514,13 +547,12 @@ This is the second paragraph.`}
                 Excerpt / Summary
               </label>
               <span
-                className={`text-xs font-semibold ${
-                  formData.excerpt.length >= EXCERPT_LIMIT
+                className={`text-xs font-semibold ${formData.excerpt.length >= EXCERPT_LIMIT
                     ? "text-red-600"
                     : formData.excerpt.length >= EXCERPT_LIMIT * 0.9
-                    ? "text-amber-600"
-                    : "text-slate-500"
-                }`}
+                      ? "text-amber-600"
+                      : "text-slate-500"
+                  }`}
               >
                 {formData.excerpt.length}/{EXCERPT_LIMIT}
               </span>
@@ -564,7 +596,7 @@ This is the second paragraph.`}
               <p className="text-xs text-blue-800 flex items-start gap-2">
                 <Info className="w-4 h-4 shrink-0 mt-0.5" />
                 <span>
-                  Use markdown-style formatting: <code className="bg-white px-1.5 py-0.5 rounded mx-1">#</code> for headings, 
+                  Use markdown-style formatting: <code className="bg-white px-1.5 py-0.5 rounded mx-1">#</code> for headings,
                   <code className="bg-white px-1.5 py-0.5 rounded mx-1">-</code> for bullets, etc. Click the Formatting Guide for details.
                 </span>
               </p>
@@ -653,22 +685,20 @@ This is the second paragraph.`}
             <div className="flex gap-3">
               <button
                 onClick={() => handleChange("status", "DRAFT")}
-                className={`flex-1 px-4 py-3 rounded-xl font-semibold transition-all ${
-                  formData.status === "DRAFT"
+                className={`flex-1 px-4 py-3 rounded-xl font-semibold transition-all ${formData.status === "DRAFT"
                     ? "bg-amber-600 text-white shadow-lg shadow-amber-500/30"
                     : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-                }`}
+                  }`}
                 type="button"
               >
                 Draft
               </button>
               <button
                 onClick={() => handleChange("status", "PUBLISHED")}
-                className={`flex-1 px-4 py-3 rounded-xl font-semibold transition-all ${
-                  formData.status === "PUBLISHED"
+                className={`flex-1 px-4 py-3 rounded-xl font-semibold transition-all ${formData.status === "PUBLISHED"
                     ? "bg-emerald-600 text-white shadow-lg shadow-emerald-500/30"
                     : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-                }`}
+                  }`}
                 type="button"
               >
                 Published
