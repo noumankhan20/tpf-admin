@@ -16,6 +16,7 @@ import {
 import FundraisingHeader from "./FundraisingHeader";
 import CampaignList from "./CampaignList";
 import CampaignForm from "./CampaignForm";
+
 export default function FundraisingCMS() {
   const router = useRouter();
   const [viewMode, setViewMode] = useState("view");
@@ -29,11 +30,19 @@ export default function FundraisingCMS() {
   const categories = [
     "Emergency Aid",
     "Medical Aid",
-    "Orphans",
+    "Disaster Relief",
+    "Orphans & Children",
     "Education",
+    "Women Empowerment",
     "Clean Water",
-    "Construction"
+    "Food Distribution",
+    "Healthcare",
+    "Elderly Care",
+    "Animal Welfare",
+    "Environment",
+    "Other",
   ];
+
 
   const categoryColors = {
     "Emergency Aid": "bg-red-100 text-red-800",
@@ -46,19 +55,25 @@ export default function FundraisingCMS() {
 
   const [formData, setFormData] = useState({
     category: "Emergency Aid",
+    customCategory: "",
+    source: "INTERNAL",
+    permanentType: "Other", // Zakat Campaign, Bank Interest (Riba), Emergency Funds
+    fundsDisbursed: 0,
+    allowedDonationTypes: [],
     isUrgent: false,
     taxBenefits: false,
     zakatVerified: false,
+    ribaEligible: false,
     title: "",
     organization: "",
     beneficiaryName: "",
-    campaignerName: " ",
+    campaignerName: "",
     about: "",
     impactGoals: [""],
     requiredAmount: "",
     deadline: "",
     mediaType: "image",
-    image: null,
+    images: [],
     imagePreview: null,
     video: null,
     videoPreview: null,
@@ -73,6 +88,15 @@ export default function FundraisingCMS() {
     selectedVideoUrl: "",
     taskId: "",
     currentStatus: "",
+    imageGallery: [],
+    socialLinks: {
+      instagram: "",
+      facebook: "",
+      youtube: "",
+      twitter: "",
+      linkedin: "",
+      other: "",
+    },
   });
 
   const {
@@ -87,7 +111,6 @@ export default function FundraisingCMS() {
     useUpdateFundraiserMutation();
 
   const isSaving = isCreating || isUpdating;
-
 
   const [deleteFundraiser] = useDeleteFundraiserMutation();
 
@@ -108,14 +131,50 @@ export default function FundraisingCMS() {
     }
   };
 
+  const fetchCampaignByFundraiser = async (fundraiserId) => {
+    try {
+      const res = await axios.get(
+        `${API_BASE}/campaigns/by-fundraiser/${fundraiserId}`,
+        { withCredentials: true }
+      );
 
-  const handleEdit = (card) => {
+      return res.data?.data || null;
+    } catch (err) {
+      console.error("Failed to fetch campaign:", err);
+      return null;
+    }
+  };
+
+
+  const handleEdit = async (card) => {
     setEditingCard(card);
+    const campaign = await fetchCampaignByFundraiser(card._id);
+
+    // ✅ TAKE LATEST SOCIAL MEDIA SUBMISSION
+    const latestSocialLinks =
+      campaign?.socialMediaSubmissions?.length
+        ? campaign.socialMediaSubmissions[
+          campaign.socialMediaSubmissions.length - 1
+        ].links
+        : {
+          instagram: "",
+          facebook: "",
+          youtube: "",
+          twitter: "",
+          linkedin: "",
+          other: "",
+        };
+
     setFormData({
       category: card.category,
+      customCategory: card.customCategory || "",
+      source: card.source || "INTERNAL",
+      fundsDisbursed: card.fundsDisbursed || 0,
+      allowedDonationTypes: card.allowedDonationTypes || [],
       isUrgent: card.isUrgent,
       taxBenefits: card.taxBenefits,
       zakatVerified: card.zakatVerified,
+      ribaEligible: card.ribaEligible,
       title: card.title,
       organization: card.organization,
       beneficiaryName: card.beneficiaryName || "",
@@ -125,7 +184,7 @@ export default function FundraisingCMS() {
       requiredAmount: card.requiredAmount,
       deadline: card.deadline?.split("T")[0],
       mediaType: card.mediaType || "image",
-      image: null,
+      images: [],
       imagePreview: card.imageUrl,
       video: null,
       videoPreview: card.videoUrl,
@@ -136,6 +195,10 @@ export default function FundraisingCMS() {
       existingDocuments: card.documents || [],
       documents: [],
       currentStatus: card.currentStatus || "",
+      selectedImageUrl: card.imageUrl || "",
+      selectedVideoUrl: card.videoUrl || "",
+      imageGallery: card.imageGallery || [],
+      socialLinks: latestSocialLinks,
     });
     setViewMode("edit");
   };
@@ -155,6 +218,12 @@ export default function FundraisingCMS() {
       alert("Failed to delete campaign");
     }
   };
+  const finalCategory =
+    formData.category === "Other" && formData.customCategory.trim()
+      ? formData.customCategory.trim()
+      : formData.category;
+
+
 
   const handleSave = async () => {
     try {
@@ -162,17 +231,32 @@ export default function FundraisingCMS() {
 
       form.append("title", formData.title);
       form.append("organization", formData.organization);
-      form.append("category", formData.category);
-      form.append("requiredAmount", formData.requiredAmount);
-      form.append("deadline", formData.deadline);
+      form.append("category", finalCategory);
+      form.append("source", formData.source);
+      form.append("fundsDisbursed", formData.fundsDisbursed);
+      form.append("allowedDonationTypes", JSON.stringify(formData.allowedDonationTypes));
+
+      if (formData.source !== "FOUNDATION") {
+        form.append("requiredAmount", formData.requiredAmount);
+        form.append("deadline", formData.deadline);
+      }
       form.append("mediaType", formData.mediaType);
       form.append("isUrgent", formData.isUrgent);
       form.append("taxBenefits", formData.taxBenefits);
       form.append("zakatVerified", formData.zakatVerified);
+      form.append("ribaEligible", formData.ribaEligible);
       form.append("beneficiaryName", formData.beneficiaryName);
       form.append("campaignerName", formData.campaignerName);
       form.append("about", formData.about);
       form.append("currentStatus", formData.currentStatus);
+      if (
+        formData.socialLinks &&
+        Object.values(formData.socialLinks).some(
+          (v) => typeof v === "string" && v.trim() !== ""
+        )
+      ) {
+        form.append("socialLinks", JSON.stringify(formData.socialLinks));
+      }
 
       formData.documents.forEach((file) => {
         form.append("documents", file);
@@ -182,8 +266,17 @@ export default function FundraisingCMS() {
         formData.impactGoals.filter(g => g.trim() !== "")
       ));
 
-      if (formData.mediaType === "image" && formData.image instanceof File) {
-        form.append("image", formData.image);
+      if (formData.mediaType === "image") {
+        formData.images.forEach((file) => {
+          form.append("image", file);
+        });
+      }
+
+      if (editingCard) {
+        form.append(
+          "imageGallery",
+          JSON.stringify(formData.imageGallery)
+        );
       }
 
       if (formData.mediaType === "video" && formData.video instanceof File) {
@@ -193,8 +286,6 @@ export default function FundraisingCMS() {
       form.append("campaignId", formData.campaignId);
       if (formData.selectedImageUrl) form.append("selectedImageUrl", formData.selectedImageUrl);
       if (formData.selectedVideoUrl) form.append("selectedVideoUrl", formData.selectedVideoUrl);
-
-      let res;
 
       if (editingCard) {
         await updateFundraiser({
@@ -230,9 +321,11 @@ export default function FundraisingCMS() {
   const resetForm = () => {
     setFormData({
       category: "Emergency Aid",
+      customCategory: "",
       isUrgent: false,
       taxBenefits: false,
       zakatVerified: false,
+      ribaEligible: false,
       title: "",
       organization: "",
       beneficiaryName: "",
@@ -242,7 +335,7 @@ export default function FundraisingCMS() {
       requiredAmount: "",
       deadline: "",
       mediaType: "image",
-      image: null,
+      images: [],
       imagePreview: null,
       video: null,
       videoPreview: null,
@@ -257,6 +350,16 @@ export default function FundraisingCMS() {
       selectedVideoUrl: "",
       taskId: "",
       currentStatus: "",
+      imageGallery: [],
+      socialLinks: {
+        instagram: "",
+        facebook: "",
+        youtube: "",
+        twitter: "",
+        linkedin: "",
+        other: "",
+      },
+
     });
     setSelectedCampaign(null);
   };
@@ -283,7 +386,6 @@ export default function FundraisingCMS() {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Back Button */}
         <button
           onClick={() => router.push('/cms-admin')}
           className="mb-6 flex items-center gap-2 text-gray-600 hover:text-emerald-600 transition-colors font-medium"
@@ -333,7 +435,6 @@ export default function FundraisingCMS() {
             onSave={handleSave}
             onCancel={handleCancel}
             isSaving={isSaving}
-
           />
         )}
       </div>

@@ -1,9 +1,9 @@
-import FundraisingCMS from '@/components/CMS-Admin/Fundraising'
 import React from 'react'
+import AdminNoticesPage from "@/components/Notices/Notices"
 const page = () => {
   return (
     <div>
-        <FundraisingCMS />
+        <AdminNoticesPage />
         </div>
   )
 }

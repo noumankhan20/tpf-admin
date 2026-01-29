@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Search, Menu, X } from 'lucide-react';
 import NotificationDropdown from '../Admin/Communication/NotificationDropdown';
+import VoucherNotification from '../Admin/VoucherNotification';
 
 export default function Navbar({ onMenuClick }) {
     const [isSearchExpanded, setIsSearchExpanded] = useState(false);
@@ -21,6 +22,7 @@ export default function Navbar({ onMenuClick }) {
 
                 {/* Right Section */}
                 <div className="flex items-center space-x-4 ml-auto">
+                    <VoucherNotification />
                     <NotificationDropdown />
 
                     <div className="flex items-center space-x-3">

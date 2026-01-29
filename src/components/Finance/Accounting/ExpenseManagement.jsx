@@ -32,6 +32,10 @@ import { useGetCampaignListQuery } from '@/utils/slices/campaignSlice';
 import { useGetPurchasesQuery } from '@/utils/slices/InventoryAndAsset/purchaseApiSlice';
 import { useGetVendorsQuery } from '@/utils/slices/InventoryAndAsset/vendorApiSlice';
 import { useGetAgreementsQuery } from '@/utils/slices/documentationApiSlice';
+import {
+    useGetVolunteersQuery,
+    useGetApprovedVouchersQuery,
+} from '@/utils/slices/vouchersApiSlice';
 
 export default function ExpenseManagement() {
     const router = useRouter();
@@ -53,13 +57,6 @@ export default function ExpenseManagement() {
 
     const [createExpense, { isLoading: isCreating }] = useCreateExpenseMutation();
 
-    const expenses = expensesResponse?.data || [];
-    const admins = adminsResponse?.data || [];
-    const campaigns = campaignsResponse?.data || [];
-    const purchases = purchasesResponse?.data || [];
-    const vendors = vendorsResponse?.data || [];
-    const agreements = agreementsResponse?.data || [];
-
     // Form State
     const [formData, setFormData] = useState({
         expenseType: 'SALARY',
@@ -77,8 +74,26 @@ export default function ExpenseManagement() {
         volunteerName: '',
         volunteerPhone: '',
         volunteerLocation: '',
+        volunteerId: '',
+        voucherId: '',
         proofFile: null
     });
+
+    const { data: volunteersResponse } = useGetVolunteersQuery();
+    const { data: vouchersResponse } = useGetApprovedVouchersQuery(formData.volunteerId, {
+        skip: !formData.volunteerId
+    });
+
+    const volunteers = volunteersResponse?.data || [];
+    const approvedVouchers = vouchersResponse?.data || [];
+
+    const expenses = expensesResponse?.data || [];
+    const admins = adminsResponse?.data || [];
+    const campaigns = campaignsResponse?.data || [];
+    const purchases = purchasesResponse?.data || [];
+    const vendors = vendorsResponse?.data || [];
+    const agreements = agreementsResponse?.data || [];
+
 
     const expenseTypes = [
         { value: 'ALL', label: 'All Expenses', color: 'gray' },
@@ -127,10 +142,12 @@ export default function ExpenseManagement() {
             if (formData.expenseType === 'REIMBURSEMENT') {
                 if (formData.reimbursementType === 'ADMIN' && formData.adminId) {
                     formDataToSend.append('reimbursementTo[adminId]', formData.adminId);
-                } else if (formData.reimbursementType === 'VOLUNTEER') {
-                    formDataToSend.append('reimbursementTo[volunteerDetails][name]', formData.volunteerName);
+                } else if (formData.reimbursementType === 'VOLUNTEER' && formData.volunteerId) {
+                    formDataToSend.append('reimbursementTo[volunteerDetails][name]', formData.volunteerName); // Still keeping old fields for safety
                     formDataToSend.append('reimbursementTo[volunteerDetails][phone]', formData.volunteerPhone);
                     formDataToSend.append('reimbursementTo[volunteerDetails][location]', formData.volunteerLocation);
+                    formDataToSend.append('reimbursementTo[volunteerId]', formData.volunteerId);
+                    if (formData.voucherId) formDataToSend.append('voucherId', formData.voucherId);
                 }
             }
 
@@ -164,6 +181,8 @@ export default function ExpenseManagement() {
             volunteerName: '',
             volunteerPhone: '',
             volunteerLocation: '',
+            volunteerId: '',
+            voucherId: '',
             proofFile: null
         });
     };
@@ -182,7 +201,7 @@ export default function ExpenseManagement() {
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
                     <div className="flex items-center gap-4">
                         <button
-                           onClick={() => router.push('/select-portal?category=finance')}
+                            onClick={() => router.push('/select-portal?category=finance')}
                             className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-500"
                         >
                             <ArrowLeft size={20} />
@@ -555,37 +574,61 @@ export default function ExpenseManagement() {
                                                     </div>
                                                 </div>
                                             ) : (
-                                                <div className="grid grid-cols-3 gap-4">
+                                                <div className="space-y-4">
                                                     <div>
-                                                        <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">Name *</label>
-                                                        <input
-                                                            type="text"
-                                                            required
-                                                            value={formData.volunteerName}
-                                                            onChange={(e) => setFormData(p => ({ ...p, volunteerName: e.target.value }))}
-                                                            className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all"
-                                                        />
+                                                        <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">Select a Volunteer *</label>
+                                                        <div className="relative">
+                                                            <Users className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                                                            <select
+                                                                required
+                                                                value={formData.volunteerId}
+                                                                onChange={(e) => {
+                                                                    const vId = e.target.value;
+                                                                    setFormData(p => ({ ...p, volunteerId: vId, voucherId: '', amount: '', description: '' }));
+                                                                }}
+                                                                className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all appearance-none"
+                                                            >
+                                                                <option value="">Choose Volunteer</option>
+                                                                {volunteers.map(v => (
+                                                                    <option key={v._id} value={v._id}>{v.fullName} ({v.email})</option>
+                                                                ))}
+                                                            </select>
+                                                        </div>
                                                     </div>
-                                                    <div>
-                                                        <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">Phone *</label>
-                                                        <input
-                                                            type="tel"
-                                                            required
-                                                            value={formData.volunteerPhone}
-                                                            onChange={(e) => setFormData(p => ({ ...p, volunteerPhone: e.target.value }))}
-                                                            className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all"
-                                                        />
-                                                    </div>
-                                                    <div>
-                                                        <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">Location *</label>
-                                                        <input
-                                                            type="text"
-                                                            required
-                                                            value={formData.volunteerLocation}
-                                                            onChange={(e) => setFormData(p => ({ ...p, volunteerLocation: e.target.value }))}
-                                                            className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all"
-                                                        />
-                                                    </div>
+
+                                                    {formData.volunteerId && (
+                                                        <div>
+                                                            <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">Select a Voucher *</label>
+                                                            <div className="relative">
+                                                                <Receipt className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                                                                <select
+                                                                    required
+                                                                    value={formData.voucherId}
+                                                                    onChange={(e) => {
+                                                                        const vId = e.target.value;
+                                                                        const selectedV = approvedVouchers.find(v => v._id === vId);
+                                                                        setFormData(p => ({
+                                                                            ...p,
+                                                                            voucherId: vId,
+                                                                            amount: selectedV?.amount || '',
+                                                                            description: selectedV?.description || ''
+                                                                        }));
+                                                                    }}
+                                                                    className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all appearance-none"
+                                                                >
+                                                                    <option value="">Choose Approved Voucher</option>
+                                                                    {approvedVouchers.map(v => (
+                                                                        <option key={v._id} value={v._id}>
+                                                                            #{v._id.slice(-6).toUpperCase()} - ₹{v.amount} ({v.description})
+                                                                        </option>
+                                                                    ))}
+                                                                </select>
+                                                            </div>
+                                                            {approvedVouchers.length === 0 && (
+                                                                <p className="text-xs text-orange-500 mt-1">No approved and pending vouchers found for this volunteer.</p>
+                                                            )}
+                                                        </div>
+                                                    )}
                                                 </div>
                                             )}
                                         </>
