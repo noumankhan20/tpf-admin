@@ -206,4 +206,12 @@ export const MODULES = [
     category: "communication",
     desc: "Monitor all internal admin conversations",
   },
+  {
+    id: "FAQ Management",
+    name: "FAQ Management",
+    icon: MessageSquare,
+    route: "/admin/faq-management",
+    category: "communication",
+    desc: "Manage user questions and curate the platform FAQ system",
+  },
 ];

@@ -281,7 +281,8 @@ export default function CampaignForm({
                         allowed = ["Riba"];
                         riba = true;
                       } else if (val === "Emergency Funds") {
-                        allowed = ["Sadaqah", "Lillah"];
+                        allowed = ["Sadaqah", "Lillah", "Riba", "Imdad"];
+                        ribaEligible = true;
                       }
 
                       setFormData(prev => ({
