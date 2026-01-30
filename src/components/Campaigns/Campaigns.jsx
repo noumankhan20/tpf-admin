@@ -63,6 +63,7 @@ export default function CampaignAdminDashboard() {
 
     return matchesSearch && matchesFilter;
   });
+  const overallTotalTips = apiResponse?.overallTotalTips || 0;
 
   const stats = {
     total: campaigns.length,
@@ -419,14 +420,14 @@ export default function CampaignAdminDashboard() {
           </div>
 
           <div className="bg-gradient-to-br from-red-50 to-white rounded-xl sm:rounded-2xl shadow-sm border border-red-200 p-4 sm:p-6 hover:shadow-md transition-all transform hover:-translate-y-1">
-            <p className="text-xs sm:text-sm font-medium text-red-600 mb-1 sm:mb-2">Urgent</p>
-            <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-red-600">{stats.urgent}</p>
+            <p className="text-xs sm:text-sm font-medium text-red-600 mb-1 sm:mb-2">Total Tip</p>
+            <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-red-600">₹{overallTotalTips.toLocaleString('en-IN')}</p>
           </div>
 
           <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-200 p-4 sm:p-6 hover:shadow-md transition-all transform hover:-translate-y-1">
             <p className="text-xs sm:text-sm font-medium text-gray-500 mb-1 sm:mb-2">Raised</p>
             <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">
-              ₹{(stats.totalRaised / 1000).toFixed(0)}K
+              ₹{(stats.totalRaised || 0).toLocaleString('en-IN')}
             </p>
           </div>
 
