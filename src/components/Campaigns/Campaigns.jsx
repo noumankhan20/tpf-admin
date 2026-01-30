@@ -387,6 +387,44 @@ export default function CampaignAdminDashboard() {
                   </div>
                 )}
               </div>
+              {/* Donation Type Breakdown */}
+              {campaign.donationSummary && campaign.donationSummary.length > 0 && (
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5 sm:p-6 hover:shadow-md transition-shadow">
+                  <h3 className="text-sm font-bold text-gray-900 mb-4 flex items-center justify-between">
+                    <span>Donation Breakdown</span>
+                    <span className="text-xs font-semibold px-2.5 py-1 bg-emerald-50 text-emerald-700 rounded-full">
+                      {campaign.donationSummary.length} types
+                    </span>
+                  </h3>
+
+                  <div className="space-y-3">
+                    {campaign.donationSummary.map((item, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center justify-between p-4 rounded-xl border border-gray-100 bg-gradient-to-r from-gray-50 to-white hover:border-emerald-200 transition-all"
+                      >
+                        {/* Left */}
+                        <div>
+                          <p className="text-xs uppercase tracking-wide text-gray-500 font-semibold">
+                            {item.donationType}
+                          </p>
+                          <p className="text-sm text-gray-600 mt-1">
+                            {item.count} donation{item.count > 1 ? "s" : ""}
+                          </p>
+                        </div>
+
+                        {/* Right */}
+                        <div className="text-right">
+                          <p className="text-lg font-bold text-gray-900">
+                            ₹{item.totalAmount.toLocaleString("en-IN")}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
             </div>
           </div>
         </div>
