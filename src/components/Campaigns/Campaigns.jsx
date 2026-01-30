@@ -325,11 +325,22 @@ export default function CampaignAdminDashboard() {
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    {campaign.donorMessages.map((message, index) => (
-                      <div key={index} className="p-4 bg-gray-50 rounded-xl border border-gray-100 hover:border-gray-200 transition-colors">
-                        <p className="text-sm text-gray-900">{message}</p>
+                    {campaign.donorMessages.map((msg, index) => (
+                      <div
+                        key={index}
+                        className="p-4 bg-gray-50 rounded-xl border border-gray-100 hover:border-gray-200 transition-colors"
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          <User className="w-4 h-4 text-gray-400" />
+                          <span className="text-xs font-semibold text-gray-600">
+                            {msg.userName || "Anonymous"}
+                          </span>
+                        </div>
+
+                        <p className="text-sm text-gray-900">{msg.message}</p>
                       </div>
                     ))}
+
                   </div>
                 )}
               </div>
