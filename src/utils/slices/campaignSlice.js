@@ -13,7 +13,7 @@ export const campaignApiSlice = apiSlice.injectEndpoints({
       providesTags: ['Campaigns'],
     }),
     fetchCampaignById: builder.query({
-      query: (id) => `campaigns/${id}`, // <-- match your backend route
+      query: (id) => `campaigns/getcampaignlist/${id}`, // <-- match your backend route
       providesTags: (result, error, id) => [{ type: 'Campaigns', id }],
     }),
   }),
