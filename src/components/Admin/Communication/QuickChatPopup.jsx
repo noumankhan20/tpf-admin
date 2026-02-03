@@ -481,6 +481,11 @@ function MiniChatWindow({ chat, adminInfo, onClose }) {
                     <textarea
                         value={message}
                         onChange={(e) => handleInputChange(e.target.value)}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter' && !e.shiftKey) {
+                                handleSend(e);
+                            }
+                        }}
                         placeholder="Write a message..."
                         className="w-full bg-transparent border-none text-sm focus:ring-0 focus:outline-none resize-none placeholder:text-gray-500"
                         rows={2}
