@@ -79,10 +79,22 @@ export default function QuickChatPopup() {
 
     const openChat = (admin, isGlobal = false) => {
         const chatId = isGlobal ? 'global' : admin._id;
-        if (!activeChats.find(chat => chat.id === chatId)) {
+        const exists = activeChats.find(chat => chat.id === chatId);
+        if (!exists) {
             // Add new chat to the stack (up to 3)
-            setActiveChats(prev => [{ id: chatId, admin, isGlobal }, ...prev].slice(0, 3));
+            setActiveChats(prev => [{ id: chatId, admin, isGlobal, isMinimized: false }, ...prev].slice(0, 3));
+        } else if (exists.isMinimized) {
+            // If already open but minimized, unminimize it
+            setActiveChats(prev => prev.map(chat =>
+                chat.id === chatId ? { ...chat, isMinimized: false } : chat
+            ));
         }
+    };
+
+    const toggleMinimize = (chatId) => {
+        setActiveChats(prev => prev.map(chat =>
+            chat.id === chatId ? { ...chat, isMinimized: !chat.isMinimized } : chat
+        ));
     };
 
     const closeChat = (chatId) => {
@@ -253,38 +265,45 @@ export default function QuickChatPopup() {
                         const chatWidth = 340;
                         const gap = 12;
                         const startX = listLeftEdge - (index + 1) * (chatWidth + gap);
-                        const startY = typeof window !== 'undefined' ? window.innerHeight - 410 : 0;
+                        const windowHeight = chat.isMinimized ? 48 : 410;
+                        const startY = typeof window !== 'undefined' ? window.innerHeight - windowHeight : 0;
 
                         return (
                             <motion.div
                                 key={chat.id}
-                                drag
+                                drag={!chat.isMinimized}
                                 dragMomentum={false}
-                                initial={{ opacity: 0, scale: 0.9, x: startX, y: startY }}
-                                animate={{ opacity: 1, scale: 1, x: startX, y: startY }}
-                                // We use animate with startX/Y only for the first render to position them.
-                                // Framer motion drag will take over after that.
-                                // Actually, if we want them to STAY where they are after drag, we shouldn't 
-                                // keep startX/Y in 'animate' if it's dynamic.
-                                // But here startX/Y depends on 'index'. If a chat is closed, indices change.
-                                // To keep the "LinkedIn vibe" of stacking, we'll let them re-stack if one is closed.
+                                initial={{ opacity: 0, scale: 0.9, x: startX, y: startY + 50 }}
+                                animate={{
+                                    opacity: 1,
+                                    scale: 1,
+                                    x: startX,
+                                    y: startY
+                                }}
+                                transition={{
+                                    type: "spring",
+                                    stiffness: 400,
+                                    damping: 30,
+                                    mass: 0.8
+                                }}
                                 className="absolute w-[320px] sm:w-[340px] pointer-events-auto shadow-[0_20px_50px_-12px_rgba(0,0,0,0.25)] rounded-xl overflow-hidden"
                             >
                                 <MiniChatWindow
                                     chat={chat}
                                     adminInfo={adminInfo}
                                     onClose={() => closeChat(chat.id)}
+                                    onMinimize={() => toggleMinimize(chat.id)}
                                 />
                             </motion.div>
                         );
                     })}
                 </AnimatePresence>
             </div>
-        </div>
+        </div >
     );
 }
 
-function MiniChatWindow({ chat, adminInfo, onClose }) {
+function MiniChatWindow({ chat, adminInfo, onClose, onMinimize }) {
     const [message, setMessage] = useState('');
     const [allMessages, setAllMessages] = useState([]);
     const [typingUser, setTypingUser] = useState(null);
@@ -408,7 +427,7 @@ function MiniChatWindow({ chat, adminInfo, onClose }) {
     };
 
     return (
-        <div className="flex flex-col h-[400px] bg-white border border-gray-200 overflow-hidden">
+        <div className={`flex flex-col bg-white border border-gray-200 overflow-hidden ${chat.isMinimized ? 'h-[48px]' : 'h-[400px]'}`}>
             {/* Window Header - Draggable Handle */}
             <div className="px-3 py-2 border-b border-gray-200 flex items-center justify-between bg-white shrink-0 cursor-move">
                 <div className="flex items-center gap-2">
@@ -425,7 +444,24 @@ function MiniChatWindow({ chat, adminInfo, onClose }) {
                     </div>
                 </div>
                 <div className="flex items-center gap-1">
-                    <button onClick={onClose} className="p-1.5 hover:bg-gray-100 rounded-full transition-colors text-gray-500"><X size={18} /></button>
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onMinimize();
+                        }}
+                        className="p-1.5 hover:bg-gray-100 rounded-full transition-colors text-gray-500"
+                    >
+                        {chat.isMinimized ? <Maximize2 size={16} /> : <Minimize2 size={16} />}
+                    </button>
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onClose();
+                        }}
+                        className="p-1.5 hover:bg-gray-100 rounded-full transition-colors text-gray-500"
+                    >
+                        <X size={18} />
+                    </button>
                 </div>
             </div>
 
