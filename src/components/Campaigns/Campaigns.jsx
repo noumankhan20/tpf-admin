@@ -432,6 +432,65 @@ export default function CampaignAdminDashboard() {
                   </div>
                 </div>
               )}
+              {/* Campaign Expenses */}
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5 sm:p-6 hover:shadow-md transition-shadow">
+                <h3 className="text-sm font-bold text-gray-900 mb-4 flex items-center justify-between">
+                  <span>Campaign Expenses</span>
+                  <span className="text-xs font-semibold px-2.5 py-1 bg-red-50 text-red-700 rounded-full">
+                    {campaign.campaignExpenses?.length || 0} entries
+                  </span>
+                </h3>
+
+                {!campaign.campaignExpenses || campaign.campaignExpenses.length === 0 ? (
+                  <div className="text-center py-8">
+                    <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-gray-100 mb-3">
+                      <Receipt className="w-6 h-6 text-gray-400" />
+                    </div>
+                    <p className="text-xs text-gray-500 font-medium">
+                      No expenses recorded yet
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {campaign.campaignExpenses.map((expense, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center justify-between p-4 rounded-xl border border-gray-100 bg-gradient-to-r from-red-50 to-white hover:border-red-200 transition-all"
+                      >
+                        {/* Left */}
+                        <div>
+                          <p className="text-sm font-semibold text-gray-900">
+                            {expense.title || "Expense"}
+                          </p>
+                          {expense.date && (
+                            <p className="text-xs text-gray-500 mt-1">
+                              {formatDate(expense.date)}
+                            </p>
+                          )}
+                        </div>
+
+                        {/* Right */}
+                        <div className="text-right">
+                          <p className="text-lg font-bold text-red-600">
+                            ₹{(expense.amount || 0).toLocaleString("en-IN")}
+                          </p>
+
+                          {expense.proofUrl && (
+                            <a
+                              href={expense.proofUrl}
+                              target="_blank"
+                              className="text-xs text-emerald-600 hover:underline flex items-center justify-end gap-1 mt-1"
+                            >
+                              View Proof <ExternalLink className="w-3 h-3" />
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
 
             </div>
           </div>
