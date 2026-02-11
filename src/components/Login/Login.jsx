@@ -8,8 +8,6 @@ import { ToastContainer, toast } from 'react-toastify';
 import { useDispatch } from 'react-redux';
 import { useSelector } from "react-redux";
 
-
-
 export default function AdminLogin() {
   const router = useRouter();
   const [videoReady, setVideoReady] = useState(false);
@@ -240,13 +238,15 @@ export default function AdminLogin() {
 
             {/* Forgot Password Link */}
             <div className="text-center pt-2">
-              <a
-                href="#"
-                className="text-emerald-600 hover:text-emerald-700 text-sm font-medium transition-colors inline-flex items-center group"
+              <button
+                type="button"
+                onClick={() => router.push('/forgot-password')}
+                className="text-emerald-600 cursor-pointer hover:text-emerald-700 text-sm font-medium transition-colors inline-flex items-center group"
               >
                 Forgot your password?
-              </a>
+              </button>
             </div>
+
           </div>
         </div>
 

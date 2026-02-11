@@ -25,7 +25,7 @@ function AdminBootstrap({ children }) {
 
   const [ready, setReady] = useState(false);
 
-  const PUBLIC_ROUTES = ["/"];
+  const PUBLIC_ROUTES = ["/","/forgot-password"];
 
   useEffect(() => {
     // Skip auth check on login page

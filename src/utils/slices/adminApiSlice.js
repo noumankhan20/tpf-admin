@@ -138,6 +138,23 @@ export const adminApiSlice = apiSlice.injectEndpoints({
         method: "DELETE",
       }),
     }),
+    forgotPasswordAdmin: builder.mutation({
+      query: (data) => ({
+        url: "/adminAuth/forgot-password",
+        method: "POST",
+        body: data,
+      }),
+    }),
+
+    resetPasswordAdmin: builder.mutation({
+      query: (data) => ({
+        url: "/adminAuth/reset-password",
+        method: "POST",
+        body: data,
+      }),
+    }),
+
+
 
 
   }),
@@ -160,4 +177,6 @@ export const {
   useGetAdminExpensesQuery,
   useGetEmployeeLoginLogoutTimeQuery,
   useDeleteAdminMutation,
+  useForgotPasswordAdminMutation,
+  useResetPasswordAdminMutation
 } = adminApiSlice;
