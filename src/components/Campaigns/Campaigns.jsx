@@ -1,11 +1,11 @@
 "use client"
 import React, { useState } from 'react';
 import { AlertCircle, CheckCircle, FileText, MessageSquare, Users, TrendingUp, Clock, Shield, Receipt, Search, Filter, Eye, Trash2, Download, ChevronRight, ChevronDown, MoreVertical, Loader2, ArrowLeft, X, Menu, Edit, ExternalLink, User } from 'lucide-react';
-import { useFetchCampaignsQuery } from '@/utils/slices/campaignSlice';
+import { useFetchCampaignsQuery, useFetchCampaignByIdQuery } from '@/utils/slices/campaignSlice';
 import { useRouter } from 'next/navigation';
 export default function CampaignAdminDashboard() {
   const [view, setView] = useState('list');
-  const [selectedCampaign, setSelectedCampaign] = useState(null);
+  const [selectedCampaignId, setSelectedCampaignId] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [expandedRow, setExpandedRow] = useState(null);
@@ -16,6 +16,15 @@ export default function CampaignAdminDashboard() {
     page: currentPage,
     limit: limit
   });
+
+  const {
+    data: campaignDetailResponse,
+    isLoading: isCampaignLoading,
+    isError: isCampaignError,
+  } = useFetchCampaignByIdQuery(selectedCampaignId, {
+    skip: !selectedCampaignId,
+  });
+
 
   const campaigns = apiResponse?.campaigns || [];
 
@@ -58,20 +67,18 @@ export default function CampaignAdminDashboard() {
 
     const matchesFilter = filterStatus === 'all' ? true :
       filterStatus === 'active' ? campaign.isActive :
-        filterStatus === 'urgent' ? campaign.isUrgent :
-          filterStatus === 'inactive' ? !campaign.isActive : true;
+        filterStatus === 'inactive' ? !campaign.isActive : true;
 
     return matchesSearch && matchesFilter;
   });
 
-  const stats = {
-    total: campaigns.length,
-    active: campaigns.filter(c => c.isActive).length,
-    inactive: campaigns.filter(c => !c.isActive).length,
-    urgent: campaigns.filter(c => c.isUrgent).length,
-    totalRaised: campaigns.reduce((sum, c) => sum + (c.raisedAmount || 0), 0),
-    totalDonors: campaigns.reduce((sum, c) => sum + (c.totalDonors || 0), 0)
-  };
+  const totalCampaigns = campaigns.length;
+  const activeCampaigns = campaigns.filter(c => c.isActive).length;
+  const inactiveCampaigns = campaigns.filter(c => !c.isActive).length;
+  const totalDonors = apiResponse?.totalDonors || 0;
+  const overallTotalTips = apiResponse?.overallTotalTips || 0;
+  const totalRaised = apiResponse?.totalRaised || 0;
+
 
   if (isLoading) {
     return (
@@ -112,8 +119,17 @@ export default function CampaignAdminDashboard() {
     );
   }
 
-  if (view === 'detail' && selectedCampaign) {
-    const campaign = selectedCampaign;
+  if (view === 'detail') {
+    if (isCampaignLoading) {
+      return <div className="p-8">Loading campaign details...</div>;
+    }
+
+    if (isCampaignError || !campaignDetailResponse?.campaign) {
+      return <div className="p-8">Failed to load campaign details</div>;
+    }
+
+    const campaign = campaignDetailResponse.campaign;
+
     const progressPercentage = getProgressPercentage(campaign.raisedAmount || 0, campaign.targetAmount || 0);
 
     return (
@@ -121,7 +137,10 @@ export default function CampaignAdminDashboard() {
         <div className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-10">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
             <button
-              onClick={() => setView('list')}
+              onClick={() => {
+                setView('list');
+                setSelectedCampaignId(null);
+              }}
               className="flex items-center cursor-pointer gap-2 text-sm font-medium text-gray-600 hover:text-emerald-600 mb-4 transition-colors group"
             >
               <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
@@ -195,6 +214,14 @@ export default function CampaignAdminDashboard() {
                         {campaign.totalDonors === 0 ? 'No donors yet' : `${campaign.totalDonors} ${campaign.totalDonors === 1 ? 'donor' : 'donors'}`}
                       </span>
                     </div>
+                    {campaign.totalTips > 0 && (
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-gray-400">•</span>
+                        <span className="text-sm font-semibold text-red-600">
+                          Tip from this Campaign ₹{campaign.totalTips.toLocaleString("en-IN")}
+                        </span>
+                      </div>
+                    )}
                     {campaign.deadline && (
                       <div className="flex items-center gap-2">
                         <Clock className="w-5 h-5 text-gray-400" />
@@ -306,11 +333,22 @@ export default function CampaignAdminDashboard() {
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    {campaign.donorMessages.map((message, index) => (
-                      <div key={index} className="p-4 bg-gray-50 rounded-xl border border-gray-100 hover:border-gray-200 transition-colors">
-                        <p className="text-sm text-gray-900">{message}</p>
+                    {campaign.donorMessages.map((msg, index) => (
+                      <div
+                        key={index}
+                        className="p-4 bg-gray-50 rounded-xl border border-gray-100 hover:border-gray-200 transition-colors"
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          <User className="w-4 h-4 text-gray-400" />
+                          <span className="text-xs font-semibold text-gray-600">
+                            {msg.userName || "Anonymous"}
+                          </span>
+                        </div>
+
+                        <p className="text-sm text-gray-900">{msg.message}</p>
                       </div>
                     ))}
+
                   </div>
                 )}
               </div>
@@ -357,6 +395,103 @@ export default function CampaignAdminDashboard() {
                   </div>
                 )}
               </div>
+              {/* Donation Type Breakdown */}
+              {campaign.donationSummary && campaign.donationSummary.length > 0 && (
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5 sm:p-6 hover:shadow-md transition-shadow">
+                  <h3 className="text-sm font-bold text-gray-900 mb-4 flex items-center justify-between">
+                    <span>Donation Breakdown</span>
+                    <span className="text-xs font-semibold px-2.5 py-1 bg-emerald-50 text-emerald-700 rounded-full">
+                      {campaign.donationSummary.length} types
+                    </span>
+                  </h3>
+
+                  <div className="space-y-3">
+                    {campaign.donationSummary.map((item, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center justify-between p-4 rounded-xl border border-gray-100 bg-gradient-to-r from-gray-50 to-white hover:border-emerald-200 transition-all"
+                      >
+                        {/* Left */}
+                        <div>
+                          <p className="text-xs uppercase tracking-wide text-gray-500 font-semibold">
+                            {item.donationType}
+                          </p>
+                          <p className="text-sm text-gray-600 mt-1">
+                            {item.count} donation{item.count > 1 ? "s" : ""}
+                          </p>
+                        </div>
+
+                        {/* Right */}
+                        <div className="text-right">
+                          <p className="text-lg font-bold text-gray-900">
+                            ₹{item.totalAmount.toLocaleString("en-IN")}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {/* Campaign Expenses */}
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5 sm:p-6 hover:shadow-md transition-shadow">
+                <h3 className="text-sm font-bold text-gray-900 mb-4 flex items-center justify-between">
+                  <span>Campaign Expenses</span>
+                  <span className="text-xs font-semibold px-2.5 py-1 bg-red-50 text-red-700 rounded-full">
+                    {campaign.campaignExpenses?.length || 0} entries
+                  </span>
+                </h3>
+
+                {!campaign.campaignExpenses || campaign.campaignExpenses.length === 0 ? (
+                  <div className="text-center py-8">
+                    <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-gray-100 mb-3">
+                      <Receipt className="w-6 h-6 text-gray-400" />
+                    </div>
+                    <p className="text-xs text-gray-500 font-medium">
+                      No expenses recorded yet
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {campaign.campaignExpenses.map((expense, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center justify-between p-4 rounded-xl border border-gray-100 bg-gradient-to-r from-red-50 to-white hover:border-red-200 transition-all"
+                      >
+                        {/* Left */}
+                        <div>
+                          <p className="text-sm font-semibold text-gray-900">
+                            {expense.title || "Expense"}
+                          </p>
+                          {expense.date && (
+                            <p className="text-xs text-gray-500 mt-1">
+                              {formatDate(expense.date)}
+                            </p>
+                          )}
+                        </div>
+
+                        {/* Right */}
+                        <div className="text-right">
+                          <p className="text-lg font-bold text-red-600">
+                            ₹{(expense.amount || 0).toLocaleString("en-IN")}
+                          </p>
+
+                          {expense.proofUrl && (
+                            <a
+                              href={expense.proofUrl}
+                              target="_blank"
+                              className="text-xs text-emerald-600 hover:underline flex items-center justify-end gap-1 mt-1"
+                            >
+                              View Proof <ExternalLink className="w-3 h-3" />
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+
             </div>
           </div>
         </div>
@@ -405,34 +540,34 @@ export default function CampaignAdminDashboard() {
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4 mb-6 sm:mb-8">
           <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-200 p-4 sm:p-6 hover:shadow-md transition-all transform hover:-translate-y-1">
             <p className="text-xs sm:text-sm font-medium text-gray-500 mb-1 sm:mb-2">Total</p>
-            <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">{stats.total}</p>
+            <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">{totalCampaigns}</p>
           </div>
 
           <div className="bg-gradient-to-br from-emerald-50 to-white rounded-xl sm:rounded-2xl shadow-sm border border-emerald-200 p-4 sm:p-6 hover:shadow-md transition-all transform hover:-translate-y-1">
             <p className="text-xs sm:text-sm font-medium text-emerald-600 mb-1 sm:mb-2">Active</p>
-            <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-emerald-600">{stats.active}</p>
+            <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-emerald-600">{activeCampaigns}</p>
           </div>
 
           <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-200 p-4 sm:p-6 hover:shadow-md transition-all transform hover:-translate-y-1">
             <p className="text-xs sm:text-sm font-medium text-gray-500 mb-1 sm:mb-2">Inactive</p>
-            <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">{stats.inactive}</p>
+            <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">{inactiveCampaigns}</p>
           </div>
 
           <div className="bg-gradient-to-br from-red-50 to-white rounded-xl sm:rounded-2xl shadow-sm border border-red-200 p-4 sm:p-6 hover:shadow-md transition-all transform hover:-translate-y-1">
-            <p className="text-xs sm:text-sm font-medium text-red-600 mb-1 sm:mb-2">Urgent</p>
-            <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-red-600">{stats.urgent}</p>
+            <p className="text-xs sm:text-sm font-medium text-red-600 mb-1 sm:mb-2">Total Tip</p>
+            <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-red-600">₹{overallTotalTips.toLocaleString('en-IN')}</p>
           </div>
 
           <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-200 p-4 sm:p-6 hover:shadow-md transition-all transform hover:-translate-y-1">
             <p className="text-xs sm:text-sm font-medium text-gray-500 mb-1 sm:mb-2">Raised</p>
             <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">
-              ₹{(stats.totalRaised / 1000).toFixed(0)}K
+              ₹{totalRaised.toLocaleString('en-IN')}
             </p>
           </div>
 
           <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-200 p-4 sm:p-6 hover:shadow-md transition-all transform hover:-translate-y-1">
             <p className="text-xs sm:text-sm font-medium text-gray-500 mb-1 sm:mb-2">Donors</p>
-            <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">{stats.totalDonors}</p>
+            <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">{totalDonors}</p>
           </div>
         </div>
 
@@ -529,7 +664,7 @@ export default function CampaignAdminDashboard() {
                         <div className="flex items-center justify-end gap-2">
                           <button
                             onClick={() => {
-                              setSelectedCampaign(campaign);
+                              setSelectedCampaignId(campaign._id);
                               setView('detail');
                             }}
                             className="p-2 text-gray-600 cursor-pointer hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all"
@@ -664,7 +799,7 @@ export default function CampaignAdminDashboard() {
                   <div className="flex items-center gap-2 mt-4 pt-3 border-t border-gray-200">
                     <button
                       onClick={() => {
-                        setSelectedCampaign(campaign);
+                        setSelectedCampaignId(campaign._id);
                         setView('detail');
                       }}
                       className="flex-1 py-2.5 px-3 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600 text-white text-sm font-semibold rounded-xl transition-all shadow-sm hover:shadow-md transform hover:-translate-y-0.5"

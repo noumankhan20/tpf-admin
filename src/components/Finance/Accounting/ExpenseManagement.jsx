@@ -126,7 +126,7 @@ export default function ExpenseManagement() {
             if (formData.expenseType === 'SALARY' && formData.adminId) {
                 formDataToSend.append('adminId', formData.adminId);
             }
-            if (formData.expenseType === 'BENEFICIARY' && formData.campaignId) {
+            if (formData.campaignId) {
                 formDataToSend.append('campaignId', formData.campaignId);
             }
             if (formData.expenseType === 'PURCHASE' && formData.purchaseId) {
@@ -476,25 +476,31 @@ export default function ExpenseManagement() {
                                         </div>
                                     )}
 
-                                    {formData.expenseType === 'BENEFICIARY' && (
-                                        <div>
-                                            <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">Select Campaign *</label>
-                                            <div className="relative">
-                                                <Users className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                                                <select
-                                                    required
-                                                    value={formData.campaignId}
-                                                    onChange={(e) => setFormData(p => ({ ...p, campaignId: e.target.value }))}
-                                                    className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all appearance-none"
-                                                >
-                                                    <option value="">Choose Campaign</option>
-                                                    {campaigns.map(campaign => (
-                                                        <option key={campaign._id} value={campaign._id}>{campaign.title}</option>
-                                                    ))}
-                                                </select>
+                                    {/* Campaign Selection for SALARY, REIMBURSEMENT, and BENEFICIARY */}
+                                    {(formData.expenseType === 'BENEFICIARY' ||
+                                        (formData.expenseType === 'SALARY' && formData.adminId) ||
+                                        (formData.expenseType === 'REIMBURSEMENT' && (formData.adminId || formData.volunteerId))
+                                    ) && (
+                                            <div>
+                                                <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">
+                                                    Select Campaign {formData.expenseType !== 'BENEFICIARY' && '(Optional)'}
+                                                </label>
+                                                <div className="relative">
+                                                    <Users className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                                                    <select
+                                                        required={formData.expenseType === 'BENEFICIARY'}
+                                                        value={formData.campaignId}
+                                                        onChange={(e) => setFormData(p => ({ ...p, campaignId: e.target.value }))}
+                                                        className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all appearance-none"
+                                                    >
+                                                        <option value="">Choose Campaign</option>
+                                                        {campaigns.map(campaign => (
+                                                            <option key={campaign._id} value={campaign._id}>{campaign.title}</option>
+                                                        ))}
+                                                    </select>
+                                                </div>
                                             </div>
-                                        </div>
-                                    )}
+                                        )}
 
                                     {formData.expenseType === 'PURCHASE' && (
                                         <div>

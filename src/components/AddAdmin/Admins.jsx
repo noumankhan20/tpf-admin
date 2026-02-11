@@ -21,10 +21,11 @@ import {
     Shield,
     Users,
     Activity,
+    Trash2,
 } from 'lucide-react';
 import AddAdminModal from "./AddAdminModal";
 import { ADMIN_MODULES } from '../config/adminRoles';
-import { useGetAllAdminsQuery, useAddAdminMutation, useDisableAdminMutation, useEnableAdminMutation, useEditAdminMutation } from '@/utils/slices/adminApiSlice';
+import { useGetAllAdminsQuery, useAddAdminMutation, useDisableAdminMutation, useEnableAdminMutation, useEditAdminMutation, useDeleteAdminMutation } from '@/utils/slices/adminApiSlice';
 
 const AdminManagement = () => {
     const {
@@ -50,6 +51,7 @@ const AdminManagement = () => {
     const [disableAdmin, { isLoading: isDisablingAdmin }] = useDisableAdminMutation();
     const [enableAdmin, { isLoading: isEnabingAdmin }] = useEnableAdminMutation();
     const [editAdmin, { isLoading: isEditingAdmin }] = useEditAdminMutation();
+    const [deleteAdmin, { isLoading: isDeletingAdmin }] = useDeleteAdminMutation();
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
@@ -59,6 +61,7 @@ const AdminManagement = () => {
     const [selectedAdmin, setSelectedAdmin] = useState(null);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [confirmDisableAdmin, setConfirmDisableAdmin] = useState(null);
+    const [confirmDeleteAdmin, setConfirmDeleteAdmin] = useState(null);
 
     const router = useRouter();
 
@@ -215,6 +218,20 @@ const AdminManagement = () => {
     };
 
 
+    const handleDeleteAdmin = async (adminId) => {
+        try {
+            await deleteAdmin(adminId).unwrap();
+            showAlert("Admin deleted successfully", "success");
+            refetch(); // refresh list
+        } catch (error) {
+            showAlert(
+                error?.data?.message || "Failed to delete admin",
+                "error"
+            );
+        }
+    };
+
+
     if (isLoading) {
         return (
             <div className="flex flex-col justify-center items-center min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
@@ -288,7 +305,7 @@ const AdminManagement = () => {
                         <div className="lg:hidden space-y-4">
                             <div className="flex items-center justify-between">
                                 <button
-                                 onClick={() => router.push('/select-portal?category=administration')}
+                                    onClick={() => router.push('/select-portal?category=administration')}
                                     className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-gray-600 hover:text-gray-800 hover:bg-white transition-all border border-gray-300 shadow-sm"
                                 >
                                     <ArrowLeft className="w-4 h-4" />
@@ -520,6 +537,15 @@ const AdminManagement = () => {
                                                                 <CheckCircle2 className="w-4 h-4" />
                                                             </button>
                                                         )}
+                                                        <button
+                                                            onClick={() => setConfirmDeleteAdmin(admin)}
+                                                            disabled={isDeletingAdmin}
+                                                            className="p-2 rounded-lg transition-all cursor-pointer duration-200 text-red-700 hover:bg-red-100 hover:scale-110"
+                                                            title="Delete Admin"
+                                                        >
+                                                            <Trash2 className="w-4 h-4" /> {/* you can replace with Trash2 icon later */}
+                                                        </button>
+
                                                     </div>
                                                 </td>
                                             </tr>
@@ -943,6 +969,51 @@ const AdminManagement = () => {
                     </div>
                 </div>
             )}
+            {confirmDeleteAdmin && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-md flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
+                        <div className="flex items-center justify-center w-14 h-14 bg-red-100 rounded-full mx-auto mb-4">
+                            <AlertCircle className="w-7 h-7 text-red-600" />
+                        </div>
+
+                        <h3 className="text-xl font-bold text-gray-900 mb-2 text-center">
+                            Delete Admin Permanently
+                        </h3>
+
+                        <p className="text-sm text-gray-600 mb-6 text-center">
+                            Are you sure you want to delete{" "}
+                            <span className="font-semibold text-gray-900">
+                                {confirmDeleteAdmin.name}
+                            </span>?
+                            <br />
+                            <span className="text-red-600 font-semibold">
+                                This action cannot be undone.
+                            </span>
+                        </p>
+
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => setConfirmDeleteAdmin(null)}
+                                className="flex-1 px-4 py-3 border-2 border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50 font-medium"
+                            >
+                                Cancel
+                            </button>
+
+                            <button
+                                onClick={() => {
+                                    handleDeleteAdmin(confirmDeleteAdmin.id);
+                                    setConfirmDeleteAdmin(null);
+                                }}
+                                disabled={isDeletingAdmin}
+                                className="flex-1 px-4 py-3 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-xl font-medium disabled:opacity-50"
+                            >
+                                {isDeletingAdmin ? "Deleting..." : "Delete"}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
         </div >
     );
 };

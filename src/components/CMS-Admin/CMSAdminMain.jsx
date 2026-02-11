@@ -101,14 +101,14 @@ const CMS_MODULES = [
     category: 'banners',
     route: '/cms-admin/before-footer',
   },
-   {
+  {
     id: 'notices',
     name: 'Notices',
     desc: 'Manage Notices on the Websites',
     icon: Bell,
     category: 'content',
     route: '/cms-admin/notices',
-  },  {
+  }, {
     id: 'blogs',
     name: 'Blogs',
     desc: 'Manage Blogs on the Websites',
@@ -317,31 +317,32 @@ function Title({ isLoaded, totalModules }) {
   const router = useRouter();
 
   return (
-    <div className="relative mb-8">
-      {/* Back Button */}
-      <div className="absolute left-0 top-1/2 -translate-y-1/2">
+    <div className="mb-6 sm:mb-8">
+      {/* Back Button - Mobile: Above title, Desktop: Absolute positioned */}
+      <div className="mb-4 sm:mb-0 sm:absolute sm:left-0 sm:-translate-y-1/2">
         <button
           onClick={() => router.push('/select-portal?category=work')}
           className="flex items-center gap-2 text-gray-600 hover:text-emerald-600 transition-colors font-medium"
         >
-          <ArrowLeft size={20} />
-          <span>Back to Select Portal</span>
+          <ArrowLeft size={18} className="sm:w-5 sm:h-5" />
+          <span className="hidden sm:inline">Back to Select Portal</span>
+          <span className="sm:hidden">Back</span>
         </button>
       </div>
 
       {/* Centered Title */}
-      <div className="text-center">
-        <div className="inline-flex items-center space-x-2 px-4 py-1.5 bg-emerald-100 rounded-full mb-4">
-          <Layers className="w-4 h-4 text-emerald-600" />
-          <span className="text-sm font-medium text-emerald-700">
+      <div className="text-center sm:relative">
+        <div className="inline-flex items-center space-x-2 px-3 py-1.5 sm:px-4 bg-emerald-100 rounded-full mb-3 sm:mb-4">
+          <Layers className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-600" />
+          <span className="text-xs sm:text-sm font-medium text-emerald-700">
             {totalModules} CMS Modules
           </span>
         </div>
 
-        <h1 className="text-4xl font-bold text-gray-900 mb-2">
+        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-2 px-2">
           Content Management
         </h1>
-        <p className="text-gray-600">
+        <p className="text-sm sm:text-base text-gray-600 px-4">
           Select a module to manage your website content
         </p>
       </div>

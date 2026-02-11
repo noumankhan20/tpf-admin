@@ -165,6 +165,29 @@ const RESOURCES = [
             { header: 'Address', key: 'fullAddress', width: 40 },
             { header: 'Status', key: 'status', width: 15 },
         ]
+    },
+    {
+        id: 'form_10bd',
+        title: 'Form 10BD',
+        description: 'Statutory 80G Tax Report for Donors',
+        icon: DownloadCloud,
+        theme: 'emerald',
+        endpoint: '/donations/form-10bd',
+        dataKey: 'data',
+        fileName: 'Form_10BD_Report',
+        columns: [
+            { header: 'Sr. No', key: 'srNo', width: 12 },
+            { header: 'UIN(unique identification number)', key: 'panNumber', width: 40 },
+            { header: 'ID Code', key: 'idCode', width: 15 },
+            { header: 'Section code', key: 'sectionCode', width: 20 },
+            { header: 'URN(Unique Registration Number)', key: 'urn', width: 40 },
+            { header: 'Date of Issue of Registration', key: 'dateOfIssue', width: 30 },
+            { header: 'Name of the donor', key: 'fullName', width: 40 },
+            { header: 'Address of Donor', key: 'fullAddress', width: 80 },
+            { header: 'Donation Type', key: 'donationType', width: 20 },
+            { header: 'Mode of Receipt', key: 'modeOfReceipt', width: 60 },
+            { header: 'Amount', key: 'totalAmount', width: 20, format: (val) => `₹${val}` },
+        ]
     }
 ];
 
@@ -291,16 +314,17 @@ export default function DownloadsMain() {
     });
 
     const financialResources = RESOURCES.filter(r => FINANCIAL_RESOURCE_IDS.includes(r.id));
-    const otherResources = RESOURCES.filter(r => !FINANCIAL_RESOURCE_IDS.includes(r.id));
+    const otherResources = RESOURCES.filter(r => !FINANCIAL_RESOURCE_IDS.includes(r.id) && r.id !== 'form_10bd');
     const selectedFinancialResource = financialResources.find(r => r.id === financialFilters.typeId) || financialResources[0];
+    const form10BDResource = RESOURCES.find(r => r.id === 'form_10bd');
 
-    const fetchData = async (resource) => {
+    const fetchData = async (resource, filters = null) => {
         try {
             if (resource.id === 'all_donations') {
                 const [online, offline, expenses] = await Promise.all([
-                    fetchData(RESOURCES.find(r => r.id === 'online_donations')),
-                    fetchData(RESOURCES.find(r => r.id === 'offline_donations')),
-                    fetchData(RESOURCES.find(r => r.id === 'expenses'))
+                    fetchData(RESOURCES.find(r => r.id === 'online_donations'), filters),
+                    fetchData(RESOURCES.find(r => r.id === 'offline_donations'), filters),
+                    fetchData(RESOURCES.find(r => r.id === 'expenses'), filters)
                 ]);
 
                 return [
@@ -334,7 +358,18 @@ export default function DownloadsMain() {
                 ].sort((a, b) => new Date(b.finalDate) - new Date(a.finalDate));
             }
 
+            const params = {};
+            if (filters?.period === 'custom') {
+                params.startDate = filters.startDate;
+                params.endDate = filters.endDate;
+            } else if (filters?.period && filters.period !== 'all') {
+                // Approximate standard periods for backend if needed, 
+                // but filterDataByPeriod handles it on frontend anyway.
+                // For Form 10BD, backend aggregation by date is better.
+            }
+
             const { data } = await axios.get(`${API_URL}${resource.endpoint}`, {
+                params,
                 withCredentials: true
             });
 
@@ -365,7 +400,22 @@ export default function DownloadsMain() {
         const toastId = toast.loading(`Preparing ${resource.title} export...`);
 
         try {
-            let data = await fetchData(resource);
+            let data = await fetchData(resource, customFilters);
+
+            // Special handle for Form 10BD logic
+            if (resource.id === 'form_10bd') {
+                data = data.map((item, index) => ({
+                    ...item,
+                    srNo: String(index + 1),
+                    idCode: "1",
+                    sectionCode: "80G",
+                    urn: "AAJCT1092MF2023101",
+                    dateOfIssue: "25-04-2023",
+                    fullAddress: `${item.address || ''}${item.city ? ', ' + item.city : ''}${item.state ? ', ' + item.state : ''}${item.pincode ? ' - ' + item.pincode : ''}`,
+                    donationType: "Others",
+                    modeOfReceipt: "Electronic modes including account payee cheque/draft"
+                }));
+            }
 
             // Apply filters if provided
             if (customFilters && customFilters.period && customFilters.period !== 'all') {
@@ -393,7 +443,8 @@ export default function DownloadsMain() {
             });
 
             if (type === 'excel') {
-                generateExcel(data, resource);
+                // Use xlsx format for form_10bd to preserve the formatting/widths
+                generateExcel(data, resource, 'xlsx');
             } else {
                 await generatePDF(data, resource);
             }
@@ -452,7 +503,7 @@ export default function DownloadsMain() {
         });
     };
 
-    const generateExcel = (data, resource) => {
+    const generateExcel = (data, resource, format = 'xlsx') => {
         const tableData = data.map(item => {
             const row = {};
             resource.columns.forEach(col => {
@@ -480,7 +531,7 @@ export default function DownloadsMain() {
         const wscols = resource.columns.map(col => ({ wch: col.width || 20 }));
         ws['!cols'] = wscols;
         XLSX.utils.book_append_sheet(wb, ws, resource.title);
-        XLSX.writeFile(wb, `${resource.fileName}_${new Date().toISOString().slice(0, 10)}.xlsx`);
+        XLSX.writeFile(wb, `${resource.fileName}_${new Date().toISOString().slice(0, 10)}.${format}`);
     };
 
     const generatePDF = async (data, resource) => {
@@ -735,6 +786,39 @@ export default function DownloadsMain() {
                                         </div>
                                     </div>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                {/* 1.5 Form 10BD Section - New */}
+                <section>
+                    <div className="bg-white border border-gray-100 rounded-[2.5rem] p-1 shadow-2xl shadow-emerald-900/5 overflow-hidden">
+                        <div className="bg-gradient-to-br from-emerald-50 via-white to-white rounded-[2.25rem] p-8 md:p-12 relative">
+                            <div className="flex flex-col md:flex-row items-center justify-between gap-8">
+                                <div className="flex items-center gap-6">
+                                    <div className="w-16 h-16 rounded-2xl bg-emerald-600 flex items-center justify-center shadow-2xl shadow-emerald-200">
+                                        <DownloadCloud className="w-8 h-8 text-white" />
+                                    </div>
+                                    <div>
+                                        <h2 className="text-2xl font-bold text-gray-900">Form 10BD</h2>
+                                        <p className="text-gray-500 font-medium mt-1">
+                                            Statutory report for donors with verified PAN (Aggregated by user).
+                                        </p>
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={() => handleDownload(form10BDResource, 'excel', financialFilters)}
+                                    disabled={loading.id !== null}
+                                    className="px-10 py-5 bg-gray-900 text-white rounded-2xl font-bold hover:bg-black hover:shadow-2xl hover:shadow-gray-200 active:scale-95 transition-all disabled:opacity-50 flex items-center gap-3"
+                                >
+                                    {loading.id === 'form_10bd' ? (
+                                        <Loader2 className="w-5 h-5 animate-spin" />
+                                    ) : (
+                                        <FileSpreadsheet className="w-5 h-5 text-emerald-400" />
+                                    )}
+                                    Download Excel
+                                </button>
                             </div>
                         </div>
                     </div>

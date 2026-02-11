@@ -132,6 +132,14 @@ export const adminApiSlice = apiSlice.injectEndpoints({
       }),
     }),
 
+    deleteAdmin: builder.mutation({
+      query: (adminId) => ({
+        url: `/adminAuth/delete/${adminId}`,
+        method: "DELETE",
+      }),
+    }),
+
+
   }),
 });
 
@@ -150,5 +158,6 @@ export const {
   useGetEmployeesQuery,
   useGetAdminSalaryQuery,
   useGetAdminExpensesQuery,
-  useGetEmployeeLoginLogoutTimeQuery
+  useGetEmployeeLoginLogoutTimeQuery,
+  useDeleteAdminMutation,
 } = adminApiSlice;

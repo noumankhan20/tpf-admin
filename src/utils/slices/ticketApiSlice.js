@@ -11,9 +11,10 @@ export const ticketsApiSlice = apiSlice.injectEndpoints({
     }),
 
     markTicketAsResolved: builder.mutation({
-      query: (ticketId) => ({
+      query: ({ ticketId, ...data }) => ({
         url: `/ticket/${ticketId}/resolved`,
         method: "PUT",
+        body: data,
       }),
       invalidatesTags: ["Tickets"],
     }),
@@ -21,4 +22,4 @@ export const ticketsApiSlice = apiSlice.injectEndpoints({
   }),
 });
 
-export const { useGetAllTicketsQuery,useMarkTicketAsResolvedMutation } = ticketsApiSlice;
+export const { useGetAllTicketsQuery, useMarkTicketAsResolvedMutation } = ticketsApiSlice;

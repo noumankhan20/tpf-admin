@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect, useMemo } from 'react';
-import { Search, Filter, ChevronDown, ArrowLeft, ChevronLeft, Check, ChevronRight, X, Eye, Calendar, Mail, User, MessageSquare, Clock, TrendingUp, AlertCircle, FileText, Inbox } from 'lucide-react';
+import { Search, Filter, ChevronDown, ArrowLeft, ChevronLeft, Check, ChevronRight, X, Eye, Calendar, Mail, User, MessageSquare, Clock, TrendingUp, AlertCircle, FileText, Inbox, Settings, Zap } from 'lucide-react';
 import { useGetAllTicketsQuery, useMarkTicketAsResolvedMutation } from '@/utils/slices/ticketApiSlice';
 import { useRouter } from 'next/navigation';
 
@@ -62,6 +62,17 @@ const formatDateShort = (dateString) => {
 };
 
 
+const FAQ_CATEGORIES = [
+  { id: 'general', label: 'General' },
+  { id: 'donors', label: 'For Donors' },
+  { id: 'beneficiaries', label: 'For Beneficiaries' },
+  { id: 'volunteers', label: 'For Volunteers' },
+  { id: 'issues', label: 'Issues & Support' },
+  { id: 'legal', label: 'Legal' },
+  { id: 'other', label: 'Other' }
+];
+
+
 const AdminPanel = () => {
   const router = useRouter();
   const [selectedTicket, setSelectedTicket] = useState(null);
@@ -69,6 +80,11 @@ const AdminPanel = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [queryTypeFilter, setQueryTypeFilter] = useState('all');
   const [showFilters, setShowFilters] = useState(false);
+
+  // FAQ specific state for modal
+  const [answer, setAnswer] = useState('');
+  const [category, setCategory] = useState('');
+
   const itemsPerPage = 10;
   const {
     data,
@@ -132,6 +148,7 @@ const AdminPanel = () => {
     Unresolved: 'bg-blue-50 text-red-700 border-blue-200',
     Resolved: 'bg-emerald-50 text-emerald-700 border-emerald-200',
   };
+
   const getStatusBadgeClass = (status) =>
     STATUS_BADGE_CLASSES[status] ||
     'bg-gray-50 text-gray-600 border-gray-200';
@@ -139,127 +156,19 @@ const AdminPanel = () => {
   // Handle mark as resolved
   const handleMarkAsResolved = async (ticketId) => {
     try {
-      await markTicketAsResolved(ticketId).unwrap();
+      const payload = { ticketId };
+      if (answer.trim()) payload.answer = answer;
+      if (category) payload.category = category;
+
+      await markTicketAsResolved(payload).unwrap();
       setSelectedTicket(null);
+      setAnswer('');
+      setCategory('');
     } catch (error) {
       console.error('Failed to mark ticket as resolved:', error);
     }
   };
 
-  // Message detail modal
-  const MessageModal = ({ ticket, onClose }) => (
-    <div
-      className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200"
-      onClick={onClose}
-    >
-      <div
-        className="bg-white rounded-3xl w-full max-w-3xl max-h-[90vh] overflow-hidden shadow-2xl border border-slate-200 animate-in zoom-in-95 duration-300"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Modal Header */}
-        <div className="bg-gradient-to-br from-slate-50 to-slate-100/50 px-6 py-5 flex items-center justify-between border-b border-slate-200">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
-              <MessageSquare className="w-5 h-5 text-white" />
-            </div>
-            <h2 className="text-xl font-semibold text-slate-900">Message Details</h2>
-          </div>
-          <div className="flex items-center gap-2">
-            {ticket.status === 'Resolved' ? (
-              <span className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-100 text-slate-600 text-sm font-medium border border-slate-200">
-                <Check className="w-4 h-4 text-emerald-600" />
-                Resolved
-              </span>
-            ) : (
-              <button
-                onClick={() => handleMarkAsResolved(ticket._id)}
-                disabled={isMarkingResolved}
-                className="px-4 py-2 bg-gradient-to-br from-emerald-500 to-teal-600 text-white rounded-xl hover:from-emerald-600 hover:to-teal-700 transition-all duration-200 font-medium text-sm flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <Check className="w-4 h-4" />
-                {isMarkingResolved ? 'Marking...' : 'Mark as Resolved'}
-              </button>
-            )}
-            <button
-              onClick={onClose}
-              className="p-2 hover:bg-slate-200/50 rounded-xl transition-all duration-200 group"
-            >
-              <X className="w-5 h-5 text-slate-500 group-hover:text-slate-700" />
-            </button>
-          </div>
-        </div>
-
-        {/* Modal Content */}
-        <div className="p-6 overflow-y-auto max-h-[calc(90vh-80px)]">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-            {/* Full Name */}
-            <div className="bg-slate-50/50 p-4 rounded-2xl border border-slate-200 hover:border-emerald-300 transition-all duration-200">
-              <div className="flex items-center gap-2 mb-2">
-                <User className="w-4 h-4 text-slate-400" />
-                <label className="text-xs font-medium text-slate-500 uppercase tracking-wider">Full Name</label>
-              </div>
-              <p className="text-slate-900 font-medium text-base">{ticket.fullName}</p>
-            </div>
-
-            {/* Email */}
-            <div className="bg-slate-50/50 p-4 rounded-2xl border border-slate-200 hover:border-emerald-300 transition-all duration-200">
-              <div className="flex items-center gap-2 mb-2">
-                <Mail className="w-4 h-4 text-slate-400" />
-                <label className="text-xs font-medium text-slate-500 uppercase tracking-wider">Email</label>
-              </div>
-              <p className="text-slate-900 font-medium text-sm break-all">{ticket.email}</p>
-            </div>
-
-            {/* Query Type */}
-            <div className="bg-slate-50/50 p-4 rounded-2xl border border-slate-200 hover:border-emerald-300 transition-all duration-200">
-              <div className="flex items-center gap-2 mb-2">
-                <Filter className="w-4 h-4 text-slate-400" />
-                <label className="text-xs font-medium text-slate-500 uppercase tracking-wider">Query Type</label>
-              </div>
-              <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium border ${QUERY_BADGE_CLASS(ticket.queryType)}`}>
-                <span className="capitalize">{ticket.queryType}</span>
-              </span>
-            </div>
-            {ticket.queryType === 'other' && ticket.otherCategory && (
-              <div className="bg-slate-50/50 p-4 rounded-2xl border border-slate-200 hover:border-emerald-300 transition-all duration-200">
-                <div className="flex items-center gap-2 mb-2">
-                  <FileText className="w-4 h-4 text-slate-400" />
-                  <label className="text-xs font-medium text-slate-500 uppercase tracking-wider">
-                    Other Category
-                  </label>
-                </div>
-                <p className="text-slate-900 font-medium text-sm">
-                  {ticket.otherCategory}
-                </p>
-              </div>
-            )}
-
-            {/* Date & Time */}
-            <div className="bg-slate-50/50 p-4 rounded-2xl border border-slate-200 hover:border-emerald-300 transition-all duration-200">
-              <div className="flex items-center gap-2 mb-2">
-                <Calendar className="w-4 h-4 text-slate-400" />
-                <label className="text-xs font-medium text-slate-500 uppercase tracking-wider">Date & Time</label>
-              </div>
-              <p className="text-slate-900 font-medium text-sm">{formatDateTime(ticket.createdAt)}</p>
-            </div>
-          </div>
-
-          {/* Message Content */}
-          <div className="bg-gradient-to-br from-emerald-50/50 to-teal-50/30 p-5 rounded-2xl border border-emerald-200">
-            <div className="flex items-center gap-2 mb-3">
-              <MessageSquare className="w-4 h-4 text-emerald-600" />
-              <label className="text-sm font-medium text-emerald-900 uppercase tracking-wider">Message Content</label>
-            </div>
-            <div className="bg-white p-4 rounded-xl border border-emerald-100">
-              <p className="text-slate-700 whitespace-pre-wrap break-words leading-relaxed text-sm">
-                {ticket.message}
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
 
   if (isLoading) {
     return (
@@ -295,7 +204,7 @@ const AdminPanel = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50" >
       <main className="w-full">
         {/* Back Button */}
         <div className="px-4 lg:px-8 pt-6">
@@ -529,10 +438,208 @@ const AdminPanel = () => {
         <MessageModal
           ticket={selectedTicket}
           onClose={() => setSelectedTicket(null)}
+          answer={answer}
+          setAnswer={setAnswer}
+          category={category}
+          setCategory={setCategory}
+          handleMarkAsResolved={handleMarkAsResolved}
+          isMarkingResolved={isMarkingResolved}
+          QUERY_BADGE_CLASS={QUERY_BADGE_CLASS}
+          getStatusBadgeClass={getStatusBadgeClass}
+          formatDateTime={formatDateTime}
+          formatDateShort={formatDateShort}
         />
-      )}
-    </div>
+      )
+      }
+    </div >
   );
 };
+
+// Message detail modal - Moved outside AdminPanel to prevent unmounting on state changes
+const MessageModal = ({
+  ticket,
+  onClose,
+  answer,
+  setAnswer,
+  category,
+  setCategory,
+  handleMarkAsResolved,
+  isMarkingResolved,
+  QUERY_BADGE_CLASS,
+  getStatusBadgeClass,
+  formatDateTime,
+  formatDateShort
+}) => (
+  <div
+    className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200"
+    onClick={onClose}
+  >
+    <div
+      className="bg-white rounded-3xl w-full max-w-3xl max-h-[90vh] overflow-hidden shadow-2xl border border-slate-200 animate-in zoom-in-95 duration-300"
+      style={{ fontFamily: 'Arial, sans-serif' }}
+      onClick={(e) => e.stopPropagation()}
+    >
+      {/* Modal Header */}
+      <div className="bg-gradient-to-br from-slate-50 to-slate-100/50 px-6 py-5 flex items-center justify-between border-b border-slate-200">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
+            <MessageSquare className="w-5 h-5 text-white" />
+          </div>
+          <h2 className="text-xl font-semibold text-slate-900">Message Details</h2>
+        </div>
+        <div className="flex items-center gap-2">
+          {ticket.status === 'Resolved' ? (
+            <span className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-50 text-emerald-700 text-sm font-medium border border-emerald-200 shadow-sm shadow-emerald-50">
+              <Check className="w-4 h-4" />
+              Resolved
+            </span>
+          ) : (
+            <button
+              onClick={() => handleMarkAsResolved(ticket._id)}
+              disabled={isMarkingResolved || (ticket.queryType === 'faqs' && (!answer.trim() || !category))}
+              className="px-5 py-2.5 bg-gradient-to-br from-emerald-500 to-teal-600 text-white rounded-xl hover:from-emerald-600 hover:to-teal-700 transition-all duration-300 font-bold text-sm flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-emerald-200 active:scale-95"
+            >
+              <Check className="w-4 h-4 shadow-sm" />
+              {isMarkingResolved ? 'Processing...' : (ticket.queryType === 'faqs' ? 'Resolve & Publish to FAQ' : 'Mark as Resolved')}
+            </button>
+          )}
+          <button
+            onClick={() => {
+              onClose();
+              setAnswer('');
+              setCategory('');
+            }}
+            className="p-2.5 hover:bg-slate-200/50 rounded-xl transition-all duration-200 group border border-transparent hover:border-slate-200"
+          >
+            <X className="w-5 h-5 text-slate-500 group-hover:text-red-500 transition-colors" />
+          </button>
+        </div>
+      </div>
+
+      {/* Modal Content */}
+      <div className="p-6 overflow-y-auto max-h-[calc(90vh-80px)]">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+          {/* Full Name */}
+          <div className="bg-slate-50/50 p-4 rounded-2xl border border-slate-200 hover:border-emerald-300 transition-all duration-200">
+            <div className="flex items-center gap-2 mb-2">
+              <User className="w-4 h-4 text-slate-400" />
+              <label className="text-xs font-medium text-slate-500 uppercase tracking-wider">Full Name</label>
+            </div>
+            <p className="text-slate-900 font-medium text-base">{ticket.fullName}</p>
+          </div>
+
+          {/* Email */}
+          <div className="bg-slate-50/50 p-4 rounded-2xl border border-slate-200 hover:border-emerald-300 transition-all duration-200">
+            <div className="flex items-center gap-2 mb-2">
+              <Mail className="w-4 h-4 text-slate-400" />
+              <label className="text-xs font-medium text-slate-500 uppercase tracking-wider">Email</label>
+            </div>
+            <p className="text-slate-900 font-medium text-sm break-all">{ticket.email}</p>
+          </div>
+
+          {/* Query Type */}
+          <div className="bg-slate-50/50 p-4 rounded-2xl border border-slate-200 hover:border-emerald-300 transition-all duration-200">
+            <div className="flex items-center gap-2 mb-2">
+              <Filter className="w-4 h-4 text-slate-400" />
+              <label className="text-xs font-medium text-slate-500 uppercase tracking-wider">Query Type</label>
+            </div>
+            <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium border ${QUERY_BADGE_CLASS(ticket.queryType)}`}>
+              <span className="capitalize">{ticket.queryType}</span>
+            </span>
+          </div>
+          {ticket.queryType === 'other' && ticket.otherCategory && (
+            <div className="bg-slate-50/50 p-4 rounded-2xl border border-slate-200 hover:border-emerald-300 transition-all duration-200">
+              <div className="flex items-center gap-2 mb-2">
+                <FileText className="w-4 h-4 text-slate-400" />
+                <label className="text-xs font-medium text-slate-500 uppercase tracking-wider">
+                  Other Category
+                </label>
+              </div>
+              <p className="text-slate-900 font-medium text-sm">
+                {ticket.otherCategory}
+              </p>
+            </div>
+          )}
+
+          {/* Date & Time */}
+          <div className="bg-slate-50/50 p-4 rounded-2xl border border-slate-200 hover:border-emerald-300 transition-all duration-200">
+            <div className="flex items-center gap-2 mb-2">
+              <Calendar className="w-4 h-4 text-slate-400" />
+              <label className="text-xs font-medium text-slate-500 uppercase tracking-wider">Date & Time</label>
+            </div>
+            <p className="text-slate-900 font-medium text-sm">{formatDateTime(ticket.createdAt)}</p>
+          </div>
+        </div>
+
+        {/* FAQ Answering Section (Only for Unresolved FAQ tickets) */}
+        {ticket.queryType === 'faqs' && ticket.status === 'Unresolved' && (
+          <div className="space-y-6 mt-8 animate-in slide-in-from-bottom-4 duration-300">
+            <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
+              <Settings className="w-4 h-4 text-emerald-500" />
+              <h3 className="text-sm font-bold text-slate-900 uppercase tracking-widest">FAQ Publication Details</h3>
+            </div>
+
+            <div className="space-y-3">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Classify FAQ Category <span className="text-red-500">*</span></label>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {FAQ_CATEGORIES.map((cat) => (
+                  <button
+                    key={cat.id}
+                    type="button"
+                    onClick={() => setCategory(cat.id)}
+                    className={`px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border-2 ${category === cat.id
+                      ? 'bg-emerald-600 border-emerald-600 text-white shadow-md shadow-emerald-100'
+                      : 'bg-white border-slate-100 text-slate-500 hover:border-emerald-200'
+                      }`}
+                  >
+                    {cat.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Official FAQ Answer <span className="text-red-500">*</span></label>
+              <textarea
+                value={answer}
+                onChange={(e) => setAnswer(e.target.value)}
+                placeholder="Draft a clear, professional answer for the public FAQ database..."
+                className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 text-sm font-medium focus:border-emerald-500 focus:bg-white outline-none transition-all resize-none min-h-[120px]"
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Message Content (Existing) */}
+        <div className="bg-gradient-to-br from-slate-50 to-slate-100/30 p-5 rounded-2xl border border-slate-200 mt-6 group/msg">
+          <div className="flex items-center gap-2 mb-3">
+            <MessageSquare className="w-4 h-4 text-slate-600" />
+            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Original Message Content</label>
+          </div>
+          <div className="bg-white/80 p-4 rounded-xl border border-slate-100 group-hover/msg:border-emerald-200 transition-colors">
+            <p className="text-slate-700 whitespace-pre-wrap break-words leading-relaxed text-sm italic">
+              "{ticket.message}"
+            </p>
+          </div>
+        </div>
+
+        {/* Show Answer if Resolved */}
+        {ticket.status === 'Resolved' && ticket.answer && (
+          <div className="bg-gradient-to-br from-emerald-50 to-teal-50/50 p-5 rounded-2xl border border-emerald-100 mt-6 shadow-sm shadow-emerald-50">
+            <div className="flex items-center gap-2 mb-3">
+              <Check className="w-4 h-4 text-emerald-600" />
+              <label className="text-[10px] font-black text-emerald-900 uppercase tracking-widest">Published Answer {ticket.category && `(${FAQ_CATEGORIES.find(c => c.id === ticket.category)?.label})`}</label>
+            </div>
+            <div className="bg-white/80 p-4 rounded-xl border border-emerald-100">
+              <p className="text-slate-700 whitespace-pre-wrap break-words leading-relaxed text-sm font-medium">
+                {ticket.answer}
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  </div>
+);
 
 export default AdminPanel;

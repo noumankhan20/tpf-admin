@@ -12,10 +12,15 @@ export const campaignApiSlice = apiSlice.injectEndpoints({
       query: () => 'campaigns/list',
       providesTags: ['Campaigns'],
     }),
+    fetchCampaignById: builder.query({
+      query: (id) => `campaigns/getcampaignlist/${id}`, // <-- match your backend route
+      providesTags: (result, error, id) => [{ type: 'Campaigns', id }],
+    }),
   }),
 });
 
 export const {
   useFetchCampaignsQuery,   // The hook for fetching campaigns
   useGetCampaignListQuery,
+  useFetchCampaignByIdQuery,
 } = campaignApiSlice;
