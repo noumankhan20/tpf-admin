@@ -406,7 +406,7 @@ export default function DownloadsMain() {
             if (resource.id === 'form_10bd') {
                 data = data.map((item, index) => ({
                     ...item,
-                    srNo: index + 1,
+                    srNo: String(index + 1),
                     idCode: "1",
                     sectionCode: "80G",
                     urn: "AAJCT1092MF2023101",
