@@ -48,17 +48,28 @@ import { Calendar as CalendarIcon } from 'lucide-react';
 
 
 
+// const CATEGORIES = [
+//   { id: 'dashboard', name: 'Dashboard', icon: LayoutDashboard },
+//   { id: 'administration', name: 'Administration', icon: Settings },
+//   { id: 'people', name: 'People Management', icon: Users },
+//   { id: 'finance', name: 'Finance & Transactions', icon: Calculator },
+//   { id: 'operations', name: 'Operations', icon: FolderKanban },
+//   { id: 'documentation', name: 'Documentation', icon: FileText },
+//   { id: 'verify-forms', name: 'Verify Forms', icon: Shield },
+//   { id: 'communication', name: 'Communication', icon: MessageSquare },
+//   { id: 'quick-access', name: 'Quick Access', icon: Zap },
+// ];
+
 const CATEGORIES = [
   { id: 'dashboard', name: 'Dashboard', icon: LayoutDashboard },
+  { id: 'work', name: 'Work', icon: FolderKanban },
+  { id: 'resource', name: 'Resource Management', icon: Package },
+  { id: 'monitoring', name: 'Monitoring', icon: Layers },
   { id: 'administration', name: 'Administration', icon: Settings },
-  { id: 'people', name: 'People Management', icon: Users },
-  { id: 'finance', name: 'Finance & Transactions', icon: Calculator },
-  { id: 'operations', name: 'Operations', icon: FolderKanban },
-  { id: 'documentation', name: 'Documentation', icon: FileText },
-  { id: 'verify-forms', name: 'Verify Forms', icon: Shield },
+  { id: 'legal', name: 'Legal & Records', icon: Scale },
   { id: 'communication', name: 'Communication', icon: MessageSquare },
-  { id: 'quick-access', name: 'Quick Access', icon: Zap },
 ];
+
 
 export default function SelectPanel() {
   const [isLoaded, setIsLoaded] = useState(false);
@@ -461,7 +472,9 @@ function ListView({
                       return (
                         <div
                           key={module.id}
-                          onClick={() => router.push(module.route)}
+                          onClick={() =>
+                            router.push(`${module.route}?category=${module.category}`)
+                          }
                           className="group flex items-center justify-between p-3 sm:p-4 bg-gray-50 hover:bg-emerald-50 border-2 border-transparent hover:border-emerald-500 rounded-lg cursor-pointer transition-all duration-300 ease-out"
                         >
                           <div className="flex items-center space-x-3 sm:space-x-4 flex-1 min-w-0">

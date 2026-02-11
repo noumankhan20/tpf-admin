@@ -21,3 +21,44 @@ export const ADMIN_MODULES = [
   "Internal Communication",
   "Communication Audit"
 ];
+
+// export const ADMIN_MODULES = [
+
+//   // Dashboard
+//   "dashboard-overview",
+//   "dashboard-summary",
+
+//   // Work
+//   "aid-verification",
+//   "kyc-verification",
+//   "photography",
+//   "photo-editing",
+//   "cms",
+//   "social-media",
+//   "disbursement",
+
+//   // Resource Management
+//   "inventory",
+//   "finance-accounting",
+
+//   // Monitoring
+//   "task-monitoring",
+//   "donation-monitoring",
+//   "campaign-monitoring",
+//   "tpf-management",
+
+//   // Administration
+//   "security-access",
+//   "admin-management",
+//   "communication-audit",
+//   "tickets-queries",
+
+
+//   // Legal & Records
+//   "document-management",
+//   "legal-compliance",
+//   "downloads",
+
+//   // Communication
+//   "internal-chat"
+// ];

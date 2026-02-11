@@ -544,7 +544,7 @@ export default function DownloadsMain() {
         <div className="space-y-8">
             {/* Header */}
             <div>
-                <button  onClick={() => router.push('/select-portal?category=quick-access')} className="group flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4 transition-colors">
+                <button  onClick={() => router.push('/select-portal?category=monitoring')} className="group flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4 transition-colors">
                     <div className="w-10 h-10 rounded-xl bg-white border-2 border-gray-200 group-hover:border-emerald-500 flex items-center justify-center transition-all shadow-sm group-hover:shadow-md">
                         <ArrowLeft size={20} strokeWidth={2.5} className="group-hover:text-emerald-600" />
                     </div>

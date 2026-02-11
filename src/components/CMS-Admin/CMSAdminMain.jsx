@@ -321,7 +321,7 @@ function Title({ isLoaded, totalModules }) {
       {/* Back Button */}
       <div className="absolute left-0 top-1/2 -translate-y-1/2">
         <button
-          onClick={() => router.push('/select-portal')}
+          onClick={() => router.push('/select-portal?category=work')}
           className="flex items-center gap-2 text-gray-600 hover:text-emerald-600 transition-colors font-medium"
         >
           <ArrowLeft size={20} />

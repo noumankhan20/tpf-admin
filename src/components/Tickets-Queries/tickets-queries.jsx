@@ -300,7 +300,7 @@ const AdminPanel = () => {
         {/* Back Button */}
         <div className="px-4 lg:px-8 pt-6">
           <button
-           onClick={() => router.push('/select-portal?category=communication')}
+           onClick={() => router.push('/select-portal?category=administration')}
             className="flex items-center cursor-pointer gap-2 px-4 py-2 rounded-xl text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-white transition-all border border-slate-200 hover:border-slate-300 hover:shadow-sm"
           >
             <ArrowLeft className="w-4 h-4" />

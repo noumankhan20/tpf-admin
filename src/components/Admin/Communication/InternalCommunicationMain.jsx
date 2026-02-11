@@ -108,7 +108,7 @@ export default function InternalCommunicationMain() {
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                             <button
-                                onClick={() => router.push('/select-portal')}
+                                onClick={() => router.push('/select-portal?category=communication')}
                                 className="p-2 hover:bg-gray-200 rounded-full transition-colors"
                                 title="Back to Portal"
                             >

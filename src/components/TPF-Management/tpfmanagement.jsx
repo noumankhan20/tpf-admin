@@ -63,7 +63,7 @@ export default function TPFManagement() {
                         Manage core entities of the platform
                     </p>
                     <button
-         onClick={() => router.push('/select-portal?category=people')}
+         onClick={() => router.push('/select-portal?category=monitoring')}
                         className="flex items-center gap-2 px-4 py-3 w-full sm:w-auto cursor-pointer rounded-xl text-sm font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-100 transition-colors border border-gray-300"
                     >
                         <ArrowLeft className="w-4 h-4" />

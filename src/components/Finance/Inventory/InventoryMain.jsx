@@ -299,7 +299,7 @@ function Title({ totalModules }) {
     const router = useRouter();
     return (
         <div className="relative mb-8 pt-4">
-            <button onClick={() => router.push('/select-portal')} className="flex items-center gap-2 text-gray-600 hover:text-emerald-600 transition-colors font-medium mb-6">
+            <button onClick={() => router.push('/select-portal?category=resource')} className="flex items-center gap-2 text-gray-600 hover:text-emerald-600 transition-colors font-medium mb-6">
                 <ArrowLeft size={20} />
                 <span>Back to Select Portal</span>
             </button>
