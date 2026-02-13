@@ -212,6 +212,7 @@ const DonationDetailsModal = ({ donation, onClose }) => {
 // Main Donation Management Component
 export default function DonationManagement() {
     const [searchQuery, setSearchQuery] = useState('');
+    const [debouncedSearch, setDebouncedSearch] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     const [selectedDonation, setSelectedDonation] = useState(null);
     const [showFilters, setShowFilters] = useState(false);
@@ -240,15 +241,16 @@ export default function DonationManagement() {
             page: currentPage,
             limit: itemsPerPage,
         };
-
-        if (searchQuery) params.search = searchQuery;
+        if (debouncedSearch && debouncedSearch.length >= 2) {
+            params.search = debouncedSearch;
+        }
         if (appliedFilters.startDate) params.startDate = appliedFilters.startDate;
         if (appliedFilters.endDate) params.endDate = appliedFilters.endDate;
         if (appliedFilters.minAmount) params.minAmount = appliedFilters.minAmount;
         if (appliedFilters.maxAmount) params.maxAmount = appliedFilters.maxAmount;
 
         return params;
-    }, [currentPage, searchQuery, appliedFilters]);
+    }, [currentPage, debouncedSearch, appliedFilters]);
 
 
     // Fetch donations using RTK Query
@@ -264,8 +266,15 @@ export default function DonationManagement() {
     // Reset to page 1 when filters or search changes
     useEffect(() => {
         setCurrentPage(1);
-    }, [searchQuery, appliedFilters]);
+    }, [debouncedSearch, appliedFilters]);
 
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedSearch(searchQuery);
+        }, 500); // 500ms delay
+
+        return () => clearTimeout(timer);
+    }, [searchQuery]);
 
     // Extract donations and pagination from API response
     const donations = data?.donations || [];
@@ -279,7 +288,7 @@ export default function DonationManagement() {
                 <div className="mb-4 sm:mb-8 relative">
                     {/* Back Button (left aligned) */}
                     <button
-                       onClick={() => router.push('/select-portal?category=monitoring')}
+                        onClick={() => router.push('/select-portal?category=monitoring')}
                         className="absolute left-0 top-0 flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-100 active:bg-gray-200 transition-colors"
                     >
                         <ChevronDown className="w-3.5 h-3.5 sm:w-4 sm:h-4 rotate-90" />
