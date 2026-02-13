@@ -258,6 +258,35 @@ export const RequestDetail = React.memo(({
                                     <DocLink key={idx} label={`Supporting Doc ${idx + 1}`} url={path} />
                                 ))}
 
+                                {selectedForm.supportingPicturesPaths?.length > 0 && (
+                                    <div className="col-span-full mt-6">
+                                        <div className="flex items-center gap-2 text-emerald-600 mb-4">
+                                            <Camera className="w-5 h-5" />
+                                            <p className="text-sm font-bold uppercase tracking-wider">Supporting Pictures</p>
+                                        </div>
+                                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                                            {selectedForm.supportingPicturesPaths.map((img, idx) => (
+                                                <a
+                                                    key={idx}
+                                                    href={getMediaUrl(img)}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="relative aspect-square rounded-lg overflow-hidden border border-gray-200 hover:border-emerald-500 transition-all shadow-sm group"
+                                                >
+                                                    <img
+                                                        src={getMediaUrl(img)}
+                                                        alt={`Supporting Picture ${idx + 1}`}
+                                                        className="w-full h-full object-cover transition-transform group-hover:scale-110"
+                                                    />
+                                                    <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                                        <FileText className="text-white w-6 h-6" />
+                                                    </div>
+                                                </a>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
                                 {selectedForm.clarificationDocuments?.length > 0 && (
                                     <>
                                         <div className="col-span-full mt-4 mb-2">
