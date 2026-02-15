@@ -7,6 +7,7 @@ import {
 import { Badge } from './Badge';
 
 import { useGetOrganizationByIdQuery } from '@/utils/slices/organizationApiSlice';
+import { getMediaUrl } from '@/utils/media';
 
 export const RequestDetail = React.memo(({
     selectedForm: summaryOrg,
@@ -38,13 +39,7 @@ export const RequestDetail = React.memo(({
     const companyDetails = org.companyDetails || {};
     const contactDetails = org.contactDetails || {};
 
-    const getDocUrl = (key) => {
-        if (!key) return null;
-        if (key.startsWith('http')) return key;
-        // Use BACKEND_URL (root) instead of BACKEND_API (/api) for static files
-        const baseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_API?.replace('/api', '');
-        return `${baseUrl}/uploads/${key}`;
-    };
+    const getDocUrl = (key) => getMediaUrl(key);
 
     return (
         <div id="printable-form" className="lg:col-span-8 bg-white rounded-xl border border-gray-200 overflow-hidden flex flex-col relative shadow-sm print:overflow-visible print:h-auto">
