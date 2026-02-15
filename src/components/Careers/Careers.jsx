@@ -16,7 +16,6 @@ const MOCK_JOBS = [
     experience: "2–4 years",
     salary: "$40,000 – $55,000",
     postedDate: "2025-01-10",
-    status: "Active",
     applicants: 14,
     description:
       "We are looking for a talented Graphic Designer to join our creative team and help communicate our mission visually.",
@@ -34,7 +33,6 @@ const MOCK_JOBS = [
     experience: "3–5 years",
     salary: "$50,000 – $65,000",
     postedDate: "2025-01-15",
-    status: "Active",
     applicants: 22,
     description:
       "Drive our digital storytelling and engage communities across all social platforms.",
@@ -52,7 +50,6 @@ const MOCK_JOBS = [
     experience: "1–3 years",
     salary: "$38,000 – $48,000",
     postedDate: "2024-12-20",
-    status: "Closed",
     applicants: 38,
     description:
       "Support program implementation and ensure effective delivery of community initiatives.",
@@ -70,7 +67,6 @@ const MOCK_JOBS = [
     experience: "4–6 years",
     salary: "$30/hr – $40/hr",
     postedDate: "2025-02-01",
-    status: "Active",
     applicants: 9,
     description:
       "Research and write compelling grant proposals to secure funding for our programs.",
@@ -88,7 +84,6 @@ const MOCK_JOBS = [
     experience: "2–4 years",
     salary: "$42,000 – $52,000",
     postedDate: "2025-01-28",
-    status: "Active",
     applicants: 17,
     description:
       "Recruit, train, and coordinate our volunteer network to amplify organizational impact.",
@@ -111,7 +106,7 @@ const MOCK_APPLICANTS = {
       coverLetter:
         "I am deeply passionate about using design as a tool for social change. With five years of experience working with nonprofits, I have honed my ability to communicate complex missions through compelling visuals. I would love to bring my skills to your team and help amplify your impact.",
       portfolio: "amara-osei.design",
-      status: "Under Review",
+      status: "Pending",
     },
     {
       id: 102,
@@ -135,7 +130,7 @@ const MOCK_APPLICANTS = {
       coverLetter:
         "Your mission to create equitable communities speaks directly to my own background. I have extensive experience in print and digital design for mission-driven organizations, and I am confident I can elevate your visual communications.",
       portfolio: "priyasubramaniam.net",
-      status: "New",
+      status: "Pending",
     },
     {
       id: 104,
@@ -147,7 +142,7 @@ const MOCK_APPLICANTS = {
       coverLetter:
         "I am a bilingual designer with a passion for community-driven storytelling. I have worked with three nonprofits over the past four years and understand the unique constraints and opportunities of design in the social sector.",
       portfolio: "carlosreyes.design",
-      status: "Under Review",
+      status: "Pending",
     },
   ],
   2: [
@@ -173,7 +168,7 @@ const MOCK_APPLICANTS = {
       coverLetter:
         "I specialize in content strategy for purpose-driven brands. My campaigns have consistently doubled engagement rates for the organizations I have served, and I am ready to bring that energy to your mission.",
       portfolio: "liamonline.co",
-      status: "New",
+      status: "Pending",
     },
   ],
   3: [
@@ -187,7 +182,7 @@ const MOCK_APPLICANTS = {
       coverLetter:
         "Community coordination is my calling. I have spent three years working at the intersection of program delivery and community engagement, and I am fluent in both English and Spanish, which I believe will be a significant asset.",
       portfolio: null,
-      status: "Hired",
+      status: "Pending",
     },
   ],
   4: [
@@ -201,7 +196,7 @@ const MOCK_APPLICANTS = {
       coverLetter:
         "Grant writing is both an art and a science, and I have mastered both. Over the past six years I have secured over $2M in funding for nonprofit organizations across the education and health sectors.",
       portfolio: null,
-      status: "Under Review",
+      status: "Pending",
     },
     {
       id: 402,
@@ -213,7 +208,7 @@ const MOCK_APPLICANTS = {
       coverLetter:
         "I am a strategic grant writer with deep experience in the international development funding landscape. I thrive on building compelling narratives that connect funders to mission.",
       portfolio: null,
-      status: "New",
+      status: "Pending",
     },
   ],
   5: [
@@ -246,13 +241,9 @@ const DEPARTMENTS = [
 const EMPLOYMENT_TYPES = ["Full-time", "Part-time", "Contract", "Internship", "Volunteer"];
 
 const STATUS_BADGE = {
-  Active: "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200",
-  Closed: "bg-gray-100 text-gray-500 ring-1 ring-gray-200",
   New: "bg-blue-50 text-blue-700 ring-1 ring-blue-200",
   "Under Review": "bg-amber-50 text-amber-700 ring-1 ring-amber-200",
   Shortlisted: "bg-violet-50 text-violet-700 ring-1 ring-violet-200",
-  Hired: "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200",
-  Rejected: "bg-red-50 text-red-500 ring-1 ring-red-200",
 };
 
 // ─────────────────────────────────────────────
@@ -361,7 +352,6 @@ function JobFormModal({ job, onClose, onSave }) {
       description: "",
       responsibilities: "",
       requirements: "",
-      status: "Active",
     }
   );
 
@@ -443,14 +433,6 @@ function JobFormModal({ job, onClose, onSave }) {
               </Field>
               <Field label="Experience Required" name="experience" />
               <Field label="Salary Range" name="salary" />
-              <Field label="Status" name="status">
-                <select name="status" value={form.status} onChange={handleChange}
-                  className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-transparent transition-all bg-white"
-                >
-                  <option value="Active">Active</option>
-                  <option value="Closed">Closed</option>
-                </select>
-              </Field>
             </div>
           </div>
 
@@ -597,14 +579,8 @@ function ApplicantDetailModal({ applicant, onClose }) {
 
         {/* Footer Actions */}
         <div className="px-6 py-4 border-t border-gray-100 flex flex-wrap gap-2 justify-end">
-          <button className="px-4 py-2 text-sm font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">
-            Mark as Rejected
-          </button>
           <button className="px-4 py-2 text-sm font-medium text-violet-700 bg-violet-50 rounded-lg hover:bg-violet-100 transition-colors">
             Shortlist
-          </button>
-          <button className="px-4 py-2 text-sm font-medium text-white bg-emerald-500 rounded-lg hover:bg-emerald-600 transition-colors">
-            Mark as Hired
           </button>
         </div>
       </div>
@@ -817,8 +793,6 @@ export function CareersDashboard() {
 
   const stats = {
     total: jobs.length,
-    active: jobs.filter((j) => j.status === "Active").length,
-    closed: jobs.filter((j) => j.status === "Closed").length,
     totalApplicants: jobs.reduce((sum, j) => sum + j.applicants, 0),
   };
 
@@ -879,8 +853,6 @@ export function CareersDashboard() {
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           {[
             { label: "Total Postings", value: stats.total, icon: "M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z", color: "text-gray-700", bg: "bg-gray-100" },
-            { label: "Active Jobs", value: stats.active, icon: "M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z", color: "text-emerald-700", bg: "bg-emerald-50" },
-            { label: "Closed Jobs", value: stats.closed, icon: "M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z", color: "text-gray-500", bg: "bg-gray-100" },
             { label: "Total Applicants", value: stats.totalApplicants, icon: "M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z", color: "text-violet-700", bg: "bg-violet-50" },
           ].map(({ label, value, icon, color, bg }) => (
             <div key={label} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
@@ -913,8 +885,8 @@ export function CareersDashboard() {
               className="px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-400 bg-white min-w-[130px]"
             >
               <option value="All">All Status</option>
-              <option value="Active">Active</option>
-              <option value="Closed">Closed</option>
+              <option value="Pending">Pending</option>
+              <option value="Shortlisted">Shortlisted</option>
             </select>
             <select value={filterDept} onChange={(e) => setFilterDept(e.target.value)}
               className="px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-400 bg-white min-w-[160px]"
