@@ -1,6 +1,6 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { Badge } from './Badge';
-import { Search, ChevronLeft, ChevronRight, Inbox } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Inbox, Building } from 'lucide-react';
 
 export const RequestsList = React.memo(({
     isLoading,
@@ -55,7 +55,7 @@ export const RequestsList = React.memo(({
                 {displayForms.length === 0 ? (
                     <div className="h-full flex flex-col items-center justify-center p-8 text-center text-gray-400">
                         <Inbox className="w-12 h-12 mb-3 opacity-20" />
-                        <p className="text-sm font-medium">No organizations found</p>
+                        <p className="text-sm font-medium">No registrations found</p>
                         {activeFilterCount > 0 && (
                             <button onClick={clearFilters} className="text-blue-500 text-xs mt-2 hover:underline">Clear all filters</button>
                         )}
@@ -70,12 +70,15 @@ export const RequestsList = React.memo(({
                             >
                                 <div className="flex justify-between items-start mb-1">
                                     <h4 className="font-bold text-gray-800 truncate flex-1 pr-2">
-                                        {form.organizationName || form.fullName}
+                                        {form.organizationName}
                                     </h4>
-                                    <Badge status={form.status === 'approved' ? 'active' : form.status} />
+                                    <Badge status={form.verificationStatus} />
                                 </div>
                                 <div className="flex justify-between items-center">
-                                    <p className="text-xs text-gray-500 font-medium truncate italic">{form.city || 'Location N/A'}</p>
+                                    <div className="flex items-center gap-1.5 text-gray-500">
+                                        <Building size={12} />
+                                        <span className="text-xs font-medium">{form.isNGO ? 'NGO' : 'Company'}</span>
+                                    </div>
                                     <p className="text-[10px] text-gray-400 font-bold uppercase">{new Date(form.createdAt).toLocaleDateString()}</p>
                                 </div>
                             </div>

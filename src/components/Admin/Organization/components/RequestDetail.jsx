@@ -1,42 +1,50 @@
 import React from 'react';
 import {
-    CheckCircle, XCircle, X as XIcon, Camera, Printer, FileText,
-    Building, User, Phone, Mail, MapPin, Briefcase, CreditCard, Users,
-    LucideMessageSquareWarning, Power, ShieldOff
+    CheckCircle, XCircle, Printer, FileText,
+    Building, User, Mail, Briefcase,
+    LucideMessageSquareWarning, ExternalLink
 } from 'lucide-react';
 import { Badge } from './Badge';
 
-import { useGetFormByIdQuery } from '@/utils/slices/financialAidApiSlice';
-import { getMediaUrl } from '@/utils/media';
+import { useGetOrganizationByIdQuery } from '@/utils/slices/organizationApiSlice';
 
 export const RequestDetail = React.memo(({
-    selectedForm: summaryForm,
+    selectedForm: summaryOrg,
     onOpenGroundReport,
-    isOrganizationPage = false
 }) => {
     // Fetch full details
-    const { data: fullFormData, isLoading: isDetailsLoading } = useGetFormByIdQuery(summaryForm?._id, {
-        skip: !summaryForm?._id
+    const { data: fullOrgData, isLoading: isDetailsLoading } = useGetOrganizationByIdQuery(summaryOrg?._id, {
+        skip: !summaryOrg?._id
     });
 
-    const selectedForm = fullFormData?.data || summaryForm;
+    const org = fullOrgData?.data || summaryOrg;
 
-    if (!summaryForm) {
+    if (!summaryOrg) {
         return (
             <div className="lg:col-span-8 bg-white rounded-xl border border-gray-200 overflow-hidden flex flex-col relative shadow-sm h-full print:h-auto">
                 <div className="h-full flex flex-col items-center justify-center text-gray-500 p-8 text-center bg-gray-50">
                     <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-6 shadow-inner">
                         <FileText className="w-10 h-10 text-blue-500/30" />
                     </div>
-                    <h3 className="text-xl font-semibold text-gray-700 mb-2">No Application Selected</h3>
-                    <p className="max-w-xs mx-auto text-gray-600">Select an organization from the list on the left to view full details and perform actions.</p>
+                    <h3 className="text-xl font-semibold text-gray-700 mb-2">No Organization Selected</h3>
+                    <p className="max-w-xs mx-auto text-gray-600">Select a registration from the list on the left to view full details and perform actions.</p>
                 </div>
             </div>
         );
     }
 
-    const isCurrentlyApproved = selectedForm.status === 'approved' || selectedForm.status === 'active';
-    const isCurrentlyInactive = selectedForm.status === 'inactive';
+    const isNGO = org.isNGO;
+    const ngoDetails = org.ngoDetails || {};
+    const companyDetails = org.companyDetails || {};
+    const contactDetails = org.contactDetails || {};
+
+    const getDocUrl = (key) => {
+        if (!key) return null;
+        if (key.startsWith('http')) return key;
+        // Use BACKEND_URL (root) instead of BACKEND_API (/api) for static files
+        const baseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_API?.replace('/api', '');
+        return `${baseUrl}/uploads/${key}`;
+    };
 
     return (
         <div id="printable-form" className="lg:col-span-8 bg-white rounded-xl border border-gray-200 overflow-hidden flex flex-col relative shadow-sm print:overflow-visible print:h-auto">
@@ -44,28 +52,37 @@ export const RequestDetail = React.memo(({
                 {/* Detail Header */}
                 <div className="p-6 border-b border-gray-200 bg-white backdrop-blur-sm z-10 sticky top-0">
                     <div className="flex justify-between items-start">
-                        <div>
-                            <h2 className="text-3xl font-bold text-gray-800 mb-2">
-                                {selectedForm.organizationName || selectedForm.fullName}
-                            </h2>
-                            <div className="flex items-center gap-3 text-sm">
-                                <span className="px-3 py-1 bg-gray-100 rounded-full flex items-center gap-1.5 text-gray-700">
-                                    <Building size={14} className="text-blue-600" />
-                                    Organization
-                                </span>
-                                <span className="text-gray-600">ID: {selectedForm._id}</span>
-                                <button
-                                    onClick={() => window.print()}
-                                    className="no-print p-2 hover:bg-gray-100 rounded-full text-gray-600 transition-colors"
-                                    title="Print Form"
-                                >
-                                    <Printer size={20} />
-                                </button>
+                        <div className="flex gap-4">
+                            {org.organizationLogo && (
+                                <img
+                                    src={getDocUrl(org.organizationLogo)}
+                                    alt="Logo"
+                                    className="w-16 h-16 rounded-lg object-cover border border-gray-100"
+                                />
+                            )}
+                            <div>
+                                <h2 className="text-3xl font-bold text-gray-800 mb-2">
+                                    {org.organizationName}
+                                </h2>
+                                <div className="flex items-center gap-3 text-sm">
+                                    <span className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full flex items-center gap-1.5 font-semibold">
+                                        <Building size={14} />
+                                        {isNGO ? 'NGO' : 'Company'}
+                                    </span>
+                                    <span className="text-gray-500 font-medium">ID: {org._id}</span>
+                                    <button
+                                        onClick={() => window.print()}
+                                        className="no-print p-2 hover:bg-gray-100 rounded-full text-gray-600 transition-colors"
+                                        title="Print Form"
+                                    >
+                                        <Printer size={20} />
+                                    </button>
+                                </div>
                             </div>
                         </div>
                         <div className="text-right">
-                            <p className="text-sm text-gray-600 uppercase tracking-widest mb-5 font-semibold">Current Status</p>
-                            <Badge status={selectedForm.status === 'approved' ? 'active' : selectedForm.status} size="large" />
+                            <p className="text-[10px] text-gray-500 uppercase tracking-widest mb-1.5 font-bold">Verification Status</p>
+                            <Badge status={org.verificationStatus} size="large" />
                         </div>
                     </div>
                 </div>
@@ -73,158 +90,146 @@ export const RequestDetail = React.memo(({
                 {/* SCROLLABLE FORM DATA */}
                 <div className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar pb-32 print:overflow-visible print:h-auto print:pb-0">
 
-                    {/* NGO Registration Form Information */}
-                    <DetailSection title="Organization Registration Information" icon={<Building className="text-blue-600" />}>
+                    {/* Basic Information */}
+                    <DetailSection title="Basic Information" icon={<Building className="text-blue-600" />}>
                         <Grid>
-                            <Field label="Organization Name" value={selectedForm.organizationName || selectedForm.fullName} />
-                            <Field label="Registration Type" value={selectedForm.nonProfit} />
-                            <Field label="Organization Type Description" value={selectedForm.organizationTypeDescription} />
-                            <Field label="City" value={selectedForm.city} />
-                            <Field label="Founder Name" value={selectedForm.founderName} />
-                            <Field label="Founder Email" value={selectedForm.founderEmail} />
-                            <Field label="Founder Mobile" value={selectedForm.founderMobile} />
-                            <Field label="Website" value={selectedForm.ngoWebsite} isLink />
-                            <div className="col-span-full">
-                                <Field label="Cause Supported" value={selectedForm.causeSupported?.join(', ')} />
+                            <Field label="Email" value={org.organizationEmail} copyable />
+                            <Field label="Website" value={org.officialWebsite} isLink />
+                            <Field label="Location" value={`${org.city}, ${org.state}`} />
+                            <Field label="Registered On" value={new Date(org.createdAt).toLocaleString()} />
+                        </Grid>
+                        {org.organizationDescription && (
+                            <div className="mt-4 p-4 bg-white border border-gray-100 rounded-lg">
+                                <p className="text-xs text-gray-500 uppercase font-bold mb-2">Description</p>
+                                <p className="text-gray-700 text-sm leading-relaxed">{org.organizationDescription}</p>
                             </div>
-                            <div className="col-span-full">
-                                <Field label="About NGO" value={selectedForm.aboutNGO} />
-                            </div>
-                        </Grid>
+                        )}
                     </DetailSection>
 
-                    {/* Contact Person Details */}
-                    <DetailSection title="Contact Person Details" icon={<User className="text-blue-600" />}>
+                    {/* Contact Person */}
+                    <DetailSection title="Contact Person" icon={<User className="text-blue-600" />}>
                         <Grid>
-                            <Field label="Contact Name" value={selectedForm.contactName} />
-                            <Field label="Contact Number" value={selectedForm.contactNumber} />
-                            <Field label="Email Address" value={selectedForm.email} />
-                            <Field label="Designation" value={selectedForm.designation} />
+                            <Field label="Name" value={contactDetails.contactName} />
+                            <Field label="Designation" value={contactDetails.designation} />
+                            <Field label="Email" value={contactDetails.contactEmail} copyable />
+                            <Field label="Number" value={contactDetails.contactNumber} />
                         </Grid>
                     </DetailSection>
 
-                    {/* Organization Profile Details */}
-                    <DetailSection title="Organization Profile" icon={<Briefcase className="text-blue-600" />}>
-                        <Grid>
-                            <Field label="Budget" value={selectedForm.budget} />
-                            <Field label="Donor Database" value={selectedForm.donorDatabase} />
-                            <Field label="Full Time Fundraising" value={selectedForm.fullTimeFundraising} />
-                            <Field label="Crowdfunded Before?" value={selectedForm.crowdfundedBefore} />
-                            <Field label="Employee Strength" value={selectedForm.employeeStrength} />
-                            <Field label="Volunteer Strength" value={selectedForm.volunteerStrength} />
-                            <Field label="Organize Events?" value={selectedForm.organizeEvents} />
-                        </Grid>
-                    </DetailSection>
-
-                    {/* Certifications & Identity */}
-                    <DetailSection title="Identity & Certifications" icon={<FileText className="text-blue-600" />}>
-                        <Grid>
-                            <Field label="Has 80G?" value={selectedForm.has80G} />
-                            <Field label="80G Expiry" value={selectedForm.expiryDate} />
-                            <Field label="Has FCRA?" value={selectedForm.hasFCRA} />
-                            <Field label="PAN Card No" value={selectedForm.panCard} />
-                        </Grid>
-                    </DetailSection>
-
-                    {/* Ground Verification Report */}
-                    {selectedForm.groundReport && selectedForm.groundReport.reason && (
-                        <div className="avoid-break bg-white rounded-xl p-6 border-2 border-dashed border-emerald-200">
-                            <div className="flex items-center gap-3 mb-4">
-                                <div className="p-2 bg-emerald-50 rounded-lg text-emerald-600">
-                                    <CheckCircle size={20} />
-                                </div>
-                                <h3 className="text-lg font-bold text-gray-800 italic">Verification Report</h3>
-                            </div>
-                            <div className="space-y-4">
-                                <div className="bg-emerald-50/30 p-4 rounded-lg">
-                                    <p className="text-xs text-emerald-700 uppercase tracking-wider font-bold mb-2">Verification Summary</p>
-                                    <p className="text-gray-800 leading-relaxed italic">"{selectedForm.groundReport.reason}"</p>
-                                </div>
-                                {selectedForm.groundReport.images?.length > 0 && (
-                                    <div>
-                                        <p className="text-xs text-gray-500 uppercase tracking-wider font-bold mb-3">Verification Photos</p>
-                                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                                            {selectedForm.groundReport.images.map((img, idx) => (
-                                                <a
-                                                    key={idx}
-                                                    href={getMediaUrl(img)}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="relative aspect-square rounded-lg overflow-hidden border border-gray-200 hover:border-emerald-500 transition-all shadow-sm group"
-                                                >
-                                                    <img
-                                                        src={getMediaUrl(img)}
-                                                        alt={`Verification ${idx + 1}`}
-                                                        className="w-full h-full object-cover transition-transform group-hover:scale-110"
-                                                    />
-                                                    <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                                        <Camera className="text-white w-6 h-6" />
-                                                    </div>
-                                                </a>
-                                            ))}
-                                        </div>
+                    {/* NGO Specific Details */}
+                    {isNGO && (
+                        <>
+                            <DetailSection title="NGO Specific Details" icon={<Briefcase className="text-blue-600" />}>
+                                <Grid>
+                                    <Field label="Founder Name" value={ngoDetails.founderName} />
+                                    <Field label="Founder Email" value={ngoDetails.founderEmail} copyable />
+                                    <Field label="Founder Mobile" value={ngoDetails.founderMobile} />
+                                    <Field label="80G Certification" value={ngoDetails.has80G} />
+                                    <Field label="FCRA Certification" value={ngoDetails.hasFCRA} />
+                                    <Field label="80G Expiry" value={ngoDetails.certification80GExpiryDate ? new Date(ngoDetails.certification80GExpiryDate).toLocaleDateString() : 'N/A'} />
+                                    <Field label="PAN Card" value={ngoDetails.panCard} copyable />
+                                </Grid>
+                                <div className="mt-4">
+                                    <p className="text-xs text-gray-500 uppercase font-bold mb-2">Causes Supported</p>
+                                    <div className="flex flex-wrap gap-2">
+                                        {ngoDetails.causesSupported?.map((cause, idx) => (
+                                            <span key={idx} className="px-3 py-1 bg-blue-50 text-blue-600 rounded-lg text-xs font-semibold border border-blue-100">
+                                                {cause}
+                                            </span>
+                                        ))}
                                     </div>
+                                </div>
+                            </DetailSection>
+
+                            <DetailSection title="NGO Profile & Capacity" icon={<Briefcase className="text-blue-600" />}>
+                                <Grid>
+                                    <Field label="Annual Budget" value={ngoDetails.annualBudget} />
+                                    <Field label="Donor Database" value={ngoDetails.donorDatabase} />
+                                    <Field label="Fundraising Team?" value={ngoDetails.fullTimeFundraising} />
+                                    <Field label="Crowdfunded Before?" value={ngoDetails.crowdfundedBefore} />
+                                    <Field label="Employee Strength" value={ngoDetails.employeeStrength} />
+                                    <Field label="Volunteer Strength" value={ngoDetails.volunteerStrength} />
+                                    <Field label="Organize Events?" value={ngoDetails.organizeEvents} />
+                                </Grid>
+                            </DetailSection>
+                        </>
+                    )}
+
+                    {/* Company Specific Details */}
+                    {!isNGO && (
+                        <DetailSection title="Company Specific Details" icon={<Building className="text-blue-600" />}>
+                            <Grid>
+                                <Field label="Director Name" value={companyDetails.directorName} />
+                                <Field label="Director Email" value={companyDetails.directorEmail} copyable />
+                                <Field label="Director Mobile" value={companyDetails.directorMobile} />
+                                <Field label="Business Domain" value={companyDetails.businessDomain} />
+                                <Field label="Annual Revenue" value={companyDetails.annualRevenue} />
+                                <Field label="Employees" value={companyDetails.numberOfEmployees} />
+                                <Field label="Years in operation" value={companyDetails.yearsInOperation} />
+                                <Field label="Document Type" value={companyDetails.documentType} />
+                            </Grid>
+                        </DetailSection>
+                    )}
+
+                    {/* Verification Notes */}
+                    {org.verificationNotes && (
+                        <div className="avoid-break bg-white rounded-xl p-6 border-2 border-dashed border-blue-200">
+                            <div className="flex items-center gap-3 mb-4">
+                                <div className="p-2 bg-blue-50 rounded-lg text-blue-600">
+                                    <LucideMessageSquareWarning size={20} />
+                                </div>
+                                <h3 className="text-lg font-bold text-gray-800">Admin Notes</h3>
+                            </div>
+                            <div className="bg-blue-50/30 p-4 rounded-lg">
+                                <p className="text-gray-800 leading-relaxed italic">"{org.verificationNotes}"</p>
+                                {org.verifiedAt && (
+                                    <p className="text-[10px] text-gray-500 mt-2 uppercase font-bold">
+                                        Verified On: {new Date(org.verifiedAt).toLocaleString()}
+                                    </p>
                                 )}
                             </div>
                         </div>
                     )}
 
-                    {/* Uploaded Documents */}
-                    <div className="print-col-span-2">
-                        <DetailSection title="Uploaded Documents" icon={<FileText className="text-blue-600" />}>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <DocLink label="80G Certificate" url={selectedForm.certification80GPath} />
-                                <DocLink label="PAN Card Image" url={selectedForm.panCardImagePath} />
-                                <DocLink label="Registration Document" url={selectedForm.registrationDocPath} />
-                                <DocLink label="PAN Card Document" url={selectedForm.panCardDocPath} />
-                            </div>
-                        </DetailSection>
-                    </div>
+                    {/* Documents */}
+                    <DetailSection title="Documents" icon={<FileText className="text-blue-600" />}>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {isNGO ? (
+                                <>
+                                    <DocLink label="80G Certificate" url={getDocUrl(ngoDetails.certification80GDocument)} />
+                                    <DocLink label="PAN Card Image" url={getDocUrl(ngoDetails.panCardImage)} />
+                                </>
+                            ) : (
+                                <>
+                                    <DocLink label="Business Registration" url={getDocUrl(companyDetails.businessDocument)} />
+                                </>
+                            )}
+                        </div>
+                    </DetailSection>
 
                 </div>
 
                 {/* Footer / Action Bar */}
-                <div className="border-t border-gray-200 p-6 bg-white absolute bottom-0 w-full backdrop-blur-md z-20">
-                    <div className="flex justify-end gap-4">
-                        {selectedForm.status === 'pending' && (
-                            <>
-                                <button
-                                    onClick={() => onOpenGroundReport('clarification')}
-                                    className="flex items-center gap-2 px-6 py-3 bg-amber-50 text-amber-600 hover:bg-amber-100 rounded-xl border border-amber-200 transition-all font-semibold"
-                                >
-                                    <LucideMessageSquareWarning size={18} />
-                                    Clarification
-                                </button>
-                                <button
-                                    onClick={() => onOpenGroundReport('rejected')}
-                                    className="flex items-center gap-2 px-6 py-3 bg-red-50 text-red-600 hover:bg-red-600 hover:text-white rounded-xl border border-red-200 transition-all font-semibold"
-                                >
-                                    <XCircle size={18} />
-                                    Reject
-                                </button>
-                                <button
-                                    onClick={() => onOpenGroundReport('active')}
-                                    className="flex items-center gap-2 px-8 py-3 bg-emerald-600 text-white hover:bg-emerald-700 rounded-xl shadow-lg shadow-emerald-500/20 transition-all font-bold text-lg hover:-translate-y-1"
-                                >
-                                    <CheckCircle size={20} />
-                                    Approve & Activate
-                                </button>
-                            </>
-                        )}
-
-                        {(isCurrentlyApproved || isCurrentlyInactive) && (
-                            <>
-                                <button
-                                    onClick={() => onOpenGroundReport(isCurrentlyApproved ? 'inactive' : 'active')}
-                                    className={`flex items-center gap-2 px-6 py-3 ${isCurrentlyApproved ? 'bg-gray-100 text-gray-700 hover:bg-gray-200' : 'bg-emerald-600 text-white hover:bg-emerald-700'} rounded-xl transition-all font-semibold shadow-sm`}
-                                >
-                                    {isCurrentlyApproved ? <ShieldOff size={18} /> : <Power size={18} />}
-                                    {isCurrentlyApproved ? 'Deactivate Organization' : 'Reactivate Organization'}
-                                </button>
-                            </>
-                        )}
+                {org.verificationStatus === 'pending' && (
+                    <div className="no-print border-t border-gray-200 p-6 bg-white absolute bottom-0 w-full backdrop-blur-md z-20">
+                        <div className="flex justify-end gap-4">
+                            <button
+                                onClick={() => onOpenGroundReport('rejected')}
+                                className="flex items-center gap-2 px-6 py-3 bg-red-50 text-red-600 hover:bg-red-600 hover:text-white rounded-xl border border-red-200 transition-all font-semibold"
+                            >
+                                <XCircle size={18} />
+                                Reject
+                            </button>
+                            <button
+                                onClick={() => onOpenGroundReport('verified')}
+                                className="flex items-center gap-2 px-8 py-3 bg-emerald-600 text-white hover:bg-emerald-700 rounded-xl shadow-lg shadow-emerald-500/20 transition-all font-bold text-lg hover:-translate-y-1"
+                            >
+                                <CheckCircle size={20} />
+                                Verify & Approve
+                            </button>
+                        </div>
                     </div>
-                </div>
+                )}
             </div>
         </div>
     );
@@ -236,7 +241,7 @@ RequestDetail.displayName = 'RequestDetail';
 
 function DetailSection({ title, icon, children }) {
     return (
-        <div className="bg-gray-50 rounded-xl p-5 border border-gray-200 avoid-break">
+        <div className="bg-gray-50 rounded-xl p-5 border border-gray-200 avoid-break shadow-sm">
             <div className="flex items-center gap-3 mb-6 border-b border-gray-200 pb-3">
                 <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center shadow-sm">
                     {icon}
@@ -256,32 +261,35 @@ function Grid({ children, cols = 2 }) {
     );
 }
 
-function Field({ label, value, icon, isLink, copyable }) {
-    if (!value) return null;
+function Field({ label, value, isLink, copyable }) {
+    if (!value && value !== 0) return null;
 
     return (
         <div className="group">
-            <p className="text-xs text-gray-600 uppercase tracking-wider font-bold mb-1.5 flex items-center gap-2">
-                {icon && <span className="text-blue-600">{icon}</span>}
-                {label}
-            </p>
+            <p className="text-[10px] text-gray-500 uppercase tracking-wider font-bold mb-1.5">{label}</p>
             {isLink ? (
-                <a href={value} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline hover:text-blue-700 truncate block">
+                <a
+                    href={value.startsWith('http') ? value : `https://${value}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:underline hover:text-blue-700 truncate flex items-center gap-1 font-medium"
+                >
                     {value}
+                    <ExternalLink size={12} />
                 </a>
             ) : (
-                <p className="text-gray-800 font-medium text-[15px] break-words flex items-center gap-2 print-break-all">
-                    {value}
+                <p className="text-gray-800 font-semibold text-sm flex items-center gap-2 break-all">
+                    {value.toString()}
                     {copyable && (
                         <button
                             onClick={(e) => {
                                 e.stopPropagation();
                                 navigator.clipboard.writeText(value);
                             }}
-                            className="opacity-0 group-hover:opacity-100 p-1 hover:bg-gray-200 rounded text-gray-600 transition no-print"
+                            className="opacity-0 group-hover:opacity-100 p-1 hover:bg-gray-200 rounded text-gray-400 font-normal transition no-print"
                             title="Copy"
                         >
-                            <FileText size={12} />
+                            <FileText size={10} />
                         </button>
                     )}
                 </p>
@@ -292,20 +300,19 @@ function Field({ label, value, icon, isLink, copyable }) {
 
 function DocLink({ label, url }) {
     if (!url) return null;
-    const fullUrl = getMediaUrl(url);
     return (
         <a
-            href={fullUrl}
+            href={url}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-3 p-4 bg-white border border-gray-200 hover:border-blue-500 rounded-lg transition-all group shadow-sm"
+            className="flex items-center gap-3 p-4 bg-white border border-gray-200 hover:border-blue-500 rounded-xl transition-all group shadow-sm"
         >
-            <div className="w-10 h-10 bg-gray-50 rounded-lg flex items-center justify-center group-hover:bg-blue-50 transition-colors">
+            <div className="w-10 h-10 bg-gray-50 rounded-lg flex items-center justify-center group-hover:bg-blue-50 transition-colors shadow-inner">
                 <FileText className="text-blue-600 w-5 h-5" />
             </div>
             <div className="overflow-hidden">
-                <p className="text-sm font-medium text-gray-800 group-hover:text-blue-600 transition-colors truncate">{label}</p>
-                <p className="text-xs text-gray-500 truncate no-print">Click to view document</p>
+                <p className="text-sm font-bold text-gray-800 group-hover:text-blue-600 transition-colors truncate">{label}</p>
+                <p className="text-[10px] text-gray-400 font-bold uppercase no-print">Click to view</p>
             </div>
         </a>
     );

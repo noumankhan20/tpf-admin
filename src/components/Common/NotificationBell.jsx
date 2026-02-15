@@ -63,10 +63,12 @@ const NotificationBell = ({ moduleFilter = null }) => {
                 const isVerifyModule = !moduleFilter || moduleFilter === 'VERIFY';
                 const isFinancialAidFilter = moduleFilter === 'FINANCIAL_AID';
                 const isKYCFilter = moduleFilter === 'KYC';
+                const isOrgFilter = moduleFilter === 'ORGANIZATION';
 
                 // Permission checks
                 const hasFinancialAidAccess = admin?.isSuperAdmin || admin?.modules?.includes('Financial Aid');
                 const hasKYCAccess = admin?.isSuperAdmin || admin?.modules?.includes('KYC Verification');
+                const hasOrgAccess = admin?.isSuperAdmin || admin?.modules?.includes('Organization Verification');
 
                 if ((isVerifyModule || isFinancialAidFilter) && hasFinancialAidAccess) {
                     // Fetch Financial Aid Forms
@@ -112,6 +114,31 @@ const NotificationBell = ({ moduleFilter = null }) => {
                         }
                     } catch (err) {
                         console.error('KYC Notification fetch failed:', err);
+                    }
+                }
+
+                if ((isVerifyModule || isOrgFilter) && hasOrgAccess) {
+                    // Fetch Organization Registrations
+                    try {
+                        const orgRes = await fetch(`${apiBase}/organizations?verificationStatus=pending`, {
+                            credentials: 'include'
+                        });
+                        const orgResult = await orgRes.json();
+                        if (orgResult.success && orgResult.data) {
+                            const orgNotifications = orgResult.data.map(org => ({
+                                id: org._id,
+                                type: 'FORM',
+                                formType: 'ORGANIZATION',
+                                title: `Pending Verification: Organization`,
+                                subtitle: org.organizationName,
+                                time: org.createdAt,
+                                read: false,
+                                data: org
+                            }));
+                            allInitial = [...allInitial, ...orgNotifications];
+                        }
+                    } catch (err) {
+                        console.error('Org Notification fetch failed:', err);
                     }
                 }
 
@@ -189,7 +216,10 @@ const NotificationBell = ({ moduleFilter = null }) => {
             // Permission checks
             const hasFinancialAidAccess = admin?.isSuperAdmin || admin?.modules?.includes('Financial Aid');
             const hasKYCAccess = admin?.isSuperAdmin || admin?.modules?.includes('KYC Verification');
-            const isRelevantForm = (data.type === 'KYC' && hasKYCAccess) || (data.type !== 'KYC' && hasFinancialAidAccess);
+            const hasOrgAccess = admin?.isSuperAdmin || admin?.modules?.includes('Organization Verification');
+            const isRelevantForm = (data.type === 'KYC' && hasKYCAccess) ||
+                (data.type === 'ORGANIZATION' && hasOrgAccess) ||
+                (data.type !== 'KYC' && data.type !== 'ORGANIZATION' && hasFinancialAidAccess);
 
             if ((isVerifyModule || isFinancialAidFilter || isKYCFilter) && isRelevantForm) {
                 setNotifications(prev => [newNotification, ...prev]);
@@ -233,6 +263,7 @@ const NotificationBell = ({ moduleFilter = null }) => {
             }
         } else if (notification.type === 'FORM') {
             if (notification.formType === 'KYC') router.push('/verify/kyc');
+            else if (notification.formType === 'ORGANIZATION') router.push('/verify/organization');
             else router.push('/verify/financial'); // Adjust path as needed
         }
     };
@@ -318,7 +349,7 @@ const NotificationBell = ({ moduleFilter = null }) => {
                             )}
                         </div>
 
-                       
+
                     </motion.div>
                 )}
             </AnimatePresence>

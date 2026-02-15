@@ -5,7 +5,11 @@ import { useRouter } from 'next/navigation';
 import NotificationBell from '../../Common/NotificationBell';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft } from 'lucide-react';
-import { useGetAllFormsQuery, useUpdateFormStatusMutation } from '@/utils/slices/financialAidApiSlice';
+import {
+   useGetAllOrganizationsQuery,
+   useUpdateOrganizationVerificationStatusMutation,
+   useGetOrganizationStatsQuery
+} from '@/utils/slices/organizationApiSlice';
 
 // Components
 import { StatCards } from './components/StatCards';
@@ -22,10 +26,8 @@ export default function OrganizationVerifyPage() {
 
    // Ground Report Modal State
    const [isGroundReportModalOpen, setIsGroundReportModalOpen] = useState(false);
-   const [groundReportStatus, setGroundReportStatus] = useState(null); // 'approved' (active), 'rejected', 'inactive'
+   const [groundReportStatus, setGroundReportStatus] = useState(null); // 'verified', 'rejected', 'pending'
    const [groundReportReason, setGroundReportReason] = useState('');
-   const [imagePreviews, setImagePreviews] = useState([]);
-   const [groundImages, setGroundImages] = useState([]); // File objects
 
    // UI State
    const [showSuccessMessage, setShowSuccessMessage] = useState(false);
@@ -43,12 +45,14 @@ export default function OrganizationVerifyPage() {
    const itemsPerPage = 8;
 
    // API Hooks
-   const { data: formsData, isLoading, refetch } = useGetAllFormsQuery({
-      formType: 'organization', // Fetch only organization forms
-      limit: 1000
+   const { data: orgsData, isLoading, refetch } = useGetAllOrganizationsQuery({
+      limit: 1000,
+      search: debouncedSearch,
+      verificationStatus: statusFilter === 'all' ? undefined : statusFilter
    });
 
-   const [updateFormStatus, { isLoading: isUpdating }] = useUpdateFormStatusMutation();
+   const { data: statsData } = useGetOrganizationStatsQuery();
+   const [updateStatus, { isLoading: isUpdating }] = useUpdateOrganizationVerificationStatusMutation();
 
    // Debounce Search
    useEffect(() => {
@@ -59,55 +63,39 @@ export default function OrganizationVerifyPage() {
       return () => clearTimeout(handler);
    }, [searchQuery]);
 
-   // Stats Calculation
+   // Stats Calculation - From Dedicated stats endpoint
    const stats = useMemo(() => {
-      if (!formsData?.data) return { pending: 0, approved: 0, rejected: 0, inactive: 0, active: 0 };
-      return formsData.data.reduce((acc, form) => {
-         const status = form.status === 'approved' ? 'active' : form.status;
-         acc[status] = (acc[status] || 0) + 1;
-         // Also count 'approved' as 'active' for stats consistency if needed
-         if (form.status === 'approved') acc['active'] = (acc['active'] || 0) + 1;
-         return acc;
-      }, { pending: 0, approved: 0, rejected: 0, inactive: 0, active: 0 });
-   }, [formsData]);
+      const s = statsData?.data?.byVerificationStatus || [];
+      const statsObj = { pending: 0, verified: 0, rejected: 0 };
+      s.forEach(item => {
+         if (item._id) statsObj[item._id] = item.count;
+      });
+      return statsObj;
+   }, [statsData]);
 
-   const totalCount = formsData?.data?.length || 0;
+   const totalCount = statsData?.data?.totalCount?.[0]?.count || orgsData?.total || 0;
 
-   // Filtering Logic
+   // Filtering Logic (Client side refined filtering if needed)
    const displayForms = useMemo(() => {
-      if (!formsData?.data) return [];
+      if (!orgsData?.data) return [];
 
-      let filtered = formsData.data.filter(form => {
-         // Status Filter
-         if (statusFilter !== 'all') {
-            if (statusFilter === 'active' && form.status !== 'approved' && form.status !== 'active') return false;
-            if (statusFilter !== 'active' && form.status !== statusFilter) return false;
-         }
+      let filtered = [...orgsData.data];
 
-         // Search Filter
-         if (debouncedSearch) {
-            const searchLower = debouncedSearch.toLowerCase();
-            const matchesName = (form.fullName || form.organizationName || '').toLowerCase().includes(searchLower);
-            const matchesEmail = (form.email || '').toLowerCase().includes(searchLower);
-            const matchesId = (form._id || '').toLowerCase().includes(searchLower);
-            if (!matchesName && !matchesEmail && !matchesId) return false;
-         }
-
-         // Date Filter
-         if (dateFilter !== 'all') {
+      // Date Filter
+      if (dateFilter !== 'all') {
+         filtered = filtered.filter(form => {
             const formDate = new Date(form.createdAt);
             const now = new Date();
             const diffTime = Math.abs(now - formDate);
             const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-            if (dateFilter === 'today' && diffDays > 1) return false;
-            if (dateFilter === 'week' && diffDays > 7) return false;
-            if (dateFilter === 'month' && diffDays > 30) return false;
-            if (dateFilter === 'year' && diffDays > 365) return false;
-         }
-
-         return true;
-      });
+            if (dateFilter === 'today') return diffDays <= 1;
+            if (dateFilter === 'week') return diffDays <= 7;
+            if (dateFilter === 'month') return diffDays <= 30;
+            if (dateFilter === 'year') return diffDays <= 365;
+            return true;
+         });
+      }
 
       // Sorting
       return filtered.sort((a, b) => {
@@ -115,7 +103,7 @@ export default function OrganizationVerifyPage() {
          const dateB = new Date(b.createdAt);
          return sortOrder === 'asc' ? dateA - dateB : dateB - dateA;
       });
-   }, [formsData, statusFilter, debouncedSearch, dateFilter, sortOrder]);
+   }, [orgsData, dateFilter, sortOrder]);
 
    // Pagination Logic
    const totalPages = Math.ceil(displayForms.length / itemsPerPage);
@@ -143,23 +131,7 @@ export default function OrganizationVerifyPage() {
    const handleOpenGroundReport = (status) => {
       setGroundReportStatus(status);
       setGroundReportReason('');
-      setGroundImages([]);
-      setImagePreviews([]);
       setIsGroundReportModalOpen(true);
-   };
-
-   const handleImageChange = (e) => {
-      const files = Array.from(e.target.files);
-      if (files.length > 0) {
-         setGroundImages(prev => [...prev, ...files]);
-         const newPreviews = files.map(file => URL.createObjectURL(file));
-         setImagePreviews(prev => [...prev, ...newPreviews]);
-      }
-   };
-
-   const removeImage = (index) => {
-      setGroundImages(prev => prev.filter((_, i) => i !== index));
-      setImagePreviews(prev => prev.filter((_, i) => i !== index));
    };
 
    const handleSubmitGroundReport = async () => {
@@ -170,20 +142,12 @@ export default function OrganizationVerifyPage() {
 
       if (!selectedForm) return;
 
-      const formData = new FormData();
-      // Map 'active' to 'approved' for backend compatibility if needed
-      const apiStatus = groundReportStatus === 'active' ? 'approved' : groundReportStatus;
-      formData.append('status', apiStatus);
-      formData.append('groundReportReason', groundReportReason);
-
-      if (groundReportStatus !== 'clarification') {
-         groundImages.forEach(image => {
-            formData.append('groundReportImages', image);
-         });
-      }
-
       try {
-         await updateFormStatus({ id: selectedForm._id, formData }).unwrap();
+         await updateStatus({
+            id: selectedForm._id,
+            verificationStatus: groundReportStatus,
+            verificationNotes: groundReportReason
+         }).unwrap();
 
          setIsGroundReportModalOpen(false);
          setShowSuccessMessage(true);
@@ -197,23 +161,8 @@ export default function OrganizationVerifyPage() {
       }
    };
 
-   // Print Styles
-   const printStyles = `
-      @media print {
-         body * { visibility: hidden; }
-         #printable-form, #printable-form * { visibility: visible; }
-         #printable-form { position: absolute; left: 0; top: 0; width: 100%; height: auto; overflow: visible !important; }
-         .no-print { display: none !important; }
-         .print-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-         .print-col-span-2 { grid-column: span 2; }
-         .avoid-break { break-inside: avoid; page-break-inside: avoid; }
-      }
-   `;
-
    return (
       <div className="min-h-screen bg-gray-50 font-sans flex flex-col">
-         <style>{printStyles}</style>
-
          {/* Notifications / Alerts */}
          <AnimatePresence>
             {showSuccessMessage && (
@@ -221,7 +170,7 @@ export default function OrganizationVerifyPage() {
                   initial={{ opacity: 0, y: -50 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -50 }}
                   className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-gradient-to-r from-emerald-600 to-emerald-400 text-white px-6 py-4 rounded-lg shadow-2xl flex items-center gap-3"
                >
-                  <span>Organization Status Updated Successfully!</span>
+                  <span>Organization Verification Status Updated!</span>
                </motion.div>
             )}
             {showErrorMessage && (
@@ -243,10 +192,10 @@ export default function OrganizationVerifyPage() {
                >
                   <ArrowLeft className="w-5 h-5 text-gray-600" />
                </button>
-               <h1 className="text-xl font-bold text-gray-800">Verify Organization Forms</h1>
+               <h1 className="text-xl font-bold text-gray-800">Verify Organization Registrations</h1>
             </div>
             <div className="flex items-center gap-4">
-               <NotificationBell moduleFilter="FINANCIAL_AID" />
+               <NotificationBell moduleFilter="ORGANIZATION" />
             </div>
          </header>
 
@@ -285,7 +234,6 @@ export default function OrganizationVerifyPage() {
                <RequestDetail
                   selectedForm={selectedForm}
                   onOpenGroundReport={handleOpenGroundReport}
-                  isOrganizationPage={true}
                />
             </div>
          </main>
@@ -296,11 +244,9 @@ export default function OrganizationVerifyPage() {
             status={groundReportStatus}
             reason={groundReportReason}
             setReason={setGroundReportReason}
-            images={imagePreviews}
-            onImageChange={handleImageChange}
-            onRemoveImage={removeImage}
             onSubmit={handleSubmitGroundReport}
             isUpdating={isUpdating}
+            isOrganizationUpdate={true}
          />
       </div>
    );
