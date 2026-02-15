@@ -344,6 +344,15 @@ export const MODULES = [
     category: "resource",
     desc: "Manage financial records and accounting",
   },
+  {
+    id: "Career & Job Opportunites",
+    name: "Career & Job Opportunites",
+    icon: Calculator,
+    route: "/career-opportunities",
+    category: "resource",
+    desc: "Manage career and job opportunities",
+
+  },
 
   // ===============================
   // MONITORING (Read-only / Tracking)
