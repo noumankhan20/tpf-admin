@@ -276,6 +276,14 @@ export const MODULES = [
     desc: "Verify user KYC documents",
   },
   {
+    id: "Organization Verification",
+    name: "Organization Form Verification",
+    icon: ClipboardCheck,
+    route: "/verify/organization",
+    category: "work",
+    desc: "Verify and manage organization registration forms",
+  },
+  {
     id: "Photography",
     name: "Photography",
     icon: Camera,
@@ -386,22 +394,22 @@ export const MODULES = [
     category: "administration",
     desc: "Manage roles and permissions",
   },
- {
-  id: "Tickets-Queries",
-  name: "Tickets & Queries",
-  icon: MessageSquare,
-  route: "/tickets-queries",
-  category: "administration",
-  desc: "Respond to user tickets and support queries",
-},
-{
-  id: "Communication Audit",
-  name: "Communication Audit",
-  icon: Shield,
-  route: "/tpf-management/communication-audit",
-  category: "administration",
-  desc: "Monitor internal admin communications",
-},
+  {
+    id: "Tickets-Queries",
+    name: "Tickets & Queries",
+    icon: MessageSquare,
+    route: "/tickets-queries",
+    category: "administration",
+    desc: "Respond to user tickets and support queries",
+  },
+  {
+    id: "Communication Audit",
+    name: "Communication Audit",
+    icon: Shield,
+    route: "/tpf-management/communication-audit",
+    category: "administration",
+    desc: "Monitor internal admin communications",
+  },
 
 
   // ===============================
