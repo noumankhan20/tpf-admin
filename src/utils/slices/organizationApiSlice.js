@@ -40,6 +40,18 @@ export const organizationApiSlice = apiSlice.injectEndpoints({
             query: () => "/organizations/stats",
             providesTags: ["Organizations"],
         }),
+        getAllCampaignRequests: builder.query({
+            query: () => "/campaign-requests/all",
+            providesTags: ["CampaignRequest"],
+        }),
+        updateCampaignRequestStatus: builder.mutation({
+            query: ({ id, status, adminStatement }) => ({
+                url: `/campaign-requests/admin/${id}/status`,
+                method: "PATCH",
+                body: { status, adminStatement },
+            }),
+            invalidatesTags: ["CampaignRequest", "Campaign", "Fundraiser"],
+        }),
     }),
 });
 
@@ -50,4 +62,6 @@ export const {
     useUpdateOrganizationMutation,
     useDeleteOrganizationMutation,
     useGetOrganizationStatsQuery,
+    useGetAllCampaignRequestsQuery,
+    useUpdateCampaignRequestStatusMutation,
 } = organizationApiSlice;

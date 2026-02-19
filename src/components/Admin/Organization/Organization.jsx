@@ -8,7 +8,9 @@ import { ArrowLeft } from 'lucide-react';
 import {
    useGetAllOrganizationsQuery,
    useUpdateOrganizationVerificationStatusMutation,
-   useGetOrganizationStatsQuery
+   useGetOrganizationStatsQuery,
+   useGetAllCampaignRequestsQuery,
+   useUpdateCampaignRequestStatusMutation
 } from '@/utils/slices/organizationApiSlice';
 
 // Components
@@ -16,17 +18,23 @@ import { StatCards } from './components/StatCards';
 import { FilterBar } from './components/FilterBar';
 import { RequestsList } from './components/RequestsList';
 import { RequestDetail } from './components/RequestDetail';
+import { CampaignRequestsList } from './components/CampaignRequestsList';
+import { CampaignRequestDetail } from './components/CampaignRequestDetail';
 import { GroundReportModal } from './components/GroundReportModal';
 
 export default function OrganizationVerifyPage() {
    const router = useRouter();
 
+   // Tab State
+   const [activeTab, setActiveTab] = useState('registrations'); // 'registrations' or 'campaigns'
+
    // Selection state
    const [selectedForm, setSelectedForm] = useState(null);
+   const [selectedCampaignRequest, setSelectedCampaignRequest] = useState(null);
 
    // Ground Report Modal State
    const [isGroundReportModalOpen, setIsGroundReportModalOpen] = useState(false);
-   const [groundReportStatus, setGroundReportStatus] = useState(null); // 'verified', 'rejected', 'pending'
+   const [groundReportStatus, setGroundReportStatus] = useState(null); // 'verified', 'rejected', 'pending', 'approved', 'clarification'
    const [groundReportReason, setGroundReportReason] = useState('');
 
    // UI State
@@ -45,14 +53,21 @@ export default function OrganizationVerifyPage() {
    const itemsPerPage = 8;
 
    // API Hooks
-   const { data: orgsData, isLoading, refetch } = useGetAllOrganizationsQuery({
+   const { data: orgsData, isLoading: isLoadingOrgs, refetch: refetchOrgs } = useGetAllOrganizationsQuery({
       limit: 1000,
       search: debouncedSearch,
       verificationStatus: statusFilter === 'all' ? undefined : statusFilter
+   }, { skip: activeTab !== 'registrations' });
+
+   const { data: campaignRequestsData, isLoading: isLoadingCampaigns, refetch: refetchCampaigns } = useGetAllCampaignRequestsQuery(undefined, {
+      skip: activeTab !== 'campaigns'
    });
 
    const { data: statsData } = useGetOrganizationStatsQuery();
-   const [updateStatus, { isLoading: isUpdating }] = useUpdateOrganizationVerificationStatusMutation();
+   const [updateOrgStatus, { isLoading: isUpdatingOrg }] = useUpdateOrganizationVerificationStatusMutation();
+   const [updateCampaignStatus, { isLoading: isUpdatingCampaign }] = useUpdateCampaignRequestStatusMutation();
+
+   const isUpdating = isUpdatingOrg || isUpdatingCampaign;
 
    // Debounce Search
    useEffect(() => {
@@ -76,7 +91,7 @@ export default function OrganizationVerifyPage() {
    const totalCount = statsData?.data?.totalCount?.[0]?.count || orgsData?.total || 0;
 
    // Filtering Logic (Client side refined filtering if needed)
-   const displayForms = useMemo(() => {
+   const registrationsList = useMemo(() => {
       if (!orgsData?.data) return [];
 
       let filtered = [...orgsData.data];
@@ -105,6 +120,26 @@ export default function OrganizationVerifyPage() {
       });
    }, [orgsData, dateFilter, sortOrder]);
 
+   const campaignsList = useMemo(() => {
+      if (!campaignRequestsData?.data) return [];
+      let filtered = [...campaignRequestsData.data];
+
+      if (statusFilter !== 'all') {
+         filtered = filtered.filter(req => req.status === statusFilter);
+      }
+
+      if (debouncedSearch) {
+         filtered = filtered.filter(req =>
+            req.title.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+            req.organizationName.toLowerCase().includes(debouncedSearch.toLowerCase())
+         );
+      }
+
+      return filtered.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+   }, [campaignRequestsData, statusFilter, debouncedSearch]);
+
+   const displayForms = activeTab === 'registrations' ? registrationsList : campaignsList;
+
    // Pagination Logic
    const totalPages = Math.ceil(displayForms.length / itemsPerPage);
    const startIndex = (currentPage - 1) * itemsPerPage;
@@ -113,10 +148,16 @@ export default function OrganizationVerifyPage() {
 
    // Auto-select
    useEffect(() => {
-      if (selectedForm && !displayForms.find(f => f._id === selectedForm._id)) {
-         setSelectedForm(null);
+      if (activeTab === 'registrations') {
+         if (selectedForm && !displayForms.find(f => f._id === selectedForm._id)) {
+            setSelectedForm(null);
+         }
+      } else {
+         if (selectedCampaignRequest && !displayForms.find(f => f._id === selectedCampaignRequest._id)) {
+            setSelectedCampaignRequest(null);
+         }
       }
-   }, [displayForms, selectedForm]);
+   }, [displayForms, selectedForm, selectedCampaignRequest, activeTab]);
 
    const activeFilterCount = (statusFilter !== 'all' ? 1 : 0) + (dateFilter !== 'all' ? 1 : 0) + (debouncedSearch !== '' ? 1 : 0);
 
@@ -140,20 +181,28 @@ export default function OrganizationVerifyPage() {
          return;
       }
 
-      if (!selectedForm) return;
-
       try {
-         await updateStatus({
-            id: selectedForm._id,
-            verificationStatus: groundReportStatus,
-            verificationNotes: groundReportReason
-         }).unwrap();
+         if (activeTab === 'registrations') {
+            if (!selectedForm) return;
+            await updateOrgStatus({
+               id: selectedForm._id,
+               verificationStatus: groundReportStatus,
+               verificationNotes: groundReportReason
+            }).unwrap();
+            setSelectedForm(null);
+         } else {
+            if (!selectedCampaignRequest) return;
+            await updateCampaignStatus({
+               id: selectedCampaignRequest._id,
+               status: groundReportStatus,
+               adminStatement: groundReportReason
+            }).unwrap();
+            setSelectedCampaignRequest(null);
+         }
 
          setIsGroundReportModalOpen(false);
          setShowSuccessMessage(true);
          setTimeout(() => setShowSuccessMessage(false), 3000);
-
-         setSelectedForm(null);
       } catch (error) {
          console.error('Failed to update status:', error);
          setShowErrorMessage(true);
@@ -168,15 +217,15 @@ export default function OrganizationVerifyPage() {
             {showSuccessMessage && (
                <motion.div
                   initial={{ opacity: 0, y: -50 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -50 }}
-                  className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-gradient-to-r from-emerald-600 to-emerald-400 text-white px-6 py-4 rounded-lg shadow-2xl flex items-center gap-3"
+                  className="fixed top-4 left-1/2 -translate-x-1/2 z-[60] bg-gradient-to-r from-emerald-600 to-emerald-400 text-white px-6 py-4 rounded-lg shadow-2xl flex items-center gap-3"
                >
-                  <span>Organization Verification Status Updated!</span>
+                  <span>Request Status Updated!</span>
                </motion.div>
             )}
             {showErrorMessage && (
                <motion.div
                   initial={{ opacity: 0, y: -50 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -50 }}
-                  className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-gradient-to-r from-red-600 to-red-400 text-white px-6 py-4 rounded-lg shadow-2xl flex items-center gap-3"
+                  className="fixed top-4 left-1/2 -translate-x-1/2 z-[60] bg-gradient-to-r from-red-600 to-red-400 text-white px-6 py-4 rounded-lg shadow-2xl flex items-center gap-3"
                >
                   <span>Action Failed! Please try again.</span>
                </motion.div>
@@ -185,14 +234,31 @@ export default function OrganizationVerifyPage() {
 
          {/* Header */}
          <header className="flex items-center justify-between px-6 py-4 bg-white border-b border-gray-200 shrink-0 shadow-sm">
-            <div className="flex items-center space-x-4">
-               <button
-                  onClick={() => router.push('/select-portal?category=work')}
-                  className="p-2 hover:bg-gray-100 rounded-full transition"
-               >
-                  <ArrowLeft className="w-5 h-5 text-gray-600" />
-               </button>
-               <h1 className="text-xl font-bold text-gray-800">Verify Organization Registrations</h1>
+            <div className="flex items-center space-x-6">
+               <div className="flex items-center space-x-4">
+                  <button
+                     onClick={() => router.push('/select-portal?category=work')}
+                     className="p-2 hover:bg-gray-100 rounded-full transition"
+                  >
+                     <ArrowLeft className="w-5 h-5 text-gray-600" />
+                  </button>
+                  <h1 className="text-xl font-bold text-gray-800">Organization Center</h1>
+               </div>
+
+               <div className="flex bg-gray-100 p-1 rounded-xl">
+                  <button
+                     onClick={() => { setActiveTab('registrations'); setCurrentPage(1); }}
+                     className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'registrations' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                  >
+                     Registration Requests
+                  </button>
+                  <button
+                     onClick={() => { setActiveTab('campaigns'); setCurrentPage(1); }}
+                     className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'campaigns' ? 'bg-white text-emerald-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                  >
+                     Campaign Requests
+                  </button>
+               </div>
             </div>
             <div className="flex items-center gap-4">
                <NotificationBell moduleFilter="ORGANIZATION" />
@@ -216,25 +282,51 @@ export default function OrganizationVerifyPage() {
 
             {/* Content Grid */}
             <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 min-h-0">
-               <RequestsList
-                  isLoading={isLoading}
-                  displayForms={paginatedForms}
-                  selectedForm={selectedForm}
-                  setSelectedForm={setSelectedForm}
-                  totalCount={displayForms.length}
-                  startIndex={startIndex + 1}
-                  endIndex={Math.min(startIndex + itemsPerPage, displayForms.length)}
-                  activeFilterCount={activeFilterCount}
-                  clearFilters={clearAllFilters}
-                  currentPage={currentPage}
-                  setCurrentPage={setCurrentPage}
-                  totalPages={totalPages}
-               />
+               {activeTab === 'registrations' ? (
+                  <>
+                     <RequestsList
+                        isLoading={isLoadingOrgs}
+                        displayForms={paginatedForms}
+                        selectedForm={selectedForm}
+                        setSelectedForm={setSelectedForm}
+                        totalCount={displayForms.length}
+                        startIndex={startIndex + 1}
+                        endIndex={Math.min(startIndex + itemsPerPage, displayForms.length)}
+                        activeFilterCount={activeFilterCount}
+                        clearFilters={clearAllFilters}
+                        currentPage={currentPage}
+                        setCurrentPage={setCurrentPage}
+                        totalPages={totalPages}
+                     />
 
-               <RequestDetail
-                  selectedForm={selectedForm}
-                  onOpenGroundReport={handleOpenGroundReport}
-               />
+                     <RequestDetail
+                        selectedForm={selectedForm}
+                        onOpenGroundReport={handleOpenGroundReport}
+                     />
+                  </>
+               ) : (
+                  <>
+                     <CampaignRequestsList
+                        isLoading={isLoadingCampaigns}
+                        displayForms={paginatedForms}
+                        selectedForm={selectedCampaignRequest}
+                        setSelectedForm={setSelectedCampaignRequest}
+                        totalCount={displayForms.length}
+                        startIndex={startIndex + 1}
+                        endIndex={Math.min(startIndex + itemsPerPage, displayForms.length)}
+                        activeFilterCount={activeFilterCount}
+                        clearFilters={clearAllFilters}
+                        currentPage={currentPage}
+                        setCurrentPage={setCurrentPage}
+                        totalPages={totalPages}
+                     />
+
+                     <CampaignRequestDetail
+                        selectedRequest={selectedCampaignRequest}
+                        onOpenStatusUpdate={handleOpenGroundReport}
+                     />
+                  </>
+               )}
             </div>
          </main>
 
@@ -246,7 +338,7 @@ export default function OrganizationVerifyPage() {
             setReason={setGroundReportReason}
             onSubmit={handleSubmitGroundReport}
             isUpdating={isUpdating}
-            isOrganizationUpdate={true}
+            isOrganizationUpdate={activeTab === 'registrations'}
          />
       </div>
    );
