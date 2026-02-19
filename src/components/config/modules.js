@@ -277,11 +277,11 @@ export const MODULES = [
   },
   {
     id: "Organization Verification",
-    name: "Organization Form Verification",
+    name: "Organization Approvals",
     icon: ClipboardCheck,
     route: "/verify/organization",
     category: "work",
-    desc: "Verify and manage organization registration forms",
+    desc: "Manage registrations and campaign requests",
   },
   {
     id: "Photography",
