@@ -195,6 +195,17 @@ export const CampaignRequestDetail = React.memo(({
                             <p className="text-amber-900 text-sm italic">"{request.adminStatement}"</p>
                         </div>
                     )}
+
+                    {/* Organization Statement / Comment */}
+                    {request.organizationStatement && (
+                        <div className="bg-emerald-50 rounded-xl p-5 border border-emerald-200">
+                            <div className="flex items-center gap-2 mb-3">
+                                <Building className="text-emerald-600" size={20} />
+                                <h3 className="text-lg font-bold text-emerald-800">Organization Response</h3>
+                            </div>
+                            <p className="text-emerald-900 text-sm italic">"{request.organizationStatement}"</p>
+                        </div>
+                    )}
                 </div>
 
                 {/* Footer Actions */}

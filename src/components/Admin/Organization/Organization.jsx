@@ -90,6 +90,18 @@ export default function OrganizationVerifyPage() {
 
    const totalCount = statsData?.data?.totalCount?.[0]?.count || orgsData?.total || 0;
 
+   // Campaign Stats Calculation
+   const campaignsStats = useMemo(() => {
+      if (!campaignRequestsData?.data) return { pending: 0, approved: 0, rejected: 0, total: 0 };
+      const data = campaignRequestsData.data;
+      return {
+         pending: data.filter(r => r.status === 'pending').length,
+         approved: data.filter(r => r.status === 'approved').length,
+         rejected: data.filter(r => r.status === 'rejected' || r.status === 'clarification').length,
+         total: data.length
+      };
+   }, [campaignRequestsData]);
+
    // Filtering Logic (Client side refined filtering if needed)
    const registrationsList = useMemo(() => {
       if (!orgsData?.data) return [];
@@ -245,20 +257,6 @@ export default function OrganizationVerifyPage() {
                   <h1 className="text-xl font-bold text-gray-800">Organization Center</h1>
                </div>
 
-               <div className="flex bg-gray-100 p-1 rounded-xl">
-                  <button
-                     onClick={() => { setActiveTab('registrations'); setCurrentPage(1); }}
-                     className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'registrations' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-                  >
-                     Registration Requests
-                  </button>
-                  <button
-                     onClick={() => { setActiveTab('campaigns'); setCurrentPage(1); }}
-                     className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'campaigns' ? 'bg-white text-emerald-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-                  >
-                     Campaign Requests
-                  </button>
-               </div>
             </div>
             <div className="flex items-center gap-4">
                <NotificationBell moduleFilter="ORGANIZATION" />
@@ -268,7 +266,26 @@ export default function OrganizationVerifyPage() {
          {/* Main Content */}
          <main className="flex-1 p-6 max-w-[1600px] mx-auto w-full overflow-hidden flex flex-col print:overflow-visible print:p-0">
 
-            <StatCards totalCount={totalCount} stats={stats} isOrganization={true} />
+            <div className="flex bg-gray-100 p-1 rounded-xl w-fit mb-6">
+               <button
+                  onClick={() => { setActiveTab('registrations'); setCurrentPage(1); }}
+                  className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'registrations' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+               >
+                  Registration Requests
+               </button>
+               <button
+                  onClick={() => { setActiveTab('campaigns'); setCurrentPage(1); }}
+                  className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'campaigns' ? 'bg-white text-emerald-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+               >
+                  Campaign Requests
+               </button>
+            </div>
+
+            <StatCards
+               totalCount={activeTab === 'registrations' ? totalCount : campaignsStats.total}
+               stats={activeTab === 'registrations' ? stats : campaignsStats}
+               isOrganization={activeTab === 'registrations'}
+            />
 
             <FilterBar
                searchQuery={searchQuery} setSearchQuery={setSearchQuery}
