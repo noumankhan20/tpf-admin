@@ -58,7 +58,7 @@ export default function OrganizationVerifyPage() {
       limit: 1000,
       search: debouncedSearch,
       verificationStatus: statusFilter === 'all' ? undefined : statusFilter
-   }, { skip: activeTab !== 'registrations' });
+   }, { skip: activeTab !== 'registrations' && activeTab !== 'edits' });
 
    const { data: campaignRequestsData, isLoading: isLoadingCampaigns, refetch: refetchCampaigns } = useGetAllCampaignRequestsQuery(undefined, {
       skip: activeTab !== 'campaigns'

@@ -83,7 +83,7 @@ export const RequestDetail = React.memo(({
                 </div>
 
                 {/* SCROLLABLE FORM DATA */}
-                <div className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar pb-32 print:overflow-visible print:h-auto print:pb-0">
+                <div className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar print:overflow-visible print:h-auto print:pb-0">
 
                     {/* Basic Information */}
                     <DetailSection title="Basic Information" icon={<Building className="text-blue-600" />}>
@@ -206,7 +206,7 @@ export const RequestDetail = React.memo(({
 
                 {/* Footer / Action Bar */}
                 {org.verificationStatus === 'pending' && (
-                    <div className="no-print border-t border-gray-200 p-6 bg-white absolute bottom-0 w-full backdrop-blur-md z-20">
+                    <div className="no-print border-t border-gray-200 p-6 bg-white w-full backdrop-blur-md z-20">
                         <div className="flex justify-end gap-4">
                             <button
                                 onClick={() => onOpenGroundReport('rejected')}

@@ -62,7 +62,7 @@ export const EditRequestDetail = ({ org, onProcessed }) => {
                 </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar pb-32">
+            <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
                 {/* Logo Change */}
                 {edit.logo && (
                     <div className="bg-white border border-gray-100 rounded-xl p-4 flex flex-col gap-3">
@@ -106,7 +106,7 @@ export const EditRequestDetail = ({ org, onProcessed }) => {
                 )}
             </div>
 
-            <div className="border-t border-gray-200 p-6 bg-white absolute bottom-0 w-full shadow-[0_-4px_20px_rgba(0,0,0,0.05)] z-20">
+            <div className="border-t border-gray-200 p-6 bg-white w-full shadow-[0_-4px_20px_rgba(0,0,0,0.05)] z-20">
                 <div className="mb-4">
                     <textarea
                         placeholder="Add admin notes or reason for rejection..."
