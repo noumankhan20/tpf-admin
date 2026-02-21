@@ -175,6 +175,14 @@ const DonationDetailsModal = ({ donation, onClose }) => {
                             <p className="mt-1 text-xl sm:text-2xl font-bold text-emerald-600">₹{donation.amount.toLocaleString()}</p>
                         </div>
                         <div>
+                            <label className="text-xs sm:text-sm font-medium text-gray-500">
+                                Tip Amount
+                            </label>
+                            <p className="mt-1 text-lg sm:text-xl font-semibold text-blue-600">
+                                ₹{(donation.tipAmount || 0).toLocaleString('en-IN')}
+                            </p>
+                        </div>
+                        <div>
                             <label className="text-xs sm:text-sm font-medium text-gray-500">Location</label>
                             <p className="mt-1 text-sm sm:text-base text-gray-900 break-all">{donation.kycStatus}</p>
                         </div>
