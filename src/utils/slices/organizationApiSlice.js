@@ -52,6 +52,14 @@ export const organizationApiSlice = apiSlice.injectEndpoints({
             }),
             invalidatesTags: ["CampaignRequest", "Campaign", "Fundraiser"],
         }),
+        approveOrganizationEdit: builder.mutation({
+            query: ({ id, status, adminNotes }) => ({
+                url: `/organizations/${id}/approve-edit`,
+                method: "PUT",
+                body: { status, adminNotes },
+            }),
+            invalidatesTags: ["Organizations"],
+        }),
     }),
 });
 
@@ -64,4 +72,5 @@ export const {
     useGetOrganizationStatsQuery,
     useGetAllCampaignRequestsQuery,
     useUpdateCampaignRequestStatusMutation,
+    useApproveOrganizationEditMutation,
 } = organizationApiSlice;

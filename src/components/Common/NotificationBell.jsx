@@ -118,8 +118,9 @@ const NotificationBell = ({ moduleFilter = null }) => {
                 }
 
                 if ((isVerifyModule || isOrgFilter) && hasOrgAccess) {
-                    // Fetch Organization Registrations
+                    // Fetch Organization Registrations & Edits
                     try {
+                        // Registrations
                         const orgRes = await fetch(`${apiBase}/organizations?verificationStatus=pending`, {
                             credentials: 'include'
                         });
@@ -137,8 +138,54 @@ const NotificationBell = ({ moduleFilter = null }) => {
                             }));
                             allInitial = [...allInitial, ...orgNotifications];
                         }
+
+                        // Edits
+                        const allOrgRes = await fetch(`${apiBase}/organizations`, {
+                            credentials: 'include'
+                        });
+                        const allOrgResult = await allOrgRes.json();
+                        if (allOrgResult.success && allOrgResult.data) {
+                            const editNotifications = allOrgResult.data
+                                .filter(org => org.editRequests?.status === 'pending')
+                                .map(org => ({
+                                    id: `${org._id}_edit`,
+                                    type: 'FORM',
+                                    formType: 'ORGANIZATION_EDIT',
+                                    title: `Pending Edit: ${org.organizationName}`,
+                                    subtitle: 'Organization details update',
+                                    time: org.editRequests.requestedAt || org.updatedAt,
+                                    read: false,
+                                    data: org
+                                }));
+                            allInitial = [...allInitial, ...editNotifications];
+                        }
                     } catch (err) {
                         console.error('Org Notification fetch failed:', err);
+                    }
+
+                    // Fetch Campaign Requests
+                    try {
+                        const campRes = await fetch(`${apiBase}/campaign-requests/all`, {
+                            credentials: 'include'
+                        });
+                        const campResult = await campRes.json();
+                        if (campResult.success && campResult.data) {
+                            const campNotifications = campResult.data
+                                .filter(req => req.status === 'pending')
+                                .map(req => ({
+                                    id: req._id,
+                                    type: 'FORM',
+                                    formType: 'CAMPAIGN_REQUEST',
+                                    title: `Pending Campaign: ${req.title}`,
+                                    subtitle: req.organizationName,
+                                    time: req.createdAt,
+                                    read: false,
+                                    data: req
+                                }));
+                            allInitial = [...allInitial, ...campNotifications];
+                        }
+                    } catch (err) {
+                        console.error('Campaign Notification fetch failed:', err);
                     }
                 }
 
@@ -219,7 +266,10 @@ const NotificationBell = ({ moduleFilter = null }) => {
             const hasOrgAccess = admin?.isSuperAdmin || admin?.modules?.includes('Organization Verification');
             const isRelevantForm = (data.type === 'KYC' && hasKYCAccess) ||
                 (data.type === 'ORGANIZATION' && hasOrgAccess) ||
-                (data.type !== 'KYC' && data.type !== 'ORGANIZATION' && hasFinancialAidAccess);
+                (data.type === 'ORGANIZATION_EDIT' && hasOrgAccess) ||
+                (data.type === 'CAMPAIGN_REQUEST' && hasOrgAccess) ||
+                (data.type === 'CAMPAIGN_RESUBMITTED' && hasOrgAccess) ||
+                (data.type !== 'KYC' && data.type !== 'ORGANIZATION' && data.type !== 'ORGANIZATION_EDIT' && data.type !== 'CAMPAIGN_REQUEST' && data.type !== 'CAMPAIGN_RESUBMITTED' && hasFinancialAidAccess);
 
             if ((isVerifyModule || isFinancialAidFilter || isKYCFilter) && isRelevantForm) {
                 setNotifications(prev => [newNotification, ...prev]);
@@ -263,7 +313,7 @@ const NotificationBell = ({ moduleFilter = null }) => {
             }
         } else if (notification.type === 'FORM') {
             if (notification.formType === 'KYC') router.push('/verify/kyc');
-            else if (notification.formType === 'ORGANIZATION') router.push('/verify/organization');
+            else if (notification.formType === 'ORGANIZATION' || notification.formType === 'ORGANIZATION_EDIT' || notification.formType === 'CAMPAIGN_REQUEST' || notification.formType === 'CAMPAIGN_RESUBMITTED') router.push('/verify/organization');
             else router.push('/verify/financial'); // Adjust path as needed
         }
     };

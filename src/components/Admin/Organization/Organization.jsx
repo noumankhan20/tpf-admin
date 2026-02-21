@@ -21,12 +21,13 @@ import { RequestDetail } from './components/RequestDetail';
 import { CampaignRequestsList } from './components/CampaignRequestsList';
 import { CampaignRequestDetail } from './components/CampaignRequestDetail';
 import { GroundReportModal } from './components/GroundReportModal';
+import { EditRequestDetail } from './components/EditRequestDetail';
 
 export default function OrganizationVerifyPage() {
    const router = useRouter();
 
    // Tab State
-   const [activeTab, setActiveTab] = useState('registrations'); // 'registrations' or 'campaigns'
+   const [activeTab, setActiveTab] = useState('registrations'); // 'registrations', 'campaigns', 'edits'
 
    // Selection state
    const [selectedForm, setSelectedForm] = useState(null);
@@ -150,7 +151,12 @@ export default function OrganizationVerifyPage() {
       return filtered.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
    }, [campaignRequestsData, statusFilter, debouncedSearch]);
 
-   const displayForms = activeTab === 'registrations' ? registrationsList : campaignsList;
+   const editsList = useMemo(() => {
+      if (!orgsData?.data) return [];
+      return orgsData.data.filter(org => org.editRequests?.status === 'pending');
+   }, [orgsData]);
+
+   const displayForms = activeTab === 'registrations' ? registrationsList : (activeTab === 'edits' ? editsList : campaignsList);
 
    // Pagination Logic
    const totalPages = Math.ceil(displayForms.length / itemsPerPage);
@@ -279,6 +285,12 @@ export default function OrganizationVerifyPage() {
                >
                   Campaign Requests
                </button>
+               <button
+                  onClick={() => { setActiveTab('edits'); setCurrentPage(1); }}
+                  className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'edits' ? 'bg-white text-amber-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+               >
+                  Edit Requests
+               </button>
             </div>
 
             <StatCards
@@ -319,6 +331,31 @@ export default function OrganizationVerifyPage() {
                      <RequestDetail
                         selectedForm={selectedForm}
                         onOpenGroundReport={handleOpenGroundReport}
+                     />
+                  </>
+               ) : activeTab === 'edits' ? (
+                  <>
+                     <RequestsList
+                        isLoading={isLoadingOrgs}
+                        displayForms={paginatedForms}
+                        selectedForm={selectedForm}
+                        setSelectedForm={setSelectedForm}
+                        totalCount={displayForms.length}
+                        startIndex={startIndex + 1}
+                        endIndex={Math.min(startIndex + itemsPerPage, displayForms.length)}
+                        activeFilterCount={activeFilterCount}
+                        clearFilters={clearAllFilters}
+                        currentPage={currentPage}
+                        setCurrentPage={setCurrentPage}
+                        totalPages={totalPages}
+                     />
+
+                     <EditRequestDetail
+                        org={selectedForm}
+                        onProcessed={() => {
+                           setSelectedForm(null);
+                           refetchOrgs();
+                        }}
                      />
                   </>
                ) : (
