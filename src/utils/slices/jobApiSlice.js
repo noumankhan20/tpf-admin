@@ -46,7 +46,15 @@ export const jobApiSlice = apiSlice.injectEndpoints({
             providesTags: ["Applications"],
         }),
 
-}),
+        updateApplicationStatus: builder.mutation({
+            query: ({ id, status }) => ({
+                url: `/applicants/update-status/${id}`,
+                method: "PUT",
+                body: { status },
+            }),
+        }),
+
+    }),
 });
 
 export const {
@@ -55,4 +63,5 @@ export const {
     useUpdateJobMutation,
     useDeleteJobMutation,
     useGetApplicationsByJobQuery,
+    useUpdateApplicationStatusMutation,
 } = jobApiSlice;

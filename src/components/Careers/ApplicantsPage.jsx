@@ -43,7 +43,7 @@ function EmptyState({ message }) {
 // ─────────────────────────────────────────────
 
 export function ApplicantsPage({ job, onBack }) {
-  const { data, isLoading, isError } =
+  const { data, isLoading, isError,refetch } =
     useGetApplicationsByJobQuery(job._id);
   const applicants = data?.data || [];
   const [selected, setSelected] = useState(null);
@@ -211,7 +211,11 @@ export function ApplicantsPage({ job, onBack }) {
       )}
 
       {selected && (
-        <ApplicantDetailModal applicant={selected} onClose={() => setSelected(null)} />
+        <ApplicantDetailModal
+          applicant={selected}
+          onClose={() => setSelected(null)}
+          onUpdated={refetch}
+        />
       )}
 
       {/* Styles */}
