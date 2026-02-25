@@ -70,6 +70,7 @@ export default function CampaignAdminDashboard() {
         filterStatus === 'inactive' ? !campaign.isActive : true;
 
     return matchesSearch && matchesFilter;
+    console.log("Campaign Detail:", campaign);
   });
 
   const totalCampaigns = campaigns.length;
@@ -78,8 +79,10 @@ export default function CampaignAdminDashboard() {
   const totalDonors = apiResponse?.totalDonors || 0;
   const overallTotalTips = apiResponse?.overallTotalTips || 0;
   const totalRaised = apiResponse?.totalRaised || 0;
-
-
+  const totalNetRaised = campaigns.reduce(
+    (sum, campaign) => sum + (campaign.netRaisedAmount || 0),
+    0
+  );
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50 flex items-center justify-center p-4">
@@ -130,7 +133,7 @@ export default function CampaignAdminDashboard() {
 
     const campaign = campaignDetailResponse.campaign;
 
-    const progressPercentage = getProgressPercentage(campaign.raisedAmount || 0, campaign.targetAmount || 0);
+    const progressPercentage = getProgressPercentage(campaign.netRaisedAmount || 0, campaign.targetAmount || 0);
 
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
@@ -187,7 +190,7 @@ export default function CampaignAdminDashboard() {
                   <div className="flex items-baseline justify-between flex-wrap gap-4">
                     <div>
                       <p className="text-3xl sm:text-4xl font-bold text-emerald-600">
-                        ₹{(campaign.raisedAmount || 0).toLocaleString('en-IN')}
+                        ₹{(campaign.netRaisedAmount || 0).toLocaleString('en-IN')}
                       </p>
                       <p className="text-sm text-gray-500 mt-2">
                         raised of ₹{(campaign.targetAmount || 0).toLocaleString('en-IN')} goal
@@ -506,7 +509,7 @@ export default function CampaignAdminDashboard() {
           <div className="relative flex items-center justify-between flex-wrap gap-4">
             {/* Back Button (Left) */}
             <button
-            onClick={() => router.push('/select-portal?category=work')}
+              onClick={() => router.push('/select-portal?category=work')}
               className="flex items-center cursor-pointer gap-2 px-4 py-2 rounded-xl text-sm font-medium text-gray-600 hover:text-gray-800 hover:bg-white transition-all border border-gray-300 shadow-sm"
             >
               <ArrowLeft className="w-4 h-4" />
@@ -561,7 +564,7 @@ export default function CampaignAdminDashboard() {
           <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-200 p-4 sm:p-6 hover:shadow-md transition-all transform hover:-translate-y-1">
             <p className="text-xs sm:text-sm font-medium text-gray-500 mb-1 sm:mb-2">Raised</p>
             <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">
-              ₹{totalRaised.toLocaleString('en-IN')}
+              ₹{totalNetRaised.toLocaleString('en-IN')}
             </p>
           </div>
 
@@ -602,7 +605,7 @@ export default function CampaignAdminDashboard() {
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {filteredCampaigns.map((campaign) => {
-                  const progress = getProgressPercentage(campaign.raisedAmount || 0, campaign.targetAmount || 0);
+                  const progress = getProgressPercentage(campaign.netRaisedAmount || 0, campaign.targetAmount || 0);
 
                   return (
                     <tr key={campaign._id} className="hover:bg-gray-50 transition-colors">
@@ -644,7 +647,7 @@ export default function CampaignAdminDashboard() {
                       <td className="px-6 py-4">
                         <div>
                           <p className="text-sm font-bold text-gray-900">
-                            ₹{(campaign.raisedAmount || 0).toLocaleString('en-IN')}
+                            ₹{(campaign.netRaisedAmount || 0).toLocaleString('en-IN')}
                           </p>
                           <p className="text-xs text-gray-500 mt-0.5">
                             of ₹{(campaign.targetAmount || 0).toLocaleString('en-IN')}
@@ -683,7 +686,7 @@ export default function CampaignAdminDashboard() {
 
           <div className="lg:hidden divide-y divide-gray-200">
             {filteredCampaigns.map((campaign) => {
-              const progress = getProgressPercentage(campaign.raisedAmount || 0, campaign.targetAmount || 0);
+              const progress = getProgressPercentage(campaign.netRaisedAmount || 0, campaign.targetAmount || 0);
               const isExpanded = expandedRow === campaign._id;
 
               return (
@@ -740,7 +743,7 @@ export default function CampaignAdminDashboard() {
                   <div className="flex items-center justify-between mb-3">
                     <div>
                       <p className="text-base font-bold text-gray-900">
-                        ₹{(campaign.raisedAmount || 0).toLocaleString('en-IN')}
+                        ₹{(campaign.netRaisedAmount || 0).toLocaleString('en-IN')}
                       </p>
                       <p className="text-xs text-gray-500">
                         of ₹{(campaign.targetAmount || 0).toLocaleString('en-IN')}
