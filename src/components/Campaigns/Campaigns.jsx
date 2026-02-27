@@ -625,7 +625,9 @@ export default function CampaignAdminDashboard() {
                           <span
                             className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border ${getStatusColor(campaign.campaignStatus)}`}
                           >
-                            {campaign.campaignStatus?.replace(/_/g, ' ')}
+                            {/* {campaign.campaignStatus?.replace(/_/g, ' ')}
+                             */}
+                             {campaign.isActive ? 'Active' : 'Inactive'}
                           </span>
                         </div>
                       </td>
