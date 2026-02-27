@@ -392,7 +392,14 @@ export default function CampaignAdminDashboard() {
                             {doc.name || doc}
                           </span>
                         </div>
-                        <Download className="w-4 h-4 text-gray-400 group-hover:text-emerald-600 flex-shrink-0 cursor-pointer transition-colors" />
+                        <a
+                          href={doc.fileUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          download
+                        >
+                          <Download className="w-4 h-4 text-gray-400 group-hover:text-emerald-600 flex-shrink-0 cursor-pointer transition-colors" />
+                        </a>
                       </div>
                     ))}
                   </div>
@@ -627,7 +634,7 @@ export default function CampaignAdminDashboard() {
                           >
                             {/* {campaign.campaignStatus?.replace(/_/g, ' ')}
                              */}
-                             {campaign.isActive ? 'Active' : 'Inactive'}
+                            {campaign.isActive ? 'Active' : 'Inactive'}
                           </span>
                         </div>
                       </td>
