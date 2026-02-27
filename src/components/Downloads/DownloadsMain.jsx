@@ -321,11 +321,15 @@ export default function DownloadsMain() {
     const fetchData = async (resource, filters = null) => {
         try {
             if (resource.id === 'all_donations') {
-                const [online, offline, expenses] = await Promise.all([
+                const fetchResults = await Promise.allSettled([
                     fetchData(RESOURCES.find(r => r.id === 'online_donations'), filters),
                     fetchData(RESOURCES.find(r => r.id === 'offline_donations'), filters),
                     fetchData(RESOURCES.find(r => r.id === 'expenses'), filters)
                 ]);
+
+                const online = fetchResults[0].status === 'fulfilled' ? fetchResults[0].value : [];
+                const offline = fetchResults[1].status === 'fulfilled' ? fetchResults[1].value : [];
+                const expenses = fetchResults[2].status === 'fulfilled' ? fetchResults[2].value : [];
 
                 return [
                     ...online.map(d => ({
@@ -358,7 +362,9 @@ export default function DownloadsMain() {
                 ].sort((a, b) => new Date(b.finalDate) - new Date(a.finalDate));
             }
 
-            const params = {};
+            const params = {
+                limit: 5000 // Ensure we get all records for downloads
+            };
             if (filters?.period === 'custom') {
                 params.startDate = filters.startDate;
                 params.endDate = filters.endDate;
@@ -595,7 +601,7 @@ export default function DownloadsMain() {
         <div className="space-y-8">
             {/* Header */}
             <div>
-                <button  onClick={() => router.push('/select-portal?category=monitoring')} className="group flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4 transition-colors">
+                <button onClick={() => router.push('/select-portal?category=monitoring')} className="group flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4 transition-colors">
                     <div className="w-10 h-10 rounded-xl bg-white border-2 border-gray-200 group-hover:border-emerald-500 flex items-center justify-center transition-all shadow-sm group-hover:shadow-md">
                         <ArrowLeft size={20} strokeWidth={2.5} className="group-hover:text-emerald-600" />
                     </div>
