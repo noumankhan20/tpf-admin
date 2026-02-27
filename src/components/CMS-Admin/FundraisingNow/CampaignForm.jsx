@@ -163,17 +163,26 @@ export default function CampaignForm({
         ...prev,
         imageGallery: updatedGallery,
         imageGalleryChanged: true,
-
-        // ✅ FIX: use updatedGallery (not prev.imageGallery)
         selectedImageUrl:
           prev.selectedImageUrl === prev.imageGallery[index]
             ? updatedGallery[0] || ""
             : prev.selectedImageUrl,
-
         imagePreview:
           prev.selectedImageUrl === prev.imageGallery[index]
             ? updatedGallery[0] || null
             : prev.imagePreview,
+      }));
+    } else {
+      // 🔥 FIX FOR UPLOADED IMAGES
+      const updatedImages = formData.images.filter((_, i) => i !== index);
+
+      setFormData((prev) => ({
+        ...prev,
+        images: updatedImages,
+        imagePreview:
+          updatedImages.length > 0
+            ? URL.createObjectURL(updatedImages[0])
+            : null,
       }));
     }
   };
