@@ -77,7 +77,15 @@ export const donationApiSlice = apiSlice.injectEndpoints({
         method: "GET",
       }),
     }),
+    
+    deleteOfflineDonation: builder.mutation({
+      query: (donationId) => ({
+        url: `offline-donations/delete/${donationId}`,
+        method: "DELETE",
+      }),
+    }),
 
+    
   })
 })
 
@@ -92,4 +100,5 @@ export const {
   useRejectOfflineDonationsMutation,
   useCreateOfflineDonationByAdminMutation,
   useGetCampaignDropdownQuery,
+  useDeleteOfflineDonationMutation,
 } = donationApiSlice

@@ -15,7 +15,7 @@ import {
   User,
   Filter,
 } from "lucide-react";
-import { useGetOfflineDonationsQuery, useApproveOfflineDonationsMutation, useRejectOfflineDonationsMutation } from '@/utils/slices/donationApiSlice';
+import { useGetOfflineDonationsQuery, useApproveOfflineDonationsMutation, useRejectOfflineDonationsMutation, useDeleteOfflineDonationMutation } from '@/utils/slices/donationApiSlice';
 import AddOfflineDonationModal from "./addofflinedonationmodal";
 // ==================== STATUS BADGE COMPONENT ====================
 const StatusBadge = ({ status }) => {
@@ -200,7 +200,7 @@ const FilterModal = ({ isOpen, onClose, filters, setFilters, onApply }) => {
 };
 
 // ==================== DETAILS MODAL ====================
-const OfflineDonationDetailsModal = ({ isOpen, onClose, donation, onApprove, onRejectClick, }) => {
+const OfflineDonationDetailsModal = ({ isOpen, onClose, donation, onApprove, onRejectClick,onDelete }) => {
   if (!isOpen || !donation) return null;
 
   const formatDate = (dateString) => {
@@ -386,6 +386,16 @@ const OfflineDonationDetailsModal = ({ isOpen, onClose, donation, onApprove, onR
             className="w-full sm:w-auto px-4 py-2 cursor-pointer bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
           >
             Close
+          </button>
+          <button
+            onClick={() => {
+              onDelete(donation.id);
+              onClose();
+            }}
+            className="w-full sm:w-auto px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center gap-2"
+          >
+            <XCircle className="w-4 h-4" />
+            Delete
           </button>
 
           {donation.status === "pending" && (
@@ -668,7 +678,8 @@ export default function OfflineDonationPage() {
 
   const [rejectOfflineDonation, { isLoading: isRejecting }] =
     useRejectOfflineDonationsMutation();
-
+  const [deleteOfflineDonation, { isLoading: isDeleting }] =
+    useDeleteOfflineDonationMutation();
   const [filters, setFilters] = useState({
     startDate: '',
     endDate: '',
@@ -728,6 +739,23 @@ export default function OfflineDonationPage() {
   const openRejectModal = (donationId) => {
     setRejectDonationId(donationId);
     setIsRejectModalOpen(true);
+  };
+
+  const handleDelete = async (donationId) => {
+    const confirmDelete = window.confirm(
+      "Are you sure you want to delete this donation?"
+    );
+
+    if (!confirmDelete) return;
+
+    try {
+      const res = await deleteOfflineDonation(donationId).unwrap();
+      alert(res.message);
+      refetch(); // refresh list
+    } catch (err) {
+      console.error(err);
+      alert(err?.data?.message || "Failed to delete donation");
+    }
   };
 
 
@@ -891,6 +919,7 @@ export default function OfflineDonationPage() {
         donation={selectedDonation}
         onApprove={handleApprove}
         onRejectClick={openRejectModal}
+        onDelete={handleDelete}
       />
 
       <FilterModal
