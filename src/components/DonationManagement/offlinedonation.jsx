@@ -16,7 +16,7 @@ import {
   Filter,
 } from "lucide-react";
 import { useGetOfflineDonationsQuery, useApproveOfflineDonationsMutation, useRejectOfflineDonationsMutation } from '@/utils/slices/donationApiSlice';
-
+import AddOfflineDonationModal from "./addofflinedonationmodal";
 // ==================== STATUS BADGE COMPONENT ====================
 const StatusBadge = ({ status }) => {
   const styles = {
@@ -234,7 +234,7 @@ const OfflineDonationDetailsModal = ({ isOpen, onClose, donation, onApprove, onR
           <div className="grid grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg">
             <div>
               <p className="text-sm text-gray-600">Donor Name</p>
-              <p className="font-medium text-gray-900">{donation.fullName || "N/A"}</p>
+              <p className="font-medium text-gray-900">{donation.fullName || donation.donorName}</p>
             </div>
             <div>
               <p className="text-sm text-gray-600">Status</p>
@@ -243,12 +243,24 @@ const OfflineDonationDetailsModal = ({ isOpen, onClose, donation, onApprove, onR
               </div>
             </div>
             <div>
+              <p className="text-sm text-gray-600">Transaction ID</p>
+              <p className="font-semibold text-emerald-700">
+                {donation.transactionId || "N/A"}
+              </p>
+            </div>
+            <div>
               <p className="text-sm text-gray-600">Email</p>
-              <p className="font-medium text-gray-900">{donation.email}</p>
+              <p className="font-medium text-gray-900">{donation.email || donation.donorEmail}</p>
             </div>
             <div>
               <p className="text-sm text-gray-600">Mobile</p>
-              <p className="font-medium text-gray-900">{donation.mobile || "N/A"}</p>
+              <p className="font-medium text-gray-900">{donation.mobile || donation.donorPhone}</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-600">Campaign</p>
+              <p className="font-medium text-gray-900">
+                {donation.campaignTitle || "N/A"}
+              </p>
             </div>
             <div>
               <p className="text-sm text-gray-600">Method</p>
@@ -759,6 +771,13 @@ export default function OfflineDonationPage() {
                 Verify and approve offline donation entries
               </p>
             </div>
+            <button
+              onClick={() => setIsAddModalOpen(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              Add Offline Donation
+            </button>
           </div>
         </div>
 
@@ -887,6 +906,11 @@ export default function OfflineDonationPage() {
         donationId={rejectDonationId}
         onReject={handleReject}
         isLoading={isRejecting}
+      />
+      <AddOfflineDonationModal
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        onSuccess={refetch}
       />
 
     </div>
