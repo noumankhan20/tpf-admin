@@ -325,6 +325,159 @@ const DonationTypeBreakdown = () => {
     );
 };
 
+
+const MetricSparkCard = ({ title, value, color, data }) => {
+    const chartOption = {
+        grid: { left: 0, right: 0, top: 10, bottom: 0 },
+        xAxis: { type: 'category', show: false },
+        yAxis: { type: 'value', show: false },
+        series: [{
+            data: data,
+            type: 'line',
+            smooth: true,
+            showSymbol: false,
+            lineStyle: { width: 2, color: color },
+            areaStyle: {
+                color: {
+                    type: 'linear', x: 0, y: 0, x2: 0, y2: 1,
+                    colorStops: [{ offset: 0, color: color + '33' }, { offset: 1, color: color + '00' }]
+                }
+            },
+            animationDuration: 2000
+        }]
+    };
+
+    return (
+        <motion.div whileHover={{ y: -5 }} className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm hover:shadow-xl transition-all">
+            <div className="flex justify-between items-start mb-4">
+                <div>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">{title}</p>
+                    <h4 className="text-2xl font-black text-gray-900">{value}</h4>
+                </div>
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-xs`} style={{ backgroundColor: color + '15', color: color }}>
+                    +12%
+                </div>
+            </div>
+            <div className="h-16 w-full">
+                <ReactEcharts option={chartOption} style={{ height: '100%' }} />
+            </div>
+        </motion.div>
+    );
+};
+
+const SalesGoalGauge = () => {
+    const option = {
+        series: [{
+            type: 'gauge',
+            startAngle: 180,
+            endAngle: 0,
+            center: ['50%', '75%'],
+            radius: '100%',
+            min: 0,
+            max: 100,
+            progress: { show: true, width: 18, itemStyle: { color: '#10b981' } },
+            pointer: { show: false },
+            axisLine: { lineStyle: { width: 18, color: [[1, '#f3f4f6']] } },
+            axisTick: { show: false },
+            splitLine: { show: false },
+            axisLabel: { show: false },
+            anchor: { show: false },
+            title: { show: false },
+            detail: {
+                valueAnimation: true,
+                offsetCenter: [0, '-10%'],
+                fontSize: 28,
+                fontWeight: '800',
+                formatter: '{value}%',
+                color: '#1f2937'
+            },
+            data: [{ value: 78 }]
+        }]
+    };
+    return (
+        <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm h-full flex flex-col items-center">
+            <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-4 w-full text-center">Monthly Goal Progress</p>
+            <div className="h-40 w-full mb-4">
+                <ReactEcharts option={option} style={{ height: '100%' }} />
+            </div>
+            <p className="text-xs font-bold text-gray-500 text-center">₹3.2L / ₹4.0L Target</p>
+        </div>
+    );
+};
+
+const ActivityHeatmap = () => {
+    const days = ['Sat', 'Fri', 'Thu', 'Wed', 'Tue', 'Mon', 'Sun'];
+    const hours = ['12a', '3a', '6a', '9a', '12p', '3p', '6p', '9p'];
+    const data = [];
+    for (let i = 0; i < 7; i++) {
+        for (let j = 0; j < 8; j++) {
+            data.push([j, i, Math.floor(Math.random() * 10)]);
+        }
+    }
+
+    const option = {
+        tooltip: { position: 'top' },
+        grid: { top: '10%', bottom: '15%', left: '10%', right: '5%' },
+        xAxis: { type: 'category', data: hours, splitArea: { show: true }, axisLine: { show: false }, axisTick: { show: false } },
+        yAxis: { type: 'category', data: days, splitArea: { show: true }, axisLine: { show: false }, axisTick: { show: false } },
+        visualMap: {
+            min: 0, max: 10, calculable: true, orient: 'horizontal', left: 'center', bottom: '0%',
+            inRange: { color: ['#f0fdf4', '#10b981'] },
+            show: false
+        },
+        series: [{
+            name: 'Activity', type: 'heatmap', data: data,
+            label: { show: false },
+            emphasis: { itemStyle: { shadowBlur: 10, shadowColor: 'rgba(0, 0, 0, 0.5)' } }
+        }]
+    };
+
+    return (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-white rounded-3xl p-8 border border-gray-100 shadow-sm h-full">
+            <h3 className="text-xl font-black text-gray-900 mb-6">Peak Donation Hours</h3>
+            <div className="h-[250px] w-full">
+                <ReactEcharts option={option} style={{ height: '100%' }} />
+            </div>
+        </motion.div>
+    );
+};
+
+const PerformanceRadar = () => {
+    const option = {
+        radar: {
+            indicator: [
+                { name: 'Efficiency', max: 100 },
+                { name: 'Growth', max: 100 },
+                { name: 'Verification', max: 100 },
+                { name: 'Engagement', max: 100 },
+                { name: 'Retention', max: 100 }
+            ],
+            shape: 'circle',
+            splitNumber: 4,
+            axisName: { color: '#9ca3af', fontWeight: 'bold' },
+            splitLine: { lineStyle: { color: ['rgba(16, 185, 129, 0.1)'] } },
+            splitArea: { show: false }
+        },
+        series: [{
+            type: 'radar',
+            data: [{
+                value: [80, 90, 70, 85, 60],
+                name: 'Performance',
+                itemStyle: { color: '#10b981' },
+                areaStyle: { color: 'rgba(16, 185, 129, 0.2)' }
+            }]
+        }]
+    };
+    return (
+        <div className="bg-white rounded-3xl p-8 border border-gray-100 shadow-sm h-full">
+            <h3 className="text-xl font-black text-gray-900 mb-6">Department Balance</h3>
+            <div className="h-[250px] w-full">
+                <ReactEcharts option={option} style={{ height: '100%' }} />
+            </div>
+        </div>
+    );
+};
+
 export default function DashboardOverview() {
     const router = useRouter();
     return (
@@ -339,8 +492,8 @@ export default function DashboardOverview() {
                         <ArrowLeft className="w-5 h-5" />
                     </button>
                     <div>
-                        <h1 className="text-xl font-black text-gray-900 tracking-tight">Financial Intelligence</h1>
-                        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-600">Real-time Analytics Portal</p>
+                        <h1 className="text-xl font-black text-gray-900 tracking-tight">Intelligence Dashboard</h1>
+                        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-600">Enterprise Resource Management</p>
                     </div>
                 </div>
                 <div className="flex items-center gap-4">
@@ -348,7 +501,7 @@ export default function DashboardOverview() {
                         <span className="text-xs font-black text-gray-900 uppercase">System Status</span>
                         <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest flex items-center gap-1">
                             <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
-                            Live Updates
+                            Live Node Active
                         </span>
                     </div>
                     <div className="w-10 h-10 rounded-2xl bg-gray-900 flex items-center justify-center text-white">
@@ -358,14 +511,24 @@ export default function DashboardOverview() {
             </header>
 
             {/* Main Content Area */}
-            <main className="flex-1 p-8 max-w-[1800px] mx-auto w-full flex flex-col space-y-8">
+            <main className="flex-1 p-8 max-w-[1900px] mx-auto w-full flex flex-col gap-8">
                 <motion.div
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                 >
-                    <h2 className="text-4xl font-black text-gray-900 tracking-tight mb-2">Overview <span className="text-emerald-500">& Insights</span></h2>
-                    <p className="text-lg text-gray-500 font-medium">Monitoring platform performance and donation metrics across all sectors.</p>
+                    <h2 className="text-4xl font-black text-gray-900 tracking-tight mb-2">System <span className="text-emerald-500">Intelligence</span></h2>
+                    <p className="text-lg text-gray-500 font-medium">Real-time performance monitoring and multi-dimensional data analysis.</p>
                 </motion.div>
+
+                {/* 1. Sparkline Cards Row */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <MetricSparkCard title="Active Donors" value="1,284" color="#10b981" data={[30, 40, 35, 50, 49, 60, 70, 91]} />
+                    <MetricSparkCard title="Verification Rate" value="94.2%" color="#6366f1" data={[40, 30, 45, 30, 55, 45, 60, 50]} />
+                    <MetricSparkCard title="Avg. Amount" value="₹2,450" color="#f59e0b" data={[20, 50, 40, 60, 50, 70, 65, 80]} />
+                    <div className="hidden lg:block">
+                        <SalesGoalGauge />
+                    </div>
+                </div>
 
                 <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
                     <div className="xl:col-span-2">
@@ -374,6 +537,12 @@ export default function DashboardOverview() {
                     <div className="xl:col-span-1">
                         <DonationTypeBreakdown />
                     </div>
+                </div>
+
+                {/* 2. Advanced Analytics Row */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                    <ActivityHeatmap />
+                    <PerformanceRadar />
                 </div>
             </main>
         </div>
