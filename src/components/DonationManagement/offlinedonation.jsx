@@ -15,8 +15,8 @@ import {
   User,
   Filter,
 } from "lucide-react";
-import { useGetOfflineDonationsQuery, useApproveOfflineDonationsMutation, useRejectOfflineDonationsMutation } from '@/utils/slices/donationApiSlice';
-
+import { useGetOfflineDonationsQuery, useApproveOfflineDonationsMutation, useRejectOfflineDonationsMutation, useDeleteOfflineDonationMutation } from '@/utils/slices/donationApiSlice';
+import AddOfflineDonationModal from "./addofflinedonationmodal";
 // ==================== STATUS BADGE COMPONENT ====================
 const StatusBadge = ({ status }) => {
   const styles = {
@@ -200,7 +200,7 @@ const FilterModal = ({ isOpen, onClose, filters, setFilters, onApply }) => {
 };
 
 // ==================== DETAILS MODAL ====================
-const OfflineDonationDetailsModal = ({ isOpen, onClose, donation, onApprove, onRejectClick, }) => {
+const OfflineDonationDetailsModal = ({ isOpen, onClose, donation, onApprove, onRejectClick,onDelete }) => {
   if (!isOpen || !donation) return null;
 
   const formatDate = (dateString) => {
@@ -234,7 +234,7 @@ const OfflineDonationDetailsModal = ({ isOpen, onClose, donation, onApprove, onR
           <div className="grid grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg">
             <div>
               <p className="text-sm text-gray-600">Donor Name</p>
-              <p className="font-medium text-gray-900">{donation.fullName || "N/A"}</p>
+              <p className="font-medium text-gray-900">{donation.fullName || donation.donorName}</p>
             </div>
             <div>
               <p className="text-sm text-gray-600">Status</p>
@@ -243,12 +243,24 @@ const OfflineDonationDetailsModal = ({ isOpen, onClose, donation, onApprove, onR
               </div>
             </div>
             <div>
+              <p className="text-sm text-gray-600">Transaction ID</p>
+              <p className="font-semibold text-emerald-700">
+                {donation.transactionId || "N/A"}
+              </p>
+            </div>
+            <div>
               <p className="text-sm text-gray-600">Email</p>
-              <p className="font-medium text-gray-900">{donation.email}</p>
+              <p className="font-medium text-gray-900">{donation.email || donation.donorEmail}</p>
             </div>
             <div>
               <p className="text-sm text-gray-600">Mobile</p>
-              <p className="font-medium text-gray-900">{donation.mobile || "N/A"}</p>
+              <p className="font-medium text-gray-900">{donation.mobile || donation.donorPhone}</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-600">Campaign</p>
+              <p className="font-medium text-gray-900">
+                {donation.campaignTitle || "N/A"}
+              </p>
             </div>
             <div>
               <p className="text-sm text-gray-600">Method</p>
@@ -374,6 +386,16 @@ const OfflineDonationDetailsModal = ({ isOpen, onClose, donation, onApprove, onR
             className="w-full sm:w-auto px-4 py-2 cursor-pointer bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
           >
             Close
+          </button>
+          <button
+            onClick={() => {
+              onDelete(donation.id);
+              onClose();
+            }}
+            className="w-full sm:w-auto px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center gap-2"
+          >
+            <XCircle className="w-4 h-4" />
+            Delete
           </button>
 
           {donation.status === "pending" && (
@@ -656,7 +678,8 @@ export default function OfflineDonationPage() {
 
   const [rejectOfflineDonation, { isLoading: isRejecting }] =
     useRejectOfflineDonationsMutation();
-
+  const [deleteOfflineDonation, { isLoading: isDeleting }] =
+    useDeleteOfflineDonationMutation();
   const [filters, setFilters] = useState({
     startDate: '',
     endDate: '',
@@ -718,6 +741,23 @@ export default function OfflineDonationPage() {
     setIsRejectModalOpen(true);
   };
 
+  const handleDelete = async (donationId) => {
+    const confirmDelete = window.confirm(
+      "Are you sure you want to delete this donation?"
+    );
+
+    if (!confirmDelete) return;
+
+    try {
+      const res = await deleteOfflineDonation(donationId).unwrap();
+      alert(res.message);
+      refetch(); // refresh list
+    } catch (err) {
+      console.error(err);
+      alert(err?.data?.message || "Failed to delete donation");
+    }
+  };
+
 
 
   const handleReject = async (donationId, remarks) => {
@@ -759,6 +799,13 @@ export default function OfflineDonationPage() {
                 Verify and approve offline donation entries
               </p>
             </div>
+            <button
+              onClick={() => setIsAddModalOpen(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              Add Offline Donation
+            </button>
           </div>
         </div>
 
@@ -872,6 +919,7 @@ export default function OfflineDonationPage() {
         donation={selectedDonation}
         onApprove={handleApprove}
         onRejectClick={openRejectModal}
+        onDelete={handleDelete}
       />
 
       <FilterModal
@@ -887,6 +935,11 @@ export default function OfflineDonationPage() {
         donationId={rejectDonationId}
         onReject={handleReject}
         isLoading={isRejecting}
+      />
+      <AddOfflineDonationModal
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        onSuccess={refetch}
       />
 
     </div>

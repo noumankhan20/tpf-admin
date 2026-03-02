@@ -1,8 +1,8 @@
 import { apiSlice } from "./apiSlice";
 
 export const donationApiSlice = apiSlice.injectEndpoints({
-    endpoints: (builder) =>({
-        getDonations: builder.query({
+  endpoints: (builder) => ({
+    getDonations: builder.query({
       query: (params) => ({
         url: 'donations/get', // Your backend endpoint
         method: 'GET',
@@ -10,23 +10,23 @@ export const donationApiSlice = apiSlice.injectEndpoints({
       }),
     }),
 
-      getOfflineDonations: builder.query({
-        query:(params) =>({
-          url:'offline-donations/get',
-          method:'GET',
-          params: params,
-        })
-      }),
+    getOfflineDonations: builder.query({
+      query: (params) => ({
+        url: 'offline-donations/get',
+        method: 'GET',
+        params: params,
+      })
+    }),
 
-      approveOfflineDonations: builder.mutation({
-      query: ({donationId}) => ({
+    approveOfflineDonations: builder.mutation({
+      query: ({ donationId }) => ({
         url: "offline-donations/approve",
         method: "POST",
         body: { donationId }, // Send the array of donation IDs to approve
       }),
     }),
 
-       getAllDonors: builder.query({
+    getAllDonors: builder.query({
       query: (params) => ({
         url: 'donations/getall', // Your backend endpoint
         method: 'GET',
@@ -47,7 +47,7 @@ export const donationApiSlice = apiSlice.injectEndpoints({
       }),
     }),
 
-     getPendingCount: builder.query({
+    getPendingCount: builder.query({
       query: () => ({
         url: `offline-donations/pending-count`, // Your backend endpoint for individual donor details
         method: 'GET',
@@ -55,23 +55,50 @@ export const donationApiSlice = apiSlice.injectEndpoints({
     }),
 
     rejectOfflineDonations: builder.mutation({
-      query: ({donationId,remarks}) => ({
+      query: ({ donationId, remarks }) => ({
         url: "offline-donations/reject",
         method: "POST",
         body: { donationId, remarks }, // Send the array of donation IDs to reject
       }),
     }),
+    createOfflineDonationByAdmin: builder.mutation({
+      query: (data) => ({
+        url: "offline-donations/admin-create",
+        method: "POST",
+        body: data,
+      }),
 
-    })
+      // 🔥 optional but recommended
+      invalidatesTags: ["OfflineDonations", "PendingCount"],
+    }),
+    getCampaignDropdown: builder.query({
+      query: () => ({
+        url: "offline-donations/campaign-dropdown",
+        method: "GET",
+      }),
+    }),
+    
+    deleteOfflineDonation: builder.mutation({
+      query: (donationId) => ({
+        url: `offline-donations/delete/${donationId}`,
+        method: "DELETE",
+      }),
+    }),
+
+    
+  })
 })
 
 
 export const {
-    useGetDonationsQuery,
-    useGetOfflineDonationsQuery,
-    useApproveOfflineDonationsMutation,
-    useGetAllDonorsQuery,
-    useGetDonorDetailsQuery,
-    useGetPendingCountQuery,
-    useRejectOfflineDonationsMutation,
+  useGetDonationsQuery,
+  useGetOfflineDonationsQuery,
+  useApproveOfflineDonationsMutation,
+  useGetAllDonorsQuery,
+  useGetDonorDetailsQuery,
+  useGetPendingCountQuery,
+  useRejectOfflineDonationsMutation,
+  useCreateOfflineDonationByAdminMutation,
+  useGetCampaignDropdownQuery,
+  useDeleteOfflineDonationMutation,
 } = donationApiSlice

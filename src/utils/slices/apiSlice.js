@@ -6,7 +6,7 @@ export const apiSlice = createApi({
     baseUrl: process.env.NEXT_PUBLIC_BACKEND_API,
     credentials: "include",   // needed for adminCookie
   }),
-  tagTypes: ['ADMIN', 'FinancialAidForms', 'KYCRequests', 'PhotographyAssignments', 'Campaigns', 'PhotographySubmissions', 'SocialMediaAssignments', 'TaskManagement', 'FinanceAssignments', 'Tasks', 'Assets', 'Tickets', 'Stock', 'Expenses', 'Purchases', 'InventoryDashboard', 'Documentation', 'BusinessResolutions', 'PhotoEditingAssignments', 'UnreadCounts', 'FAQ','CampaignRequest','Campaign',
+  tagTypes: ['ADMIN', 'FinancialAidForms', 'KYCRequests', 'PhotographyAssignments', 'Campaigns', 'PhotographySubmissions', 'SocialMediaAssignments', 'TaskManagement', 'FinanceAssignments', 'Tasks', 'Assets', 'Tickets', 'Stock', 'Expenses', 'Purchases', 'InventoryDashboard', 'Documentation', 'BusinessResolutions', 'PhotoEditingAssignments', 'UnreadCounts', 'FAQ','CampaignRequest','Campaign','OfflineDonations','PendingCount',
     //CMS TAGS
     'Hero',
     'Fundraiser',
