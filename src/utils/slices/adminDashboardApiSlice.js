@@ -32,11 +32,19 @@ export const adminDashboardApiSlice = apiSlice.injectEndpoints({
             },
             keepUnusedDataFor: 300,
         }),
+        getActivityHeatmap: builder.query({
+            query: () => ({
+                url: `/admin/dashboard/activity-heatmap`,
+                method: "GET",
+            }),
+            keepUnusedDataFor: 300,
+        }),
     }),
 });
 
 export const {
     useGetCalendarEventsQuery,
     useGetSummaryMetricsQuery,
-    useGetDonationAnalyticsQuery
+    useGetDonationAnalyticsQuery,
+    useGetActivityHeatmapQuery
 } = adminDashboardApiSlice;
