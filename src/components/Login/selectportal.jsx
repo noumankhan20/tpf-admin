@@ -406,15 +406,15 @@ function BentoView({ categories, getModulesByCategory, isLoaded }) {
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: idx * 0.05 }}
-            className={`group relative overflow-hidden rounded-3xl border border-gray-200 p-6 flex flex-col transition-all duration-300 shadow-sm ${style.grid} ${style.bg} ${style.border} hover:shadow-2xl hover:-translate-y-1`}
+            className={`group relative overflow-hidden rounded-3xl border border-gray-200 p-5 flex flex-col transition-all duration-300 shadow-sm ${style.grid} ${style.bg} ${style.border} hover:shadow-2xl hover:-translate-y-1`}
           >
             {/* Background Pattern */}
             <div className="absolute top-0 right-0 p-4 opacity-[0.03] group-hover:opacity-[0.08] transition-opacity">
               <Icon className="w-32 h-32 rotate-12" />
             </div>
 
-            <div className="relative flex-1">
-              <div className="flex items-center justify-between mb-6">
+            <div className="relative mb-2">
+              <div className="flex items-center justify-between mb-2">
                 <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg ${style.iconBg} text-white transition-transform group-hover:scale-110`}>
                   <Icon className="w-6 h-6" />
                 </div>
@@ -424,16 +424,16 @@ function BentoView({ categories, getModulesByCategory, isLoaded }) {
               </div>
 
 
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">{cat.name}</h2>
+              <h2 className="text-2xl font-bold text-gray-900">{cat.name}</h2>
             </div>
 
-            <div className="relative mt-auto">
+            <div className="relative">
               <div className="grid grid-cols-1 gap-2">
                 {modules.map(m => (
                   <button
                     key={m.id}
                     onClick={(e) => { e.stopPropagation(); router.push(m.route); }}
-                    className="flex items-center space-x-3 p-3 bg-white/80 hover:bg-white rounded-xl border border-transparent hover:border-emerald-200 transition-all group/btn shadow-sm"
+                    className="flex items-center space-x-3 py-2 px-3 bg-white/80 hover:bg-white rounded-xl border border-transparent hover:border-emerald-200 transition-all group/btn shadow-sm"
                   >
                     <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${style.iconBg} text-white transition-colors`}>
                       {m.icon ? <m.icon className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
@@ -465,21 +465,21 @@ function CardView({ modules, isLoaded }) {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: idx * 0.1 }}
             onClick={() => router.push(p.route)}
-            className="group relative bg-white border border-gray-200 rounded-3xl p-6 cursor-pointer transition-all duration-300 hover:border-emerald-500 hover:shadow-2xl hover:-translate-y-1"
+            className="group relative bg-white border border-gray-200 rounded-3xl p-5 cursor-pointer transition-all duration-300 hover:border-emerald-500 hover:shadow-2xl hover:-translate-y-1"
           >
             <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-50/50 rounded-bl-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
 
             <div className="relative">
-              <div className="w-16 h-16 rounded-2xl bg-emerald-600 flex items-center justify-center shadow-lg mb-6 group-hover:scale-110 transition-transform">
-                <Icon className="w-8 h-8 text-white" />
+              <div className="w-14 h-14 rounded-2xl bg-emerald-600 flex items-center justify-center shadow-lg mb-4 group-hover:scale-110 transition-transform">
+                <Icon className="w-6 h-6 text-white" />
               </div>
 
-              <h3 className="text-xl font-bold text-gray-900 mb-2 group-hover:text-emerald-700 transition-colors">
+              <h3 className="text-xl font-bold text-gray-900 mb-1 group-hover:text-emerald-700 transition-colors">
                 {p.name}
               </h3>
               <p className="text-sm text-gray-500 leading-relaxed font-medium">{p.desc}</p>
 
-              <div className="flex items-center text-emerald-600 text-xs font-bold uppercase tracking-widest mt-6 opacity-40 group-hover:opacity-100 transition-all">
+              <div className="flex items-center text-emerald-600 text-xs font-bold uppercase tracking-widest mt-4 opacity-40 group-hover:opacity-100 transition-all">
                 <span>Access Module</span>
                 <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-2 transition-transform" />
               </div>
