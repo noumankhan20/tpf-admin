@@ -20,6 +20,7 @@ const COLORS = {
     SADAQAH: "#f59e0b",
     LILLAH: "#6366f1",
     IMDAD: "#14b8a6",
+    OFFLINE: "#64748b", // Slate color for offline
 };
 
 
