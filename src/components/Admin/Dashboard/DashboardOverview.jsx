@@ -24,7 +24,7 @@ const COLORS = {
 
 
 const DonationTrendChart = () => {
-    const [timeRange, setTimeRange] = useState("year");
+    const [timeRange, setTimeRange] = useState("today");
     const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
     const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
     const [activeType, setActiveType] = useState("ALL");
