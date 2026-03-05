@@ -79,10 +79,8 @@ export default function CampaignAdminDashboard() {
   const totalDonors = apiResponse?.totalDonors || 0;
   const overallTotalTips = apiResponse?.overallTotalTips || 0;
   const totalRaised = apiResponse?.totalRaised || 0;
-  const totalNetRaised = campaigns.reduce(
-    (sum, campaign) => sum + (campaign.netRaisedAmount || 0),
-    0
-  );
+  const totalNetRaised = apiResponse?.netRaised || 0;
+  const totalExpenses = apiResponse?.totalExpenses || 0;
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50 flex items-center justify-center p-4">
