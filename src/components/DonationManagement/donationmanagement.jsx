@@ -202,6 +202,10 @@ const DonationDetailsModal = ({ donation, onClose }) => {
                                 </span>
                             </p>
                         </div>
+                        <div>
+                            <label className="text-xs sm:text-sm font-medium text-gray-500">Campaign Name</label>
+                            <p className="mt-1 text-xl sm:text-2xl font-bold text-emerald-600">{donation.campaignName}</p>
+                        </div>
                     </div>
                 </div>
                 <div className="border-t border-gray-200 px-4 sm:px-6 py-3 sm:py-4 bg-gray-50 flex justify-end sticky bottom-0">
@@ -240,8 +244,12 @@ export default function DonationManagement() {
         minAmount: '',
         maxAmount: '',
     });
-    const itemsPerPage = 10;
+    const [itemsPerPage, setItemsPerPage] = useState(10);
     const router = useRouter();
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [itemsPerPage]);
 
     // Build query params for API
     const queryParams = useMemo(() => {
@@ -258,7 +266,7 @@ export default function DonationManagement() {
         if (appliedFilters.maxAmount) params.maxAmount = appliedFilters.maxAmount;
 
         return params;
-    }, [currentPage, debouncedSearch, appliedFilters]);
+    }, [currentPage, debouncedSearch, appliedFilters,itemsPerPage]);
 
 
     // Fetch donations using RTK Query
@@ -350,7 +358,26 @@ export default function DonationManagement() {
                     </div>
 
                 </div>
+                <div className="flex justify-between items-center mb-3 px-4">
+                    <p className="text-sm text-gray-600">
+                        Showing {donations.length} of {pagination.totalDonations}
+                    </p>
 
+                    <div className="flex items-center gap-2">
+                        <span className="text-sm text-gray-600">Rows per page:</span>
+
+                        <select
+                            value={itemsPerPage}
+                            onChange={(e) => setItemsPerPage(Number(e.target.value))}
+                            className="border border-gray-300 rounded-md px-2 py-1 text-sm focus:ring-emerald-500 focus:border-emerald-500"
+                        >
+                            <option value={10}>10</option>
+                            <option value={25}>25</option>
+                            <option value={50}>50</option>
+                            <option value={100}>100</option>
+                        </select>
+                    </div>
+                </div>
                 {/* Search and Filters */}
                 <div className="bg-white rounded-lg shadow mb-4 sm:mb-6 p-3 sm:p-4">
                     <div className="flex flex-col gap-3 sm:gap-4">
