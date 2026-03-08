@@ -230,6 +230,10 @@ import {
   Scale,
   Download,
   MessageSquare,
+  Heart,
+  UserCheck,
+  Building2,
+  Briefcase,
 } from "lucide-react";
 
 export const MODULES = [
@@ -382,13 +386,49 @@ export const MODULES = [
     category: "monitoring",
     desc: "Monitor campaign performance and status",
   },
+
+  // ===============================
+  // TPF-Management
+  // ===============================
   {
-    id: "TPF Management",
-    name: "TPF Management",
+    id: "Donor",
+    name: "Donor",
+    desc: "All users are donors by default. View donor profiles and donation statistics.",
+    icon: Heart,
+    route: "/tpf-management/donors",
+    category: 'tpf-management'
+  },
+  {
+    id: "permanent-donors",
+    name: "Permanent Donor",
+    desc: "Manage donor plans and track recurring donations.",
+    icon: UserCheck,
+    route: "/tpf-management/permanent-donors",
+    category: 'tpf-management'
+  },
+  {
+    id: "volunteers",
+    name: "Volunteer",
+    desc: "Volunteer profiles, status, and reimbursement workflows.",
     icon: Users,
-    route: "/tpf-management",
-    category: "monitoring",
-    desc: "Manage and review TPF records",
+    route: "/tpf-management/volunteers",
+    category: 'tpf-management'
+  },
+  {
+    id: "employees",
+    name: "Employee",
+    desc: "Attendance, salary, expenses, and login records.",
+    icon: Briefcase,
+    route: "/tpf-management/employee-management",
+    category: 'tpf-management'
+  },
+  {
+    id: "organizations",
+    name: "Organization",
+    desc: "Organization details based on backend models.",
+    icon: Building2,
+    route: "/tpf-management/organizations",
+    category: 'tpf-management'
   },
 
   // ===============================

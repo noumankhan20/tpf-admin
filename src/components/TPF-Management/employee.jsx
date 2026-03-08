@@ -125,7 +125,7 @@ export default function EmployeeManagement() {
             setIsEditing(false);
             setEditedEmployee(null);
         } else {
-            window.location.href = '/tpf-management';
+            window.location.href = '/select-portal';
         }
     };
 
@@ -509,7 +509,7 @@ export default function EmployeeManagement() {
                 <div className="p-2 rounded-lg bg-white shadow-sm group-hover:shadow-md group-hover:bg-slate-50 transition-all duration-200">
                     <ArrowLeft className="w-4 h-4" />
                 </div>
-                <span className="font-medium">Back to TPF Management</span>
+                <span className="font-medium">Back</span>
             </button>
 
             <div className="text-center mb-8">

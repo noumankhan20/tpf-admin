@@ -55,7 +55,7 @@ export default function PermanentDonorModule() {
   const totalPages = Math.ceil(filteredDonors.length / itemsPerPage);
 
   const handleBackToTPFManagementClick = () => {
-    router.push('/tpf-management');
+    router.push('/select-portal');
   };
 
   const handleBackToDonorsClick = () => {
@@ -283,7 +283,7 @@ export default function PermanentDonorModule() {
             className="inline-flex items-center gap-2 text-slate-700 hover:text-slate-900 mb-4 transition-all hover:gap-3 group"
           >
             <ArrowLeft className="w-5 h-5 transition-transform group-hover:-translate-x-1" />
-            <span className="font-medium">Back to TPF Management</span>
+            <span className="font-medium">Back</span>
           </button>
           
           <div className="text-center md:text-left">
