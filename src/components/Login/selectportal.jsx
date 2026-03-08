@@ -75,7 +75,7 @@ export default function SelectPanel() {
   const [isLoaded, setIsLoaded] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [mounted, setMounted] = useState(false);
-  const [showLoading, setShowLoading] = useState(true);
+  const [showLoading, setShowLoading] = useState(false);
 
 
   const [logoutAdmin] = useLogoutAdminApiMutation();
@@ -88,12 +88,20 @@ export default function SelectPanel() {
 
   useEffect(() => {
     setMounted(true);
-    // Hide loading screen after 3 seconds
-    const timer = setTimeout(() => {
-      setShowLoading(false);
-    }, 3000);
 
-    return () => clearTimeout(timer);
+    const hasSeenLoading = sessionStorage.getItem('hasSeenLoadingScreen');
+
+    if (!hasSeenLoading) {
+      setShowLoading(true);
+      sessionStorage.setItem('hasSeenLoadingScreen', 'true');
+
+      // Hide loading screen after 3 seconds
+      const timer = setTimeout(() => {
+        setShowLoading(false);
+      }, 3000);
+
+      return () => clearTimeout(timer);
+    }
   }, []);
 
   const admin = useSelector((state) => state.adminAuth.adminInfo);

@@ -65,10 +65,10 @@ const SummaryMetrics = () => {
     const metrics = data?.metrics || {};
 
     const summaryItems = [
-        { id: 1, label: "Total Donors", value: metrics.totalDonors || 0, icon: HeartHandshake, route: "/donation-management/offline-donation", gradient: "from-blue-500 to-blue-600" },
+        { id: 1, label: "Total Donors", value: metrics.totalDonors || 0, icon: HeartHandshake, route: "/tpf-management/donors", gradient: "from-blue-500 to-blue-600" },
         { id: 2, label: "Total Donation Collected", value: metrics.totalDonationCollected ? `₹${(metrics.totalDonationCollected).toLocaleString('en-IN')}` : "₹0", icon: IndianRupee, route: "/donation-management", gradient: "from-emerald-500 to-emerald-600" },
         { id: 3, label: "Total Admins", value: metrics.totalAdmins || 0, icon: UserCog, route: "/add-admin", gradient: "from-purple-500 to-purple-600" },
-        { id: 4, label: "Total Users", value: metrics.totalUsers || 0, icon: Users, route: "/admin/volunteers", gradient: "from-amber-500 to-amber-600" },
+        { id: 4, label: "Total Users", value: metrics.totalUsers || 0, icon: Users, route: "/tpf-management/donors", gradient: "from-amber-500 to-amber-600" },
         { id: 5, label: "Total Campaigns", value: metrics.totalCampaigns || 0, icon: Flag, route: "/campaigns", gradient: "from-pink-500 to-pink-600" },
         { id: 6, label: "Total Pending Tasks", value: metrics.totalPendingTasks || 0, icon: CheckSquare, route: "/admin/task-management", gradient: "from-teal-500 to-teal-600" },
     ];
@@ -105,6 +105,7 @@ const RecentTransactions = () => {
                             <th className="pb-4 font-bold text-gray-500 uppercase text-xs tracking-wider">Amount</th>
                             <th className="pb-4 font-bold text-gray-500 uppercase text-xs tracking-wider">Type</th>
                             <th className="pb-4 font-bold text-gray-500 uppercase text-xs tracking-wider">Date</th>
+                            <th className="pb-4 font-bold text-gray-500 uppercase text-xs tracking-wider">Time</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-50">
@@ -128,10 +129,11 @@ const RecentTransactions = () => {
                                     </span>
                                 </td>
                                 <td className="py-4 text-sm text-gray-500">{donation.date ? new Date(donation.date).toLocaleDateString() : 'N/A'}</td>
+                                <td className="py-4 text-sm text-gray-500">{donation.date ? new Date(donation.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }) : 'N/A'}</td>
                             </tr>
                         )) : (
                             <tr>
-                                <td colSpan="4" className="py-10 text-center text-gray-400">No recent transactions found</td>
+                                <td colSpan="5" className="py-10 text-center text-gray-400">No recent transactions found</td>
                             </tr>
                         )}
                     </tbody>
