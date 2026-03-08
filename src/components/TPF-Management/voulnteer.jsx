@@ -25,7 +25,8 @@ import {
     Info,
     ExternalLink,
     CheckCircle2,
-    Loader2
+    Loader2,
+    Heart
 } from 'lucide-react';
 import {
     useGetVolunteersQuery,
@@ -227,6 +228,17 @@ export default function VolunteerModule() {
                                             </p>
                                         </div>
                                     </div>
+                                    {selectedVolunteer.helpDescription && (
+                                        <div className="flex items-start gap-3 p-3 rounded-xl bg-emerald-50/50 border border-emerald-100/50">
+                                            <Heart className="text-emerald-500 mt-1 shrink-0" size={18} />
+                                            <div>
+                                                <p className="text-xs text-emerald-600 font-bold uppercase tracking-wider">How can I help?</p>
+                                                <p className="text-sm font-medium text-gray-700 leading-relaxed mt-1 italic">
+                                                    "{selectedVolunteer.helpDescription}"
+                                                </p>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 
