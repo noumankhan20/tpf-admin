@@ -279,28 +279,33 @@ export default function FundraisingCMS() {
       ));
 
       const rawItemName = formData.unitConfig.itemName || "Unit";
-      const finalPresets = (formData.unitConfig.presets && formData.unitConfig.presets.length > 0)
+      const impactPresets = (formData.unitConfig.presets && formData.unitConfig.presets.length > 0)
         ? formData.unitConfig.presets.map(p => {
           const name = p.qty === 1 ? rawItemName : `${rawItemName}s`;
+          const finalAmount = p.amount !== undefined ? p.amount : (p.qty * (formData.unitConfig.unitCost || 0));
           return {
             ...p,
+            amount: finalAmount,
             label: `${p.qty} ${name}`,
-            sublabel: `₹${(p.qty * (formData.unitConfig.unitCost || 0)).toLocaleString()}`
+            sublabel: `₹${finalAmount.toLocaleString()}`
           };
         })
-        : [
-          { amount: 50, label: "₹50", sublabel: "Gift", qty: 0 },
-          { amount: 100, label: "₹100", sublabel: "Gift", qty: 0 },
-          ...[1, 10, 100, 1000].map(qty => {
-            const name = qty === 1 ? rawItemName : `${rawItemName}s`;
-            return {
-              qty,
-              amount: qty * (formData.unitConfig.unitCost || 0),
-              label: `${qty} ${name}`,
-              sublabel: `₹${(qty * (formData.unitConfig.unitCost || 0)).toLocaleString()}`
-            };
-          })
-        ];
+        : [1, 10, 100, 1000].map(qty => {
+          const name = qty === 1 ? rawItemName : `${rawItemName}s`;
+          const amt = qty * (formData.unitConfig.unitCost || 0);
+          return {
+            qty,
+            amount: amt,
+            label: `${qty} ${name}`,
+            sublabel: `₹${amt.toLocaleString()}`
+          };
+        });
+
+      const finalPresets = [
+        { amount: 50, label: "₹50", sublabel: "Gift", qty: 0 },
+        { amount: 100, label: "₹100", sublabel: "Gift", qty: 0 },
+        ...impactPresets
+      ];
 
       form.append("unitConfig", JSON.stringify({
         ...formData.unitConfig,
