@@ -98,18 +98,10 @@ export default function FundraisingCMS() {
       other: "",
     },
     unitConfig: {
-      unitName: "Kit",
-      unitNamePlural: "Kits",
+      itemName: "Kit",
       unitCost: 1000,
       emoji: "📦",
-      presets: [
-        { amount: 50, label: "₹50", sublabel: "", qty: 0 },
-        { amount: 100, label: "₹100", sublabel: "", qty: 0 },
-        { amount: 0, label: "", sublabel: "", qty: 1 },
-        { amount: 0, label: "", sublabel: "", qty: 5 },
-        { amount: 0, label: "", sublabel: "", qty: 10 },
-        { amount: 0, label: "", sublabel: "", qty: 100 },
-      ]
+      presets: []
     },
   });
 
@@ -214,18 +206,10 @@ export default function FundraisingCMS() {
       imageGallery: card.imageGallery || [],
       socialLinks: latestSocialLinks,
       unitConfig: {
-        unitName: card.unitConfig?.unitName || "Kit",
-        unitNamePlural: card.unitConfig?.unitNamePlural || "Kits",
+        itemName: card.unitConfig?.itemName || card.unitConfig?.unitName || "Kit",
         unitCost: card.unitConfig?.unitCost || 1000,
         emoji: card.unitConfig?.emoji || "📦",
-        presets: card.unitConfig?.presets?.length ? card.unitConfig.presets : [
-          { amount: 50, label: "₹50", sublabel: "", qty: 0 },
-          { amount: 100, label: "₹100", sublabel: "", qty: 0 },
-          { amount: 0, label: "", sublabel: "", qty: 1 },
-          { amount: 0, label: "", sublabel: "", qty: 5 },
-          { amount: 0, label: "", sublabel: "", qty: 10 },
-          { amount: 0, label: "", sublabel: "", qty: 100 },
-        ]
+        presets: card.unitConfig?.presets || []
       },
     });
     setViewMode("edit");
@@ -294,7 +278,34 @@ export default function FundraisingCMS() {
         formData.impactGoals.filter(g => g.trim() !== "")
       ));
 
-      form.append("unitConfig", JSON.stringify(formData.unitConfig));
+      const rawItemName = formData.unitConfig.itemName || "Unit";
+      const finalPresets = (formData.unitConfig.presets && formData.unitConfig.presets.length > 0)
+        ? formData.unitConfig.presets.map(p => {
+          const name = p.qty === 1 ? rawItemName : `${rawItemName}s`;
+          return {
+            ...p,
+            label: `${p.qty} ${name}`,
+            sublabel: `₹${(p.qty * (formData.unitConfig.unitCost || 0)).toLocaleString()}`
+          };
+        })
+        : [
+          { amount: 50, label: "₹50", sublabel: "Gift", qty: 0 },
+          { amount: 100, label: "₹100", sublabel: "Gift", qty: 0 },
+          ...[1, 10, 100, 1000].map(qty => {
+            const name = qty === 1 ? rawItemName : `${rawItemName}s`;
+            return {
+              qty,
+              amount: qty * (formData.unitConfig.unitCost || 0),
+              label: `${qty} ${name}`,
+              sublabel: `₹${(qty * (formData.unitConfig.unitCost || 0)).toLocaleString()}`
+            };
+          })
+        ];
+
+      form.append("unitConfig", JSON.stringify({
+        ...formData.unitConfig,
+        presets: finalPresets
+      }));
 
       if (formData.mediaType === "image") {
         formData.images.forEach((file) => {
@@ -390,18 +401,10 @@ export default function FundraisingCMS() {
         other: "",
       },
       unitConfig: {
-        unitName: "Kit",
-        unitNamePlural: "Kits",
+        itemName: "Kit",
         unitCost: 1000,
         emoji: "📦",
-        presets: [
-          { amount: 50, label: "₹50", sublabel: "", qty: 0 },
-          { amount: 100, label: "₹100", sublabel: "", qty: 0 },
-          { amount: 0, label: "", sublabel: "", qty: 1 },
-          { amount: 0, label: "", sublabel: "", qty: 5 },
-          { amount: 0, label: "", sublabel: "", qty: 10 },
-          { amount: 0, label: "", sublabel: "", qty: 100 },
-        ]
+        presets: []
       },
     });
     setSelectedCampaign(null);

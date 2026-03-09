@@ -233,7 +233,7 @@ export default function CampaignForm({
 
   return (
     <>
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-4xl mx-auto" style={{ fontFamily: '"Inter", "system-ui", "-apple-system", "sans-serif"' }}>
         {/* Tab Navigation */}
         <div className="flex flex-wrap gap-2 mb-6 bg-white p-2 rounded-2xl border-2 border-gray-100 shadow-sm">
           {tabs.map((tab) => (
@@ -552,40 +552,6 @@ export default function CampaignForm({
                     <h3 className="text-lg font-black text-gray-900 flex items-center gap-2">
                       <Zap className="text-emerald-500" size={20} /> Matrix Configuration
                     </h3>
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const newPreset = { amount: 0, label: "", sublabel: "", qty: 1 };
-                          setFormData(prev => ({
-                            ...prev,
-                            unitConfig: {
-                              ...prev.unitConfig,
-                              presets: [...(prev.unitConfig?.presets || []), newPreset]
-                            }
-                          }));
-                        }}
-                        className="px-3 py-1.5 bg-emerald-50 text-emerald-600 text-[10px] font-bold uppercase tracking-widest rounded-lg border border-emerald-100 hover:bg-emerald-100 transition-colors"
-                      >
-                        + Unit Preset
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const newPreset = { amount: 50, label: "₹50", sublabel: "", qty: 0 };
-                          setFormData(prev => ({
-                            ...prev,
-                            unitConfig: {
-                              ...prev.unitConfig,
-                              presets: [...(prev.unitConfig?.presets || []), newPreset]
-                            }
-                          }));
-                        }}
-                        className="px-3 py-1.5 bg-gray-50 text-gray-600 text-[10px] font-bold uppercase tracking-widest rounded-lg border border-gray-100 hover:bg-gray-200 transition-colors"
-                      >
-                        + Fixed Preset
-                      </button>
-                    </div>
                   </div>
 
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -613,80 +579,73 @@ export default function CampaignForm({
                       />
                     </div>
                     <div className="col-span-2">
-                      <label className="block text-[10px] font-bold text-gray-500 uppercase mb-2">Display Name</label>
-                      <div className="flex gap-2">
-                        <input type="text" placeholder="Kit" value={formData.unitConfig?.unitName} onChange={e => setFormData({ ...formData, unitConfig: { ...formData.unitConfig, unitName: e.target.value } })} className="flex-1 p-3 border-2 border-gray-100 rounded-xl text-sm" />
-                        <input type="text" placeholder="Kits" value={formData.unitConfig?.unitNamePlural} onChange={e => setFormData({ ...formData, unitConfig: { ...formData.unitConfig, unitNamePlural: e.target.value } })} className="flex-1 p-3 border-2 border-gray-100 rounded-xl text-sm" />
-                      </div>
+                      <label className="block text-[10px] font-bold text-gray-500 uppercase mb-2">Item Name (e.g. Kit)</label>
+                      <input
+                        type="text"
+                        placeholder="Kit"
+                        value={formData.unitConfig?.itemName || formData.unitConfig?.unitName}
+                        onChange={e => {
+                          const val = e.target.value;
+                          setFormData(prev => ({
+                            ...prev,
+                            unitConfig: { ...prev.unitConfig, itemName: val }
+                          }));
+                        }}
+                        className="w-full p-3 border-2 border-gray-100 rounded-xl text-sm outline-none focus:border-emerald-500"
+                      />
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
-                    {formData.unitConfig?.presets?.map((p, i) => (
-                      <div key={i} className="p-3 bg-gray-50/50 rounded-xl border-2 border-gray-100 space-y-2">
-                        {p.qty > 0 ? (
-                          <>
-                            <div className="flex flex-col gap-1">
-                              <label className="text-[8px] font-black text-gray-400 uppercase tracking-widest">Units</label>
+                  {/* Automated Preset Preview */}
+                  <div className="pt-4 border-t border-dashed">
+                    <label className="block text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-4">
+                      Automatic Impact Presets
+                    </label>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      {(formData.unitConfig?.presets?.length === 4 ? formData.unitConfig.presets : [1, 10, 100, 1000].map(q => ({ qty: q }))).map((preset, i) => {
+                        const qty = preset.qty || 0;
+                        const cost = formData.unitConfig?.unitCost || 0;
+                        const total = qty * cost;
+                        const rawName = formData.unitConfig?.itemName || formData.unitConfig?.unitName || 'Unit';
+                        const name = qty === 1 ? rawName : `${rawName}s`;
+                        const label = `${qty} ${name}`;
+
+                        return (
+                          <div key={i} className="p-4 bg-white border-2 border-emerald-100 rounded-2xl flex flex-col items-center justify-center text-center shadow-sm hover:border-emerald-300 transition-all">
+                            <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">
+                              Qty Box {i + 1}
+                            </div>
+                            <div className="flex items-center gap-1 mb-1">
                               <input
                                 type="number"
-                                value={p.qty}
-                                placeholder="Qty"
+                                value={qty}
                                 onChange={e => {
-                                  const q = parseInt(e.target.value) || 0;
+                                  const val = parseInt(e.target.value) || 0;
                                   setFormData(prev => {
-                                    const newPresets = [...prev.unitConfig.presets];
-                                    newPresets[i] = { ...newPresets[i], qty: q, amount: q * (prev.unitConfig.unitCost || 0) };
-                                    return { ...prev, unitConfig: { ...prev.unitConfig, presets: newPresets } };
+                                    const currentPresets = prev.unitConfig?.presets?.length === 4 ? [...prev.unitConfig.presets] : [1, 10, 100, 1000].map(q => ({ qty: q }));
+                                    currentPresets[i] = { ...currentPresets[i], qty: val, amount: val * (prev.unitConfig?.unitCost || 0) };
+                                    return {
+                                      ...prev,
+                                      unitConfig: { ...prev.unitConfig, presets: currentPresets }
+                                    };
                                   });
                                 }}
-                                className="w-full p-2 bg-white border border-gray-200 rounded-lg text-xs font-black focus:border-emerald-500 outline-none"
+                                className="w-16 p-1 text-center bg-gray-50 border border-gray-200 rounded-lg text-sm font-black focus:border-emerald-500 outline-none"
                               />
                             </div>
-                            <div className="text-[10px] font-black text-emerald-600 px-1">₹{(p.amount || 0).toLocaleString()}</div>
-                          </>
-                        ) : (
-                          <>
-                            <div className="flex flex-col gap-1">
-                              <label className="text-[8px] font-black text-gray-400 uppercase tracking-widest">Fixed Amount</label>
-                              <div className="relative">
-                                <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] font-black text-gray-400">₹</span>
-                                <input
-                                  type="number"
-                                  value={p.amount}
-                                  placeholder="Amount"
-                                  onChange={e => {
-                                    const a = parseInt(e.target.value) || 0;
-                                    setFormData(prev => {
-                                      const newPresets = [...prev.unitConfig.presets];
-                                      newPresets[i] = { ...newPresets[i], amount: a };
-                                      return { ...prev, unitConfig: { ...prev.unitConfig, presets: newPresets } };
-                                    });
-                                  }}
-                                  className="w-full p-2 pl-4 bg-white border border-gray-200 rounded-lg text-xs font-black focus:border-emerald-500 outline-none"
-                                />
-                              </div>
+                            <div className="text-[10px] font-bold text-gray-600 mb-1 truncate w-full px-1">
+                              {name}
                             </div>
-                          </>
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setFormData(prev => ({
-                              ...prev,
-                              unitConfig: {
-                                ...prev.unitConfig,
-                                presets: prev.unitConfig.presets.filter((_, idx) => idx !== i)
-                              }
-                            }));
-                          }}
-                          className="w-full pt-1 text-[8px] font-bold text-red-400 hover:text-red-600 uppercase text-center transition-colors"
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    ))}
+                            <div className="text-xs font-black text-emerald-600">
+                              ₹{total.toLocaleString()}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
+
+
                 </div>
               </div>
             )}
