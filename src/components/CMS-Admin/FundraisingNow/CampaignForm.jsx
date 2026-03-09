@@ -233,7 +233,7 @@ export default function CampaignForm({
 
   return (
     <>
-      <div className="max-w-4xl mx-auto" style={{ fontFamily: '"Inter", "system-ui", "-apple-system", "sans-serif"' }}>
+      <div className="max-w-4xl mx-auto" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}>
         {/* Tab Navigation */}
         <div className="flex flex-wrap gap-2 mb-6 bg-white p-2 rounded-2xl border-2 border-gray-100 shadow-sm">
           {tabs.map((tab) => (
@@ -253,10 +253,10 @@ export default function CampaignForm({
 
         <div className="bg-white rounded-3xl border-2 border-gray-100 p-8 shadow-sm">
           <div className="mb-8">
-            <h2 className="text-2xl font-black text-gray-900">
+            <h2 className="text-2xl font-bold text-gray-900">
               {editingCard ? "Refine Campaign" : "Draft New Campaign"}
             </h2>
-            <p className="text-gray-500 font-medium text-xs">Configure your fundraising parameters below.</p>
+            <p className="text-gray-500 font-bold text-xs">Configure your fundraising parameters below.</p>
           </div>
 
           <div className="space-y-8">
@@ -265,7 +265,7 @@ export default function CampaignForm({
                 {/* Campaign Source Selection */}
                 {!editingCard && (
                   <div>
-                    <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">
+                    <label className="block text-xs font-bold text-gray-500 uppercase mb-2">
                       Campaign Source <span className="text-red-500">*</span>
                     </label>
                     <div className="flex gap-3 mb-4">
@@ -427,7 +427,7 @@ export default function CampaignForm({
                 {/* Category & Badges */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Category</label>
+                    <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Category</label>
                     <select
                       value={formData.category}
                       onChange={(e) => setFormData({ ...formData, category: e.target.value })}
@@ -458,7 +458,7 @@ export default function CampaignForm({
             {activeTab === "story" && (
               <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
                 <div>
-                  <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">About the Campaign</label>
+                  <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Story/Description</label>
                   <textarea
                     rows={4}
                     value={formData.about}
@@ -470,7 +470,7 @@ export default function CampaignForm({
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {/* Graphics Section */}
                   <div className="space-y-4">
-                    <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Media Assets</label>
+                    <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Media Assets</label>
                     <div className="flex gap-2 p-1 bg-gray-100 rounded-lg">
                       <button type="button" onClick={() => setFormData(p => ({ ...p, mediaType: 'image' }))} className={`flex-1 py-1.5 rounded-md text-xs font-bold ${formData.mediaType === 'image' ? 'bg-white shadow-sm text-emerald-600' : 'text-gray-500'}`}>Images</button>
                       <button type="button" onClick={() => setFormData(p => ({ ...p, mediaType: 'video' }))} className={`flex-1 py-1.5 rounded-md text-xs font-bold ${formData.mediaType === 'video' ? 'bg-white shadow-sm text-emerald-600' : 'text-gray-500'}`}>Video</button>
@@ -502,7 +502,7 @@ export default function CampaignForm({
 
                   {/* External Links */}
                   <div className="space-y-4">
-                    <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Digital Footprint</label>
+                    <label className="block text-xs font-bold text-gray-400 uppercase mb-2">Digital Footprint</label>
                     <div className="grid grid-cols-2 gap-2">
                       {['instagram', 'youtube', 'facebook', 'twitter'].map(p => (
                         <input
@@ -516,7 +516,7 @@ export default function CampaignForm({
                       ))}
                     </div>
                     <div className="pt-2">
-                      <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Internal Status Feed</label>
+                      <label className="block text-xs font-bold text-gray-400 uppercase mb-2">Current Status Update</label>
                       <textarea value={formData.currentStatus} onChange={(e) => setFormData(p => ({ ...p, currentStatus: e.target.value }))} className="w-full p-3 bg-emerald-50/30 border border-emerald-100 rounded-xl text-xs font-medium focus:border-emerald-400 outline-none" rows={2} placeholder="Quick update..." />
                     </div>
                   </div>
@@ -528,7 +528,7 @@ export default function CampaignForm({
               <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-emerald-50/50 p-6 rounded-3xl border-2 border-emerald-100">
                   <div>
-                    <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Campaign Goal (₹)</label>
+                    <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Campaign Goal (₹)</label>
                     <input
                       type="number"
                       value={formData.requiredAmount}
@@ -537,7 +537,7 @@ export default function CampaignForm({
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Expiry Date</label>
+                    <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Expiry Date</label>
                     <input
                       type="date"
                       value={formData.deadline}
@@ -549,18 +549,18 @@ export default function CampaignForm({
 
                 <div className="bg-white p-6 rounded-3xl border-2 border-gray-100 space-y-6">
                   <div className="flex items-center justify-between border-b pb-4">
-                    <h3 className="text-lg font-black text-gray-900 flex items-center gap-2">
+                    <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
                       <Zap className="text-emerald-500" size={20} /> Matrix Configuration
                     </h3>
                   </div>
 
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <div>
-                      <label className="block text-[10px] font-bold text-gray-500 uppercase mb-2">Symbol</label>
+                      <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Symbol</label>
                       <input type="text" value={formData.unitConfig?.emoji} onChange={e => setFormData({ ...formData, unitConfig: { ...formData.unitConfig, emoji: e.target.value } })} className="w-full p-3 border-2 border-gray-100 rounded-xl text-center text-xl" />
                     </div>
                     <div className="col-span-1">
-                      <label className="block text-[10px] font-bold text-gray-500 uppercase mb-2">Unit Cost (₹)</label>
+                      <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Unit Cost (₹)</label>
                       <input
                         type="number"
                         value={formData.unitConfig?.unitCost}
@@ -579,7 +579,7 @@ export default function CampaignForm({
                       />
                     </div>
                     <div className="col-span-2">
-                      <label className="block text-[10px] font-bold text-gray-500 uppercase mb-2">Item Name (e.g. Kit)</label>
+                      <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Item Name (e.g. Kit)</label>
                       <input
                         type="text"
                         placeholder="Kit"
@@ -598,7 +598,7 @@ export default function CampaignForm({
 
                   {/* Automated Preset Preview */}
                   <div className="pt-4 border-t border-dashed">
-                    <label className="block text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-4">
+                    <label className="block text-xs font-bold text-emerald-600 uppercase mb-4">
                       Automatic Impact Presets
                     </label>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -612,7 +612,7 @@ export default function CampaignForm({
 
                         return (
                           <div key={i} className="p-4 bg-white border-2 border-emerald-100 rounded-2xl flex flex-col items-center justify-center text-center shadow-sm hover:border-emerald-300 transition-all">
-                            <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">
+                            <div className="text-xs font-bold text-gray-400 uppercase mb-2">
                               Qty Box {i + 1}
                             </div>
                             <div className="flex items-center gap-1 mb-1">
@@ -661,7 +661,7 @@ export default function CampaignForm({
             <button
               onClick={onSave}
               disabled={isSaving}
-              className={`px-10 py-4 rounded-2xl font-black uppercase tracking-widest text-sm shadow-xl transition-all ${isSaving ? "bg-emerald-300 cursor-not-allowed" : "bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-100"
+              className={`px-10 py-4 rounded-2xl font-bold uppercase tracking-widest text-sm shadow-xl transition-all ${isSaving ? "bg-emerald-300 cursor-not-allowed" : "bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-100"
                 }`}
             >
               {isSaving ? "Processing..." : "Deploy Campaign"}
