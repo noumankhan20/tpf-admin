@@ -552,6 +552,40 @@ export default function CampaignForm({
                     <h3 className="text-lg font-black text-gray-900 flex items-center gap-2">
                       <Zap className="text-emerald-500" size={20} /> Matrix Configuration
                     </h3>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const newPreset = { amount: 0, label: "", sublabel: "", qty: 1 };
+                          setFormData(prev => ({
+                            ...prev,
+                            unitConfig: {
+                              ...prev.unitConfig,
+                              presets: [...(prev.unitConfig?.presets || []), newPreset]
+                            }
+                          }));
+                        }}
+                        className="px-3 py-1.5 bg-emerald-50 text-emerald-600 text-[10px] font-bold uppercase tracking-widest rounded-lg border border-emerald-100 hover:bg-emerald-100 transition-colors"
+                      >
+                        + Unit Preset
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const newPreset = { amount: 50, label: "₹50", sublabel: "", qty: 0 };
+                          setFormData(prev => ({
+                            ...prev,
+                            unitConfig: {
+                              ...prev.unitConfig,
+                              presets: [...(prev.unitConfig?.presets || []), newPreset]
+                            }
+                          }));
+                        }}
+                        className="px-3 py-1.5 bg-gray-50 text-gray-600 text-[10px] font-bold uppercase tracking-widest rounded-lg border border-gray-100 hover:bg-gray-200 transition-colors"
+                      >
+                        + Fixed Preset
+                      </button>
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -635,6 +669,21 @@ export default function CampaignForm({
                             </div>
                           </>
                         )}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setFormData(prev => ({
+                              ...prev,
+                              unitConfig: {
+                                ...prev.unitConfig,
+                                presets: prev.unitConfig.presets.filter((_, idx) => idx !== i)
+                              }
+                            }));
+                          }}
+                          className="w-full pt-1 text-[8px] font-bold text-red-400 hover:text-red-600 uppercase text-center transition-colors"
+                        >
+                          Delete
+                        </button>
                       </div>
                     ))}
                   </div>

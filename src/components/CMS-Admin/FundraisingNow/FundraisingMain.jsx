@@ -213,12 +213,12 @@ export default function FundraisingCMS() {
       selectedVideoUrl: card.videoUrl || "",
       imageGallery: card.imageGallery || [],
       socialLinks: latestSocialLinks,
-      unitConfig: card.unitConfig || {
-        unitName: "",
-        unitNamePlural: "",
-        unitCost: 0,
-        emoji: "",
-        presets: [
+      unitConfig: {
+        unitName: card.unitConfig?.unitName || "Kit",
+        unitNamePlural: card.unitConfig?.unitNamePlural || "Kits",
+        unitCost: card.unitConfig?.unitCost || 1000,
+        emoji: card.unitConfig?.emoji || "📦",
+        presets: card.unitConfig?.presets?.length ? card.unitConfig.presets : [
           { amount: 50, label: "₹50", sublabel: "", qty: 0 },
           { amount: 100, label: "₹100", sublabel: "", qty: 0 },
           { amount: 0, label: "", sublabel: "", qty: 1 },
