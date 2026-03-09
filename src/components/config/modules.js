@@ -234,7 +234,6 @@ import {
   UserCheck,
   Building2,
   Briefcase,
-  Briefcase,
 } from "lucide-react";
 
 export const MODULES = [

@@ -63,14 +63,14 @@ import { Calendar as CalendarIcon } from 'lucide-react';
 
 const CATEGORIES = [
   { id: 'dashboard', name: 'Dashboard', icon: LayoutDashboard },
-  { id: 'monitoring', name: 'TPF Management', icon: Layers },
+  { id: 'tpf-management', name: 'TPF-Management', icon: Users },
+  { id: 'monitoring', name: 'Monitoring', icon: Layers },
   { id: 'work', name: 'Work', icon: FolderKanban },
   { id: 'resource', name: 'Resource Management', icon: Package },
   { id: 'hr', name: 'Human Resources', icon: Briefcase },
   { id: 'administration', name: 'Administration', icon: Settings },
   { id: 'legal', name: 'Legal & Records', icon: Scale },
   { id: 'communication', name: 'Communication', icon: MessageSquare },
-  { id: 'tpf-management', name: 'TPF-Management', icon: Users },
 ];
 
 
@@ -345,7 +345,7 @@ function BentoView({ categories, getModulesByCategory, isLoaded }) {
 
   const CAT_STYLES = {
     work: {
-      grid: "lg:col-span-2 lg:row-span-2",
+      grid: "lg:col-span-2",
       bg: "bg-gradient-to-br from-indigo-50 to-white",
       iconBg: "bg-indigo-600",
       accent: "text-indigo-600",
@@ -387,7 +387,7 @@ function BentoView({ categories, getModulesByCategory, isLoaded }) {
       border: "hover:border-slate-400"
     },
     communication: {
-      grid: "lg:col-span-2",
+      grid: "lg:col-span-2 ",
       bg: "bg-gradient-to-br from-blue-50 to-white",
       iconBg: "bg-blue-600",
       accent: "text-blue-600",
@@ -401,78 +401,78 @@ function BentoView({ categories, getModulesByCategory, isLoaded }) {
       border: "hover:border-green-400"
     },
     "tpf-management": {
-      grid: "lg:col-span-1",
+      grid: "lg:col-span-2 h-fit",
       bg: "bg-gradient-to-br from-teal-50 to-white",
       iconBg: "bg-teal-600",
       accent: "text-teal-600",
       border: "hover:border-teal-400"
-},
-};
+    },
+  };
 
-return (
-  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-    {categories.map((cat, idx) => {
-      const modules = getModulesByCategory(cat.id);
-      if (modules.length === 0) return null;
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      {categories.map((cat, idx) => {
+        const modules = getModulesByCategory(cat.id);
+        if (modules.length === 0) return null;
 
-      const style = CAT_STYLES[cat.id] || {
-        grid: "col-span-1",
-        bg: "bg-white",
-        iconBg: "bg-gray-600",
-        accent: "text-gray-600",
-        border: "hover:border-gray-400"
-      };
+        const style = CAT_STYLES[cat.id] || {
+          grid: "col-span-1",
+          bg: "bg-white",
+          iconBg: "bg-gray-600",
+          accent: "text-gray-600",
+          border: "hover:border-gray-400"
+        };
 
-      const Icon = cat.icon;
+        const Icon = cat.icon;
 
-      return (
-        <motion.div
-          key={cat.id}
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: idx * 0.05 }}
-          className={`group relative overflow-hidden rounded-3xl border border-gray-200 p-5 flex flex-col transition-all duration-300 shadow-sm ${style.grid} ${style.bg} ${style.border} hover:shadow-2xl hover:-translate-y-1`}
-        >
-          {/* Background Pattern */}
-          <div className="absolute top-0 right-0 p-4 opacity-[0.03] group-hover:opacity-[0.08] transition-opacity">
-            <Icon className="w-32 h-32 rotate-12" />
-          </div>
+        return (
+          <motion.div
+            key={cat.id}
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: idx * 0.05 }}
+            className={`group relative overflow-hidden rounded-3xl border border-gray-200 p-5 flex flex-col transition-all duration-300 shadow-sm ${style.grid} ${style.bg} ${style.border} hover:shadow-2xl hover:-translate-y-1`}
+          >
+            {/* Background Pattern */}
+            <div className="absolute top-0 right-0 p-4 opacity-[0.03] group-hover:opacity-[0.08] transition-opacity">
+              <Icon className="w-32 h-32 rotate-12" />
+            </div>
 
-          <div className="relative mb-2">
-            <div className="flex items-center justify-between mb-2">
-              <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg ${style.iconBg} text-white transition-transform group-hover:scale-110`}>
-                <Icon className="w-6 h-6" />
+            <div className="relative mb-2">
+              <div className="flex items-center justify-between mb-2">
+                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg ${style.iconBg} text-white transition-transform group-hover:scale-110`}>
+                  <Icon className="w-6 h-6" />
+                </div>
+                <span className="text-xs font-bold px-3 py-1 bg-white/60 backdrop-blur-sm rounded-full border border-gray-100 shadow-sm text-gray-500">
+                  {modules.length} Modules
+                </span>
               </div>
-              <span className="text-xs font-bold px-3 py-1 bg-white/60 backdrop-blur-sm rounded-full border border-gray-100 shadow-sm text-gray-500">
-                {modules.length} Modules
-              </span>
+
+
+              <h2 className="text-2xl font-bold text-gray-900">{cat.name}</h2>
             </div>
 
-
-            <h2 className="text-2xl font-bold text-gray-900">{cat.name}</h2>
-          </div>
-
-          <div className="relative">
-            <div className="grid grid-cols-1 gap-2">
-              {modules.map(m => (
-                <button
-                  key={m.id}
-                  onClick={(e) => { e.stopPropagation(); router.push(m.route); }}
-                  className="flex items-center space-x-3 py-2 px-3 bg-white/80 hover:bg-white rounded-xl border border-transparent hover:border-emerald-200 transition-all group/btn shadow-sm"
-                >
-                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${style.iconBg} text-white transition-colors`}>
-                    {m.icon ? <m.icon className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-                  </div>
-                  <span className="text-xs font-semibold text-gray-700 truncate">{m.name}</span>
-                </button>
-              ))}
+            <div className="relative">
+              <div className={`grid gap-2 ${cat.id === 'work' || cat.id === 'tpf-management' || cat.id === 'communication' ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-1'}`}>
+                {modules.map(m => (
+                  <button
+                    key={m.id}
+                    onClick={(e) => { e.stopPropagation(); router.push(m.route); }}
+                    className="flex items-center space-x-3 py-2 px-3 bg-white/80 hover:bg-white rounded-xl border border-transparent hover:border-emerald-200 transition-all group/btn shadow-sm"
+                  >
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${style.iconBg} text-white transition-colors`}>
+                      {m.icon ? <m.icon className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                    </div>
+                    <span className="text-xs font-semibold text-gray-700 truncate">{m.name}</span>
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
-        </motion.div>
-      );
-    })}
-  </div>
-);
+          </motion.div>
+        );
+      })}
+    </div>
+  );
 }
 
 function CardView({ modules, isLoaded }) {
