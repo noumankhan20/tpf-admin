@@ -230,6 +230,7 @@ import {
   Scale,
   Download,
   MessageSquare,
+  Briefcase,
 } from "lucide-react";
 
 export const MODULES = [
@@ -347,11 +348,26 @@ export const MODULES = [
   {
     id: "Career & Job Opportunites",
     name: "Career & Job Opportunites",
-    icon: Calculator,
+    icon: Briefcase,
     route: "/career-opportunities",
-    category: "resource",
+    category: "hr",
     desc: "Manage career and job opportunities",
-
+  },
+  {
+    id: "Employee Management",
+    name: "Employee Management",
+    icon: Briefcase,
+    route: "/tpf-management/employee-management",
+    category: "hr",
+    desc: "Manage employee records and payroll",
+  },
+  {
+    id: "Volunteer Management",
+    name: "Volunteer Management",
+    icon: Users,
+    route: "/tpf-management/volunteers",
+    category: "hr",
+    desc: "Manage volunteer profiles and tasks",
   },
 
   // ===============================
@@ -408,7 +424,7 @@ export const MODULES = [
     name: "Tickets & Queries",
     icon: MessageSquare,
     route: "/tickets-queries",
-    category: "administration",
+    category: "communication",
     desc: "Respond to user tickets and support queries",
   },
   {

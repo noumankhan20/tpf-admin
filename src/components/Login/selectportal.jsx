@@ -39,6 +39,7 @@ import {
   LayoutDashboard,
   MessageSquare,
   Zap,
+  Briefcase,
 } from 'lucide-react';
 import LoginNotificationModal from '../Common/LoginNotificationModal';
 import NotificationDropdown from '../Admin/Communication/NotificationDropdown';
@@ -62,9 +63,10 @@ import { Calendar as CalendarIcon } from 'lucide-react';
 
 const CATEGORIES = [
   { id: 'dashboard', name: 'Dashboard', icon: LayoutDashboard },
+  { id: 'monitoring', name: 'TPF Management', icon: Layers },
   { id: 'work', name: 'Work', icon: FolderKanban },
   { id: 'resource', name: 'Resource Management', icon: Package },
-  { id: 'monitoring', name: 'Monitoring', icon: Layers },
+  { id: 'hr', name: 'Human Resources', icon: Briefcase },
   { id: 'administration', name: 'Administration', icon: Settings },
   { id: 'legal', name: 'Legal & Records', icon: Scale },
   { id: 'communication', name: 'Communication', icon: MessageSquare },
@@ -389,6 +391,13 @@ function BentoView({ categories, getModulesByCategory, isLoaded }) {
       iconBg: "bg-blue-600",
       accent: "text-blue-600",
       border: "hover:border-blue-400"
+    },
+    hr: {
+      grid: "lg:col-span-1",
+      bg: "bg-gradient-to-br from-green-50 to-white",
+      iconBg: "bg-green-600",
+      accent: "text-green-600",
+      border: "hover:border-green-400"
     }
   };
 
