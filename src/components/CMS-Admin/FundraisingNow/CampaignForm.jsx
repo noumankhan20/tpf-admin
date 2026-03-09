@@ -233,7 +233,7 @@ export default function CampaignForm({
 
   return (
     <>
-      <div className="max-w-4xl mx-auto" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}>
+      <div className="max-w-4xl mx-auto antialiased text-gray-900" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}>
         {/* Tab Navigation */}
         <div className="flex flex-wrap gap-2 mb-6 bg-white p-2 rounded-2xl border-2 border-gray-100 shadow-sm">
           {tabs.map((tab) => (
@@ -256,7 +256,7 @@ export default function CampaignForm({
             <h2 className="text-2xl font-bold text-gray-900">
               {editingCard ? "Refine Campaign" : "Draft New Campaign"}
             </h2>
-            <p className="text-gray-500 font-bold text-xs">Configure your fundraising parameters below.</p>
+            <p className="text-gray-500 font-bold text-xs uppercase tracking-tight">Configure your fundraising parameters below.</p>
           </div>
 
           <div className="space-y-8">
@@ -444,7 +444,9 @@ export default function CampaignForm({
                         key={key}
                         type="button"
                         onClick={() => setFormData({ ...formData, [key]: !formData[key] })}
-                        className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border-2 transition-all ${formData[key] ? "bg-emerald-50 border-emerald-500 text-emerald-700" : "bg-gray-50 border-gray-200 text-gray-400"
+                        className={`px-4 py-1.5 rounded-full text-[10px] font-bold uppercase border-2 transition-all ${formData[key]
+                          ? 'bg-emerald-50 border-emerald-500 text-emerald-700 shadow-sm'
+                          : 'bg-white border-gray-100 text-gray-400 opacity-60'
                           }`}
                       >
                         {key.replace(/([A-Z])/g, ' $1')}
@@ -605,39 +607,57 @@ export default function CampaignForm({
                       {(formData.unitConfig?.presets?.length === 4 ? formData.unitConfig.presets : [1, 10, 100, 1000].map(q => ({ qty: q }))).map((preset, i) => {
                         const qty = preset.qty || 0;
                         const cost = formData.unitConfig?.unitCost || 0;
-                        const total = qty * cost;
+                        const total = preset.amount !== undefined ? preset.amount : (qty * cost);
                         const rawName = formData.unitConfig?.itemName || formData.unitConfig?.unitName || 'Unit';
                         const name = qty === 1 ? rawName : `${rawName}s`;
-                        const label = `${qty} ${name}`;
 
                         return (
                           <div key={i} className="p-4 bg-white border-2 border-emerald-100 rounded-2xl flex flex-col items-center justify-center text-center shadow-sm hover:border-emerald-300 transition-all">
-                            <div className="text-xs font-bold text-gray-400 uppercase mb-2">
-                              Qty Box {i + 1}
+                            <div className="text-xs font-bold text-gray-400 uppercase mb-3">
+                              Box {i + 1}
                             </div>
-                            <div className="flex items-center gap-1 mb-1">
-                              <input
-                                type="number"
-                                value={qty}
-                                onChange={e => {
-                                  const val = parseInt(e.target.value) || 0;
-                                  setFormData(prev => {
-                                    const currentPresets = prev.unitConfig?.presets?.length === 4 ? [...prev.unitConfig.presets] : [1, 10, 100, 1000].map(q => ({ qty: q }));
-                                    currentPresets[i] = { ...currentPresets[i], qty: val, amount: val * (prev.unitConfig?.unitCost || 0) };
-                                    return {
-                                      ...prev,
-                                      unitConfig: { ...prev.unitConfig, presets: currentPresets }
-                                    };
-                                  });
-                                }}
-                                className="w-16 p-1 text-center bg-gray-50 border border-gray-200 rounded-lg text-sm font-black focus:border-emerald-500 outline-none"
-                              />
+                            <div className="flex flex-col gap-2 w-full text-left">
+                              <div>
+                                <label className="text-[8px] font-bold text-gray-400 block uppercase mb-1">Quantity</label>
+                                <input
+                                  type="number"
+                                  value={qty}
+                                  onChange={e => {
+                                    const val = parseInt(e.target.value) || 0;
+                                    setFormData(prev => {
+                                      const currentPresets = prev.unitConfig?.presets?.length === 4 ? [...prev.unitConfig.presets] : [1, 10, 100, 1000].map(q => ({ qty: q }));
+                                      currentPresets[i] = { ...currentPresets[i], qty: val, amount: val * (prev.unitConfig?.unitCost || 0) };
+                                      return {
+                                        ...prev,
+                                        unitConfig: { ...prev.unitConfig, presets: currentPresets }
+                                      };
+                                    });
+                                  }}
+                                  className="w-full p-2 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold focus:border-emerald-500 outline-none"
+                                />
+                              </div>
+                              <div>
+                                <label className="text-[8px] font-bold text-gray-400 block uppercase mb-1">Amount (₹)</label>
+                                <input
+                                  type="number"
+                                  value={total}
+                                  onChange={e => {
+                                    const val = parseInt(e.target.value) || 0;
+                                    setFormData(prev => {
+                                      const currentPresets = prev.unitConfig?.presets?.length === 4 ? [...prev.unitConfig.presets] : [1, 10, 100, 1000].map(q => ({ qty: q }));
+                                      currentPresets[i] = { ...currentPresets[i], amount: val };
+                                      return {
+                                        ...prev,
+                                        unitConfig: { ...prev.unitConfig, presets: currentPresets }
+                                      };
+                                    });
+                                  }}
+                                  className="w-full p-2 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-emerald-600 focus:border-emerald-500 outline-none"
+                                />
+                              </div>
                             </div>
-                            <div className="text-[10px] font-bold text-gray-600 mb-1 truncate w-full px-1">
-                              {name}
-                            </div>
-                            <div className="text-xs font-black text-emerald-600">
-                              ₹{total.toLocaleString()}
+                            <div className="mt-3 text-[10px] font-bold text-gray-500 truncate w-full">
+                              {qty} {name}
                             </div>
                           </div>
                         );
@@ -661,7 +681,7 @@ export default function CampaignForm({
             <button
               onClick={onSave}
               disabled={isSaving}
-              className={`px-10 py-4 rounded-2xl font-bold uppercase tracking-widest text-sm shadow-xl transition-all ${isSaving ? "bg-emerald-300 cursor-not-allowed" : "bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-100"
+              className={`px-10 py-4 rounded-2xl font-bold uppercase text-sm shadow-xl transition-all ${isSaving ? "bg-emerald-300 cursor-not-allowed" : "bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-100"
                 }`}
             >
               {isSaving ? "Processing..." : "Deploy Campaign"}
