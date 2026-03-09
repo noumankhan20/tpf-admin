@@ -9,6 +9,13 @@ import {
   Trash2,
   ImagePlus,
   Star,
+  Settings,
+  Layout,
+  Trophy,
+  History,
+  Hash,
+  Smile,
+  Zap,
 } from 'lucide-react';
 import { getMediaUrl } from '@/utils/media';
 import MediaSelectorModal from './MediaSelectorModal';
@@ -28,6 +35,13 @@ export default function CampaignForm({
   isSaving,
 }) {
   const [showMediaModal, setShowMediaModal] = useState(false);
+  const [activeTab, setActiveTab] = useState("basic");
+
+  const tabs = [
+    { id: "basic", label: "Basic Info", icon: <Layout size={18} /> },
+    { id: "story", label: "Story & Media", icon: <ImageIcon size={18} /> },
+    { id: "donation", label: "Donation Config", icon: <Settings size={18} /> },
+  ];
 
   const handleCampaignSelect = (campaignId) => {
     const campaign = readyCampaigns.find(c => c._id === campaignId);
@@ -62,6 +76,7 @@ export default function CampaignForm({
       currentStatus: campaign.currentStatus || "",
       imageGallery: campaign.imageGallery || [],
       images: [],
+      unitConfig: campaign.unitConfig || prev.unitConfig,
     }));
   };
 
@@ -218,676 +233,386 @@ export default function CampaignForm({
 
   return (
     <>
-      <div className="grid lg:grid-cols-2 gap-8">
-        {/* Form Section */}
-        <div className="space-y-6">
-          <div className="bg-white rounded-xl border-2 border-gray-200 p-6">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">
-              {editingCard ? "Edit Campaign" : "Create New Campaign"}
-            </h2>
+      <div className="max-w-4xl mx-auto">
+        {/* Tab Navigation */}
+        <div className="flex flex-wrap gap-2 mb-6 bg-white p-2 rounded-2xl border-2 border-gray-100 shadow-sm">
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-bold transition-all ${activeTab === tab.id
+                ? "bg-emerald-600 text-white shadow-lg shadow-emerald-200"
+                : "text-gray-500 hover:bg-gray-50"
+                }`}
+            >
+              {tab.icon}
+              <span className="hidden sm:inline">{tab.label}</span>
+            </button>
+          ))}
+        </div>
 
-            <div className="space-y-6">
-              {/* Campaign Source Selection */}
-              {!editingCard && (
-                <div>
-                  <label className="block text-sm font-semibold text-gray-900 mb-2">
-                    Campaign Source <span className="text-red-500">*</span>
-                  </label>
-                  <div className="flex gap-3 mb-4">
-                    <button
-                      type="button"
-                      onClick={() => setFormData(prev => ({ ...prev, source: "INTERNAL", permanentType: "Other" }))}
-                      className={`flex-1 py-3 rounded-lg font-semibold transition-all ${formData.source !== "FOUNDATION"
-                        ? "bg-emerald-600 text-white"
-                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                        }`}
-                    >
-                      Public Campaign
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
+        <div className="bg-white rounded-3xl border-2 border-gray-100 p-8 shadow-sm">
+          <div className="mb-8">
+            <h2 className="text-2xl font-black text-gray-900">
+              {editingCard ? "Refine Campaign" : "Draft New Campaign"}
+            </h2>
+            <p className="text-gray-500 font-medium text-xs">Configure your fundraising parameters below.</p>
+          </div>
+
+          <div className="space-y-8">
+            {activeTab === "basic" && (
+              <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                {/* Campaign Source Selection */}
+                {!editingCard && (
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">
+                      Campaign Source <span className="text-red-500">*</span>
+                    </label>
+                    <div className="flex gap-3 mb-4">
+                      <button
+                        type="button"
+                        onClick={() => setFormData(prev => ({ ...prev, source: "INTERNAL", permanentType: "Other" }))}
+                        className={`flex-1 py-3 rounded-lg font-semibold transition-all ${formData.source !== "FOUNDATION"
+                          ? "bg-emerald-600 text-white"
+                          : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                          }`}
+                      >
+                        Public Campaign
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setFormData(prev => ({
+                            ...prev,
+                            source: "FOUNDATION",
+                            organization: "True Path Foundation",
+                            campaignerName: "True Path Foundation",
+                            beneficiaryName: "Multiple Beneficiaries",
+                            permanentType: "Zakat Campaign",
+                            allowedDonationTypes: ["Zakat"],
+                            zakatVerified: true,
+                            ribaEligible: false,
+                          }));
+                        }}
+                        className={`flex-1 py-3 rounded-lg font-semibold transition-all ${formData.source === "FOUNDATION"
+                          ? "bg-emerald-600 text-white"
+                          : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                          }`}
+                      >
+                        Foundation (Permanent)
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Permanent Campaign Type Selection (Only for Foundation) */}
+                {formData.source === "FOUNDATION" && (
+                  <div className="p-4 bg-emerald-50 rounded-xl border-2 border-emerald-100 mb-6">
+                    <label className="block text-sm font-bold text-emerald-800 mb-2">
+                      Permanent Campaign Type
+                    </label>
+                    <select
+                      value={formData.permanentType}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        let allowed = [];
+                        let zakat = false;
+                        let riba = false;
+                        if (val === "Zakat Campaign") {
+                          allowed = ["Zakat"];
+                          zakat = true;
+                        } else if (val === "Bank Interest (Riba)") {
+                          allowed = ["Riba"];
+                          riba = true;
+                        } else if (val === "Emergency Funds") {
+                          allowed = ["Sadaqah", "Lillah", "Riba", "Imdad"];
+                          ribaEligible = true;
+                        }
+
                         setFormData(prev => ({
                           ...prev,
-                          source: "FOUNDATION",
-                          organization: "True Path Foundation",
-                          campaignerName: "True Path Foundation",
-                          beneficiaryName: "Multiple Beneficiaries",
-                          permanentType: "Zakat Campaign",
-                          allowedDonationTypes: ["Zakat"],
-                          zakatVerified: true,
-                          ribaEligible: false,
+                          permanentType: val,
+                          allowedDonationTypes: allowed,
+                          zakatVerified: zakat,
+                          ribaEligible: riba,
+                          title: val,
                         }));
                       }}
-                      className={`flex-1 py-3 rounded-lg font-semibold transition-all ${formData.source === "FOUNDATION"
-                        ? "bg-emerald-600 text-white"
-                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                        }`}
+                      className="w-full px-4 py-2 bg-white border-2 border-emerald-200 rounded-lg focus:border-emerald-500 outline-none font-semibold text-emerald-900"
                     >
-                      Foundation (Permanent)
-                    </button>
+                      <option value="Zakat Campaign">Zakat Campaign</option>
+                      <option value="Bank Interest (Riba)">Bank Interest (Riba)</option>
+                      <option value="Emergency Funds">Emergency Funds</option>
+                    </select>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {formData.allowedDonationTypes.map(type => (
+                        <span key={type} className="px-2 py-1 bg-emerald-100 text-emerald-700 rounded-md text-xs font-bold uppercase">
+                          Accepts: {type}
+                        </span>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
 
-              {/* Permanent Campaign Type Selection (Only for Foundation) */}
-              {formData.source === "FOUNDATION" && (
-                <div className="p-4 bg-emerald-50 rounded-xl border-2 border-emerald-100 mb-6">
-                  <label className="block text-sm font-bold text-emerald-800 mb-2">
-                    Permanent Campaign Type
-                  </label>
-                  <select
-                    value={formData.permanentType}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      let allowed = [];
-                      let zakat = false;
-                      let riba = false;
-                      if (val === "Zakat Campaign") {
-                        allowed = ["Zakat"];
-                        zakat = true;
-                      } else if (val === "Bank Interest (Riba)") {
-                        allowed = ["Riba"];
-                        riba = true;
-                      } else if (val === "Emergency Funds") {
-                        allowed = ["Sadaqah", "Lillah", "Riba", "Imdad"];
-                        ribaEligible = true;
-                      }
-
-                      setFormData(prev => ({
-                        ...prev,
-                        permanentType: val,
-                        allowedDonationTypes: allowed,
-                        zakatVerified: zakat,
-                        ribaEligible: riba,
-                        title: val,
-                      }));
-                    }}
-                    className="w-full px-4 py-2 bg-white border-2 border-emerald-200 rounded-lg focus:border-emerald-500 outline-none font-semibold text-emerald-900"
-                  >
-                    <option value="Zakat Campaign">Zakat Campaign</option>
-                    <option value="Bank Interest (Riba)">Bank Interest (Riba)</option>
-                    <option value="Emergency Funds">Emergency Funds</option>
-                  </select>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {formData.allowedDonationTypes.map(type => (
-                      <span key={type} className="px-2 py-1 bg-emerald-100 text-emerald-700 rounded-md text-xs font-bold uppercase">
-                        Accepts: {type}
-                      </span>
-                    ))}
+                {/* Campaign Selector */}
+                {!editingCard && formData.source !== "FOUNDATION" && (
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-900 mb-2">
+                      Select Existing Campaign <span className="text-red-500">(optional for inhouse campaigns)</span>
+                    </label>
+                    <select
+                      value={formData.campaignId}
+                      onChange={(e) => handleCampaignSelect(e.target.value)}
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 outline-none transition-all font-sans"
+                    >
+                      <option value="">Select a campaign...</option>
+                      {readyCampaigns.map((c) => (
+                        <option key={c._id} value={c._id}>
+                          {c.title} ({c.beneficiaryName})
+                        </option>
+                      ))}
+                    </select>
+                    <p className="mt-2 text-xs text-gray-600">
+                      • Select a campaign if it came via photography/workflow
+                    </p>
+                    <p className="mt-2 text-xs text-gray-600">
+                      • Leave empty to create an in-house campaign
+                    </p>
                   </div>
-                </div>
-              )}
+                )}
 
-              {/* Campaign Selector */}
-              {!editingCard && formData.source !== "FOUNDATION" && (
+                {/* Title */}
                 <div>
-                  <label className="block text-sm font-semibold text-gray-900 mb-2">
-                    Select Existing Campaign <span className="text-red-500">(optional for inhouse campaigns)</span>
+                  <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">
+                    Campaign Title <span className="text-red-500">*</span>
                   </label>
-                  <select
-                    value={formData.campaignId}
-                    onChange={(e) => handleCampaignSelect(e.target.value)}
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 outline-none transition-all font-sans"
-                  >
-                    <option value="">Select a campaign...</option>
-                    {readyCampaigns.map((c) => (
-                      <option key={c._id} value={c._id}>
-                        {c.title} ({c.beneficiaryName})
-                      </option>
-                    ))}
-                  </select>
-                  <p className="mt-2 text-xs text-gray-600">
-                    • Select a campaign if it came via photography/workflow
-                  </p>
-                  <p className="mt-2 text-xs text-gray-600">
-                    • Leave empty to create an in-house campaign
-                  </p>
+                  <input
+                    type="text"
+                    value={formData.title}
+                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                    placeholder="Enter campaign title..."
+                    disabled={formData.source === "FOUNDATION"}
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 outline-none transition-all disabled:bg-gray-50 font-medium"
+                  />
                 </div>
-              )}
 
-              {/* Media Type Selection */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-900 mb-2">
-                  Media Type <span className="text-red-500">*</span>
-                </label>
-                <div className="flex gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setFormData(prev => ({ ...prev, mediaType: "image" }))}
-                    className={`flex-1 py-3 rounded-lg font-semibold transition-all ${formData.mediaType === "image"
-                      ? "bg-emerald-600 text-white"
-                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                      }`}
-                  >
-                    <ImageIcon size={20} className="inline mr-2" />
-                    Images
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setFormData(prev => ({ ...prev, mediaType: "video" }))}
-                    className={`flex-1 py-3 rounded-lg font-semibold transition-all ${formData.mediaType === "video"
-                      ? "bg-emerald-600 text-white"
-                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                      }`}
-                  >
-                    <Play size={20} className="inline mr-2" />
-                    Video
-                  </button>
+                {/* Organization */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">
+                      Organization Name <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.organization}
+                      onChange={(e) => setFormData({ ...formData, organization: e.target.value })}
+                      placeholder="Organization..."
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-emerald-500 outline-none transition-all"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">
+                      Campaigner Name
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.campaignerName}
+                      onChange={(e) => setFormData({ ...formData, campaignerName: e.target.value })}
+                      placeholder="Name..."
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-emerald-500 outline-none transition-all"
+                    />
+                  </div>
+                </div>
+
+                {/* Category & Badges */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Category</label>
+                    <select
+                      value={formData.category}
+                      onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-emerald-500 outline-none"
+                    >
+                      {categories.map((cat) => (
+                        <option key={cat} value={cat}>{cat}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="flex flex-wrap gap-2 pt-8">
+                    {['isUrgent', 'taxBenefits', 'zakatVerified', 'ribaEligible'].map(key => (
+                      <button
+                        key={key}
+                        type="button"
+                        onClick={() => setFormData({ ...formData, [key]: !formData[key] })}
+                        className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border-2 transition-all ${formData[key] ? "bg-emerald-50 border-emerald-500 text-emerald-700" : "bg-gray-50 border-gray-200 text-gray-400"
+                          }`}
+                      >
+                        {key.replace(/([A-Z])/g, ' $1')}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
+            )}
 
-              {/* Media Upload */}
-              {formData.mediaType === "image" ? (
+            {activeTab === "story" && (
+              <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
                 <div>
-                  <label className="block text-sm font-semibold text-gray-900 mb-2">
-                    Campaign Images <span className="text-red-500">*</span>
-                  </label>
+                  <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">About the Campaign</label>
+                  <textarea
+                    rows={4}
+                    value={formData.about}
+                    onChange={(e) => setFormData({ ...formData, about: e.target.value })}
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-emerald-500 outline-none resize-none"
+                  />
+                </div>
 
-                  <div className="space-y-3">
-                    {/* Upload Button */}
-                    <label className="border-2 border-dashed border-gray-300 rounded-lg p-6 block text-center cursor-pointer hover:border-emerald-500 hover:bg-emerald-50 transition-all">
-                      <input
-                        type="file"
-                        multiple
-                        accept="image/*"
-                        className="hidden"
-                        onChange={handleMultipleImageUpload}
-                      />
-                      <Upload size={32} className="mx-auto text-gray-400 mb-2" />
-                      <p className="text-sm font-medium text-gray-900">Upload Images</p>
-                      <p className="text-xs text-gray-600">Select multiple images</p>
-                    </label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Graphics Section */}
+                  <div className="space-y-4">
+                    <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Media Assets</label>
+                    <div className="flex gap-2 p-1 bg-gray-100 rounded-lg">
+                      <button type="button" onClick={() => setFormData(p => ({ ...p, mediaType: 'image' }))} className={`flex-1 py-1.5 rounded-md text-xs font-bold ${formData.mediaType === 'image' ? 'bg-white shadow-sm text-emerald-600' : 'text-gray-500'}`}>Images</button>
+                      <button type="button" onClick={() => setFormData(p => ({ ...p, mediaType: 'video' }))} className={`flex-1 py-1.5 rounded-md text-xs font-bold ${formData.mediaType === 'video' ? 'bg-white shadow-sm text-emerald-600' : 'text-gray-500'}`}>Video</button>
+                    </div>
 
-                    {/* Select from Photography */}
-                    <button
-                      type="button"
-                      onClick={() => setShowMediaModal(true)}
-                      className="w-full border-2 border-gray-300 rounded-lg p-4 hover:border-emerald-500 hover:bg-emerald-50 transition-all"
-                    >
-                      <ImagePlus size={32} className="mx-auto text-gray-400 mb-2" />
-                      <p className="text-sm font-medium text-gray-900">Select from Photography Team</p>
-                    </button>
-
-                    {/* Image Gallery */}
-                    {allImages.length > 0 && (
-                      <div className="grid grid-cols-2 gap-3">
-                        {allImages.map((img) => {
-                          const displayUrl = img.isFromGallery ? getImageUrl(img.url, true) : img.url;
-                          const isPrimary = formData.imagePreview === (img.isFromGallery ? getImageUrl(img.url, true) : img.url) ||
-                            formData.selectedImageUrl === img.url;
-
-                          return (
-                            <div key={`${img.isFromGallery}-${img.index}`} className="relative group">
-                              <img
-                                src={displayUrl}
-                                className={`w-full h-32 object-cover rounded-lg border-2 ${isPrimary ? "border-emerald-500" : "border-gray-200"
-                                  }`}
-                                alt="Campaign"
-                              />
-                              {isPrimary && (
-                                <div className="absolute top-2 left-2 bg-emerald-500 text-white px-2 py-1 rounded text-xs font-semibold flex items-center gap-1">
-                                  <Star size={12} fill="white" />
-                                  Primary
-                                </div>
-                              )}
-                              <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center gap-2">
-                                {!isPrimary && (
-                                  <button
-                                    type="button"
-                                    onClick={() => setPrimaryImage(img.isFromGallery ? img.url : displayUrl, img.isFromGallery)}
-                                    className="bg-white text-gray-900 px-3 py-1.5 rounded text-xs font-semibold hover:bg-emerald-500 hover:text-white transition-colors"
-                                  >
-                                    Set Primary
-                                  </button>
-                                )}
-                                <button
-                                  type="button"
-                                  onClick={() => removeImage(img.index, img.isFromGallery)}
-                                  className="bg-red-500 text-white p-1.5 rounded hover:bg-red-600 transition-colors"
-                                >
-                                  <Trash2 size={14} />
-                                </button>
-                              </div>
-                            </div>
-                          );
-                        })}
+                    {formData.mediaType === 'image' ? (
+                      <div className="grid grid-cols-3 gap-2">
+                        {allImages.map((img, i) => (
+                          <div key={i} className="aspect-square relative group">
+                            <img src={img.isFromGallery ? getImageUrl(img.url, true) : img.url} className={`w-full h-full object-cover rounded-lg border-2 ${formData.selectedImageUrl === img.url ? 'border-emerald-500' : 'border-transparent'}`} />
+                            <button onClick={() => removeImage(img.index, img.isFromGallery)} className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-md opacity-0 group-hover:opacity-100 transition-opacity"><Trash2 size={10} /></button>
+                          </div>
+                        ))}
+                        <button onClick={() => setShowMediaModal(true)} className="aspect-square border-2 border-dashed border-gray-200 rounded-lg flex items-center justify-center text-gray-400 hover:border-emerald-500 hover:text-emerald-500 transition-all"><ImagePlus size={20} /></button>
+                      </div>
+                    ) : (
+                      <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+                        {formData.videoPreview ? (
+                          <div className="relative aspect-video rounded-lg overflow-hidden">
+                            <video src={getImageUrl(formData.videoPreview, formData.isExistingVideo)} className="w-full h-full object-cover" />
+                            <button onClick={() => setFormData(p => ({ ...p, video: null, videoPreview: null }))} className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-lg"><Trash2 size={14} /></button>
+                          </div>
+                        ) : (
+                          <button onClick={() => setShowMediaModal(true)} className="w-full py-8 border-2 border-dashed border-gray-200 rounded-lg text-gray-400 font-bold text-xs uppercase underline">Link Video Resource</button>
+                        )}
                       </div>
                     )}
                   </div>
-                </div>
-              ) : (
-                <div>
-                  <label className="block text-sm font-semibold text-gray-900 mb-2">
-                    Campaign Video <span className="text-red-500">*</span>
-                  </label>
 
-                  {formData.videoPreview ? (
-                    <div className="relative rounded-lg overflow-hidden border-2 border-gray-200">
-                      <video
-                        src={getImageUrl(formData.videoPreview, formData.isExistingVideo)}
-                        className="w-full h-48 object-cover"
-                        controls
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setFormData(prev => ({ ...prev, video: null, videoPreview: null, selectedVideoUrl: "" }))}
-                        className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-lg hover:bg-red-600 transition-colors"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      <label className="border-2 border-dashed border-gray-300 rounded-lg p-6 block text-center cursor-pointer hover:border-emerald-500 hover:bg-emerald-50 transition-all">
+                  {/* External Links */}
+                  <div className="space-y-4">
+                    <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Digital Footprint</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {['instagram', 'youtube', 'facebook', 'twitter'].map(p => (
                         <input
-                          type="file"
-                          accept="video/*"
-                          className="hidden"
-                          onChange={handleVideoUpload}
+                          key={p}
+                          type="url"
+                          placeholder={p}
+                          value={formData.socialLinks?.[p] || ""}
+                          onChange={(e) => setFormData(prev => ({ ...prev, socialLinks: { ...prev.socialLinks, [p]: e.target.value } }))}
+                          className="px-3 py-2 border border-gray-200 rounded-lg text-xs focus:border-emerald-500 outline-none"
                         />
-                        <Upload size={32} className="mx-auto text-gray-400 mb-2" />
-                        <p className="text-sm font-medium text-gray-900">Upload Video</p>
-                        <p className="text-xs text-gray-600">MP4, MOV, etc.</p>
-                      </label>
-
-                      <button
-                        type="button"
-                        onClick={() => setShowMediaModal(true)}
-                        className="w-full border-2 border-gray-300 rounded-lg p-4 hover:border-emerald-500 hover:bg-emerald-50 transition-all"
-                      >
-                        <Play size={32} className="mx-auto text-gray-400 mb-2" />
-                        <p className="text-sm font-medium text-gray-900">Select from Photography Team</p>
-                      </button>
+                      ))}
                     </div>
-                  )}
-                </div>
-              )}
-
-              {/* Category */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-900 mb-2">
-                  Category <span className="text-red-500">*</span>
-                </label>
-                <select
-                  value={formData.category}
-                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 outline-none transition-all"
-                >
-                  {categories.map((cat) => (
-                    <option key={cat} value={cat}>{cat}</option>
-                  ))}
-                </select>
-                {/* 🆕 OTHER CATEGORY INPUT */}
-                {formData.category === "Other" && (
-                  <input
-                    type="text"
-                    placeholder="Please specify category..."
-                    value={formData.customCategory}
-                    onChange={(e) =>
-                      setFormData({ ...formData, customCategory: e.target.value })
-                    }
-                    className="mt-3 w-full px-4 py-3 border-2 border-gray-200 rounded-lg
-                 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100
-                 outline-none transition-all"
-                  />
-                )}
-              </div>
-
-              {/* Badges */}
-              {formData.source !== "FOUNDATION" && (
-                <div>
-                  <label className="block text-sm font-semibold text-gray-900 mb-3">
-                    Campaign Badges
-                  </label>
-                  <div className="space-y-3">
-                    {[
-                      { key: 'isUrgent', label: 'Mark as Urgent' },
-                      { key: 'taxBenefits', label: 'Tax Benefits Available' },
-                      { key: 'zakatVerified', label: 'Zakat Verified' },
-                      { key: 'ribaEligible', label: 'Riba Eligible' },
-                    ].map(({ key, label }) => (
-                      <label key={key} className="flex items-center gap-3 cursor-pointer group">
-                        <input
-                          type="checkbox"
-                          checked={formData[key]}
-                          onChange={(e) => setFormData({ ...formData, [key]: e.target.checked })}
-                          className="w-5 h-5 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
-                        />
-                        <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900 transition-colors">
-                          {label}
-                        </span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Title */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-900 mb-2">
-                  Campaign Title <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  placeholder="Enter campaign title..."
-                  disabled={formData.source === "FOUNDATION"}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 outline-none transition-all disabled:bg-gray-50"
-                />
-              </div>
-
-              {/* Organization */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-900 mb-2">
-                  Organization Name <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={formData.organization}
-                  onChange={(e) => setFormData({ ...formData, organization: e.target.value })}
-                  placeholder="Enter organization name..."
-                  disabled={formData.source === "FOUNDATION"}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 outline-none transition-all disabled:bg-gray-50"
-                />
-              </div>
-
-              {/* Beneficiary Name */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-900 mb-2">
-                  Beneficiary Name
-                </label>
-                <input
-                  type="text"
-                  value={formData.beneficiaryName}
-                  onChange={(e) => setFormData({ ...formData, beneficiaryName: e.target.value })}
-                  placeholder="Enter beneficiary name..."
-                  disabled={formData.source === "FOUNDATION"}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 outline-none transition-all disabled:bg-gray-50"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-900 mb-2">
-                  Campaigner Name
-                </label>
-                <input
-                  type="text"
-                  value={formData.campaignerName}
-                  onChange={(e) => setFormData({ ...formData, campaignerName: e.target.value })}
-                  placeholder="Enter campaigner name..."
-                  disabled={formData.source === "FOUNDATION"}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 outline-none transition-all disabled:bg-gray-50"
-                />
-              </div>
-
-              {/* About Campaign */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-900 mb-2">
-                  About Campaign
-                </label>
-                <textarea
-                  rows={5}
-                  value={formData.about}
-                  onChange={(e) => setFormData({ ...formData, about: e.target.value })}
-                  placeholder="Describe the campaign in detail..."
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 outline-none transition-all resize-none"
-                />
-              </div>
-
-              {/* Current Status */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-900 mb-2">
-                  Current Status
-                </label>
-                <textarea
-                  rows={3}
-                  value={formData.currentStatus}
-                  onChange={(e) => setFormData({ ...formData, currentStatus: e.target.value })}
-                  placeholder="Describe the current status of the campaign..."
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 outline-none transition-all resize-none"
-                />
-              </div>
-
-              {/* Impact Goals */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-900 mb-2">
-                  Impact Goals
-                </label>
-                <div className="space-y-3">
-                  {formData.impactGoals.map((goal, index) => (
-                    <div key={index} className="flex gap-2">
-                      <input
-                        type="text"
-                        value={goal}
-                        onChange={(e) => {
-                          const updated = [...formData.impactGoals];
-                          updated[index] = e.target.value;
-                          setFormData({ ...formData, impactGoals: updated });
-                        }}
-                        placeholder="e.g., 5,000+ families with clean water"
-                        className="flex-1 px-4 py-2.5 border-2 border-gray-200 rounded-lg focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 outline-none transition-all"
-                      />
-                      {formData.impactGoals.length > 1 && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const updated = formData.impactGoals.filter((_, i) => i !== index);
-                            setFormData({ ...formData, impactGoals: updated });
-                          }}
-                          className="p-2.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                        >
-                          <X size={20} />
-                        </button>
-                      )}
+                    <div className="pt-2">
+                      <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Internal Status Feed</label>
+                      <textarea value={formData.currentStatus} onChange={(e) => setFormData(p => ({ ...p, currentStatus: e.target.value }))} className="w-full p-3 bg-emerald-50/30 border border-emerald-100 rounded-xl text-xs font-medium focus:border-emerald-400 outline-none" rows={2} placeholder="Quick update..." />
                     </div>
-                  ))}
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setFormData({ ...formData, impactGoals: [...formData.impactGoals, ""] })}
-                  className="mt-3 text-sm text-emerald-600 hover:text-emerald-700 font-semibold"
-                >
-                  + Add Impact Goal
-                </button>
-              </div>
-
-              {/* Required Amount / Funds Disbursed */}
-              {formData.source === "FOUNDATION" ? (
-                <div>
-                  <label className="block text-sm font-semibold text-emerald-700 mb-2">
-                    Total Funds Disbursed (₹)
-                  </label>
-                  <input
-                    type="number"
-                    value={formData.fundsDisbursed}
-                    onChange={(e) => setFormData({ ...formData, fundsDisbursed: e.target.value })}
-                    placeholder="Enter total funds disbursed so far..."
-                    className="w-full px-4 py-3 border-2 border-emerald-200 rounded-lg focus:border-emerald-500 outline-none font-bold text-emerald-900"
-                  />
-                  <p className="mt-2 text-xs text-gray-500">
-                    This tracks how much the foundation has given for this cause.
-                  </p>
-                </div>
-              ) : (
-                <div>
-                  <label className="block text-sm font-semibold text-gray-900 mb-2">
-                    Required Amount (₹) <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="number"
-                    value={formData.requiredAmount}
-                    onChange={(e) => setFormData({ ...formData, requiredAmount: e.target.value })}
-                    placeholder="50000"
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 outline-none transition-all"
-                  />
-                </div>
-              )}
-
-              {/* Deadline (Only for Public) */}
-              {formData.source !== "FOUNDATION" && (
-                <div>
-                  <label className="block text-sm font-semibold text-gray-900 mb-2">
-                    Campaign Deadline <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="date"
-                    value={formData.deadline}
-                    onChange={(e) => setFormData({ ...formData, deadline: e.target.value })}
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 outline-none transition-all"
-                  />
-                </div>
-              )}
-
-              {/* Documents */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-900 mb-2">
-                  Supporting Documents
-                </label>
-                <label className="border-2 border-dashed border-gray-300 rounded-lg p-4 block text-center cursor-pointer hover:border-emerald-500 hover:bg-emerald-50 transition-all">
-                  <input
-                    type="file"
-                    multiple
-                    accept=".pdf,.doc,.docx,image/*"
-                    className="hidden"
-                    onChange={handleDocumentUpload}
-                  />
-                  <FileText size={32} className="mx-auto text-gray-400 mb-2" />
-                  <p className="text-sm font-medium text-gray-900">Upload Documents</p>
-                  <p className="text-xs text-gray-600">PDF, DOC, Images</p>
-                </label>
-
-                {/* Document Lists */}
-                {formData.existingDocuments.length > 0 && (
-                  <div className="mt-4 space-y-2">
-                    <p className="text-xs font-semibold text-gray-600">Existing Documents</p>
-                    {formData.existingDocuments.map((doc, index) => (
-                      <div key={index} className="flex items-center justify-between bg-gray-50 border border-gray-200 rounded-lg px-3 py-2">
-                        <span className="text-sm text-gray-700 truncate">{doc.name}</span>
-                        <button
-                          onClick={() => removeDocument(index, true)}
-                          className="text-red-600 hover:bg-red-50 p-1 rounded transition-colors"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    ))}
                   </div>
-                )}
-
-                {formData.documents.length > 0 && (
-                  <div className="mt-4 space-y-2">
-                    <p className="text-xs font-semibold text-gray-600">New Documents</p>
-                    {formData.documents.map((file, index) => (
-                      <div key={index} className="flex items-center justify-between bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2">
-                        <span className="text-sm text-gray-700 truncate">{file.name}</span>
-                        <button
-                          onClick={() => removeDocument(index, false)}
-                          className="text-red-600 hover:bg-red-50 p-1 rounded transition-colors"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                </div>
               </div>
+            )}
 
-              {/* Social Media Links (Optional) */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-900 mb-2">
-                  Social Media Promotion Links <span className="text-gray-400">(optional)</span>
-                </label>
-
-                {["instagram", "facebook", "youtube", "twitter", "linkedin", "other"].map(
-                  (platform) => (
+            {activeTab === "donation" && (
+              <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-emerald-50/50 p-6 rounded-3xl border-2 border-emerald-100">
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Campaign Goal (₹)</label>
                     <input
-                      key={platform}
-                      type="url"
-                      placeholder={`Enter ${platform} link`}
-                      value={formData.socialLinks?.[platform] || ""}
-                      onChange={(e) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          socialLinks: {
-                            ...prev.socialLinks,
-                            [platform]: e.target.value,
-                          },
-                        }))
-                      }
-                      className="mb-2 w-full px-4 py-2.5 border-2 border-gray-200 rounded-lg
-        focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100
-        outline-none transition-all"
+                      type="number"
+                      value={formData.requiredAmount}
+                      onChange={(e) => setFormData({ ...formData, requiredAmount: e.target.value })}
+                      className="w-full px-5 py-4 bg-white border-2 border-emerald-200 rounded-2xl text-lg font-bold text-emerald-900 outline-none focus:border-emerald-500"
                     />
-                  )
-                )}
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Expiry Date</label>
+                    <input
+                      type="date"
+                      value={formData.deadline}
+                      onChange={(e) => setFormData({ ...formData, deadline: e.target.value })}
+                      className="w-full px-5 py-4 bg-white border-2 border-emerald-200 rounded-2xl font-bold text-emerald-900 outline-none focus:border-emerald-500"
+                    />
+                  </div>
+                </div>
+
+                <div className="bg-white p-6 rounded-3xl border-2 border-gray-100 space-y-6">
+                  <div className="flex items-center justify-between border-b pb-4">
+                    <h3 className="text-lg font-black text-gray-900 flex items-center gap-2">
+                      <Zap className="text-emerald-500" size={20} /> Matrix Configuration
+                    </h3>
+                  </div>
+
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div>
+                      <label className="block text-[10px] font-bold text-gray-500 uppercase mb-2">Symbol</label>
+                      <input type="text" value={formData.unitConfig?.emoji} onChange={e => setFormData({ ...formData, unitConfig: { ...formData.unitConfig, emoji: e.target.value } })} className="w-full p-3 border-2 border-gray-100 rounded-xl text-center text-xl" />
+                    </div>
+                    <div className="col-span-1">
+                      <label className="block text-[10px] font-bold text-gray-500 uppercase mb-2">Unit Cost</label>
+                      <input type="number" value={formData.unitConfig?.unitCost} onChange={e => setFormData({ ...formData, unitConfig: { ...formData.unitConfig, unitCost: parseInt(e.target.value) } })} className="w-full p-3 border-2 border-gray-100 rounded-xl font-bold" />
+                    </div>
+                    <div className="col-span-2">
+                      <label className="block text-[10px] font-bold text-gray-500 uppercase mb-2">Display Name</label>
+                      <div className="flex gap-2">
+                        <input type="text" placeholder="Kit" value={formData.unitConfig?.unitName} onChange={e => setFormData({ ...formData, unitConfig: { ...formData.unitConfig, unitName: e.target.value } })} className="flex-1 p-3 border-2 border-gray-100 rounded-xl text-sm" />
+                        <input type="text" placeholder="Kits" value={formData.unitConfig?.unitNamePlural} onChange={e => setFormData({ ...formData, unitConfig: { ...formData.unitConfig, unitNamePlural: e.target.value } })} className="flex-1 p-3 border-2 border-gray-100 rounded-xl text-sm" />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 md:grid-cols-6 gap-2">
+                    {formData.unitConfig?.presets?.map((p, i) => (
+                      <div key={i} className="p-3 bg-gray-50 rounded-xl border border-gray-200">
+                        {p.qty > 0 ? (
+                          <>
+                            <div className="text-[10px] font-black text-gray-400 mb-1">X {p.qty}</div>
+                            <div className="text-xs font-black text-emerald-600">₹{(p.qty * (formData.unitConfig.unitCost || 0)).toLocaleString()}</div>
+                          </>
+                        ) : (
+                          <>
+                            <div className="text-[10px] font-black text-gray-400 mb-1">Fixed</div>
+                            <div className="text-xs font-black text-gray-700">₹{p.amount.toLocaleString()}</div>
+                          </>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
-
-
-              {/* Action Buttons */}
-              <div className="flex gap-3 pt-4">
-                <button
-                  onClick={onSave}
-                  disabled={isSaving}
-                  className={`flex-1 flex items-center justify-center gap-2 py-3.5 rounded-lg font-semibold transition-all shadow-sm ${isSaving
-                    ? "bg-emerald-400 cursor-not-allowed"
-                    : "bg-emerald-600 hover:bg-emerald-700 hover:shadow-md text-white"
-                    }`}
-                >
-                  {isSaving ? (
-                    <>
-                      <svg
-                        className="animate-spin h-5 w-5 text-white"
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                      >
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          strokeWidth="4"
-                        />
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
-                        />
-                      </svg>
-                      {editingCard ? "Updating Campaign..." : "Creating Campaign..."}
-                    </>
-                  ) : (
-                    <>
-                      <Save size={20} />
-                      Save Campaign
-                    </>
-                  )}
-                </button>
-
-                <button
-                  onClick={onCancel}
-                  className="px-6 py-3.5 bg-white border-2 border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 transition-colors"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
+            )}
           </div>
-        </div>
 
-        {/* Preview Section */}
-        <div className="lg:sticky lg:top-8 h-fit">
-          <CampaignPreview
-            formData={formData}
-            categoryColors={categoryColors}
-            getImageUrl={getImageUrl}
-          />
+          <div className="mt-8 pt-8 border-t flex items-center justify-between">
+            <button
+              onClick={onCancel}
+              className="text-gray-400 hover:text-gray-900 font-bold uppercase tracking-widest text-xs transition-colors"
+            >
+              Abandon
+            </button>
+            <button
+              onClick={onSave}
+              disabled={isSaving}
+              className={`px-10 py-4 rounded-2xl font-black uppercase tracking-widest text-sm shadow-xl transition-all ${isSaving ? "bg-emerald-300 cursor-not-allowed" : "bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-100"
+                }`}
+            >
+              {isSaving ? "Processing..." : "Deploy Campaign"}
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Media Selector Modal */}
       <MediaSelectorModal
         isOpen={showMediaModal}
         onClose={() => setShowMediaModal(false)}

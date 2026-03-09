@@ -97,6 +97,20 @@ export default function FundraisingCMS() {
       linkedin: "",
       other: "",
     },
+    unitConfig: {
+      unitName: "Kit",
+      unitNamePlural: "Kits",
+      unitCost: 1000,
+      emoji: "📦",
+      presets: [
+        { amount: 50, label: "₹50", sublabel: "", qty: 0 },
+        { amount: 100, label: "₹100", sublabel: "", qty: 0 },
+        { amount: 0, label: "", sublabel: "", qty: 1 },
+        { amount: 0, label: "", sublabel: "", qty: 5 },
+        { amount: 0, label: "", sublabel: "", qty: 10 },
+        { amount: 0, label: "", sublabel: "", qty: 100 },
+      ]
+    },
   });
 
   const {
@@ -199,6 +213,20 @@ export default function FundraisingCMS() {
       selectedVideoUrl: card.videoUrl || "",
       imageGallery: card.imageGallery || [],
       socialLinks: latestSocialLinks,
+      unitConfig: card.unitConfig || {
+        unitName: "",
+        unitNamePlural: "",
+        unitCost: 0,
+        emoji: "",
+        presets: [
+          { amount: 50, label: "₹50", sublabel: "", qty: 0 },
+          { amount: 100, label: "₹100", sublabel: "", qty: 0 },
+          { amount: 0, label: "", sublabel: "", qty: 1 },
+          { amount: 0, label: "", sublabel: "", qty: 5 },
+          { amount: 0, label: "", sublabel: "", qty: 10 },
+          { amount: 0, label: "", sublabel: "", qty: 100 },
+        ]
+      },
     });
     setViewMode("edit");
   };
@@ -265,6 +293,8 @@ export default function FundraisingCMS() {
       form.append("impactGoals", JSON.stringify(
         formData.impactGoals.filter(g => g.trim() !== "")
       ));
+
+      form.append("unitConfig", JSON.stringify(formData.unitConfig));
 
       if (formData.mediaType === "image") {
         formData.images.forEach((file) => {
@@ -359,7 +389,20 @@ export default function FundraisingCMS() {
         linkedin: "",
         other: "",
       },
-
+      unitConfig: {
+        unitName: "Kit",
+        unitNamePlural: "Kits",
+        unitCost: 1000,
+        emoji: "📦",
+        presets: [
+          { amount: 50, label: "₹50", sublabel: "", qty: 0 },
+          { amount: 100, label: "₹100", sublabel: "", qty: 0 },
+          { amount: 0, label: "", sublabel: "", qty: 1 },
+          { amount: 0, label: "", sublabel: "", qty: 5 },
+          { amount: 0, label: "", sublabel: "", qty: 10 },
+          { amount: 0, label: "", sublabel: "", qty: 100 },
+        ]
+      },
     });
     setSelectedCampaign(null);
   };

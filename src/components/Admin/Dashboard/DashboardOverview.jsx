@@ -21,6 +21,7 @@ const COLORS = {
     LILLAH: "#6366f1",
     IMDAD: "#14b8a6",
     OFFLINE: "#64748b", // Slate color for offline
+    TIP: "#ec4899", // Pink color for tips
 };
 
 
@@ -458,7 +459,7 @@ const ActivityHeatmap = () => {
                     <TrendingUp size={20} />
                 </div>
                 <p className="text-xs text-gray-500 leading-relaxed font-medium max-w-2xl">
-                    <span className="font-bold text-gray-900 block mb-1 underline decoration-emerald-200">How to use this intelligence:</span>
+                    <span className="font-bold text-gray-900 block mb-1 underline decoration-emerald-200">How to use this intelligence heatmap:</span>
                     Darker green squares identify your "Golden Hours." Schedule high-impact social media posts and volunteer call-outs 30 minutes before these peaks for maximum conversion.
                 </p>
             </div>
