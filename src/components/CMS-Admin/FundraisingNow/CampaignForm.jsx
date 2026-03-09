@@ -560,8 +560,23 @@ export default function CampaignForm({
                       <input type="text" value={formData.unitConfig?.emoji} onChange={e => setFormData({ ...formData, unitConfig: { ...formData.unitConfig, emoji: e.target.value } })} className="w-full p-3 border-2 border-gray-100 rounded-xl text-center text-xl" />
                     </div>
                     <div className="col-span-1">
-                      <label className="block text-[10px] font-bold text-gray-500 uppercase mb-2">Unit Cost</label>
-                      <input type="number" value={formData.unitConfig?.unitCost} onChange={e => setFormData({ ...formData, unitConfig: { ...formData.unitConfig, unitCost: parseInt(e.target.value) } })} className="w-full p-3 border-2 border-gray-100 rounded-xl font-bold" />
+                      <label className="block text-[10px] font-bold text-gray-500 uppercase mb-2">Unit Cost (₹)</label>
+                      <input
+                        type="number"
+                        value={formData.unitConfig?.unitCost}
+                        onChange={e => {
+                          const cost = parseInt(e.target.value) || 0;
+                          setFormData(prev => ({
+                            ...prev,
+                            unitConfig: {
+                              ...prev.unitConfig,
+                              unitCost: cost,
+                              presets: prev.unitConfig.presets.map(p => p.qty > 0 ? { ...p, amount: p.qty * cost } : p)
+                            }
+                          }));
+                        }}
+                        className="w-full p-3 border-2 border-gray-100 rounded-xl font-bold focus:border-emerald-500 outline-none"
+                      />
                     </div>
                     <div className="col-span-2">
                       <label className="block text-[10px] font-bold text-gray-500 uppercase mb-2">Display Name</label>
@@ -572,18 +587,52 @@ export default function CampaignForm({
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 md:grid-cols-6 gap-2">
+                  <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
                     {formData.unitConfig?.presets?.map((p, i) => (
-                      <div key={i} className="p-3 bg-gray-50 rounded-xl border border-gray-200">
+                      <div key={i} className="p-3 bg-gray-50/50 rounded-xl border-2 border-gray-100 space-y-2">
                         {p.qty > 0 ? (
                           <>
-                            <div className="text-[10px] font-black text-gray-400 mb-1">X {p.qty}</div>
-                            <div className="text-xs font-black text-emerald-600">₹{(p.qty * (formData.unitConfig.unitCost || 0)).toLocaleString()}</div>
+                            <div className="flex flex-col gap-1">
+                              <label className="text-[8px] font-black text-gray-400 uppercase tracking-widest">Units</label>
+                              <input
+                                type="number"
+                                value={p.qty}
+                                placeholder="Qty"
+                                onChange={e => {
+                                  const q = parseInt(e.target.value) || 0;
+                                  setFormData(prev => {
+                                    const newPresets = [...prev.unitConfig.presets];
+                                    newPresets[i] = { ...newPresets[i], qty: q, amount: q * (prev.unitConfig.unitCost || 0) };
+                                    return { ...prev, unitConfig: { ...prev.unitConfig, presets: newPresets } };
+                                  });
+                                }}
+                                className="w-full p-2 bg-white border border-gray-200 rounded-lg text-xs font-black focus:border-emerald-500 outline-none"
+                              />
+                            </div>
+                            <div className="text-[10px] font-black text-emerald-600 px-1">₹{(p.amount || 0).toLocaleString()}</div>
                           </>
                         ) : (
                           <>
-                            <div className="text-[10px] font-black text-gray-400 mb-1">Fixed</div>
-                            <div className="text-xs font-black text-gray-700">₹{p.amount.toLocaleString()}</div>
+                            <div className="flex flex-col gap-1">
+                              <label className="text-[8px] font-black text-gray-400 uppercase tracking-widest">Fixed Amount</label>
+                              <div className="relative">
+                                <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] font-black text-gray-400">₹</span>
+                                <input
+                                  type="number"
+                                  value={p.amount}
+                                  placeholder="Amount"
+                                  onChange={e => {
+                                    const a = parseInt(e.target.value) || 0;
+                                    setFormData(prev => {
+                                      const newPresets = [...prev.unitConfig.presets];
+                                      newPresets[i] = { ...newPresets[i], amount: a };
+                                      return { ...prev, unitConfig: { ...prev.unitConfig, presets: newPresets } };
+                                    });
+                                  }}
+                                  className="w-full p-2 pl-4 bg-white border border-gray-200 rounded-lg text-xs font-black focus:border-emerald-500 outline-none"
+                                />
+                              </div>
+                            </div>
                           </>
                         )}
                       </div>
