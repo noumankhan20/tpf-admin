@@ -101,7 +101,9 @@ export default function FundraisingCMS() {
       itemName: "Kit",
       unitCost: 1000,
       emoji: "📦",
-      presets: []
+      presets: [],
+      configType: "fixed",
+      fixedPresets: [50, 100, 200, 500, 1000]
     },
   });
 
@@ -209,7 +211,9 @@ export default function FundraisingCMS() {
         itemName: card.unitConfig?.itemName || card.unitConfig?.unitName || "Kit",
         unitCost: card.unitConfig?.unitCost || 1000,
         emoji: card.unitConfig?.emoji || "📦",
-        presets: card.unitConfig?.presets || []
+        presets: card.unitConfig?.presets || [],
+        configType: card.unitConfig?.configType || "fixed",
+        fixedPresets: card.unitConfig?.fixedPresets || [50, 100, 200, 500, 1000]
       },
     });
     setViewMode("edit");
@@ -279,33 +283,42 @@ export default function FundraisingCMS() {
       ));
 
       const rawItemName = formData.unitConfig.itemName || "Unit";
-      const impactPresets = (formData.unitConfig.presets && formData.unitConfig.presets.length > 0)
-        ? formData.unitConfig.presets.map(p => {
-          const name = p.qty === 1 ? rawItemName : `${rawItemName}s`;
-          const finalAmount = p.amount !== undefined ? p.amount : (p.qty * (formData.unitConfig.unitCost || 0));
-          return {
-            ...p,
-            amount: finalAmount,
-            label: `${p.qty} ${name}`,
-            sublabel: `₹${finalAmount.toLocaleString()}`
-          };
-        })
-        : [1, 10, 100, 1000].map(qty => {
-          const name = qty === 1 ? rawItemName : `${rawItemName}s`;
-          const amt = qty * (formData.unitConfig.unitCost || 0);
-          return {
-            qty,
-            amount: amt,
-            label: `${qty} ${name}`,
-            sublabel: `₹${amt.toLocaleString()}`
-          };
-        });
+      let finalPresets = [];
 
-      const finalPresets = [
-        { amount: 50, label: "₹50", sublabel: "Gift", qty: 0 },
-        { amount: 100, label: "₹100", sublabel: "Gift", qty: 0 },
-        ...impactPresets
-      ];
+      if (formData.unitConfig.configType === "fixed") {
+        const amounts = formData.unitConfig.fixedPresets || [50, 100, 200, 500, 1000];
+        finalPresets = [
+          ...amounts.map(amt => ({ amount: amt, label: `₹${amt.toLocaleString()}`, sublabel: null, qty: 0 })),
+        ];
+      } else {
+        const impactPresets = (formData.unitConfig.presets && formData.unitConfig.presets.length > 0)
+          ? formData.unitConfig.presets.map(p => {
+            const name = p.qty === 1 ? rawItemName : `${rawItemName}s`;
+            const finalAmount = p.amount !== undefined ? p.amount : (p.qty * (formData.unitConfig.unitCost || 0));
+            return {
+              ...p,
+              amount: finalAmount,
+              label: `${p.qty} ${name}`,
+              sublabel: `₹${finalAmount.toLocaleString()}`
+            };
+          })
+          : [1, 10, 100, 1000].map(qty => {
+            const name = qty === 1 ? rawItemName : `${rawItemName}s`;
+            const amt = qty * (formData.unitConfig.unitCost || 0);
+            return {
+              qty,
+              amount: amt,
+              label: `${qty} ${name}`,
+              sublabel: `₹${amt.toLocaleString()}`
+            };
+          });
+
+        finalPresets = [
+          { amount: 50, label: "₹50", sublabel: "Gift", qty: 0 },
+          { amount: 100, label: "₹100", sublabel: "Gift", qty: 0 },
+          ...impactPresets
+        ];
+      }
 
       form.append("unitConfig", JSON.stringify({
         ...formData.unitConfig,
@@ -409,7 +422,9 @@ export default function FundraisingCMS() {
         itemName: "Kit",
         unitCost: 1000,
         emoji: "📦",
-        presets: []
+        presets: [],
+        configType: "fixed",
+        fixedPresets: [50, 100, 200, 500, 1000]
       },
     });
     setSelectedCampaign(null);

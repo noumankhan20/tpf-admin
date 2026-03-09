@@ -556,112 +556,160 @@ export default function CampaignForm({
                     </h3>
                   </div>
 
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div>
-                      <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Symbol</label>
-                      <input type="text" value={formData.unitConfig?.emoji} onChange={e => setFormData({ ...formData, unitConfig: { ...formData.unitConfig, emoji: e.target.value } })} className="w-full p-3 border-2 border-gray-100 rounded-xl text-center text-xl" />
-                    </div>
-                    <div className="col-span-1">
-                      <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Unit Cost (₹)</label>
-                      <input
-                        type="number"
-                        value={formData.unitConfig?.unitCost}
-                        onChange={e => {
-                          const cost = parseInt(e.target.value) || 0;
-                          setFormData(prev => ({
-                            ...prev,
-                            unitConfig: {
-                              ...prev.unitConfig,
-                              unitCost: cost,
-                              presets: prev.unitConfig.presets.map(p => p.qty > 0 ? { ...p, amount: p.qty * cost } : p)
-                            }
-                          }));
-                        }}
-                        className="w-full p-3 border-2 border-gray-100 rounded-xl font-bold focus:border-emerald-500 outline-none"
-                      />
-                    </div>
-                    <div className="col-span-2">
-                      <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Item Name (e.g. Kit)</label>
-                      <input
-                        type="text"
-                        placeholder="Kit"
-                        value={formData.unitConfig?.itemName || formData.unitConfig?.unitName}
-                        onChange={e => {
-                          const val = e.target.value;
-                          setFormData(prev => ({
-                            ...prev,
-                            unitConfig: { ...prev.unitConfig, itemName: val }
-                          }));
-                        }}
-                        className="w-full p-3 border-2 border-gray-100 rounded-xl text-sm outline-none focus:border-emerald-500"
-                      />
-                    </div>
+                  {/* Config Mode Toggle */}
+                  <div className="flex p-1 bg-gray-100 rounded-xl max-w-sm">
+                    <button
+                      type="button"
+                      onClick={() => setFormData(p => ({ ...p, unitConfig: { ...p.unitConfig, configType: 'unit' } }))}
+                      className={`flex-1 py-3 rounded-xl text-[10px] font-bold uppercase transition-all ${formData.unitConfig?.configType !== 'fixed' ? 'bg-white shadow text-emerald-600' : 'text-gray-500'}`}
+                    >
+                      Impact (Kits)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setFormData(p => ({ ...p, unitConfig: { ...p.unitConfig, configType: 'fixed' } }))}
+                      className={`flex-1 py-3 rounded-xl text-[10px] font-bold uppercase transition-all ${formData.unitConfig?.configType === 'fixed' ? 'bg-white shadow text-emerald-600' : 'text-gray-500'}`}
+                    >
+                      Simple Amounts
+                    </button>
                   </div>
 
-                  {/* Automated Preset Preview */}
+                  {formData.unitConfig?.configType !== 'fixed' ? (
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div>
+                        <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Symbol</label>
+                        <input type="text" value={formData.unitConfig?.emoji} onChange={e => setFormData({ ...formData, unitConfig: { ...formData.unitConfig, emoji: e.target.value } })} className="w-full p-3 border-2 border-gray-100 rounded-xl text-center text-xl" />
+                      </div>
+                      <div className="col-span-1">
+                        <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Unit Cost (₹)</label>
+                        <input
+                          type="number"
+                          value={formData.unitConfig?.unitCost}
+                          onChange={e => {
+                            const cost = parseInt(e.target.value) || 0;
+                            setFormData(prev => ({
+                              ...prev,
+                              unitConfig: {
+                                ...prev.unitConfig,
+                                unitCost: cost,
+                                presets: (prev.unitConfig.presets || []).map(p => p.qty > 0 ? { ...p, amount: p.qty * cost } : p)
+                              }
+                            }));
+                          }}
+                          className="w-full p-3 border-2 border-gray-100 rounded-xl font-bold focus:border-emerald-500 outline-none"
+                        />
+                      </div>
+                      <div className="col-span-2">
+                        <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Item Name (e.g. Kit)</label>
+                        <input
+                          type="text"
+                          placeholder="Kit"
+                          value={formData.unitConfig?.itemName || formData.unitConfig?.unitName}
+                          onChange={e => {
+                            const val = e.target.value;
+                            setFormData(prev => ({
+                              ...prev,
+                              unitConfig: { ...prev.unitConfig, itemName: val }
+                            }));
+                          }}
+                          className="w-full p-3 border-2 border-gray-100 rounded-xl text-sm outline-none focus:border-emerald-500"
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="p-4 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200">
+                      <p className="text-[10px] font-bold text-gray-400 uppercase text-center">Unit metrics hidden. Campaign will show only fixed amounts.</p>
+                    </div>
+                  )}
+
+                  {/* Automated Preset Preview / Fixed Amount Editor */}
                   <div className="pt-4 border-t border-dashed">
                     <label className="block text-xs font-bold text-emerald-600 uppercase mb-4">
-                      Automatic Impact Presets
+                      {formData.unitConfig?.configType === 'fixed' ? 'Configure Amount Buttons' : 'Automatic Impact Presets'}
                     </label>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      {(formData.unitConfig?.presets?.length === 4 ? formData.unitConfig.presets : [1, 10, 100, 1000].map(q => ({ qty: q }))).map((preset, i) => {
-                        const qty = preset.qty || 0;
-                        const cost = formData.unitConfig?.unitCost || 0;
-                        const total = preset.amount !== undefined ? preset.amount : (qty * cost);
-                        const rawName = formData.unitConfig?.itemName || formData.unitConfig?.unitName || 'Unit';
-                        const name = qty === 1 ? rawName : `${rawName}s`;
-
-                        return (
-                          <div key={i} className="p-4 bg-white border-2 border-emerald-100 rounded-2xl flex flex-col items-center justify-center text-center shadow-sm hover:border-emerald-300 transition-all">
-                            <div className="text-xs font-bold text-gray-400 uppercase mb-3">
-                              Box {i + 1}
-                            </div>
-                            <div className="flex flex-col gap-2 w-full text-left">
-                              <div>
-                                <label className="text-[8px] font-bold text-gray-400 block uppercase mb-1">Quantity</label>
-                                <input
-                                  type="number"
-                                  value={qty}
-                                  onChange={e => {
-                                    const val = parseInt(e.target.value) || 0;
-                                    setFormData(prev => {
-                                      const currentPresets = prev.unitConfig?.presets?.length === 4 ? [...prev.unitConfig.presets] : [1, 10, 100, 1000].map(q => ({ qty: q }));
-                                      currentPresets[i] = { ...currentPresets[i], qty: val, amount: val * (prev.unitConfig?.unitCost || 0) };
-                                      return {
-                                        ...prev,
-                                        unitConfig: { ...prev.unitConfig, presets: currentPresets }
-                                      };
-                                    });
-                                  }}
-                                  className="w-full p-2 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold focus:border-emerald-500 outline-none"
-                                />
-                              </div>
-                              <div>
-                                <label className="text-[8px] font-bold text-gray-400 block uppercase mb-1">Amount (₹)</label>
-                                <input
-                                  type="number"
-                                  value={total}
-                                  onChange={e => {
-                                    const val = parseInt(e.target.value) || 0;
-                                    setFormData(prev => {
-                                      const currentPresets = prev.unitConfig?.presets?.length === 4 ? [...prev.unitConfig.presets] : [1, 10, 100, 1000].map(q => ({ qty: q }));
-                                      currentPresets[i] = { ...currentPresets[i], amount: val };
-                                      return {
-                                        ...prev,
-                                        unitConfig: { ...prev.unitConfig, presets: currentPresets }
-                                      };
-                                    });
-                                  }}
-                                  className="w-full p-2 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-emerald-600 focus:border-emerald-500 outline-none"
-                                />
-                              </div>
-                            </div>
-                            <div className="mt-3 text-[10px] font-bold text-gray-500 truncate w-full">
-                              {qty} {name}
+                    <div className={`grid gap-4 ${formData.unitConfig?.configType === 'fixed' ? 'grid-cols-2 md:grid-cols-5 animate-in fade-in' : 'grid-cols-2 md:grid-cols-4 animate-in fade-in slide-in-from-bottom-2'}`}>
+                      {formData.unitConfig?.configType === 'fixed' ? (
+                        (formData.unitConfig?.fixedPresets?.length === 5 ? formData.unitConfig.fixedPresets : [50, 100, 200, 500, 1000]).map((amt, i) => (
+                          <div key={i} className="p-3 bg-white border-2 border-gray-100 rounded-2xl flex flex-col gap-2 shadow-sm hover:border-emerald-200 transition-all">
+                            <label className="text-[8px] font-bold text-gray-400 uppercase">Button {i + 1}</label>
+                            <div className="relative">
+                              <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-gray-400">₹</span>
+                              <input
+                                type="number"
+                                value={amt}
+                                onChange={e => {
+                                  const val = parseInt(e.target.value) || 0;
+                                  setFormData(prev => {
+                                    const current = prev.unitConfig?.fixedPresets?.length === 5 ? [...prev.unitConfig.fixedPresets] : [50, 100, 200, 500, 1000];
+                                    current[i] = val;
+                                    return { ...prev, unitConfig: { ...prev.unitConfig, fixedPresets: current } };
+                                  });
+                                }}
+                                className="w-full pl-5 p-2 bg-gray-50 border border-gray-100 rounded-lg text-xs font-bold outline-none focus:border-emerald-500"
+                              />
                             </div>
                           </div>
-                        );
-                      })}
+                        ))
+                      ) : (
+                        (formData.unitConfig?.presets?.length === 4 ? formData.unitConfig.presets : [1, 10, 100, 1000].map(q => ({ qty: q }))).map((preset, i) => {
+                          const qty = preset.qty || 0;
+                          const cost = formData.unitConfig?.unitCost || 0;
+                          const total = preset.amount !== undefined ? preset.amount : (qty * cost);
+                          const rawName = formData.unitConfig?.itemName || formData.unitConfig?.unitName || 'Unit';
+                          const name = qty === 1 ? rawName : `${rawName}s`;
+
+                          return (
+                            <div key={i} className="p-4 bg-white border-2 border-emerald-100 rounded-2xl flex flex-col items-center justify-center text-center shadow-sm hover:border-emerald-300 transition-all">
+                              <div className="text-xs font-bold text-gray-400 uppercase mb-3">
+                                Box {i + 1}
+                              </div>
+                              <div className="flex flex-col gap-2 w-full text-left">
+                                <div>
+                                  <label className="text-[8px] font-bold text-gray-400 block uppercase mb-1">Quantity</label>
+                                  <input
+                                    type="number"
+                                    value={qty}
+                                    onChange={e => {
+                                      const val = parseInt(e.target.value) || 0;
+                                      setFormData(prev => {
+                                        const currentPresets = prev.unitConfig?.presets?.length === 4 ? [...prev.unitConfig.presets] : [1, 10, 100, 1000].map(q => ({ qty: q }));
+                                        currentPresets[i] = { ...currentPresets[i], qty: val, amount: val * (prev.unitConfig?.unitCost || 0) };
+                                        return {
+                                          ...prev,
+                                          unitConfig: { ...prev.unitConfig, presets: currentPresets }
+                                        };
+                                      });
+                                    }}
+                                    className="w-full p-2 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold focus:border-emerald-500 outline-none"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="text-[8px] font-bold text-gray-400 block uppercase mb-1">Amount (₹)</label>
+                                  <input
+                                    type="number"
+                                    value={total}
+                                    onChange={e => {
+                                      const val = parseInt(e.target.value) || 0;
+                                      setFormData(prev => {
+                                        const currentPresets = prev.unitConfig?.presets?.length === 4 ? [...prev.unitConfig.presets] : [1, 10, 100, 1000].map(q => ({ qty: q }));
+                                        currentPresets[i] = { ...currentPresets[i], amount: val };
+                                        return {
+                                          ...prev,
+                                          unitConfig: { ...prev.unitConfig, presets: currentPresets }
+                                        };
+                                      });
+                                    }}
+                                    className="w-full p-2 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-emerald-600 focus:border-emerald-500 outline-none"
+                                  />
+                                </div>
+                              </div>
+                              <div className="mt-3 text-[10px] font-bold text-gray-500 truncate w-full">
+                                {qty} {name}
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
                     </div>
                   </div>
 
