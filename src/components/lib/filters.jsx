@@ -74,18 +74,42 @@ export default function FilterModal({
             </div>
           </div>
         </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Donation Type
+          </label>
+
+          <select
+            value={filters.donationType}
+            onChange={(e) =>
+              setFilters({ ...filters, donationType: e.target.value })
+            }
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-emerald-500 focus:border-emerald-500"
+          >
+            <option value="">All Types</option>
+            <option value="ZAKAT">Zakat</option>
+            <option value="SADAQAH">Sadaqah</option>
+            <option value="LILLAH">LILLAH</option>
+            <option value="IMDAD">IMDAD</option>
+            <option value="RIBA">RIBA</option>
+          </select>
+        </div>
 
         {/* Actions */}
         <div className="mt-6 flex gap-3 justify-end">
           <button
-            onClick={() =>
-              setFilters({
+            onClick={() => {
+              const cleared = {
                 startDate: "",
                 endDate: "",
                 minAmount: "",
                 maxAmount: "",
-              })
-            }
+                donationType: "",
+              };
+
+              setFilters(cleared);
+              onApply();   // instantly refresh
+            }}
             className="px-4 py-2 border rounded-lg text-gray-700"
           >
             Clear

@@ -235,6 +235,7 @@ export default function DonationManagement() {
         endDate: '',
         minAmount: '',
         maxAmount: '',
+        donationType: '',
     });
 
     // What is actually applied to API
@@ -264,7 +265,9 @@ export default function DonationManagement() {
         if (appliedFilters.endDate) params.endDate = appliedFilters.endDate;
         if (appliedFilters.minAmount) params.minAmount = appliedFilters.minAmount;
         if (appliedFilters.maxAmount) params.maxAmount = appliedFilters.maxAmount;
-
+        if (appliedFilters.donationType) {
+            params.donationType = appliedFilters.donationType;
+        }
         return params;
     }, [currentPage, debouncedSearch, appliedFilters, itemsPerPage]);
 
@@ -541,7 +544,13 @@ export default function DonationManagement() {
                                                 <div className="text-sm text-gray-900">{donation.kycStatus}</div>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                {new Date(donation.date).toLocaleDateString('en-IN')}
+                                                {new Date(donation.date).toLocaleString('en-IN', {
+                                                    day: '2-digit',
+                                                    month: 'short',
+                                                    year: 'numeric',
+                                                    hour: '2-digit',
+                                                    minute: '2-digit',
+                                                })}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap">
                                                 <PurposeBadge purpose={donation.purpose} />
@@ -594,7 +603,13 @@ export default function DonationManagement() {
                                     <div className="flex justify-between gap-2">
                                         <span className="text-gray-500">Date:</span>
                                         <span className="text-gray-900">
-                                            {new Date(donation.date).toLocaleDateString('en-IN')}
+                                            {new Date(donation.date).toLocaleString('en-IN', {
+                                                day: '2-digit',
+                                                month: 'short',
+                                                year: 'numeric',
+                                                hour: '2-digit',
+                                                minute: '2-digit',
+                                            })}
                                         </span>
                                     </div>
                                 </div>
