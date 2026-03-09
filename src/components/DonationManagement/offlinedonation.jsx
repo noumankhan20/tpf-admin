@@ -257,6 +257,10 @@ const OfflineDonationDetailsModal = ({ isOpen, onClose, donation, onApprove, onR
               <p className="font-medium text-gray-900">{donation.mobile || donation.donorPhone}</p>
             </div>
             <div>
+              <p className="text-sm text-gray-600">Donation Type</p>
+              <p className="font-medium text-gray-900">{donation.donationType}</p>
+            </div>
+            <div>
               <p className="text-sm text-gray-600">Campaign</p>
               <p className="font-medium text-gray-900">
                 {donation.campaignTitle || "N/A"}
@@ -365,6 +369,28 @@ const OfflineDonationDetailsModal = ({ isOpen, onClose, donation, onApprove, onR
                     <p className="text-sm text-gray-600">Branch Name</p>
                     <p className="font-medium text-gray-900">
                       {donation.branchName}
+                    </p>
+                  </div>
+                </>
+              )}
+              {donation.method === "UPI" && (
+                <>
+                  <div>
+                    <p className="text-sm text-gray-600">UPI ID</p>
+                    <p className="font-medium text-gray-900">
+                      {donation.upiId}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Payment App</p>
+                    <p className="font-medium text-gray-900">
+                      {donation.paymentApp}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Transaction Date</p>
+                    <p className="font-medium text-gray-900">
+                      {donation.transactionDate ? new Date(donation.transactionDate).toLocaleDateString("en-IN") : "N/A"}
                     </p>
                   </div>
                 </>
