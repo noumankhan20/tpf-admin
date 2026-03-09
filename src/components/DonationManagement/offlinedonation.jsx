@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo,useEffect } from "react";
 import {
   ArrowLeft,
   Plus,
@@ -36,10 +36,12 @@ const StatusBadge = ({ status }) => {
 
 // ==================== FILTER MODAL ====================
 const FilterModal = ({ isOpen, onClose, filters, setFilters, onApply }) => {
-  if (!isOpen) return null;
-
+  
   const [localFilters, setLocalFilters] = useState(filters);
-
+  useEffect(() => {
+    setLocalFilters(filters);
+  }, [filters]);
+  if (!isOpen) return null;
   const handleApply = () => {
     setFilters(localFilters);
     onApply();
@@ -159,6 +161,7 @@ const FilterModal = ({ isOpen, onClose, filters, setFilters, onApply }) => {
               <option value="NEFT">NEFT</option>
               <option value="IMPS">IMPS</option>
               <option value="CHEQUE">CHEQUE</option>
+              <option value="UPI">UPI</option>
             </select>
           </div>
 
@@ -200,7 +203,7 @@ const FilterModal = ({ isOpen, onClose, filters, setFilters, onApply }) => {
 };
 
 // ==================== DETAILS MODAL ====================
-const OfflineDonationDetailsModal = ({ isOpen, onClose, donation, onApprove, onRejectClick,onDelete }) => {
+const OfflineDonationDetailsModal = ({ isOpen, onClose, donation, onApprove, onRejectClick, onDelete }) => {
   if (!isOpen || !donation) return null;
 
   const formatDate = (dateString) => {
@@ -255,6 +258,10 @@ const OfflineDonationDetailsModal = ({ isOpen, onClose, donation, onApprove, onR
             <div>
               <p className="text-sm text-gray-600">Mobile</p>
               <p className="font-medium text-gray-900">{donation.mobile || donation.donorPhone}</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-600">Donation Type</p>
+              <p className="font-medium text-gray-900">{donation.donationType}</p>
             </div>
             <div>
               <p className="text-sm text-gray-600">Campaign</p>
@@ -365,6 +372,28 @@ const OfflineDonationDetailsModal = ({ isOpen, onClose, donation, onApprove, onR
                     <p className="text-sm text-gray-600">Branch Name</p>
                     <p className="font-medium text-gray-900">
                       {donation.branchName}
+                    </p>
+                  </div>
+                </>
+              )}
+              {donation.method === "UPI" && (
+                <>
+                  <div>
+                    <p className="text-sm text-gray-600">UPI ID</p>
+                    <p className="font-medium text-gray-900">
+                      {donation.upiId}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Payment App</p>
+                    <p className="font-medium text-gray-900">
+                      {donation.paymentApp}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Transaction Date</p>
+                    <p className="font-medium text-gray-900">
+                      {donation.transactionDate ? new Date(donation.transactionDate).toLocaleDateString("en-IN") : "N/A"}
                     </p>
                   </div>
                 </>
@@ -514,7 +543,6 @@ const OfflineDonationTable = ({ donations, onView, onApprove }) => {
       year: "numeric",
     });
   };
-
   return (
     <>
       <div className="hidden md:block overflow-x-auto">
@@ -675,7 +703,7 @@ export default function OfflineDonationPage() {
   const [selectedDonation, setSelectedDonation] = useState(null);
   const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
   const [rejectDonationId, setRejectDonationId] = useState(null);
-
+  const [page, setPage] = useState(1);
   const [rejectOfflineDonation, { isLoading: isRejecting }] =
     useRejectOfflineDonationsMutation();
   const [deleteOfflineDonation, { isLoading: isDeleting }] =
@@ -692,7 +720,7 @@ export default function OfflineDonationPage() {
   const [approveOfflineDonation] = useApproveOfflineDonationsMutation();
 
   const queryParams = useMemo(() => {
-    const params = {};
+    const params = { page };
     if (filters.startDate) params.startDate = filters.startDate;
     if (filters.endDate) params.endDate = filters.endDate;
     if (filters.minAmount) params.minAmount = filters.minAmount;
@@ -700,7 +728,7 @@ export default function OfflineDonationPage() {
     if (filters.method) params.method = filters.method;
     if (filters.status) params.status = filters.status;
     return params;
-  }, [filters]);
+  }, [filters, page]);
 
   const { data, error, isLoading, refetch } = useGetOfflineDonationsQuery(queryParams);
 
@@ -708,13 +736,11 @@ export default function OfflineDonationPage() {
   const totalAmount = data?.totalAmount || 0;
   const pagination = data?.pagination || { currentPage: 1, totalPages: 1, totalDonations: 0 };
 
-  const stats = useMemo(() => {
-    return {
-      total: donations.length,
-      pending: donations.filter((d) => d.status === "pending").length,
-      approved: donations.filter((d) => d.status === "approved").length,
-    };
-  }, [donations]);
+  const stats = data?.stats || {
+    total: 0,
+    pending: 0,
+    approved: 0,
+  };
 
   const handleApprove = async (id) => {
     try {
@@ -733,7 +759,7 @@ export default function OfflineDonationPage() {
   };
 
   const handleApplyFilters = () => {
-    refetch();
+    setPage(1);
   };
 
   const openRejectModal = (donationId) => {
@@ -897,11 +923,38 @@ export default function OfflineDonationPage() {
             </div>
             <div className="p-6">
               {donations.length > 0 ? (
-                <OfflineDonationTable
-                  donations={donations}
-                  onView={handleViewDetails}
-                  onApprove={handleApprove}
-                />
+                <>
+                  <OfflineDonationTable
+                    donations={donations}
+                    onView={handleViewDetails}
+                    onApprove={handleApprove}
+                  />
+
+                  {/* Pagination */}
+                  <div className="flex items-center justify-between mt-6">
+                    <div className="text-sm text-gray-600">
+                      Page {pagination.currentPage} of {pagination.totalPages}
+                    </div>
+
+                    <div className="flex gap-2">
+                      <button
+                        disabled={pagination.currentPage === 1}
+                        onClick={() => setPage((prev) => prev - 1)}
+                        className="px-3 py-1 border rounded disabled:opacity-50"
+                      >
+                        Previous
+                      </button>
+
+                      <button
+                        disabled={pagination.currentPage === pagination.totalPages}
+                        onClick={() => setPage((prev) => prev + 1)}
+                        className="px-3 py-1 border rounded disabled:opacity-50"
+                      >
+                        Next
+                      </button>
+                    </div>
+                  </div>
+                </>
               ) : (
                 <div className="text-center py-12">
                   <Building className="w-12 h-12 text-gray-300 mx-auto mb-4" />

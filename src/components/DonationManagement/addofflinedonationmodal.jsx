@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, User, Mail, Phone, FileText, Building2, Hash, Calendar, IndianRupee, CheckCircle2, AlertCircle } from "lucide-react";
+import { X, User, Mail, Phone, FileText, Building2, Hash, Calendar, IndianRupee, CheckCircle2, AlertCircle, Smartphone } from "lucide-react";
 import { useCreateOfflineDonationByAdminMutation, useGetCampaignDropdownQuery } from "@/utils/slices/donationApiSlice";
 
 const METHOD_CONFIG = {
@@ -21,7 +21,13 @@ const METHOD_CONFIG = {
         label: "Cheque",
         fields: ["chequeNumber", "chequeDate", "bankName", "branchName"],
     },
+    UPI: {
+        label: "UPI",
+        fields: ["upiId", "paymentApp", "transactionDate"],
+    },
 };
+
+const DONATION_TYPES = ["ZAKAAT", "LILLAH", "IMDAD", "SADQAH", "RIBA"];
 
 const FIELD_META = {
     bankName: { label: "Bank Name", icon: Building2, type: "text", placeholder: "e.g. State Bank of India" },
@@ -32,8 +38,9 @@ const FIELD_META = {
     chequeNumber: { label: "Cheque Number", icon: Hash, type: "text", placeholder: "6-digit cheque number" },
     chequeDate: { label: "Cheque Date", icon: Calendar, type: "date" },
     branchName: { label: "Branch Name", icon: Building2, type: "text", placeholder: "Bank branch name" },
+    upiId: { label: "UPI ID", icon: Hash, type: "text", placeholder: "e.g. donor@upi" },
 };
-
+const PAYMENT_APPS = ["GooglePay", "PhonePe", "Paytm", "BHIM", "Other"];
 function FormField({ label, icon: Icon, type = "text", name, value, onChange, placeholder, required }) {
     return (
         <div className="flex flex-col gap-1.5">
@@ -92,6 +99,7 @@ export default function AddOfflineDonationModal({ isOpen, onClose, onSuccess }) 
         donorEmail: "",
         donorPhone: "",
         method: "RTGS",
+        donationType: "",
         amount: "",
         campaignId: "",
         remarks: "",
@@ -103,6 +111,8 @@ export default function AddOfflineDonationModal({ isOpen, onClose, onSuccess }) 
         chequeNumber: "",
         chequeDate: "",
         branchName: "",
+        upiId: "",
+        paymentApp: "",
     });
 
     useEffect(() => {
@@ -132,6 +142,10 @@ export default function AddOfflineDonationModal({ isOpen, onClose, onSuccess }) 
         }
         if (!formData.campaignId) {
             showToast("Please select a campaign.");
+            return;
+        }
+        if (!formData.donationType) {
+            showToast("Please select a donation type.");
             return;
         }
         try {
@@ -206,16 +220,9 @@ export default function AddOfflineDonationModal({ isOpen, onClose, onSuccess }) 
 
                         {/* Campaign Selection */}
                         <div className="space-y-2">
-                            <p className="text-[10px] font-semibold section-label uppercase text-gray-900">
-                                Campaign
-                            </p>
-
+                            <p className="text-[10px] font-semibold section-label uppercase text-gray-900">Campaign</p>
                             <div className="relative group">
-                                <Building2
-                                    size={14}
-                                    className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-300 group-focus-within:text-emerald-500 transition-colors"
-                                />
-
+                                <Building2 size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-300 group-focus-within:text-emerald-500 transition-colors" />
                                 <select
                                     name="campaignId"
                                     disabled={isCampaignLoading}
@@ -224,31 +231,50 @@ export default function AddOfflineDonationModal({ isOpen, onClose, onSuccess }) 
                                     className="w-full border border-gray-200 rounded-lg py-2.5 pr-3.5 text-sm text-gray-800 bg-white focus:outline-none focus:border-emerald-400 focus:ring-4 focus:ring-emerald-500/8 transition-all duration-150"
                                     style={{ paddingLeft: "2.5rem" }}
                                 >
-                                    <option value="">
-                                        {isCampaignLoading ? "Loading campaigns..." : "Select Campaign"}
-                                    </option>
-
+                                    <option value="">{isCampaignLoading ? "Loading campaigns..." : "Select Campaign"}</option>
                                     {campaigns.map((campaign) => (
-                                        <option key={campaign._id} value={campaign._id}>
-                                            {campaign.title}
-                                        </option>
+                                        <option key={campaign._id} value={campaign._id}>{campaign.title}</option>
                                     ))}
                                 </select>
                             </div>
                         </div>
+
+                        {/* Donation Type */}
+                        <div className="space-y-2.5">
+                            <p className="text-[10px] font-semibold section-label uppercase text-gray-900">
+                                Donation Type <span className="text-rose-400">*</span>
+                            </p>
+                            <div className="grid grid-cols-5 gap-2">
+                                {DONATION_TYPES.map((type) => {
+                                    const isActive = formData.donationType === type;
+                                    return (
+                                        <button
+                                            key={type}
+                                            onClick={() => setFormData({ ...formData, donationType: type })}
+                                            className={`method-pill py-2 rounded-lg text-xs font-semibold border ${isActive
+                                                ? "bg-emerald-50 border-emerald-300 text-emerald-700"
+                                                : "bg-white border-gray-200 text-gray-500 hover:border-gray-300 hover:text-gray-700 hover:bg-gray-50"
+                                                }`}
+                                        >
+                                            {type}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
                         {/* Amount */}
                         <div className="space-y-2">
                             <p className="text-[10px] font-semibold section-label uppercase text-gray-900">Donation Amount</p>
                             <div className="relative group">
-                                <IndianRupee
-                                    size={15}
-                                    className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-300 group-focus-within:text-emerald-500 transition-colors"
-                                />
+                                <IndianRupee size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-300 group-focus-within:text-emerald-500 transition-colors" />
                                 <input
                                     type="number"
                                     name="amount"
                                     value={formData.amount}
                                     onChange={handleChange}
+                                    onWheel={(e) => e.target.blur()}
+                                    step="1"
                                     placeholder="0.00"
                                     className="w-full border border-gray-200 rounded-lg py-3 pl-9 pr-4 text-[22px] font-semibold text-gray-900 bg-white placeholder:text-gray-200 focus:outline-none focus:border-emerald-400 focus:ring-4 focus:ring-emerald-500/8 transition-all duration-150 tracking-tight [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                 />
@@ -260,7 +286,7 @@ export default function AddOfflineDonationModal({ isOpen, onClose, onSuccess }) 
                         {/* Payment Method */}
                         <div className="space-y-2.5">
                             <p className="text-[10px] font-semibold section-label uppercase text-gray-900">Payment Method</p>
-                            <div className="grid grid-cols-4 gap-2">
+                            <div className="grid grid-cols-5 gap-2">
                                 {Object.entries(METHOD_CONFIG).map(([key, cfg]) => {
                                     const isActive = formData.method === key;
                                     return (
@@ -280,10 +306,35 @@ export default function AddOfflineDonationModal({ isOpen, onClose, onSuccess }) 
                         </div>
 
                         {/* Method-specific fields */}
+                        {/* Method-specific fields */}
                         <div className="space-y-2.5">
                             <p className="text-[10px] font-semibold section-label uppercase text-gray-400">{formData.method} Details</p>
                             <div className="grid grid-cols-2 gap-3">
                                 {activeFields.map((fieldKey) => {
+                                    // Special case: paymentApp as a select
+                                    if (fieldKey === "paymentApp") {
+                                        return (
+                                            <div key="paymentApp" className="flex flex-col gap-1.5">
+                                                <label className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest">Payment App</label>
+                                                <div className="relative group">
+                                                    <Smartphone size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-300 group-focus-within:text-emerald-500 transition-colors duration-150" />
+                                                    <select
+                                                        name="paymentApp"
+                                                        value={formData.paymentApp}
+                                                        onChange={handleChange}
+                                                        className="w-full border border-gray-200 rounded-lg py-2.5 pr-3.5 text-sm text-gray-800 bg-white focus:outline-none focus:border-emerald-400 focus:ring-4 focus:ring-emerald-500/8 transition-all duration-150 appearance-none"
+                                                        style={{ paddingLeft: "2.5rem" }}
+                                                    >
+                                                        <option value="">Select App</option>
+                                                        {PAYMENT_APPS.map((app) => (
+                                                            <option key={app} value={app}>{app}</option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        );
+                                    }
+
                                     const meta = FIELD_META[fieldKey];
                                     return (
                                         <FormField

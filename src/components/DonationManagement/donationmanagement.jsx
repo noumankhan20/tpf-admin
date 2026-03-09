@@ -235,6 +235,7 @@ export default function DonationManagement() {
         endDate: '',
         minAmount: '',
         maxAmount: '',
+        donationType: '',
     });
 
     // What is actually applied to API
@@ -264,9 +265,11 @@ export default function DonationManagement() {
         if (appliedFilters.endDate) params.endDate = appliedFilters.endDate;
         if (appliedFilters.minAmount) params.minAmount = appliedFilters.minAmount;
         if (appliedFilters.maxAmount) params.maxAmount = appliedFilters.maxAmount;
-
+        if (appliedFilters.donationType) {
+            params.donationType = appliedFilters.donationType;
+        }
         return params;
-    }, [currentPage, debouncedSearch, appliedFilters,itemsPerPage]);
+    }, [currentPage, debouncedSearch, appliedFilters, itemsPerPage]);
 
 
     // Fetch donations using RTK Query
@@ -291,7 +294,9 @@ export default function DonationManagement() {
 
         return () => clearTimeout(timer);
     }, [searchQuery]);
-
+    const totalApprovedOfflineAmount = data?.totalApprovedOfflineAmount || 0;
+    const totalApprovedOfflineDonations = data?.totalApprovedOfflineDonations || 0;
+    const pendingOfflineDonations = data?.pendingOfflineDonations || 0;
     // Extract donations and pagination from API response
     const donations = data?.donations || [];
     const pagination = data?.pagination || { currentPage: 1, totalPages: 1, totalDonations: 0 };
@@ -323,38 +328,113 @@ export default function DonationManagement() {
                 </div>
 
                 {/* Stats Cards */}
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-4 sm:mb-8">
-                    <div className="bg-white rounded-lg shadow p-3 sm:p-6">
-                        <p className="text-xs sm:text-sm font-medium text-gray-600">Total Donations</p>
-                        <p className="mt-1 sm:mt-2 text-xl sm:text-3xl font-bold text-gray-900">
-                            {isLoading ? '...' : pagination.totalDonations} {/* Display total donations */}
+                {/* Stats Cards */}
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+
+                    {/* Total Donations */}
+                    <div className="relative bg-white rounded-2xl p-5 overflow-hidden group"
+                        style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(16,185,129,0.08)' }}>
+                        <div className="absolute top-0 right-0 w-24 h-24 rounded-full opacity-5 -translate-y-6 translate-x-6"
+                            style={{ background: 'radial-gradient(circle, #10b981, transparent)' }} />
+                        <div className="flex items-center gap-2 mb-3">
+                            <div className="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center flex-shrink-0">
+                                <svg className="w-4 h-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2z" />
+                                </svg>
+                            </div>
+                            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Total Donations</p>
+                        </div>
+                        <p className="text-3xl font-bold text-gray-800 tabular-nums">
+                            {isLoading ? (
+                                <span className="inline-block w-16 h-8 bg-gray-100 rounded-lg animate-pulse" />
+                            ) : pagination.totalDonations}
                         </p>
+                        <div className="mt-3 h-0.5 w-8 rounded-full bg-emerald-400" />
                     </div>
-                    <div className="bg-white rounded-lg shadow p-3 sm:p-6">
-                        <p className="text-xs sm:text-sm font-medium text-gray-600">Total Online Donation Amount</p>
-                        <p className="mt-1 sm:mt-2 text-xl sm:text-3xl font-bold text-emerald-600">
-                            {isLoading ? '...' : `₹${totalAmount.toLocaleString('en-IN')}`}
+
+                    {/* Online Donation Amount */}
+                    <div className="relative rounded-2xl p-5 overflow-hidden"
+                        style={{
+                            background: 'linear-gradient(135deg, #059669 0%, #10b981 60%, #34d399 100%)',
+                            boxShadow: '0 4px 20px rgba(16,185,129,0.35)'
+                        }}>
+                        <div className="absolute top-0 right-0 w-32 h-32 rounded-full opacity-10 -translate-y-8 translate-x-8"
+                            style={{ background: 'white' }} />
+                        <div className="flex items-center gap-2 mb-3">
+                            <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center flex-shrink-0">
+                                <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                            </div>
+                            <p className="text-xs font-semibold text-emerald-100 uppercase tracking-wider">Online Amount</p>
+                        </div>
+                        <p className="text-2xl sm:text-3xl font-bold text-white tabular-nums">
+                            {isLoading ? (
+                                <span className="inline-block w-24 h-8 bg-white/20 rounded-lg animate-pulse" />
+                            ) : `₹${totalAmount.toLocaleString('en-IN')}`}
                         </p>
+                        <div className="mt-3 h-0.5 w-8 rounded-full bg-white/40" />
                     </div>
+
+                    {/* Offline Donations */}
                     <div
                         onClick={() => router.push('/donation-management/offline-donation')}
-                        className="bg-white rounded-lg cursor-pointer shadow p-3 sm:p-6 col-span-2 lg:col-span-1 hover:shadow-md transition-shadow"
+                        className="relative bg-white rounded-2xl p-5 overflow-hidden cursor-pointer col-span-2 lg:col-span-2 transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 group"
+                        style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(16,185,129,0.08)' }}
+                        onMouseEnter={e => e.currentTarget.style.boxShadow = '0 8px 30px rgba(16,185,129,0.18)'}
+                        onMouseLeave={e => e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(16,185,129,0.08)'}
                     >
-                        <div className="flex items-center justify-between">
-                            <p className="text-xs sm:text-sm font-medium text-gray-600">
-                                Offline Donations
-                            </p>
+                        <div className="absolute top-0 right-0 w-32 h-32 rounded-full opacity-5 -translate-y-8 translate-x-8"
+                            style={{ background: 'radial-gradient(circle, #10b981, transparent)' }} />
 
-                            {/* Pending Count Badge */}
-                            <span className="inline-flex items-center justify-center min-w-[24px] h-6 px-2 rounded-full text-xs font-bold bg-red-100 text-red-600">
-                                {isPendingCountLoading ? '…' : pendingCount}
-                            </span>
+                        {/* Header */}
+                        <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center gap-2">
+                                <div className="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center flex-shrink-0">
+                                    <svg className="w-4 h-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                    </svg>
+                                </div>
+                                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Offline Donations</p>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                                <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse" />
+                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-red-50 text-red-500 border border-red-100">
+                                    {isLoading ? '…' : `${pendingOfflineDonations} pending`}
+                                </span>
+                            </div>
                         </div>
 
-                        <p className="mt-2 flex items-center gap-1 text-xs sm:text-sm font-medium text-orange-400">
-                            <span>Click here to view Offline Donations</span>
-                            <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4" />
-                        </p>
+                        {/* Stats Row */}
+                        <div className="grid grid-cols-2 gap-3 mb-4">
+                            <div className="bg-emerald-50 rounded-xl p-3">
+                                <p className="text-xs text-gray-400 font-medium mb-1">Approved</p>
+                                <p className="text-xl font-bold text-emerald-600 tabular-nums">
+                                    {isLoading ? <span className="inline-block w-10 h-6 bg-emerald-100 rounded animate-pulse" /> : totalApprovedOfflineDonations}
+                                </p>
+                            </div>
+                            <div className="bg-red-50 rounded-xl p-3">
+                                <p className="text-xs text-gray-400 font-medium mb-1">Pending</p>
+                                <p className="text-xl font-bold text-red-500 tabular-nums">
+                                    {isLoading ? <span className="inline-block w-10 h-6 bg-red-100 rounded animate-pulse" /> : pendingOfflineDonations}
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Amount Footer */}
+                        <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+                            <p className="text-xs font-medium text-gray-400">Approved Amount</p>
+                            <p className="text-lg font-bold text-gray-800 tabular-nums">
+                                {isLoading ? <span className="inline-block w-20 h-5 bg-gray-100 rounded animate-pulse" /> : `₹${totalApprovedOfflineAmount.toLocaleString("en-IN")}`}
+                            </p>
+                        </div>
+
+                        {/* Arrow hint */}
+                        <div className="absolute bottom-4 right-4 w-6 h-6 rounded-full bg-emerald-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                            <svg className="w-3 h-3 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                            </svg>
+                        </div>
                     </div>
 
                 </div>
@@ -464,7 +544,13 @@ export default function DonationManagement() {
                                                 <div className="text-sm text-gray-900">{donation.kycStatus}</div>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                {new Date(donation.date).toLocaleDateString('en-IN')}
+                                                {new Date(donation.date).toLocaleString('en-IN', {
+                                                    day: '2-digit',
+                                                    month: 'short',
+                                                    year: 'numeric',
+                                                    hour: '2-digit',
+                                                    minute: '2-digit',
+                                                })}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap">
                                                 <PurposeBadge purpose={donation.purpose} />
@@ -517,7 +603,13 @@ export default function DonationManagement() {
                                     <div className="flex justify-between gap-2">
                                         <span className="text-gray-500">Date:</span>
                                         <span className="text-gray-900">
-                                            {new Date(donation.date).toLocaleDateString('en-IN')}
+                                            {new Date(donation.date).toLocaleString('en-IN', {
+                                                day: '2-digit',
+                                                month: 'short',
+                                                year: 'numeric',
+                                                hour: '2-digit',
+                                                minute: '2-digit',
+                                            })}
                                         </span>
                                     </div>
                                 </div>
