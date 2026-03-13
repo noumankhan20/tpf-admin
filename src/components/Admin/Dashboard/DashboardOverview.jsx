@@ -20,8 +20,9 @@ const COLORS = {
     SADAQAH: "#f59e0b",
     LILLAH: "#6366f1",
     IMDAD: "#14b8a6",
-    OFFLINE: "#64748b", // Slate color for offline
-    TIP: "#ec4899", // Pink color for tips
+    OFFLINE: "#64748b",
+    TIP: "#ec4899",
+    RIBA: "#94a3b8", // Muted slate for Riba/Interest
 };
 
 
@@ -259,13 +260,13 @@ const DonationTypeBreakdown = () => {
             series: [{
                 name: 'Donation Type',
                 type: 'pie',
-                radius: ['55%', '85%'],
+                radius: ['50%', '80%'], // Slightly smaller to ensure breathing room
                 center: ['50%', '50%'],
                 avoidLabelOverlap: false,
+                minAngle: 15, // ⭐ ENSURES SMALL VALUES ARE ALWAYS VISIBLE
+                padAngle: 4,  // ⭐ ADDS GAPS TO STAND OUT TINY SLICES
                 itemStyle: {
-                    borderRadius: 16,
-                    borderColor: '#fff',
-                    borderWidth: 6
+                    borderRadius: 12, // Rounded segments for "bead" look
                 },
                 label: {
                     show: false,
@@ -274,7 +275,7 @@ const DonationTypeBreakdown = () => {
                 emphasis: {
                     label: {
                         show: true,
-                        fontSize: 24,
+                        fontSize: 22,
                         fontWeight: 'bold',
                         formatter: '{d}%'
                     },
@@ -330,8 +331,8 @@ const DonationTypeBreakdown = () => {
 
 // ... (DonationTrendChart and DonationTypeBreakdown remain largely same, but ensure they use hooks correctly)
 
-const MetricSparkCard = ({ title, value, color, data, prefix = "" }) => {
-    const chartOption = {
+const MetricSparkCard = React.memo(({ title, value, color, data, prefix = "" }) => {
+    const chartOption = useMemo(() => ({
         grid: { left: 0, right: 0, top: 10, bottom: 0 },
         xAxis: { type: 'category', show: false },
         yAxis: { type: 'value', show: false },
@@ -349,7 +350,7 @@ const MetricSparkCard = ({ title, value, color, data, prefix = "" }) => {
             },
             animationDuration: 2000
         }]
-    };
+    }), [data, color]);
 
     return (
         <motion.div whileHover={{ y: -5 }} className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm hover:shadow-xl transition-all">
@@ -363,14 +364,14 @@ const MetricSparkCard = ({ title, value, color, data, prefix = "" }) => {
                 </div>
             </div>
             <div className="h-16 w-full">
-                <ReactEcharts option={chartOption} style={{ height: '100%' }} />
+                <ReactEcharts option={chartOption} style={{ height: '100%' }} notMerge={true} />
             </div>
         </motion.div>
     );
-};
+});
 
-const SalesGoalGauge = ({ progress, targetLabel }) => {
-    const option = {
+const SalesGoalGauge = React.memo(({ progress, targetLabel }) => {
+    const option = useMemo(() => ({
         series: [{
             type: 'gauge',
             startAngle: 180,
@@ -397,26 +398,27 @@ const SalesGoalGauge = ({ progress, targetLabel }) => {
             },
             data: [{ value: progress || 0 }]
         }]
-    };
+    }), [progress]);
+
     return (
         <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm h-full flex flex-col items-center">
             <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-4 w-full text-center">Monthly Goal Progress</p>
             <div className="h-40 w-full mb-4">
-                <ReactEcharts option={option} style={{ height: '100%' }} />
+                <ReactEcharts option={option} style={{ height: '100%' }} notMerge={true} />
             </div>
             <p className="text-xs font-bold text-gray-500 text-center">{targetLabel}</p>
         </div>
     );
-};
+});
 
-const ActivityHeatmap = () => {
+const ActivityHeatmap = React.memo(() => {
     const { data: heatmapRes, isLoading } = useGetActivityHeatmapQuery();
-    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    const hours = ['12a', '1a', '2a', '3a', '4a', '5a', '6a', '7a', '8a', '9a', '10a', '11a', '12p', '1p', '2p', '3p', '4p', '5p', '6p', '7p', '8p', '9p', '10p', '11p'];
+    const days = useMemo(() => ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'], []);
+    const hours = useMemo(() => ['12a', '1a', '2a', '3a', '4a', '5a', '6a', '7a', '8a', '9a', '10a', '11a', '12p', '1p', '2p', '3p', '4p', '5p', '6p', '7p', '8p', '9p', '10p', '11p'], []);
 
     const heatmapData = heatmapRes?.data || [];
 
-    const option = {
+    const option = useMemo(() => ({
         tooltip: {
             position: 'top',
             formatter: (params) => {
@@ -436,7 +438,7 @@ const ActivityHeatmap = () => {
             label: { show: false },
             emphasis: { itemStyle: { shadowBlur: 10, shadowColor: 'rgba(0, 0, 0, 0.5)' } }
         }]
-    };
+    }), [heatmapData, days, hours]);
 
     return (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-white rounded-3xl p-8 border border-gray-100 shadow-sm w-full flex flex-col">
@@ -451,7 +453,7 @@ const ActivityHeatmap = () => {
                 {isLoading ? (
                     <div className="h-full flex items-center justify-center text-gray-400">Synchronizing Heat Data...</div>
                 ) : (
-                    <ReactEcharts option={option} style={{ height: '100%' }} />
+                    <ReactEcharts option={option} style={{ height: '100%' }} notMerge={true} />
                 )}
             </div>
             <div className="mt-6 pt-6 border-t border-gray-50 flex items-center gap-4">
@@ -465,7 +467,7 @@ const ActivityHeatmap = () => {
             </div>
         </motion.div>
     );
-};
+});
 
 export default function DashboardOverview() {
     const router = useRouter();
