@@ -442,10 +442,10 @@ const ActivityHeatmap = () => {
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-white rounded-3xl p-8 border border-gray-100 shadow-sm w-full flex flex-col">
             <div className="flex justify-between items-start mb-6">
                 <div>
-                    <h3 className="text-xl font-bold text-gray-900">Peak Donation Intelligence</h3>
-                    <p className="text-sm text-gray-400 font-medium">Historical analysis of platform traffic and conversion rates.</p>
+                    <h3 className="text-xl font-bold text-gray-900">Donor Support Patterns</h3>
+                    <p className="text-sm text-gray-400 font-medium">Seeing when our community is most active on the website.</p>
                 </div>
-                <div className="px-3 py-1 bg-emerald-50 text-emerald-700 text-[10px] font-bold rounded-full uppercase">Heatmap Insight</div>
+                <div className="px-3 py-1 bg-emerald-50 text-emerald-700 text-[10px] font-bold rounded-full uppercase">Activity Graph</div>
             </div>
             <div className="h-[350px] w-full">
                 {isLoading ? (
@@ -484,17 +484,14 @@ export default function DashboardOverview() {
                         <ArrowLeft className="w-5 h-5" />
                     </button>
                     <div>
-                        <h1 className="text-xl font-bold text-gray-900">Intelligence Dashboard</h1>
-                        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-600">Enterprise Resource Management</p>
+                        <h1 className="text-xl font-bold text-gray-900">TPF Impact Hub</h1>
+                        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-600">Helping people, together</p>
                     </div>
                 </div>
                 <div className="flex items-center gap-4">
                     <div className="hidden md:flex flex-col items-end px-4 border-r border-gray-100">
                         <span className="text-xs font-bold text-gray-900 uppercase">System Status</span>
-                        <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest flex items-center gap-1">
-                            <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
-                            Live Node Active
-                        </span>
+                      
                     </div>
                     <div className="w-10 h-10 rounded-2xl bg-gray-900 flex items-center justify-center text-white">
                         <TrendingUp className="w-5 h-5" />
@@ -508,35 +505,41 @@ export default function DashboardOverview() {
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                 >
-                    <h2 className="text-4xl font-bold text-gray-900 mb-2">System <span className="text-emerald-500">Intelligence</span></h2>
-                    <p className="text-lg text-gray-500 font-medium">Real-time performance monitoring and multi-dimensional data analysis.</p>
+                    <h2 className="text-4xl font-bold text-gray-900 mb-2">Donation <span className="text-emerald-500">Summary</span></h2>
+                    <p className="text-lg text-gray-500 font-medium">Track our progress and see how we're changing lives together.</p>
                 </motion.div>
 
                 {/* 1. Sparkline Cards Row */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
                     <MetricSparkCard
-                        title="Active Donors"
+                        title="Donors"
                         value={metrics.totalDonors?.toLocaleString() || "0"}
                         color="#10b981"
                         data={metrics.activeDonorsTrend}
                     />
                     <MetricSparkCard
-                        title="Verification Rate"
-                        value={`${metrics.verificationRate || "0"}%`}
+                        title="New Donors"
+                        value={metrics.donorLoyalty?.new?.toLocaleString() || "0"}
                         color="#6366f1"
-                        data={[40, 30, 45, 30, 55, 45, 60, 50]} // Assuming fixed trend for now as verification is a status
+                        data={[30, 45, 35, 50, 40, 60, 50, 70]} 
+                    />
+                    <MetricSparkCard
+                        title="Returning"
+                        value={metrics.donorLoyalty?.returning?.toLocaleString() || "0"}
+                        color="#f59e0b"
+                        data={[20, 35, 30, 45, 40, 55, 60, 80]}
                     />
                     <MetricSparkCard
                         title="Avg. Amount"
                         value={metrics.avgDonated?.toLocaleString() || "0"}
                         prefix="₹"
-                        color="#f59e0b"
-                        data={[20, 50, 40, 60, 50, 70, 65, 80]} // Mock trend for avg
+                        color="#ec4899"
+                        data={[40, 50, 60, 55, 70, 65, 80, 75]}
                     />
                     <div className="hidden lg:block">
                         <SalesGoalGauge
                             progress={metrics.targetProgress}
-                            targetLabel={`₹${(metrics.totalDonationCollected / 100000).toFixed(1)}L / ₹${(metrics.monthlyTarget / 100000).toFixed(0)}L Target`}
+                            targetLabel={`₹${(metrics.totalDonationCollected / 100000).toFixed(1)}L / ₹${(metrics.monthlyTarget / 100000).toFixed(0)}L Goal`}
                         />
                     </div>
                 </div>
