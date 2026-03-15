@@ -332,10 +332,8 @@ export default function FundraisingCMS() {
       }
 
       if (editingCard) {
-        form.append(
-          "imageGallery",
-          JSON.stringify(formData.imageGallery)
-        );
+        form.append("imageGallery", JSON.stringify(formData.imageGallery));
+        form.append("existingDocuments", JSON.stringify(formData.existingDocuments));
       }
 
       if (formData.mediaType === "video" && formData.video instanceof File) {

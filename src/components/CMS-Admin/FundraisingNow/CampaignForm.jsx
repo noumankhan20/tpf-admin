@@ -76,6 +76,8 @@ export default function CampaignForm({
       currentStatus: campaign.currentStatus || "",
       imageGallery: campaign.imageGallery || [],
       images: [],
+      existingDocuments: campaign.documents || [],
+      documents: [],
       unitConfig: campaign.unitConfig || prev.unitConfig,
     }));
   };
@@ -520,6 +522,78 @@ export default function CampaignForm({
                     <div className="pt-2">
                       <label className="block text-xs font-bold text-gray-400 uppercase mb-2">Current Status Update</label>
                       <textarea value={formData.currentStatus} onChange={(e) => setFormData(p => ({ ...p, currentStatus: e.target.value }))} className="w-full p-3 bg-emerald-50/30 border border-emerald-100 rounded-xl text-xs font-medium focus:border-emerald-400 outline-none" rows={2} placeholder="Quick update..." />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Documents Section */}
+                <div className="pt-8 border-t border-gray-100">
+                  <div className="flex items-center gap-2 mb-4">
+                    <FileText className="text-emerald-500" size={18} />
+                    <label className="block text-xs font-extrabold text-gray-400 uppercase tracking-wider">Supporting Documents</label>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-4">
+                      <label className="h-32 border-2 border-dashed border-gray-200 rounded-2xl flex flex-col items-center justify-center cursor-pointer hover:border-emerald-500 hover:bg-emerald-50/30 transition-all group">
+                        <input type="file" multiple onChange={handleDocumentUpload} className="hidden" />
+                        <Upload className="mb-2 text-gray-400 group-hover:text-emerald-500 transition-colors" size={24} />
+                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest group-hover:text-emerald-600">Click to Upload Documents</span>
+                        <p className="text-[9px] text-gray-400 mt-1">PDF, DOC, Images supported</p>
+                      </label>
+                    </div>
+
+                    <div className="space-y-2">
+                      {/* Existing Documents */}
+                      {formData.existingDocuments?.map((doc, i) => (
+                        <div key={`ex-${i}`} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-100 group hover:border-gray-200 transition-all">
+                          <div className="flex items-center gap-3 overflow-hidden">
+                            <div className="p-2 bg-white rounded-lg shadow-sm">
+                              <FileText className="text-gray-400" size={14} />
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="text-[10px] font-black text-gray-400 uppercase leading-none mb-1">Existing</span>
+                              <span className="text-xs font-bold text-gray-700 truncate max-w-[180px]">{doc.name}</span>
+                            </div>
+                          </div>
+                          <button 
+                            type="button"
+                            onClick={() => removeDocument(i, true)} 
+                            className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      ))}
+
+                      {/* Newly Added Documents */}
+                      {formData.documents?.map((doc, i) => (
+                        <div key={`new-${i}`} className="flex items-center justify-between p-3 bg-emerald-50/50 rounded-xl border border-emerald-100 group animate-in slide-in-from-right-2 duration-300">
+                          <div className="flex items-center gap-3 overflow-hidden">
+                            <div className="p-2 bg-white rounded-lg shadow-sm border border-emerald-100">
+                              <FileText className="text-emerald-500" size={14} />
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="text-[10px] font-black text-emerald-500 uppercase leading-none mb-1">New Upload</span>
+                              <span className="text-xs font-bold text-emerald-800 truncate max-w-[180px]">{doc.name}</span>
+                            </div>
+                          </div>
+                          <button 
+                            type="button"
+                            onClick={() => removeDocument(i, false)} 
+                            className="p-2 text-emerald-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      ))}
+
+                      {!formData.existingDocuments?.length && !formData.documents?.length && (
+                        <div className="h-32 flex flex-col items-center justify-center border-2 border-dotted border-gray-100 rounded-2x">
+                          <FileText className="text-gray-100 mb-2" size={32} />
+                          <p className="text-[10px] font-bold text-gray-300 uppercase">No documents attached</p>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
