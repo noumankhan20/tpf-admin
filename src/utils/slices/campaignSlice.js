@@ -5,7 +5,8 @@ export const campaignApiSlice = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
     // Fetch campaigns with pagination
     fetchCampaigns: builder.query({
-      query: ({ page, limit }) => `campaigns/get?page=${page}&limit=${limit}`,
+      query: ({ page = 1, limit = 50, search = '' }) => `campaigns/get?page=${page}&limit=${limit}&search=${search}`,
+      keepUnusedDataFor: 0,
       providesTags: ['Campaigns'], // This will allow cache management for campaigns
     }),
     getCampaignList: builder.query({
