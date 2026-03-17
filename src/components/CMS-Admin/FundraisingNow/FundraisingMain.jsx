@@ -265,12 +265,7 @@ export default function FundraisingCMS() {
       form.append("campaignerName", formData.campaignerName);
       form.append("about", formData.about);
       form.append("currentStatus", formData.currentStatus);
-      if (
-        formData.socialLinks &&
-        Object.values(formData.socialLinks).some(
-          (v) => typeof v === "string" && v.trim() !== ""
-        )
-      ) {
+      if (formData.socialLinks) {
         form.append("socialLinks", JSON.stringify(formData.socialLinks));
       }
 
