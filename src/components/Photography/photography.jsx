@@ -359,13 +359,13 @@ const UploadPage = ({ setActiveView, selectedTask, assignments, onTaskSelect }) 
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!images.length && !driveLink) {
-            alert('Please upload at least one image or provide a drive link.');
+            toast.warning('Please upload at least one image or provide a drive link.');
             return;
         }
 
         const taskId = selectedTask?.id || selectedTask?._id;
         if (!taskId || !selectedTask?.campaignId) {
-            alert('Missing Task ID or Campaign ID.');
+            toast.error('Missing Task ID or Campaign ID.');
             return;
         }
 
@@ -388,11 +388,11 @@ const UploadPage = ({ setActiveView, selectedTask, assignments, onTaskSelect }) 
 
             await completeTask({ taskId }).unwrap();
 
-            alert('Images uploaded and task completed successfully!');
+            toast.success('Images uploaded and task completed successfully!');
             setActiveView('dashboard');
         } catch (error) {
             console.error('Submission failed:', error);
-            alert(error?.data?.message || 'Failed to submit. Please try again.');
+            toast.error(error?.data?.message || 'Failed to submit. Please try again.');
         }
     };
 

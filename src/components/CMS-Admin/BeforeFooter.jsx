@@ -9,6 +9,9 @@ import {
 } from "@/utils/slices/cms/beforefooterApi";
 import { useRouter } from "next/navigation";
 import { getMediaUrl } from "@/utils/media";
+import { toast } from "react-toastify";
+import ConfirmModal from "../Common/ConfirmModal";
+
 export default function StartFundraiserBannerCMS() {
   const router = useRouter();
 
@@ -27,6 +30,7 @@ export default function StartFundraiserBannerCMS() {
   const [imagePreview, setImagePreview] = useState("");
   const [hasChanges, setHasChanges] = useState(false);
   const [showPreview, setShowPreview] = useState(true);
+  const [isResettingModal, setIsResettingModal] = useState(false);
   const { data, isLoading, error, refetch } = useGetBeforeFooterQuery();
 
   const [createBeforeFooter, { isLoading: isCreating }] = useCreateBeforeFooterMutation();
@@ -62,12 +66,12 @@ export default function StartFundraiserBannerCMS() {
     if (!file) return;
 
     if (!file.type.startsWith("image/")) {
-      alert("Please upload a valid image file (JPG, PNG, WebP)");
+      toast.error("Please upload a valid image file (JPG, PNG, WebP)");
       return;
     }
 
     if (file.size > 10 * 1024 * 1024) {
-      alert("Image size should be less than 10MB");
+      toast.error("Image size should be less than 10MB");
       return;
     }
 
@@ -87,7 +91,7 @@ export default function StartFundraiserBannerCMS() {
 
   const handleSave = async () => {
     if (!formData.title.trim() || !formData.description.trim()) {
-      alert("All fields required");
+      toast.warn("All fields required");
       return;
     }
 
@@ -101,25 +105,31 @@ export default function StartFundraiserBannerCMS() {
     try {
       if (mode === "create") {
         await createBeforeFooter(form).unwrap();
-        alert("Created successfully!");
+        toast.success("Created successfully!");
       } else {
         await updateBeforeFooter({
           id: bannerData._id,
           formData: form,
         }).unwrap();
-        alert("Updated successfully!");
+        toast.success("Updated successfully!");
       }
 
       setHasChanges(false);
     } catch (err) {
-      alert(err?.data?.message || "Failed to save");
+      toast.error(err?.data?.message || "Failed to save");
     }
   };
 
 
   const handleReset = () => {
-    if (hasChanges && !confirm("Discard unsaved changes?")) return;
+    if (hasChanges) {
+      setIsResettingModal(true);
+    } else {
+      confirmReset();
+    }
+  };
 
+  const confirmReset = () => {
     if (mode === "edit" && bannerData) {
       setFormData({
         title: bannerData.title,
@@ -140,6 +150,7 @@ export default function StartFundraiserBannerCMS() {
 
     setImageFile(null);
     setHasChanges(false);
+    setIsResettingModal(false);
   };
 
   if (!formData) return (
@@ -198,6 +209,15 @@ export default function StartFundraiserBannerCMS() {
                   {showPreview ? "Hide Preview" : "Show Preview"}
                 </button>
               </div>
+
+              <ConfirmModal
+                isOpen={isResettingModal}
+                onClose={() => setIsResettingModal(false)}
+                onConfirm={confirmReset}
+                title="Discard Changes"
+                message="Are you sure you want to discard your unsaved changes? This action cannot be undone."
+                confirmText="Discard"
+              />
             </div>
 
             {/* Preview Section */}

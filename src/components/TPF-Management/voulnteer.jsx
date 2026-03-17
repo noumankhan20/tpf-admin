@@ -33,7 +33,7 @@ import {
     useGetVolunteerByIdQuery,
     useUpdateVoucherStatusMutation
 } from '@/utils/slices/vouchersApiSlice';
-import { toast } from 'react-hot-toast';
+import { toast } from 'react-toastify';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { getMediaUrl } from '@/utils/media';

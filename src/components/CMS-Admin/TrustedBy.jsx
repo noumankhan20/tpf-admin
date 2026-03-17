@@ -24,11 +24,15 @@ import {
   useUpdateTrustedByMutation,
   useDeleteTrustedByMutation
 } from "@/utils/slices/cms/trustedbyApi";
+import { toast } from "react-toastify";
+import ConfirmModal from "../Common/ConfirmModal";
 
 export default function PartnersCMS() {
   const [viewMode, setViewMode] = useState("overview");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedPartner, setSelectedPartner] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteId, setDeleteId] = useState(null);
   const router = useRouter();
 
   const {
@@ -94,7 +98,7 @@ export default function PartnersCMS() {
   };
 
   const handleSavePartner = async () => {
-    if (!partnerForm.name.trim()) return alert("Name required");
+    if (!partnerForm.name.trim()) return toast.warn("Name required");
 
     const formData = new FormData();
     formData.append("title", partnerForm.name);
@@ -109,28 +113,35 @@ export default function PartnersCMS() {
           id: selectedPartner.id,
           formData,
         }).unwrap();
-        alert("Partner updated successfully");
+        toast.success("Partner updated successfully");
       } else {
         await createTrustedBy(formData).unwrap();
-        alert("Partner added successfully");
+        toast.success("Partner added successfully");
       }
 
       setViewMode("overview");
       setSelectedPartner(null);
     } catch (err) {
-      alert(err?.data?.message || "Operation failed");
+      toast.error(err?.data?.message || "Operation failed");
     }
   };
 
 
   const handleDeletePartner = async (id) => {
-    if (!confirm("Delete this partner?")) return;
+    setDeleteId(id);
+    setIsDeleting(true);
+  };
 
+  const confirmDelete = async () => {
+    if (!deleteId) return;
     try {
-      await deleteTrustedBy(id).unwrap();
-      alert("Partner deleted");
+      await deleteTrustedBy(deleteId).unwrap();
+      toast.success("Partner deleted");
     } catch {
-      alert("Failed to delete partner");
+      toast.error("Failed to delete partner");
+    } finally {
+      setIsDeleting(false);
+      setDeleteId(null);
     }
   };
 
@@ -209,6 +220,14 @@ export default function PartnersCMS() {
                   </p>
                 </div>
               </div>
+
+              <ConfirmModal
+                isOpen={isDeleting}
+                onClose={() => setIsDeleting(false)}
+                onConfirm={confirmDelete}
+                title="Delete Partner"
+                message="Are you sure you want to remove this partner? This will remove their logo from the 'Trusted By' section."
+              />
             </div>
 
             {/* OVERVIEW MODE */}

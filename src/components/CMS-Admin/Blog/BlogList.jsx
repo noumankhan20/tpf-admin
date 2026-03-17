@@ -68,7 +68,7 @@ export default function BlogList({
           {/* Status Filter */}
           <div className="flex gap-2">
             <button
-              onClick={() => handleStatusFilter("PUBLISHED")}
+              onClick={() => handleStatusFilter("published")}
               className={`px-4 py-2.5 rounded-xl font-medium text-sm transition-all ${
                 filters.status === "published"
                   ? "bg-emerald-600 text-white shadow-lg shadow-emerald-500/30"

@@ -17,7 +17,6 @@ export default function AdminLogin() {
 
   const dispatch = useDispatch();
   const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState('');
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -33,7 +32,6 @@ export default function AdminLogin() {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setError('');
     setFormData(prev => ({
       ...prev,
       [name]: value
@@ -42,10 +40,8 @@ export default function AdminLogin() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
-
     if (!formData.email || !formData.password) {
-      setError('Please fill in all fields');
+      toast.warning('Please fill in all fields');
       return;
     }
 
@@ -66,7 +62,6 @@ export default function AdminLogin() {
     } catch (err) {
       console.log("Login failed:", err);
       const errorMessage = err?.data?.message || 'Invalid username or password';
-      setError(errorMessage);
       toast.error(errorMessage);
     }
   };
@@ -144,13 +139,6 @@ export default function AdminLogin() {
             <p className="text-gray-600 text-sm">Please sign in to continue</p>
           </div>
 
-          {/* Error Alert */}
-          {error && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-start space-x-2">
-              <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
-              <p className="text-sm text-red-700">{error}</p>
-            </div>
-          )}
 
           {/* Login Form */}
           <div className="space-y-4">

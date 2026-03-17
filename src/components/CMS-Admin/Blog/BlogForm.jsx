@@ -44,7 +44,7 @@ export default function BlogForm({
     coverImagePreview: null,
     video: null,
     videoPreview: null,
-    status: "DRAFT",
+    status: "draft",
     author: {
       name: "",
       info: "",
@@ -69,7 +69,7 @@ export default function BlogForm({
         videoPreview: selectedBlog.video?.url
           ? getMediaUrl(selectedBlog.video.url)
           : null,
-        status: selectedBlog.status || "DRAFT",
+        status: selectedBlog.status || "draft",
         author: {
           name: selectedBlog.author?.name || "",
           info: selectedBlog.author?.info || "",
@@ -684,8 +684,8 @@ This is the second paragraph.`}
             </label>
             <div className="flex gap-3">
               <button
-                onClick={() => handleChange("status", "DRAFT")}
-                className={`flex-1 px-4 py-3 rounded-xl font-semibold transition-all ${formData.status === "DRAFT"
+                onClick={() => handleChange("status", "draft")}
+                className={`flex-1 px-4 py-3 rounded-xl font-semibold transition-all ${formData.status === "draft"
                     ? "bg-amber-600 text-white shadow-lg shadow-amber-500/30"
                     : "bg-slate-100 text-slate-700 hover:bg-slate-200"
                   }`}
@@ -694,8 +694,8 @@ This is the second paragraph.`}
                 Draft
               </button>
               <button
-                onClick={() => handleChange("status", "PUBLISHED")}
-                className={`flex-1 px-4 py-3 rounded-xl font-semibold transition-all ${formData.status === "PUBLISHED"
+                onClick={() => handleChange("status", "published")}
+                className={`flex-1 px-4 py-3 rounded-xl font-semibold transition-all ${formData.status === "published"
                     ? "bg-emerald-600 text-white shadow-lg shadow-emerald-500/30"
                     : "bg-slate-100 text-slate-700 hover:bg-slate-200"
                   }`}

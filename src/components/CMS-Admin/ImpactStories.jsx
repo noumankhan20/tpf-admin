@@ -11,6 +11,8 @@ import {
     useUpdateImpactStoryMutation,
     useDeleteImpactStoryMutation,
 } from "@/utils/slices/cms/impactApi";
+import { toast } from "react-toastify";
+import ConfirmModal from "../Common/ConfirmModal";
 
 // Live Preview Component
 const StoryCardPreview = ({ story, darkMode = false }) => {
@@ -89,6 +91,8 @@ export default function StoryCardsCMS() {
     const [previewDarkMode, setPreviewDarkMode] = useState(false);
     const [readyCampaigns, setReadyCampaigns] = useState([]);
     const [selectedCampaign, setSelectedCampaign] = useState(null);
+    const [isDeleting, setIsDeleting] = useState(false);
+    const [deleteId, setDeleteId] = useState(null);
     const router = useRouter();
 
     const API_BASE = (process.env.NEXT_PUBLIC_BACKEND_API || 'http://localhost:7000/api');
@@ -151,12 +155,12 @@ export default function StoryCardsCMS() {
         if (!file) return;
 
         if (!file.type.startsWith('image/')) {
-            alert('Please upload a valid image file');
+            toast.error('Please upload a valid image file');
             return;
         }
 
         if (file.size > 10 * 1024 * 1024) {
-            alert('Image size should be less than 10MB');
+            toast.error('Image size should be less than 10MB');
             return;
         }
 
@@ -200,8 +204,8 @@ export default function StoryCardsCMS() {
     };
 
     const handleSaveCard = async () => {
-        if (!cardForm.title.trim()) return alert("Title is required");
-        if (!cardForm.excerpt.trim()) return alert("Description is required");
+        if (!cardForm.title.trim()) return toast.warn("Title is required");
+        if (!cardForm.excerpt.trim()) return toast.warn("Description is required");
 
         try {
             const formData = new FormData();
@@ -223,8 +227,7 @@ export default function StoryCardsCMS() {
 
             if (viewMode === "edit-card" && selectedCard) {
                 res = await updateImpactStory({ id: selectedCard._id, formData }).unwrap();
-
-                alert("Story updated successfully!");
+                toast.success("Story updated successfully!");
             } else {
                 res = await createImpactStory(formData).unwrap();
 
@@ -243,26 +246,33 @@ export default function StoryCardsCMS() {
                     }
                 }
 
-                alert("Story added successfully!");
+                toast.success("Story added successfully!");
                 setViewMode("overview");
                 setSelectedCard(null);
                 setSelectedCampaign(null);
             }
         } catch (err) {
             console.error("Error saving story:", err);
-            alert(err.response?.data?.message || "Failed to save story");
+            toast.error(err.response?.data?.message || "Failed to save story");
         }
     };
 
     const handleDeleteCard = async (id) => {
-        if (!confirm("Are you sure you want to delete this story?")) return;
+        setDeleteId(id);
+        setIsDeleting(true);
+    };
 
+    const confirmDelete = async () => {
+        if (!deleteId) return;
         try {
-            await deleteImpactStory(id).unwrap();
-            alert("Story deleted successfully!");
+            await deleteImpactStory(deleteId).unwrap();
+            toast.success("Story deleted successfully!");
         } catch (err) {
             console.error("Error deleting story:", err);
-            alert("Failed to delete story");
+            toast.error("Failed to delete story");
+        } finally {
+            setIsDeleting(false);
+            setDeleteId(null);
         }
     };
 
@@ -322,6 +332,14 @@ export default function StoryCardsCMS() {
                                 Create and manage impactful story cards with beautiful visuals
                             </p>
                         </div>
+
+                        <ConfirmModal
+                            isOpen={isDeleting}
+                            onClose={() => setIsDeleting(false)}
+                            onConfirm={confirmDelete}
+                            title="Delete Impact Story"
+                            message="Are you sure you want to delete this impact story? This action cannot be undone."
+                        />
 
                         {viewMode === "overview" && (
                             <div className="space-y-6">

@@ -7,6 +7,7 @@ import {
     MapPin, Tag, Target, DollarSign, Users as UsersIcon, Video, Image as ImageIconAlt
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { toast } from 'react-toastify';
 
 import {
     useGetCMSTasksQuery,
@@ -275,7 +276,7 @@ const PublishCampaignPage = ({ setActiveView, selectedTask }) => {
         e.preventDefault();
 
         if (selectedMedia.length === 0) {
-            alert('Please select at least one media file from photography submissions');
+            toast.warn('Please select at least one media file from photography submissions');
             return;
         }
 
@@ -306,11 +307,11 @@ const PublishCampaignPage = ({ setActiveView, selectedTask }) => {
                 campaignData
             }).unwrap();
 
-            alert('Campaign published successfully!');
+            toast.success('Campaign published successfully!');
             setActiveView('dashboard');
         } catch (error) {
             console.error('Publish error:', error);
-            alert(error.data?.message || error.data?.error || 'Failed to publish campaign. Please try again.');
+            toast.error(error.data?.message || error.data?.error || 'Failed to publish campaign. Please try again.');
         }
     };
 

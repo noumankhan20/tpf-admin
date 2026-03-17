@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import {
     CheckCircle, XCircle, Building, User, Mail, Globe, Phone, FileText, ArrowRight, Save, Loader2
 } from 'lucide-react';
+import { toast } from 'react-toastify';
 import { getMediaUrl } from '@/utils/media';
 import { useApproveOrganizationEditMutation } from '@/utils/slices/organizationApiSlice';
 
@@ -19,9 +20,10 @@ export const EditRequestDetail = ({ org, onProcessed }) => {
         try {
             await approveEdit({ id: org._id, status, adminNotes }).unwrap();
             onProcessed();
+            toast.success(`Request ${status} successfully`);
         } catch (err) {
             console.error(err);
-            alert("Action failed");
+            toast.error(err?.data?.message || "Action failed");
         }
     };
 

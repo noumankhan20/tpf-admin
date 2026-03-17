@@ -16,7 +16,9 @@ import {
   Filter,
 } from "lucide-react";
 import { useGetOfflineDonationsQuery, useApproveOfflineDonationsMutation, useRejectOfflineDonationsMutation, useDeleteOfflineDonationMutation } from '@/utils/slices/donationApiSlice';
+import { toast } from 'react-toastify';
 import AddOfflineDonationModal from "./addofflinedonationmodal";
+import ConfirmModal from "../Common/ConfirmModal";
 // ==================== STATUS BADGE COMPONENT ====================
 const StatusBadge = ({ status }) => {
   const styles = {
@@ -474,7 +476,7 @@ const RejectDonationModal = ({
 
   const handleSubmit = () => {
     if (!remarks.trim()) {
-      alert("Remarks are required");
+      toast.warning("Remarks are required");
       return;
     }
     onReject(donationId, remarks);
@@ -704,6 +706,8 @@ export default function OfflineDonationPage() {
   const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
   const [rejectDonationId, setRejectDonationId] = useState(null);
   const [page, setPage] = useState(1);
+  const [isDeletingModal, setIsDeletingModal] = useState(false);
+  const [donationToDelete, setDonationToDelete] = useState(null);
   const [rejectOfflineDonation, { isLoading: isRejecting }] =
     useRejectOfflineDonationsMutation();
   const [deleteOfflineDonation, { isLoading: isDeleting }] =
@@ -745,11 +749,11 @@ export default function OfflineDonationPage() {
   const handleApprove = async (id) => {
     try {
       const response = await approveOfflineDonation({ donationId: id }).unwrap();
-      alert(response.message);
+      toast.success(response.message || "Donation approved successfully");
       refetch();
     } catch (error) {
       console.error("Error approving donation", error);
-      alert("Error approving donation");
+      toast.error(error?.data?.message || "Error approving donation");
     }
   };
 
@@ -767,20 +771,24 @@ export default function OfflineDonationPage() {
     setIsRejectModalOpen(true);
   };
 
-  const handleDelete = async (donationId) => {
-    const confirmDelete = window.confirm(
-      "Are you sure you want to delete this donation?"
-    );
+  const handleDelete = (donationId) => {
+    setDonationToDelete(donationId);
+    setIsDeletingModal(true);
+  };
 
-    if (!confirmDelete) return;
+  const confirmDelete = async () => {
+    if (!donationToDelete) return;
 
     try {
-      const res = await deleteOfflineDonation(donationId).unwrap();
-      alert(res.message);
+      const res = await deleteOfflineDonation(donationToDelete).unwrap();
+      toast.success(res.message);
       refetch(); // refresh list
     } catch (err) {
       console.error(err);
-      alert(err?.data?.message || "Failed to delete donation");
+      toast.error(err?.data?.message || "Failed to delete donation");
+    } finally {
+      setIsDeletingModal(false);
+      setDonationToDelete(null);
     }
   };
 
@@ -793,13 +801,13 @@ export default function OfflineDonationPage() {
         remarks,
       }).unwrap();
 
-      alert(res.message);
+      toast.success(res.message || "Donation rejected successfully");
       setIsRejectModalOpen(false);
       setRejectDonationId(null);
       refetch();
     } catch (err) {
       console.error(err);
-      alert(err?.data?.message || "Failed to reject donation");
+      toast.error(err?.data?.message || "Failed to reject donation");
     }
   };
 
@@ -993,6 +1001,14 @@ export default function OfflineDonationPage() {
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
         onSuccess={refetch}
+      />
+
+      <ConfirmModal
+        isOpen={isDeletingModal}
+        onClose={() => setIsDeletingModal(false)}
+        onConfirm={confirmDelete}
+        title="Delete Donation"
+        message="Are you sure you want to permanently delete this offline donation record? This action cannot be undone."
       />
 
     </div>

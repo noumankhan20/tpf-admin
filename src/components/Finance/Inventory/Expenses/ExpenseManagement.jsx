@@ -16,6 +16,7 @@ import {
     AlertCircle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'react-toastify';
 import { useGetExpensesQuery, useCreateExpenseMutation } from '../../../../utils/slices/InventoryAndAsset/expenseApiSlice';
 import { useGetVendorsQuery } from '../../../../utils/slices/InventoryAndAsset/vendorApiSlice';
 import { useGetItemsQuery } from '../../../../utils/slices/InventoryAndAsset/itemApiSlice';
@@ -69,9 +70,10 @@ export default function ExpenseManagement() {
                 assetId: '',
                 date: new Date().toISOString().split('T')[0]
             });
+            toast.success('Expense recorded successfully');
         } catch (err) {
             console.error('Failed to create expense:', err);
-            alert(err?.data?.message || 'Failed to create expense');
+            toast.error(err?.data?.message || 'Failed to create expense');
         }
     };
 

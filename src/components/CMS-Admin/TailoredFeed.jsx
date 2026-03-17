@@ -16,13 +16,14 @@ import {
   Search,
   Plus,
   Image as ImageIcon,
-  AlertCircle,
   CheckCircle,
   X,
   ArrowLeft,
   Sparkles,
   LayoutGrid,
 } from "lucide-react";
+import { toast } from "react-toastify";
+import ConfirmModal from "../Common/ConfirmModal";
 import { useRouter } from "next/navigation";
 import { getMediaUrl } from "@/utils/media";
 
@@ -46,6 +47,8 @@ export default function TailoredFeedCMS() {
   const [viewMode, setViewMode] = useState("overview");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedItem, setSelectedItem] = useState(null);
+  const [isDeletingModal, setIsDeletingModal] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState(null);
   const router = useRouter();
   const [itemForm, setItemForm] = useState({
     title: "",
@@ -55,49 +58,12 @@ export default function TailoredFeedCMS() {
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [successMessage, setSuccessMessage] = useState("");
-
-  // Alert Component with enhanced styling
-  const Alert = ({ type, message, onDismiss }) => {
-    const isSuccess = type === "success";
-
-    return (
-      <div className={`fixed top-4 right-4 z-50 max-w-sm w-full mx-4 sm:mx-0 ${isSuccess
-        ? "bg-emerald-50 border-2 border-emerald-500 text-emerald-900"
-        : "bg-red-50 border-2 border-red-500 text-red-900"
-        } rounded-2xl p-4 shadow-2xl animate-in slide-in-from-top-2 duration-300`}>
-        <div className="flex items-start gap-3">
-          {isSuccess ? (
-            <div className="bg-emerald-500 rounded-full p-1">
-              <CheckCircle size={18} className="text-white" />
-            </div>
-          ) : (
-            <div className="bg-red-500 rounded-full p-1">
-              <AlertCircle size={18} className="text-white" />
-            </div>
-          )}
-          <div className="flex-1">
-            <p className="text-sm font-semibold">{message}</p>
-          </div>
-          {onDismiss && (
-            <button
-              onClick={onDismiss}
-              className="flex-shrink-0 hover:opacity-70 transition-opacity p-1 hover:bg-gray-200 rounded-full"
-            >
-              <X size={16} />
-            </button>
-          )}
-        </div>
-      </div>
-    );
-  };
   // Show success or error message
   const showMessage = (message, type = "success") => {
     if (type === "success") {
-      setSuccessMessage(message);
-      setTimeout(() => setSuccessMessage(""), 4000);
+      toast.success(message);
     } else {
-      setTimeout(() => 5000);
+      toast.error(message);
     }
   };
 
@@ -208,18 +174,21 @@ export default function TailoredFeedCMS() {
 
 
   // Handle Delete Item
-  const handleDeleteItem = async (item) => {
-    const confirmDelete = window.confirm(
-      `Are you sure you want to delete "${item.title}"? This action cannot be undone.`
-    );
-    if (!confirmDelete) return;
+  const handleDeleteItem = (item) => {
+    setItemToDelete(item);
+    setIsDeletingModal(true);
+  };
 
+  const confirmDelete = async () => {
+    if (!itemToDelete) return;
     try {
-      await deleteTailored(item._id).unwrap();
+      await deleteTailored(itemToDelete._id).unwrap();
       showMessage("Item deleted successfully!");
     } catch (error) {
       showMessage(error.message, "error");
     } finally {
+      setIsDeletingModal(false);
+      setItemToDelete(null);
     }
   };
 
@@ -285,21 +254,14 @@ export default function TailoredFeedCMS() {
           )}
         </div>
 
-        {/* Alerts */}
-        {error && (
-          <Alert
-            type="error"
-            message={error}
-            onDismiss={() => setError(null)}
-          />
-        )}
-        {successMessage && (
-          <Alert
-            type="success"
-            message={successMessage}
-            onDismiss={() => setSuccessMessage("")}
-          />
-        )}
+        <ConfirmModal
+          isOpen={isDeletingModal}
+          onClose={() => setIsDeletingModal(false)}
+          onConfirm={confirmDelete}
+          title="Delete Feed Item"
+          message={`Are you sure you want to delete "${itemToDelete?.title}"? This action cannot be undone.`}
+        />
+
 
         <main className="flex-1 overflow-y-auto">
           <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">

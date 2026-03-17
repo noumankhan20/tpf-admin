@@ -16,6 +16,8 @@ import {
     Trash2,
     Loader2
 } from 'lucide-react';
+import { toast } from 'react-toastify';
+import ConfirmModal from '@/components/Common/ConfirmModal';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     useGetInventoryStockQuery,
@@ -31,6 +33,16 @@ export default function InventoryStock() {
     const [showDistributeModal, setShowDistributeModal] = useState(false);
     const [selectedItem, setSelectedItem] = useState(null);
     const [currentPage, setCurrentPage] = useState(1);
+
+    // Confirmation Modals State
+    const [confirmModal, setConfirmModal] = useState({
+        isOpen: false,
+        type: 'danger',
+        title: '',
+        message: '',
+        onConfirm: () => { },
+        confirmText: ''
+    });
 
     // API Hooks
     const { data: stockResponse, isLoading } = useGetInventoryStockQuery({
@@ -71,7 +83,7 @@ export default function InventoryStock() {
         const qty = Number(distributeData.qty);
 
         if (qty > selectedItem.currentStock) {
-            alert(`Cannot distribute more than remaining stock (${selectedItem.currentStock} ${selectedItem.unit})`);
+            toast.warning(`Cannot distribute more than remaining stock (${selectedItem.currentStock} ${selectedItem.unit})`);
             return;
         }
 
@@ -82,9 +94,10 @@ export default function InventoryStock() {
                 purpose: distributeData.purpose
             }).unwrap();
             setShowDistributeModal(false);
+            toast.success('Stock distributed successfully');
         } catch (err) {
             console.error('Failed to distribute stock:', err);
-            alert(err?.data?.message || 'Failed to distribute stock');
+            toast.error(err?.data?.message || 'Failed to distribute stock');
         }
     };
 
@@ -92,15 +105,23 @@ export default function InventoryStock() {
     // The backend handles filtering, so 'stock' is already filtered.
     const filteredStock = stock;
 
-    const handleStockDelete = async (id) => {
-        if (window.confirm('Are you sure you want to deactivate this inventory item?')) {
-            try {
-                await deleteItem(id).unwrap();
-            } catch (err) {
-                console.error('Failed to delete item:', err);
-                alert(err?.data?.message || 'Failed to deactivate item');
+    const handleStockDelete = (id) => {
+        setConfirmModal({
+            isOpen: true,
+            type: 'danger',
+            title: 'Deactivate Inventory Item',
+            message: 'Are you sure you want to deactivate this inventory item?',
+            confirmText: 'Deactivate',
+            onConfirm: async () => {
+                try {
+                    await deleteItem(id).unwrap();
+                    toast.success('Item deactivated successfully');
+                } catch (err) {
+                    console.error('Failed to delete item:', err);
+                    toast.error(err?.data?.message || 'Failed to deactivate item');
+                }
             }
-        }
+        });
     };
 
     if (!isMounted) return null;
@@ -322,6 +343,16 @@ export default function InventoryStock() {
                     </div>
                 )}
             </AnimatePresence>
+
+            <ConfirmModal
+                isOpen={confirmModal.isOpen}
+                onClose={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+                onConfirm={confirmModal.onConfirm}
+                title={confirmModal.title}
+                message={confirmModal.message}
+                type={confirmModal.type}
+                confirmText={confirmModal.confirmText}
+            />
         </div>
     );
 }

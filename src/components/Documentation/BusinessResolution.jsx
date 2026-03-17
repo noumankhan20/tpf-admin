@@ -1,12 +1,14 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import { X, Plus, Edit2, Trash2, Upload, Calendar, FileText, ArrowLeft, Download, AlertCircle } from 'lucide-react';
+import { toast } from 'react-toastify';
 import {
     useCreateBusinessResolutionMutation,
     useGetAllBusinessResolutionsQuery,
     useUpdateBusinessResolutionMutation,
     useDeleteBusinessResolutionMutation
 } from '@/utils/slices/business-resolutionApiSlice';
+import ConfirmModal from '../Common/ConfirmModal';
 
 const BusinessResolutions = () => {
     // API Hooks
@@ -82,7 +84,7 @@ const BusinessResolutions = () => {
 
     const handleSubmit = async () => {
         if (!formData.resolutionTitle || !formData.agenda || !formData.resolutionDate) {
-            alert('Please fill all required fields');
+            toast.warning('Please fill all required fields');
             return;
         }
 
@@ -107,9 +109,10 @@ const BusinessResolutions = () => {
 
             refetch();
             handleCloseModal();
+            toast.success(editingResolution ? 'Resolution updated successfully' : 'Resolution created successfully');
         } catch (error) {
             console.error('Failed to save resolution:', error);
-            alert('Failed to save resolution. Please try again.');
+            toast.error(error?.data?.message || 'Failed to save resolution. Please try again.');
         }
     };
 
@@ -118,9 +121,10 @@ const BusinessResolutions = () => {
             await deleteResolution(id).unwrap();
             refetch();
             setShowDeleteConfirm(null);
+            toast.success('Resolution deleted successfully');
         } catch (error) {
             console.error('Failed to delete resolution:', error);
-            alert('Failed to delete resolution. Please try again.');
+            toast.error(error?.data?.message || 'Failed to delete resolution. Please try again.');
         }
     };
 
@@ -543,69 +547,16 @@ const BusinessResolutions = () => {
                 </div>
             )}
 
-            {/* Delete Confirmation Modal */}
-            {showDeleteConfirm && (
-                <div 
-                    className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn"
-                    onClick={(e) => {
-                        if (e.target === e.currentTarget) setShowDeleteConfirm(null);
-                    }}
-                >
-                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 animate-slideUp">
-                        <div className="text-center">
-                            <div className="w-14 h-14 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <Trash2 className="w-6 h-6 text-red-600" />
-                            </div>
-                            <h3 className="text-lg font-semibold text-gray-900 mb-2">Delete Resolution?</h3>
-                            <p className="text-gray-600 text-sm mb-6">
-                                This action cannot be undone. The resolution and all associated documents will be permanently removed.
-                            </p>
-                            <div className="flex items-center gap-3">
-                                <button
-                                    onClick={() => setShowDeleteConfirm(null)}
-                                    disabled={isDeleting}
-                                    className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    onClick={() => handleDelete(showDeleteConfirm)}
-                                    disabled={isDeleting}
-                                    className="flex-1 px-4 py-2 bg-red-600 cursor-pointer hover:bg-red-700 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-                                >
-                                    {isDeleting ? 'Deleting...' : 'Delete'}
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
+            <ConfirmModal
+                isOpen={!!showDeleteConfirm}
+                onClose={() => setShowDeleteConfirm(null)}
+                onConfirm={() => handleDelete(showDeleteConfirm)}
+                title="Delete Resolution?"
+                message="This action cannot be undone. The resolution and all associated documents will be permanently removed."
+                confirmText={isDeleting ? "Deleting..." : "Delete"}
+                type="danger"
+            />
 
-            <style jsx>{`
-                @keyframes fadeIn {
-                    from { opacity: 0; }
-                    to { opacity: 1; }
-                }
-
-                @keyframes slideUp {
-                    from {
-                        opacity: 0;
-                        transform: translateY(16px) scale(0.98);
-                    }
-                    to {
-                        opacity: 1;
-                        transform: translateY(0) scale(1);
-                    }
-                }
-
-                .animate-fadeIn {
-                    animation: fadeIn 0.2s ease-out;
-                }
-
-                .animate-slideUp {
-                    animation: slideUp 0.3s ease-out;
-        }
-      `}</style>
         </div>
     );
 };

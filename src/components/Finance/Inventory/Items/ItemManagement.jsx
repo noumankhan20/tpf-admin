@@ -19,6 +19,8 @@ import {
     ChevronRight
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'react-toastify';
+import ConfirmModal from '@/components/Common/ConfirmModal';
 import Pagination from '../Common/Pagination';
 import {
     useGetItemsQuery,
@@ -36,6 +38,16 @@ export default function ItemManagement() {
     const [editingItem, setEditingItem] = useState(null);
     const [filterType, setFilterType] = useState('all');
     const [currentPage, setCurrentPage] = useState(1);
+
+    // Confirmation Modals State
+    const [confirmModal, setConfirmModal] = useState({
+        isOpen: false,
+        type: 'danger',
+        title: '',
+        message: '',
+        onConfirm: () => { },
+        confirmText: ''
+    });
 
     // API Hooks
     const { data: itemsResponse, isLoading, isError, error } = useGetItemsQuery({
@@ -134,7 +146,7 @@ export default function ItemManagement() {
         } catch (err) {
             console.error('Failed to save item:', err);
             const errorMessage = err?.data?.message || 'Failed to save item';
-            alert(errorMessage);
+            toast.error(errorMessage);
         }
     };
 
@@ -164,15 +176,23 @@ export default function ItemManagement() {
         setShowAddModal(true);
     };
 
-    const handleDelete = async (itemId) => {
-        if (window.confirm('Are you sure you want to deactivate this item?')) {
-            try {
-                await deleteItem(itemId).unwrap();
-            } catch (err) {
-                console.error('Failed to delete item:', err);
-                alert(err?.data?.message || 'Failed to delete item');
+    const handleDelete = (itemId) => {
+        setConfirmModal({
+            isOpen: true,
+            type: 'danger',
+            title: 'Deactivate Item',
+            message: 'Are you sure you want to deactivate this item?',
+            confirmText: 'Deactivate',
+            onConfirm: async () => {
+                try {
+                    await deleteItem(itemId).unwrap();
+                    toast.success('Item deactivated successfully');
+                } catch (err) {
+                    console.error('Failed to delete item:', err);
+                    toast.error(err?.data?.message || 'Failed to delete item');
+                }
             }
-        }
+        });
     };
 
     // Get items and pagination data
@@ -567,6 +587,16 @@ export default function ItemManagement() {
                     </div>
                 )}
             </AnimatePresence>
+
+            <ConfirmModal
+                isOpen={confirmModal.isOpen}
+                onClose={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+                onConfirm={confirmModal.onConfirm}
+                title={confirmModal.title}
+                message={confirmModal.message}
+                type={confirmModal.type}
+                confirmText={confirmModal.confirmText}
+            />
         </div>
     );
 }

@@ -13,6 +13,8 @@ import {
   useUpdateFundraiserMutation,
   useDeleteFundraiserMutation,
 } from "@/utils/slices/cms/fundraiserApi";
+import { toast } from "react-toastify";
+import ConfirmModal from "@/components/Common/ConfirmModal";
 import FundraisingHeader from "./FundraisingHeader";
 import CampaignList from "./CampaignList";
 import CampaignForm from "./CampaignForm";
@@ -24,6 +26,8 @@ export default function FundraisingCMS() {
   const [editingCard, setEditingCard] = useState(null);
   const [readyCampaigns, setReadyCampaigns] = useState([]);
   const [selectedCampaign, setSelectedCampaign] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteId, setDeleteId] = useState(null);
 
   const API_BASE = process.env.NEXT_PUBLIC_BACKEND_API || 'http://localhost:7000/api';
 
@@ -220,18 +224,21 @@ export default function FundraisingCMS() {
   };
 
   const handleDelete = async (id) => {
-    const confirmed = window.confirm(
-      "Are you sure you want to permanently delete this fundraising campaign?"
-    );
+    setDeleteId(id);
+    setIsDeleting(true);
+  };
 
-    if (!confirmed) return;
-
+  const confirmDelete = async () => {
+    if (!deleteId) return;
     try {
-      await deleteFundraiser(id).unwrap();
-      alert("Campaign deleted successfully");
+      await deleteFundraiser(deleteId).unwrap();
+      toast.success("Campaign deleted successfully");
     } catch (err) {
       console.error("Delete error:", err);
-      alert("Failed to delete campaign");
+      toast.error("Failed to delete campaign");
+    } finally {
+      setIsDeleting(false);
+      setDeleteId(null);
     }
   };
   const finalCategory =
@@ -360,13 +367,13 @@ export default function FundraisingCMS() {
         }
       }
 
-      alert(editingCard ? "Updated Successfully!" : "Created Successfully!");
+      toast.success(editingCard ? "Updated Successfully!" : "Created Successfully!");
       resetForm();
       setEditingCard(null);
       setViewMode("view");
     } catch (error) {
       console.error("Save Fundraiser Error:", error);
-      alert("Something went wrong while saving.");
+      toast.error("Something went wrong while saving.");
     }
   };
 
@@ -456,6 +463,14 @@ export default function FundraisingCMS() {
         <FundraisingHeader
           viewMode={viewMode}
           onAddNew={() => setViewMode("edit")}
+        />
+
+        <ConfirmModal
+          isOpen={isDeleting}
+          onClose={() => setIsDeleting(false)}
+          onConfirm={confirmDelete}
+          title="Delete Fundraising Campaign"
+          message="Are you sure you want to permanently delete this fundraising campaign? This action cannot be undone."
         />
 
         {viewMode === "view" ? (

@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { JobFormModal, ConfirmDeleteModal } from "./JobModals";
+import { JobFormModal } from "./JobModals";
+import ConfirmModal from "../Common/ConfirmModal";
 import { ApplicantsPage } from "./ApplicantsPage";
 import { useGetAllJobsQuery, useCreateJobMutation, useUpdateJobMutation, useDeleteJobMutation } from "@/utils/slices/jobApiSlice";
 
@@ -344,10 +345,12 @@ export function CareersDashboard() {
                 />
             )}
             {deletingJob && (
-                <ConfirmDeleteModal
-                    job={deletingJob}
+                <ConfirmModal
+                    isOpen={!!deletingJob}
+                    onClose={() => setDeletingJob(null)}
                     onConfirm={handleDelete}
-                    onCancel={() => setDeletingJob(null)}
+                    title="Delete Job Posting"
+                    message={`Are you sure you want to delete "${deletingJob?.title}"? All associated applicant data will also be removed. This action cannot be undone.`}
                 />
             )}
 

@@ -217,8 +217,8 @@ function Header({ isLoaded, handleLogout, fullName }) {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center space-x-3">
-            <img src="/TPFAid-LogoDesign-20.svg" className="h-9 w-auto" alt="TPFAid Logo" />
-            <div className="hidden md:block h-8 w-px bg-gray-200"></div>
+            <img src="/TPFAid-Logo.png" className="h-9 w-auto" alt="TPFAid Logo" />
+            <div className="hidden md:block h-8 w-px bg-gray-300"></div>
             <div className="hidden md:block">
               <h1 className="text-lg font-bold text-gray-900">Admin Portal</h1>
               <p className="text-xs text-gray-500">Management System</p>
