@@ -1,5 +1,5 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, Search, Filter, Eye, Edit, Trash2, FileText, ArrowLeft, CheckCircle, XCircle, Clock, Download, TrendingUp, Calendar, Users } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useGetAgreementsQuery, useDeleteAgreementMutation } from '@/utils/slices/documentationApiSlice';
@@ -10,6 +10,7 @@ export default function Documentation() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedAgreementId, setSelectedAgreementId] = useState(null);
   const [page, setPage] = useState(1);
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const limit = 50;
   // Draft (UI-only)
   const [draftStatus, setDraftStatus] = useState('');
@@ -26,6 +27,13 @@ export default function Documentation() {
   });
 
   const router = useRouter();
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+      setPage(1); // reset to page 1 on new search
+    }, 600);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   // RTK Query hook
   const { data, isLoading, isError, error } = useGetAgreementsQuery({
@@ -35,11 +43,12 @@ export default function Documentation() {
     agreementType: appliedFilters.agreementType,
     fromDate: appliedFilters.fromDate,
     toDate: appliedFilters.toDate,
-    search: searchQuery,
+    search: debouncedSearch,
   });
 
   const [deleteAgreement, { isLoading: isDeleting }] =
     useDeleteAgreementMutation();
+
 
   // Extract agreements from API response
   const agreements = data?.data || [];

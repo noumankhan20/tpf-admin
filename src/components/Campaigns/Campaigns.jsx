@@ -1,5 +1,5 @@
 "use client"
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AlertCircle, CheckCircle, FileText, MessageSquare, Users, TrendingUp, Clock, Shield, Receipt, Search, Filter, Eye, Trash2, Download, ChevronRight, ChevronDown, MoreVertical, Loader2, ArrowLeft, X, Menu, Edit, ExternalLink, User } from 'lucide-react';
 import { useFetchCampaignsQuery, useFetchCampaignByIdQuery } from '@/utils/slices/campaignSlice';
 import { useRouter } from 'next/navigation';
@@ -10,12 +10,15 @@ export default function CampaignAdminDashboard() {
   const [filterStatus, setFilterStatus] = useState('all');
   const [expandedRow, setExpandedRow] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [limit] = useState(50);
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const limit = 50;
   const router = useRouter();
-  const { data: apiResponse, isLoading, isError, error, refetch } = useFetchCampaignsQuery({
+  const { data: apiResponse, isLoading, isError, error, refetch, } = useFetchCampaignsQuery({
     page: currentPage,
-    limit: limit
+    limit: limit,
+    search: debouncedSearch
   });
+  const totalPages = apiResponse?.pagination?.totalPages || 1;
 
   const {
     data: campaignDetailResponse,
@@ -38,6 +41,13 @@ export default function CampaignAdminDashboard() {
     });
   };
 
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+    }, 600);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
   const getProgressPercentage = (raised, goal) => {
     if (!goal || goal === 0) return 0;
     return (raised / goal) * 100;
@@ -56,21 +66,9 @@ export default function CampaignAdminDashboard() {
   };
 
   const filteredCampaigns = campaigns.filter(campaign => {
-    const beneficiaryName = campaign.beneficiaryName || '';
-    const campaignId = campaign._id || '';
-    const title = campaign.title || '';
-
-    const matchesSearch =
-      beneficiaryName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      campaignId.includes(searchQuery) ||
-      title.toLowerCase().includes(searchQuery.toLowerCase());
-
-    const matchesFilter = filterStatus === 'all' ? true :
-      filterStatus === 'active' ? campaign.isActive :
-        filterStatus === 'inactive' ? !campaign.isActive : true;
-
-    return matchesSearch && matchesFilter;
-    console.log("Campaign Detail:", campaign);
+    if (filterStatus === 'active') return campaign.isActive;
+    if (filterStatus === 'inactive') return !campaign.isActive;
+    return true;
   });
 
   const totalCampaigns = campaigns.length;
@@ -568,8 +566,8 @@ export default function CampaignAdminDashboard() {
 
           <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-200 p-4 sm:p-6 hover:shadow-md transition-all transform hover:-translate-y-1">
             <p className="text-xs sm:text-sm font-medium text-gray-500 mb-1 sm:mb-2">Raised</p>
-            <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">
-              ₹{totalNetRaised.toLocaleString('en-IN')}
+            <p className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 break-words leading-tight">
+              ₹{Math.round(totalNetRaised).toLocaleString('en-IN')}
             </p>
           </div>
 
@@ -587,7 +585,10 @@ export default function CampaignAdminDashboard() {
                 type="text"
                 placeholder="Search by name, title or ID..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setCurrentPage(1); // ← reset to page 1 on search
+                }}
                 className="w-full pl-10 sm:pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm"
               />
             </div>
@@ -690,7 +691,6 @@ export default function CampaignAdminDashboard() {
               </tbody>
             </table>
           </div>
-
           <div className="lg:hidden divide-y divide-gray-200">
             {filteredCampaigns.map((campaign) => {
               const progress = getProgressPercentage(campaign.netRaisedAmount || 0, campaign.targetAmount || 0);
@@ -835,7 +835,28 @@ export default function CampaignAdminDashboard() {
             </div>
           )}
         </div>
-
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex justify-center items-center gap-4 mt-6">
+            <button
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage((prev) => prev - 1)}
+              className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium disabled:opacity-40 hover:bg-gray-50 transition-colors"
+            >
+              Previous
+            </button>
+            <span className="text-sm font-semibold text-gray-700">
+              Page {currentPage} of {totalPages}
+            </span>
+            <button
+              disabled={currentPage === totalPages}
+              onClick={() => setCurrentPage((prev) => prev + 1)}
+              className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium disabled:opacity-40 hover:bg-gray-50 transition-colors"
+            >
+              Next
+            </button>
+          </div>
+        )}
         {filteredCampaigns.length > 0 && (
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-500">
