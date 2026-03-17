@@ -49,11 +49,16 @@ export default function EmployeeManagement() {
 
     const { data, error, isLoading } = useGetEmployeesQuery();
     const { data: salaryData, isLoading: isSalaryLoading, error: salaryError } = useGetAdminSalaryQuery(
-        selectedEmployee ? selectedEmployee._id : null
+        selectedEmployee?._id,
+        { skip: !selectedEmployee?._id }
     );
-    const { data: expensesData } = useGetAdminExpensesQuery(selectedEmployee ? selectedEmployee._id : null);
+    const { data: expensesData } = useGetAdminExpensesQuery(
+        selectedEmployee?._id,
+        { skip: !selectedEmployee?._id }
+    );
     const { data: loginLogoutData, error: loginLogoutError, isLoading: loginLogoutLoading } = useGetEmployeeLoginLogoutTimeQuery(
-        selectedEmployee && selectedEmployee._id ? selectedEmployee._id : undefined
+        selectedEmployee?._id,
+        { skip: !selectedEmployee?._id }
     );
 
     useEffect(() => {
