@@ -3,12 +3,12 @@ import { apiSlice } from "../apiSlice";
 export const fundraiserApi = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
 
-    // 🔹 GET ALL FUNDRAISERS
+    // 🔹 GET ALL FUNDRAISERS (with pagination)
     getFundraisers: builder.query({
-      query: () => "/cms/fundraiser/get",
+      query: ({ page = 1, limit = 10 } = {}) =>
+        `/cms/fundraiser/get?page=${page}&limit=${limit}`,
       providesTags: ["Fundraiser"],
     }),
-
     // 🔹 CREATE FUNDRAISER
     createFundraiser: builder.mutation({
       query: (formData) => ({
@@ -42,8 +42,8 @@ export const fundraiserApi = apiSlice.injectEndpoints({
 });
 
 export const {
-    useGetFundraisersQuery,
-    useCreateFundraiserMutation,
-    useUpdateFundraiserMutation,
-    useDeleteFundraiserMutation,
+  useGetFundraisersQuery,
+  useCreateFundraiserMutation,
+  useUpdateFundraiserMutation,
+  useDeleteFundraiserMutation,
 } = fundraiserApi;
