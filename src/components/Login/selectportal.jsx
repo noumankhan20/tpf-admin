@@ -9,7 +9,7 @@ import {
   useLogoutAdminApiMutation,
   useLazyGetAdminMeQuery
 } from '@/utils/slices/adminApiSlice';
-
+import { useSocket } from '@/utils/context/SocketContext';
 
 import {
   LogOut,
@@ -79,6 +79,10 @@ export default function SelectPanel() {
   const [searchQuery, setSearchQuery] = useState('');
   const [mounted, setMounted] = useState(false);
   const [showLoading, setShowLoading] = useState(false);
+  const [moduleCounts, setModuleCounts] = useState({});
+  
+  const socketContext = useSocket();
+  const socket = socketContext?.socket;
 
 
   const [logoutAdmin] = useLogoutAdminApiMutation();
@@ -117,6 +121,119 @@ export default function SelectPanel() {
       router.replace("/");
     }
   }, [admin]);
+
+  useEffect(() => {
+    const fetchInitialCounts = async () => {
+      const adminId = admin?._id || admin?.id;
+      if (!adminId) return;
+
+      try {
+        const apiBase = process.env.NEXT_PUBLIC_BACKEND_API || 'http://localhost:7000/api';
+        let newCounts = {};
+        
+        const increment = (id) => {
+          newCounts[id] = (newCounts[id] || 0) + 1;
+        };
+
+        // Tasks
+        const taskRes = await fetch(`${apiBase}/workflow/tasks/pending-all`, { credentials: 'include' });
+        const taskResult = await taskRes.json();
+        if (taskResult.success && taskResult.data) {
+          taskResult.data.forEach(task => {
+            if (task.module === 'PHOTO_TASK') { increment('Photography'); increment('Photo-Editing'); }
+            if (task.module === 'CMS_TASK') increment('CMS-Admin');
+            if (task.module === 'SOCIAL_TASK') increment('Social-Media');
+            if (task.module === 'FINANCE_TASK') increment('Disbursement-Tasks');
+          });
+        }
+
+        // Financial Aid Verifications
+        if (admin?.isSuperAdmin || adminModules.includes('Financial Aid')) {
+          const formRes = await fetch(`${apiBase}/admin/verify/forms?status=pending`, { credentials: 'include' });
+          const formResult = await formRes.json();
+          if (formResult.success && formResult.data) {
+            formResult.data.forEach(() => increment('Financial Aid'));
+          }
+        }
+
+        // KYC Verification (Fixed)
+        if (admin?.isSuperAdmin || adminModules.includes('KYC Verification')) {
+          const kycRes = await fetch(`${apiBase}/admin/kyc/requests?status=pending`, { credentials: 'include' });
+          const kycResult = await kycRes.json();
+          if (kycResult.success && kycResult.data) {
+            kycResult.data.forEach(() => increment('KYC Verification')); // This increments the count for 'KYC Verification'
+          }
+        }
+
+        // Organization Verification
+        if (admin?.isSuperAdmin || adminModules.includes('Organization Verification')) {
+          const orgRes = await fetch(`${apiBase}/organizations?verificationStatus=pending`, { credentials: 'include' });
+          const orgResult = await orgRes.json();
+          if (orgResult.success && orgResult.data) {
+            orgResult.data.forEach(() => increment('Organization Verification'));
+          }
+          
+          const allOrgRes = await fetch(`${apiBase}/organizations`, { credentials: 'include' });
+          const allOrgResult = await allOrgRes.json();
+          if (allOrgResult.success && allOrgResult.data) {
+            allOrgResult.data.forEach(org => {
+              if (org.editRequests?.status === 'pending') increment('Organization Verification');
+            });
+          }
+
+          const campRes = await fetch(`${apiBase}/campaign-requests/all`, { credentials: 'include' });
+          const campResult = await campRes.json();
+          if (campResult.success && campResult.data) {
+            campResult.data.forEach(req => {
+              if (req.status === 'pending') increment('Organization Verification');
+            });
+          }
+        }
+
+        setModuleCounts(newCounts);
+      } catch (err) {
+        console.error('Failed to fetch module notification counts:', err);
+      }
+    };
+    
+    fetchInitialCounts();
+  }, [admin, adminModules]);
+
+  // Handle Socket Updates for counts
+  useEffect(() => {
+    if (!socket) return;
+    
+    const handleTaskAssigned = (data) => {
+        setModuleCounts(prev => {
+            const next = { ...prev };
+            const inc = (id) => next[id] = (next[id] || 0) + 1;
+            if (data.module === 'PHOTO_TASK') { inc('Photography'); inc('Photo-Editing'); }
+            if (data.module === 'CMS_TASK') inc('CMS-Admin');
+            if (data.module === 'SOCIAL_TASK') inc('Social-Media');
+            if (data.module === 'FINANCE_TASK') inc('Disbursement-Tasks');
+            return next;
+        });
+    };
+
+    const handleFormSubmitted = (data) => {
+        setModuleCounts(prev => {
+            const next = { ...prev };
+            const inc = (id) => next[id] = (next[id] || 0) + 1;
+            if (data.type === 'KYC') inc('KYC Verification');
+            else if (['ORGANIZATION', 'ORGANIZATION_EDIT', 'CAMPAIGN_REQUEST', 'CAMPAIGN_RESUBMITTED'].includes(data.type)) inc('Organization Verification');
+            else inc('Financial Aid');
+            return next;
+        });
+    };
+
+    socket.on('taskAssigned', handleTaskAssigned);
+    socket.on('formSubmitted', handleFormSubmitted);
+    
+    return () => {
+        socket.off('taskAssigned', handleTaskAssigned);
+        socket.off('formSubmitted', handleFormSubmitted);
+    };
+  }, [socket]);
 
 
   const allowedModules = useMemo(() => {
@@ -184,12 +301,13 @@ export default function SelectPanel() {
         )}
 
         {useCardView ? (
-          <CardView modules={filteredModules} isLoaded={isLoaded} />
+          <CardView modules={filteredModules} isLoaded={isLoaded} moduleCounts={moduleCounts} />
         ) : (
           <BentoView
             categories={CATEGORIES}
             getModulesByCategory={getModulesByCategory}
             isLoaded={isLoaded}
+            moduleCounts={moduleCounts}
           />
         )}
       </main>
@@ -340,7 +458,7 @@ function SearchBar({ isLoaded, searchQuery, setSearchQuery }) {
   );
 }
 
-function BentoView({ categories, getModulesByCategory, isLoaded }) {
+function BentoView({ categories, getModulesByCategory, isLoaded, moduleCounts }) {
   const router = useRouter();
 
   const CAT_STYLES = {
@@ -458,12 +576,17 @@ function BentoView({ categories, getModulesByCategory, isLoaded }) {
                   <button
                     key={m.id}
                     onClick={(e) => { e.stopPropagation(); router.push(m.route); }}
-                    className="flex items-center space-x-3 py-2 px-3 bg-white/80 hover:bg-white rounded-xl border border-transparent hover:border-emerald-200 transition-all group/btn shadow-sm"
+                    className="flex items-center relative space-x-3 py-2 px-3 bg-white/80 hover:bg-white rounded-xl border border-transparent hover:border-emerald-200 transition-all group/btn shadow-sm"
                   >
                     <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${style.iconBg} text-white transition-colors`}>
                       {m.icon ? <m.icon className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
                     </div>
                     <span className="text-xs font-semibold text-gray-700 truncate">{m.name}</span>
+                    {moduleCounts?.[m.id] > 0 && (
+                        <div className="absolute -top-2 -right-2 bg-emerald-500 text-white min-w-[20px] h-5 rounded-full px-1 flex items-center justify-center text-[10px] font-bold shadow-md z-10 border-2 border-white">
+                            {moduleCounts[m.id]}
+                        </div>
+                    )}
                   </button>
                 ))}
               </div>
@@ -475,7 +598,7 @@ function BentoView({ categories, getModulesByCategory, isLoaded }) {
   );
 }
 
-function CardView({ modules, isLoaded }) {
+function CardView({ modules, isLoaded, moduleCounts }) {
   const router = useRouter();
 
   return (
@@ -495,6 +618,11 @@ function CardView({ modules, isLoaded }) {
             <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-50/50 rounded-bl-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
 
             <div className="relative">
+              {moduleCounts?.[p.id] > 0 && (
+                  <div className="absolute -top-3 -right-3 bg-emerald-500 text-white min-w-[24px] h-6 rounded-full px-2 flex items-center justify-center text-xs font-bold shadow-md border-2 border-white z-10">
+                      {moduleCounts[p.id]}
+                  </div>
+              )}
               <div className="w-14 h-14 rounded-2xl bg-emerald-600 flex items-center justify-center shadow-lg mb-4 group-hover:scale-110 transition-transform">
                 <Icon className="w-6 h-6 text-white" />
               </div>
