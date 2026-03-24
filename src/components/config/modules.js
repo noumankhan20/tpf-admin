@@ -439,19 +439,19 @@ export const MODULES = [
     route: "/tpf-management/organizations",
     category: 'tpf-management'
   },
+  
+  // ===============================
+  // ADMINISTRATION (System Control)
+  // ===============================
+  
   {
     id: "deletion",
     name: "Approve Delete Requests",
     desc: "Approve the delete requests coming from different modules .",
     icon: Trash2,
     route: "/tpf-management/approve-request",
-    category: 'tpf-management'
+    category: 'administration'
   },
-
-  // ===============================
-  // ADMINISTRATION (System Control)
-  // ===============================
-
   {
     id: "Security & Access",
     name: "Security & Access",

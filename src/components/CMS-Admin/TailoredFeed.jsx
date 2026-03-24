@@ -675,6 +675,16 @@ export default function TailoredFeedCMS() {
           </div>
         </main>
       </div>
+      <ConfirmModal
+        isOpen={isDeletingModal}
+        onClose={() => {
+          setIsDeletingModal(false);
+          setItemToDelete(null);
+        }}
+        onConfirm={confirmDelete}
+        title="Delete Item"
+        message="Are you sure you want to delete this item? This action cannot be undone."
+      />
     </div>
   );
 }
