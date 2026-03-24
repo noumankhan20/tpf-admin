@@ -8,6 +8,8 @@ import {
   useUpdateStartGivingMutation
 } from "@/utils/slices/cms/startgivingApi";
 import { getMediaUrl } from "@/utils/media";
+import { toast } from "react-toastify";
+import ConfirmModal from "../Common/ConfirmModal";
 
 export default function StartGivingDaily() {
   const router = useRouter();
@@ -26,6 +28,7 @@ export default function StartGivingDaily() {
 
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState("");
+  const [isResettingModal, setIsResettingModal] = useState(false);
 
   const {
     data,
@@ -62,7 +65,7 @@ export default function StartGivingDaily() {
     if (!file) return;
 
     if (!file.type.startsWith("image/")) {
-      alert("Please upload a valid image file.");
+      toast.error("Please upload a valid image file.");
       return;
     }
 
@@ -91,16 +94,16 @@ export default function StartGivingDaily() {
 
     try {
       await createStartGiving(form).unwrap();
-      alert("Created successfully!");
+      toast.success("Created successfully!");
       setHasChanges(false);
     } catch (err) {
-      alert(err?.data?.message || "Failed to create");
+      toast.error(err?.data?.message || "Failed to create");
     }
   };
 
   const handleSave = async () => {
     if (!formData.title.trim() || !formData.description.trim()) {
-      alert("Title and description cannot be empty");
+      toast.warn("Title and description cannot be empty");
       return;
     }
 
@@ -122,16 +125,22 @@ export default function StartGivingDaily() {
         formData: form,
       }).unwrap();
 
-      alert("Updated successfully!");
+      toast.success("Updated successfully!");
       setHasChanges(false);
     } catch (err) {
-      alert(err?.data?.message || "Failed to update");
+      toast.error(err?.data?.message || "Failed to update");
     }
   };
 
   const handleReset = () => {
-    if (hasChanges && !confirm("Discard unsaved changes?")) return;
+    if (hasChanges) {
+      setIsResettingModal(true);
+    } else {
+      confirmReset();
+    }
+  };
 
+  const confirmReset = () => {
     if (mode === "edit" && bannerData) {
       setFormData({
         title: bannerData.title,
@@ -154,6 +163,7 @@ export default function StartGivingDaily() {
     }
 
     setHasChanges(false);
+    setIsResettingModal(false);
   };
 
   if (error) {
@@ -207,6 +217,15 @@ export default function StartGivingDaily() {
                   {mode === "create" ? "Create your hero banner section" : "Manage your hero banner content and design"}
                 </p>
               </div>
+
+              <ConfirmModal
+                isOpen={isResettingModal}
+                onClose={() => setIsResettingModal(false)}
+                onConfirm={confirmReset}
+                title="Discard Changes"
+                message="Are you sure you want to discard your unsaved changes? This action cannot be undone."
+                confirmText="Discard"
+              />
 
               <button
                 onClick={() => setShowPreview(!showPreview)}

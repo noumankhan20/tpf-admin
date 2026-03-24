@@ -9,6 +9,9 @@ import {
 import { Save, XCircle, Home, Edit2, ArrowLeft, Trash2, Plus, ChevronUp, ChevronDown, GripVertical, Eye, Upload, Sparkles, Users, Image as ImageIcon, CheckCircle, EyeOff } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { getMediaUrl } from "@/utils/media";
+import { toast } from "react-toastify";
+import ConfirmModal from "../Common/ConfirmModal";
+
 export default function InfluencerGalleryCMS() {
   const [viewMode, setViewMode] = useState("overview");
   const [searchQuery, setSearchQuery] = useState("");
@@ -38,18 +41,21 @@ export default function InfluencerGalleryCMS() {
       pendingDelete: item.pendingDelete,
     })) ?? [];
 
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteId, setDeleteId] = useState(null);
+
 
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
-    if (!file || !file.type.startsWith('image/')) { alert('Please upload a valid image'); return; }
-    if (file.size > 5 * 1024 * 1024) { alert('Image must be under 5MB'); return; }
+    if (!file || !file.type.startsWith('image/')) { toast.error('Please upload a valid image'); return; }
+    if (file.size > 5 * 1024 * 1024) { toast.error('Image must be under 5MB'); return; }
     const reader = new FileReader();
     reader.onloadend = () => setImageForm(p => ({ ...p, imageFile: file, imagePreview: reader.result, imageUrl: reader.result }));
     reader.readAsDataURL(file);
   };
 
   const handleSaveImage = async () => {
-    if (!imageForm.imageFile) return alert("Please upload an image");
+    if (!imageForm.imageFile) return toast.warn("Please upload an image");
 
     const formData = new FormData();
     formData.append("image", imageForm.imageFile);
@@ -64,26 +70,27 @@ export default function InfluencerGalleryCMS() {
         }).unwrap();
       }
 
-      alert("Saved successfully");
+      toast.success("Saved successfully");
       setViewMode("overview");
     } catch (err) {
       console.error(err);
-      alert("Failed to save image");
+      toast.error("Failed to save image");
     }
   };
 
   const handleDeleteImage = async (id) => {
-    if (!confirm("Delete this image?")) return;
+    setDeleteId(id);
+    setIsDeleting(true);
+  };
 
+  const confirmDelete = async () => {
+    if (!deleteId) return;
     try {
-      const res = await deleteInfluencer(id).unwrap(); // ✅ FIX
-
-      alert(res.message); // ✅ dynamic message
-
+      await deleteInfluencer(id).unwrap();
+      alert("Deleted successfully");
     } catch (err) {
       console.error(err);
-
-      alert(err?.data?.message || "Delete failed"); // ✅ FIX
+      alert("Delete failed");
     }
   };
 
@@ -133,6 +140,14 @@ export default function InfluencerGalleryCMS() {
                   Influencer Gallery Management
                 </h1>
               </div>
+
+              <ConfirmModal
+                isOpen={isDeleting}
+                onClose={() => setIsDeleting(false)}
+                onConfirm={confirmDelete}
+                title="Delete Image"
+                message="Are you sure you want to permanently delete this image from the gallery? This action cannot be undone."
+              />
               <p className="text-emerald-700">
                 Manage circular profile images in the horizontal scroll gallery
               </p>

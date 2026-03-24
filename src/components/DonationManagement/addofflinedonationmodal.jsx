@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { X, User, Mail, Phone, FileText, Building2, Hash, Calendar, IndianRupee, CheckCircle2, AlertCircle, Smartphone } from "lucide-react";
+import { toast } from 'react-toastify';
 import { useCreateOfflineDonationByAdminMutation, useGetCampaignDropdownQuery } from "@/utils/slices/donationApiSlice";
 
 const METHOD_CONFIG = {
@@ -68,29 +69,10 @@ function FormField({ label, icon: Icon, type = "text", name, value, onChange, pl
     );
 }
 
-function Toast({ toast }) {
-    if (!toast) return null;
-    const isSuccess = toast.type === "success";
-    return (
-        <div
-            className="fixed top-5 left-1/2 -translate-x-1/2 z-[60] flex items-center gap-2.5 px-4 py-3 rounded-xl shadow-lg text-sm font-medium border whitespace-nowrap"
-            style={{
-                animation: "toastIn 0.25s cubic-bezier(0.16,1,0.3,1) forwards",
-                background: isSuccess ? "#f0fdf4" : "#fff1f2",
-                color: isSuccess ? "#166534" : "#9f1239",
-                borderColor: isSuccess ? "#bbf7d0" : "#fecdd3",
-            }}
-        >
-            {isSuccess ? <CheckCircle2 size={15} /> : <AlertCircle size={15} />}
-            {toast.message}
-        </div>
-    );
-}
 
 export default function AddOfflineDonationModal({ isOpen, onClose, onSuccess }) {
     const [createDonation, { isLoading: isCreating }] = useCreateOfflineDonationByAdminMutation();
     const [mounted, setMounted] = useState(false);
-    const [toast, setToast] = useState(null);
     const { data, isLoading: isCampaignLoading } = useGetCampaignDropdownQuery();
 
     const campaigns = data?.campaigns || [];
@@ -130,30 +112,26 @@ export default function AddOfflineDonationModal({ isOpen, onClose, onSuccess }) 
 
     const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
-    const showToast = (message, type = "error") => {
-        setToast({ message, type });
-        setTimeout(() => setToast(null), 4000);
-    };
 
     const handleSubmit = async () => {
         if (!formData.donorName || !formData.donorEmail || !formData.amount) {
-            showToast("Donor name, email, and amount are required.");
+            toast.error("Donor name, email, and amount are required.");
             return;
         }
         if (!formData.campaignId) {
-            showToast("Please select a campaign.");
+            toast.error("Please select a campaign.");
             return;
         }
         if (!formData.donationType) {
-            showToast("Please select a donation type.");
+            toast.error("Please select a donation type.");
             return;
         }
         try {
             const res = await createDonation(formData).unwrap();
-            showToast(`Donation recorded — ID: ${res.donation.transactionId}`, "success");
+            toast.success(`Donation recorded — ID: ${res.donation.transactionId}`);
             setTimeout(() => { onSuccess?.(); onClose(); }, 1800);
         } catch (err) {
-            showToast(err?.data?.message || "Failed to create donation.");
+            toast.error(err?.data?.message || "Failed to create donation.");
         }
     };
 
@@ -175,7 +153,6 @@ export default function AddOfflineDonationModal({ isOpen, onClose, onSuccess }) 
         .section-label { letter-spacing: 0.12em; }
       `}</style>
 
-            <Toast toast={toast} />
 
             <div
                 className="donation-modal fixed inset-0 z-50 flex items-center justify-center p-4"

@@ -20,6 +20,8 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Pagination from '../Common/Pagination';
+import { toast } from 'react-toastify';
+import ConfirmModal from '@/components/Common/ConfirmModal';
 import {
     useGetVendorsQuery,
     useCreateVendorMutation,
@@ -34,6 +36,16 @@ export default function VendorManagement() {
     const [showAddModal, setShowAddModal] = useState(false);
     const [editingVendor, setEditingVendor] = useState(null);
     const [currentPage, setCurrentPage] = useState(1);
+
+    // Confirmation Modals State
+    const [confirmModal, setConfirmModal] = useState({
+        isOpen: false,
+        type: 'danger',
+        title: '',
+        message: '',
+        onConfirm: () => { },
+        confirmText: ''
+    });
 
     // API Hooks
     const { data: vendorsData, isLoading, isError, error } = useGetVendorsQuery({
@@ -70,13 +82,13 @@ export default function VendorManagement() {
         try {
             // Validate contact number
             if (!/^[0-9]{10}$/.test(formData.contactNumber)) {
-                alert('Contact number must be a valid 10-digit number');
+                toast.warning('Contact number must be a valid 10-digit number');
                 return;
             }
 
             // Validate GST if provided
             if (formData.vendorGST && !/^[0-9A-Z]{15}$/.test(formData.vendorGST)) {
-                alert('Invalid GST number format (must be 15 alphanumeric characters)');
+                toast.warning('Invalid GST number format (must be 15 alphanumeric characters)');
                 return;
             }
 
@@ -100,9 +112,10 @@ export default function VendorManagement() {
             });
             setEditingVendor(null);
             setShowAddModal(false);
+            toast.success(editingVendor ? 'Vendor updated successfully' : 'Vendor created successfully');
         } catch (err) {
             console.error('Failed to save vendor:', err);
-            alert(err?.data?.message || 'Failed to save vendor');
+            toast.error(err?.data?.message || 'Failed to save vendor');
         }
     };
 
@@ -126,21 +139,30 @@ export default function VendorManagement() {
                 vendorId: vendor._id,
                 data: { status: newStatus }
             }).unwrap();
+            toast.success(`Vendor ${newStatus.toLowerCase()} successfully`);
         } catch (err) {
             console.error('Failed to update vendor status:', err);
-            alert(err?.data?.message || 'Failed to update vendor status');
+            toast.error(err?.data?.message || 'Failed to update vendor status');
         }
     };
 
-    const handleDelete = async (vendorId) => {
-        if (window.confirm('Are you sure you want to deactivate this vendor?')) {
-            try {
-                await deleteVendor(vendorId).unwrap();
-            } catch (err) {
-                console.error('Failed to delete vendor:', err);
-                alert(err?.data?.message || 'Failed to delete vendor');
+    const handleDelete = (vendorId) => {
+        setConfirmModal({
+            isOpen: true,
+            type: 'danger',
+            title: 'Deactivate Vendor',
+            message: 'Are you sure you want to deactivate this vendor?',
+            confirmText: 'Deactivate',
+            onConfirm: async () => {
+                try {
+                    await deleteVendor(vendorId).unwrap();
+                    toast.success('Vendor deactivated successfully');
+                } catch (err) {
+                    console.error('Failed to delete vendor:', err);
+                    toast.error(err?.data?.message || 'Failed to delete vendor');
+                }
             }
-        }
+        });
     };
 
     // Get vendors from API response
@@ -444,6 +466,16 @@ export default function VendorManagement() {
                     </div>
                 )}
             </AnimatePresence>
+
+            <ConfirmModal
+                isOpen={confirmModal.isOpen}
+                onClose={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+                onConfirm={confirmModal.onConfirm}
+                title={confirmModal.title}
+                message={confirmModal.message}
+                type={confirmModal.type}
+                confirmText={confirmModal.confirmText}
+            />
         </div>
     );
 }

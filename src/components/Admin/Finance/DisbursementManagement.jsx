@@ -19,6 +19,7 @@ import {
     ChevronRight,
     QrCode
 } from 'lucide-react';
+import { toast } from 'react-toastify';
 import {
     useGetFinanceAssignmentsQuery,
     useSubmitFinanceProofMutation
@@ -245,7 +246,7 @@ function ActionModal({ task, onClose, refetch }) {
 
     const handleSubmit = async () => {
         if (proofFiles.length === 0) {
-            alert('Please upload a proof of transaction');
+            toast.warning('Please upload a proof of transaction');
             return;
         }
 
@@ -266,9 +267,10 @@ function ActionModal({ task, onClose, refetch }) {
                 refetch();
                 onClose();
             }, 2000);
+            toast.success('Disbursement processed successfully');
         } catch (error) {
             console.error('Submit Error:', error);
-            alert('Failed to process disbursement' + (error.data?.message ? ': ' + error.data.message : ''));
+            toast.error('Failed to process disbursement' + (error.data?.message ? ': ' + error.data.message : ''));
             setIsSubmitting(false);
         }
     };

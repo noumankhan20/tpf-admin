@@ -10,6 +10,8 @@ import {
 } from "@/utils/slices/noticesApiSlice";
 import { ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { toast } from "react-toastify";
+import ConfirmModal from "../Common/ConfirmModal";
 // ============================================
 // UTILITY: Format Date
 // ============================================
@@ -50,55 +52,6 @@ function CategoryBadge({ category }) {
     );
 }
 
-// ============================================
-// COMPONENT: Alert Message
-// ============================================
-function Alert({ type, message, onClose }) {
-    const styles = {
-        success: {
-            bg: "bg-emerald-50",
-            border: "border-emerald-200",
-            text: "text-emerald-800",
-            icon: "text-emerald-500"
-        },
-        error: {
-            bg: "bg-red-50",
-            border: "border-red-200",
-            text: "text-red-800",
-            icon: "text-red-500"
-        }
-    };
-
-    const currentStyle = styles[type] || styles.success;
-
-    return (
-        <div className={`${currentStyle.bg} border ${currentStyle.border} rounded-xl p-4 mb-6 flex items-start justify-between shadow-sm animate-slideIn`}>
-            <div className="flex items-start gap-3">
-                <div className={`${currentStyle.icon} mt-0.5`}>
-                    {type === "success" ? (
-                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                        </svg>
-                    ) : (
-                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                        </svg>
-                    )}
-                </div>
-                <p className={`text-sm font-medium ${currentStyle.text}`}>{message}</p>
-            </div>
-            <button
-                onClick={onClose}
-                className={`${currentStyle.text} hover:opacity-70 transition-opacity ml-4`}
-                aria-label="Close alert"
-            >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-            </button>
-        </div>
-    );
-}
 
 // ============================================
 // COMPONENT: Modal Base
@@ -290,16 +243,15 @@ function NoticeFormModal({ isOpen, onClose, noticeId, onSuccess }) {
         try {
             if (isEditMode) {
                 await updateNotice({ id: noticeId, data: formData }).unwrap();
-                onSuccess("Notice updated successfully!");
+                toast.success("Notice updated successfully!");
             } else {
                 await createNotice(formData).unwrap();
-                onSuccess("Notice created successfully!");
+                toast.success("Notice created successfully!");
             }
             onClose();
         } catch (error) {
-            onSuccess(
-                error?.data?.message || `Failed to ${isEditMode ? "update" : "create"} notice`,
-                "error"
+            toast.error(
+                error?.data?.message || `Failed to ${isEditMode ? "update" : "create"} notice`
             );
         }
     };
@@ -429,81 +381,6 @@ function NoticeFormModal({ isOpen, onClose, noticeId, onSuccess }) {
     );
 }
 
-// ============================================
-// COMPONENT: DeleteConfirmModal
-// ============================================
-function DeleteConfirmModal({ isOpen, onClose, noticeId, noticeTitle, onSuccess }) {
-    const [deleteNotice, { isLoading }] = useDeleteNoticeMutation();
-
-    const handleDelete = async () => {
-        try {
-            await deleteNotice(noticeId).unwrap();
-            onSuccess("Notice deleted successfully!");
-            onClose();
-        } catch (error) {
-            onSuccess(error?.data?.message || "Failed to delete notice", "error");
-        }
-    };
-
-    return (
-        <Modal isOpen={isOpen} onClose={onClose} title="Delete Notice">
-            <div className="space-y-6">
-                <div className="flex items-center justify-center w-16 h-16 mx-auto bg-red-100 rounded-full">
-                    <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                    </svg>
-                </div>
-
-                <div className="text-center space-y-3">
-                    <h4 className="text-lg font-semibold text-gray-900">Are you sure?</h4>
-                    <p className="text-gray-600">
-                        You are about to delete the following notice:
-                    </p>
-                    <p className="text-base font-semibold text-gray-900 bg-gray-50 px-4 py-2 rounded-lg">
-                        "{noticeTitle}"
-                    </p>
-                    <p className="text-sm text-gray-500">
-                        This action cannot be undone.
-                    </p>
-                </div>
-
-                <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
-                    <button
-                        type="button"
-                        onClick={onClose}
-                        disabled={isLoading}
-                        className="px-6 py-2.5 text-sm font-semibold text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
-                    >
-                        Cancel
-                    </button>
-                    <button
-                        type="button"
-                        onClick={handleDelete}
-                        disabled={isLoading}
-                        className="px-6 py-2.5 text-sm font-semibold text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                    >
-                        {isLoading ? (
-                            <>
-                                <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
-                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                </svg>
-                                Deleting...
-                            </>
-                        ) : (
-                            <>
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                </svg>
-                                Delete Notice
-                            </>
-                        )}
-                    </button>
-                </div>
-            </div>
-        </Modal>
-    );
-}
 
 // ============================================
 // COMPONENT: NoticesTable
@@ -674,13 +551,8 @@ export default function AdminNoticesPage() {
 
     const [selectedNoticeId, setSelectedNoticeId] = useState(null);
     const [selectedNoticeTitle, setSelectedNoticeTitle] = useState("");
+    const [deleteNotice] = useDeleteNoticeMutation();
 
-    const [alert, setAlert] = useState(null);
-
-    const showAlert = (message, type = "success") => {
-        setAlert({ message, type });
-        setTimeout(() => setAlert(null), 5000);
-    };
 
     const handleView = (noticeId) => {
         setSelectedNoticeId(noticeId);
@@ -709,6 +581,17 @@ export default function AdminNoticesPage() {
         setDeleteModalOpen(false);
         setSelectedNoticeId(null);
         setSelectedNoticeTitle("");
+    };
+
+    const confirmDelete = async () => {
+        if (!selectedNoticeId) return;
+        try {
+            await deleteNotice(selectedNoticeId).unwrap();
+            toast.success("Notice deleted successfully!");
+            closeModals();
+        } catch (error) {
+            toast.error(error?.data?.message || "Failed to delete notice");
+        }
     };
 
     return (
@@ -744,14 +627,6 @@ export default function AdminNoticesPage() {
                     </button>
                 </div>
 
-                {/* Alert */}
-                {alert && (
-                    <Alert
-                        type={alert.type}
-                        message={alert.message}
-                        onClose={() => setAlert(null)}
-                    />
-                )}
 
                 {/* Error State */}
                 {isError && (
@@ -785,15 +660,14 @@ export default function AdminNoticesPage() {
                     isOpen={formModalOpen}
                     onClose={closeModals}
                     noticeId={selectedNoticeId}
-                    onSuccess={showAlert}
                 />
 
-                <DeleteConfirmModal
+                <ConfirmModal
                     isOpen={deleteModalOpen}
                     onClose={closeModals}
-                    noticeId={selectedNoticeId}
-                    noticeTitle={selectedNoticeTitle}
-                    onSuccess={showAlert}
+                    onConfirm={confirmDelete}
+                    title="Delete Notice"
+                    message={`Are you sure you want to delete the notice: "${selectedNoticeTitle}"? This action cannot be undone.`}
                 />
             </div>
 

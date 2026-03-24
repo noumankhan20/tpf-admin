@@ -21,6 +21,7 @@ import {
     CheckCircle2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'react-toastify';
 
 // Redux hooks
 import {
@@ -158,9 +159,10 @@ export default function ExpenseManagement() {
             await createExpense(formDataToSend).unwrap();
             setShowAddModal(false);
             resetForm();
+            toast.success('Expense recorded successfully');
         } catch (error) {
             console.error('Failed to create expense:', error);
-            alert(error?.data?.message || 'Failed to create expense');
+            toast.error(error?.data?.message || 'Failed to create expense');
         }
     };
 

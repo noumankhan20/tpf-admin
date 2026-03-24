@@ -19,6 +19,8 @@ import {
     Eye
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'react-toastify';
+import ConfirmModal from '@/components/Common/ConfirmModal';
 import Pagination from '../Common/Pagination';
 import { useGetPurchasesQuery, useCreatePurchaseMutation, useDeletePurchaseMutation } from '../../../../utils/slices/InventoryAndAsset/purchaseApiSlice';
 import { useGetVendorsQuery } from '../../../../utils/slices/InventoryAndAsset/vendorApiSlice';
@@ -32,6 +34,16 @@ export default function PurchaseManagement() {
     const [showAddModal, setShowAddModal] = useState(false);
     const [viewPurchase, setViewPurchase] = useState(null);
     const [currentPage, setCurrentPage] = useState(1);
+
+    // Confirmation Modals State
+    const [confirmModal, setConfirmModal] = useState({
+        isOpen: false,
+        type: 'danger',
+        title: '',
+        message: '',
+        onConfirm: () => { },
+        confirmText: ''
+    });
 
     // API Hooks
     const { data: purchasesResponse, isLoading, isError } = useGetPurchasesQuery({
@@ -111,22 +123,22 @@ export default function PurchaseManagement() {
 
         // Basic validation
         if (formData.lineItems.length === 0) {
-            alert("Please add at least one item.");
+            toast.warning("Please add at least one item.");
             return;
         }
 
         // Validate all line items have valid values
         for (const item of formData.lineItems) {
             if (!item.itemId) {
-                alert("Please select an item for all line items.");
+                toast.warning("Please select an item for all line items.");
                 return;
             }
             if (!item.qty || Number(item.qty) <= 0) {
-                alert("Please enter a valid quantity for all items.");
+                toast.warning("Please enter a valid quantity for all items.");
                 return;
             }
             if (!item.price || Number(item.price) < 0) {
-                alert("Please enter a valid price for all items.");
+                toast.warning("Please enter a valid price for all items.");
                 return;
             }
         }
@@ -160,21 +172,30 @@ export default function PurchaseManagement() {
                 proofFile: null,
                 lineItems: []
             });
+            toast.success('Purchase recorded successfully');
         } catch (err) {
             console.error('Failed to create purchase:', err);
-            alert(err?.data?.message || 'Failed to record purchase');
+            toast.error(err?.data?.message || 'Failed to record purchase');
         }
     };
 
-    const handleDelete = async (id) => {
-        if (window.confirm('Are you sure you want to delete this purchase record? Stock will be reverted.')) {
-            try {
-                await deletePurchase(id).unwrap();
-            } catch (err) {
-                console.error('Failed to delete purchase:', err);
-                alert(err?.data?.message || 'Failed to delete purchase');
+    const handleDelete = (id) => {
+        setConfirmModal({
+            isOpen: true,
+            type: 'danger',
+            title: 'Delete Purchase Record',
+            message: 'Are you sure you want to delete this purchase record? Stock will be reverted.',
+            confirmText: 'Delete',
+            onConfirm: async () => {
+                try {
+                    await deletePurchase(id).unwrap();
+                    toast.success('Purchase record deleted successfully');
+                } catch (err) {
+                    console.error('Failed to delete purchase:', err);
+                    toast.error(err?.data?.message || 'Failed to delete purchase');
+                }
             }
-        }
+        });
     };
 
     if (!isMounted) return null;
@@ -632,6 +653,16 @@ export default function PurchaseManagement() {
                     </div>
                 )}
             </AnimatePresence>
+
+            <ConfirmModal
+                isOpen={confirmModal.isOpen}
+                onClose={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+                onConfirm={confirmModal.onConfirm}
+                title={confirmModal.title}
+                message={confirmModal.message}
+                type={confirmModal.type}
+                confirmText={confirmModal.confirmText}
+            />
         </div>
     );
 }

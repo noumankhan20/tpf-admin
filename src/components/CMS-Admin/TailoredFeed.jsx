@@ -16,13 +16,14 @@ import {
   Search,
   Plus,
   Image as ImageIcon,
-  AlertCircle,
   CheckCircle,
   X,
   ArrowLeft,
   Sparkles,
   LayoutGrid,
 } from "lucide-react";
+import { toast } from "react-toastify";
+import ConfirmModal from "../Common/ConfirmModal";
 import { useRouter } from "next/navigation";
 import { getMediaUrl } from "@/utils/media";
 
@@ -46,6 +47,8 @@ export default function TailoredFeedCMS() {
   const [viewMode, setViewMode] = useState("overview");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedItem, setSelectedItem] = useState(null);
+  const [isDeletingModal, setIsDeletingModal] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState(null);
   const router = useRouter();
   const [itemForm, setItemForm] = useState({
     title: "",
@@ -56,7 +59,7 @@ export default function TailoredFeedCMS() {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
-  const [errorMessage, setErrorMessage] = useState("");
+
   // Alert Component with enhanced styling
   const Alert = ({ type, message, onDismiss }) => {
     const isSuccess = type === "success";
@@ -94,10 +97,9 @@ export default function TailoredFeedCMS() {
   // Show success or error message
   const showMessage = (message, type = "success") => {
     if (type === "success") {
-      setSuccessMessage(message);
-      setTimeout(() => setSuccessMessage(""), 4000);
+      toast.success(message);
     } else {
-      setTimeout(() => 5000);
+      toast.error(message);
     }
   };
 
@@ -208,18 +210,21 @@ export default function TailoredFeedCMS() {
 
 
   // Handle Delete Item
-  const handleDeleteItem = async (item) => {
-    const confirmDelete = window.confirm(
-      `Are you sure you want to delete "${item.title}"? This action cannot be undone.`
-    );
-    if (!confirmDelete) return;
+  const handleDeleteItem = (item) => {
+    setItemToDelete(item);
+    setIsDeletingModal(true);
+  };
 
+  const confirmDelete = async () => {
+    if (!itemToDelete) return;
     try {
       await deleteTailored(item._id).unwrap();
-      showMessage(res.message);
+      showMessage("Item deleted successfully!");
     } catch (error) {
       showMessage(error.message, "error");
     } finally {
+      setIsDeletingModal(false);
+      setItemToDelete(null);
     }
   };
 
@@ -290,7 +295,7 @@ export default function TailoredFeedCMS() {
           <Alert
             type="error"
             message={error}
-            onDismiss={() => setErrorMessage(null)}
+            onDismiss={() => setError(null)}
           />
         )}
         {successMessage && (

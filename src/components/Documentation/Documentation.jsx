@@ -4,11 +4,15 @@ import { Plus, Search, Filter, Eye, Edit, Trash2, FileText, ArrowLeft, CheckCirc
 import { useRouter } from 'next/navigation';
 import { useGetAgreementsQuery, useDeleteAgreementMutation } from '@/utils/slices/documentationApiSlice';
 import Modal from "./PopModal"
+import ConfirmModal from '../Common/ConfirmModal';
+import { toast } from "react-toastify";
 export default function Documentation() {
   const [showFilters, setShowFilters] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedAgreementId, setSelectedAgreementId] = useState(null);
+  const [isDeletingModal, setIsDeletingModal] = useState(false);
+  const [agreementToDelete, setAgreementToDelete] = useState(null);
   const [page, setPage] = useState(1);
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const limit = 50;
@@ -110,22 +114,23 @@ export default function Documentation() {
   };
 
 
-  const handleDelete = async (id) => {
-    const confirmDelete = window.confirm(
-      'Are you sure?\nThis will permanently delete the agreement and all related files.'
-    );
+  const handleDelete = (id) => {
+    setAgreementToDelete(id);
+    setIsDeletingModal(true);
+  };
 
-    if (!confirmDelete) return;
+  const confirmDelete = async () => {
+    if (!agreementToDelete) return;
 
     try {
-      const res = await deleteAgreement(id).unwrap(); // ✅ capture response
+      const res = await deleteAgreement(agreementToDelete).unwrap(); // ✅ capture response
 
       alert(res.message); // 🔥 dynamic message
 
+      toast.success("Agreement deleted successfully");
     } catch (err) {
       console.error('Delete failed:', err);
-
-      alert(err?.data?.message || 'Failed to delete agreement'); // ✅ proper error
+      alert('Failed to delete agreement');
     }
   };
 
@@ -586,6 +591,13 @@ export default function Documentation() {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         agreementId={selectedAgreementId}
+      />
+      <ConfirmModal
+        isOpen={isDeletingModal}
+        onClose={() => setIsDeletingModal(false)}
+        onConfirm={confirmDelete}
+        title="Delete Agreement"
+        message="Are you sure you want to permanently delete this agreement and all related files? This action cannot be undone."
       />
     </div>
   );

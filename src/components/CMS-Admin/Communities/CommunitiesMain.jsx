@@ -26,6 +26,9 @@ import {
 } from "lucide-react";
 import CommunityForm from "./CommunitiesForm";
 import CommunityPreview from "./CommunitiesPreview";
+import { toast } from "react-toastify";
+import ConfirmModal from "@/components/Common/ConfirmModal";
+
 export default function CommunitiesMain() {
     const {
         data,
@@ -39,9 +42,8 @@ export default function CommunitiesMain() {
     const [viewMode, setViewMode] = useState("overview");
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedCommunity, setSelectedCommunity] = useState(null);
-    const [showSuccessMessage, setShowSuccessMessage] = useState(false);
-    const [showErrorMessage, setShowErrorMessage] = useState(false);
-    const [successText, setSuccessText] = useState("");
+    const [isDeleting, setIsDeleting] = useState(false);
+    const [deleteId, setDeleteId] = useState(null);
 
     const [communityForm, setCommunityForm] = useState({
         name: "",
@@ -50,19 +52,7 @@ export default function CommunitiesMain() {
         route: "",
     });
 
-    useEffect(() => {
-        if (showSuccessMessage) {
-            const timer = setTimeout(() => setShowSuccessMessage(false), 3000);
-            return () => clearTimeout(timer);
-        }
-    }, [showSuccessMessage]);
 
-    useEffect(() => {
-        if (showErrorMessage) {
-            const timer = setTimeout(() => setShowErrorMessage(false), 3000);
-            return () => clearTimeout(timer);
-        }
-    }, [showErrorMessage]);
 
     const communities = React.useMemo(() => {
         if (!data?.communities) return [];
@@ -117,7 +107,7 @@ export default function CommunitiesMain() {
 
     const handleSaveCommunity = async () => {
         if (!communityForm.name) {
-            alert("Name is required");
+            toast.warn("Name is required");
             return;
         }
 
@@ -127,7 +117,7 @@ export default function CommunitiesMain() {
         }
 
         if (!communityForm.image) {
-            alert("Image is required");
+            toast.warn("Image is required");
             return;
         }
 
@@ -138,13 +128,11 @@ export default function CommunitiesMain() {
 
         try {
             await createCommunity(formData).unwrap();
-
-            setSuccessText("Community added successfully!");
-            setShowSuccessMessage(true);
+            toast.success("Community added successfully!");
             setViewMode("overview");
         } catch (error) {
             console.error("Upload error:", error);
-            setShowErrorMessage(true);
+            toast.error("Operation Failed! Please try again later");
         }
     };
 
@@ -165,27 +153,28 @@ export default function CommunitiesMain() {
                 formData,
             }).unwrap();
 
-            setSuccessText("Community updated successfully!");
-            setShowSuccessMessage(true);
+            toast.success("Community updated successfully!");
             setViewMode("overview");
             setSelectedCommunity(null);
         } catch (error) {
             console.error("Update error:", error);
-            setShowErrorMessage(true);
+            toast.error("Operation Failed! Please try again later");
         }
     };
 
 
     const handleDeleteCommunity = async (id) => {
-        const confirmDelete = confirm("Are you sure you want to delete this community?");
-        if (!confirmDelete) return;
+        setDeleteId(id);
+        setIsDeleting(true);
+    };
 
+    const confirmDelete = async () => {
+        if (!deleteId) return;
         try {
-            const res = await deleteCommunity(id).unwrap();
-            setSuccessText(res?.message || "Operation successful");
-            setShowSuccessMessage(true);
+            const res = await deleteCommunity(deleteId).unwrap();
+            toast.success(res?.message || "Operation successful");
         } catch (error) {
-            setSuccessText(error?.data?.message || "Delete failed");
+            console.error("Delete error:", error);
             setShowErrorMessage(true);
         }
     };
@@ -233,7 +222,7 @@ export default function CommunitiesMain() {
                         <XCircle className="w-5 h-5" />
                     </div>
                     <div>
-                        <p className="font-semibold">{successText}</p>
+                        <p className="font-semibold">Operation Failed!</p>
                         <p className="text-sm text-red-100">Please try again later</p>
                     </div>
                 </div>
@@ -260,6 +249,14 @@ export default function CommunitiesMain() {
                             <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full"></span>
                         </button>
                     </header>
+
+                    <ConfirmModal
+                        isOpen={isDeleting}
+                        onClose={() => setIsDeleting(false)}
+                        onConfirm={confirmDelete}
+                        title="Delete Community"
+                        message="Are you sure you want to delete this community? This action cannot be undone."
+                    />
 
                     {/* Main Content */}
                     <main className="flex-1 overflow-y-auto">

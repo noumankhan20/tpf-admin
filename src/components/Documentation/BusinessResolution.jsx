@@ -1,12 +1,14 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import { X, Plus, Edit2, Trash2, Upload, Calendar, FileText, ArrowLeft, Download, AlertCircle } from 'lucide-react';
+import { toast } from 'react-toastify';
 import {
     useCreateBusinessResolutionMutation,
     useGetAllBusinessResolutionsQuery,
     useUpdateBusinessResolutionMutation,
     useDeleteBusinessResolutionMutation
 } from '@/utils/slices/business-resolutionApiSlice';
+import ConfirmModal from '../Common/ConfirmModal';
 
 const BusinessResolutions = () => {
     // API Hooks
@@ -82,7 +84,7 @@ const BusinessResolutions = () => {
 
     const handleSubmit = async () => {
         if (!formData.resolutionTitle || !formData.agenda || !formData.resolutionDate) {
-            alert('Please fill all required fields');
+            toast.warning('Please fill all required fields');
             return;
         }
 
@@ -107,9 +109,10 @@ const BusinessResolutions = () => {
 
             refetch();
             handleCloseModal();
+            toast.success(editingResolution ? 'Resolution updated successfully' : 'Resolution created successfully');
         } catch (error) {
             console.error('Failed to save resolution:', error);
-            alert('Failed to save resolution. Please try again.');
+            toast.error(error?.data?.message || 'Failed to save resolution. Please try again.');
         }
     };
 
@@ -121,11 +124,12 @@ const BusinessResolutions = () => {
 
             refetch();
             setShowDeleteConfirm(null);
+            toast.success('Resolution deleted successfully');
 
         } catch (err) {
             console.error('Failed to delete resolution:', err);
 
-            alert(err?.data?.message || 'Failed to delete resolution'); // ✅ proper error
+            toast.error(error?.data?.message || err?.data?.message || 'Failed to delete resolution'); // ✅ proper error
         }
     };
 
@@ -563,7 +567,7 @@ const BusinessResolutions = () => {
 
             {/* Delete Confirmation Modal */}
             {showDeleteConfirm && (
-                <div
+                <div 
                     className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn"
                     onClick={(e) => {
                         if (e.target === e.currentTarget) setShowDeleteConfirm(null);

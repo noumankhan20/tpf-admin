@@ -22,6 +22,8 @@ import {
     Loader2,
     Eye
 } from 'lucide-react';
+import { toast } from 'react-toastify';
+import ConfirmModal from '@/components/Common/ConfirmModal';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     useGetAssetsQuery,
@@ -44,6 +46,16 @@ export default function AssetManagement() {
     const [viewAsset, setViewAsset] = useState(null);
     const [selectedAsset, setSelectedAsset] = useState(null);
     const [currentPage, setCurrentPage] = useState(1);
+
+    // Confirmation Modals State
+    const [confirmModal, setConfirmModal] = useState({
+        isOpen: false,
+        type: 'danger',
+        title: '',
+        message: '',
+        onConfirm: () => { },
+        confirmText: ''
+    });
 
     // API Hooks
     const { data: assetsResponse, isLoading } = useGetAssetsQuery({
@@ -83,7 +95,7 @@ export default function AssetManagement() {
             setSelectedAsset(null);
         } catch (err) {
             console.error('Failed to assign asset:', err);
-            alert(err?.data?.message || 'Failed to assign asset');
+            toast.error(err?.data?.message || 'Failed to assign asset');
         }
     };
 
@@ -97,30 +109,46 @@ export default function AssetManagement() {
             setSelectedAsset(null);
         } catch (err) {
             console.error('Failed to update income:', err);
-            alert(err?.data?.message || 'Failed to update income');
+            toast.error(err?.data?.message || 'Failed to update income');
         }
     };
 
-    const handleUnassign = async (id) => {
-        if (confirm('Are you sure you want to unassign this asset? This will make it available for others.')) {
-            try {
-                await unassignAsset(id).unwrap();
-            } catch (err) {
-                console.error('Failed to unassign asset:', err);
-                alert(err?.data?.message || 'Failed to unassign asset');
+    const handleUnassign = (id) => {
+        setConfirmModal({
+            isOpen: true,
+            type: 'warning',
+            title: 'Unassign Asset',
+            message: 'Are you sure you want to unassign this asset? This will make it available for others.',
+            confirmText: 'Unassign',
+            onConfirm: async () => {
+                try {
+                    await unassignAsset(id).unwrap();
+                    toast.success('Asset unassigned successfully');
+                } catch (err) {
+                    console.error('Failed to unassign asset:', err);
+                    toast.error(err?.data?.message || 'Failed to unassign asset');
+                }
             }
-        }
+        });
     };
 
-    const handleAssetDelete = async (id) => {
-        if (window.confirm('Are you sure you want to deactivate this asset?')) {
-            try {
-                await deleteAsset(id).unwrap();
-            } catch (err) {
-                console.error('Failed to delete asset:', err);
-                alert(err?.data?.message || 'Failed to deactivate asset');
+    const handleAssetDelete = (id) => {
+        setConfirmModal({
+            isOpen: true,
+            type: 'danger',
+            title: 'Deactivate Asset',
+            message: 'Are you sure you want to deactivate this asset?',
+            confirmText: 'Deactivate',
+            onConfirm: async () => {
+                try {
+                    await deleteAsset(id).unwrap();
+                    toast.success('Asset deactivated successfully');
+                } catch (err) {
+                    console.error('Failed to delete asset:', err);
+                    toast.error(err?.data?.message || 'Failed to deactivate asset');
+                }
             }
-        }
+        });
     };
 
     const filteredAssets = assets;
@@ -492,6 +520,16 @@ export default function AssetManagement() {
                     </div>
                 )}
             </AnimatePresence>
+
+            <ConfirmModal
+                isOpen={confirmModal.isOpen}
+                onClose={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+                onConfirm={confirmModal.onConfirm}
+                title={confirmModal.title}
+                message={confirmModal.message}
+                type={confirmModal.type}
+                confirmText={confirmModal.confirmText}
+            />
         </div>
     );
 }

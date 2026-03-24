@@ -29,6 +29,7 @@ import {
     RefreshCw,
     Printer
 } from 'lucide-react';
+import { toast } from 'react-toastify';
 import { useGetKycRequestsQuery, useUpdateKycStatusMutation } from '@/utils/slices/kycApiSlice';
 
 export default function KYCVerificationPage() {
@@ -36,8 +37,6 @@ export default function KYCVerificationPage() {
     const [selectedUser, setSelectedUser] = useState(null);
     const [rejectReason, setRejectReason] = useState('');
     const [isRejecting, setIsRejecting] = useState(false);
-    const [showSuccessMessage, setShowSuccessMessage] = useState(false);
-    const [showErrorMessage, setShowErrorMessage] = useState(false);
 
     // Filter & Search State
     const [searchQuery, setSearchQuery] = useState('');
@@ -59,25 +58,6 @@ export default function KYCVerificationPage() {
         return () => clearTimeout(timer);
     }, [searchQuery]);
 
-    // Auto-hide success message
-    React.useEffect(() => {
-        if (showSuccessMessage) {
-            const timer = setTimeout(() => {
-                setShowSuccessMessage(false);
-            }, 3000);
-            return () => clearTimeout(timer);
-        }
-    }, [showSuccessMessage]);
-
-    // Auto-hide error message
-    React.useEffect(() => {
-        if (showErrorMessage) {
-            const timer = setTimeout(() => {
-                setShowErrorMessage(false);
-            }, 3000);
-            return () => clearTimeout(timer);
-        }
-    }, [showErrorMessage]);
 
     // Query Hook
     const { data: kycData, isLoading, isFetching } = useGetKycRequestsQuery({
@@ -96,16 +76,16 @@ export default function KYCVerificationPage() {
         try {
             await updateStatus({ id, status: 'verified' }).unwrap();
             setSelectedUser(null);
-            setShowSuccessMessage(true);
+            toast.success("KYC Approved Successfully!");
         } catch (err) {
             console.error("KYC Approve Error:", err);
-            setShowErrorMessage(true);
+            toast.error(err?.data?.message || "Failed to approve KYC");
         }
     };
 
     const handleReject = async (id) => {
         if (!rejectReason.trim()) {
-            setShowErrorMessage(true);
+            toast.warning("Please enter a reason for rejection.");
             return;
         }
         try {
@@ -113,10 +93,10 @@ export default function KYCVerificationPage() {
             setIsRejecting(false);
             setRejectReason('');
             setSelectedUser(null);
-            setShowSuccessMessage(true);
+            toast.success("KYC Rejected Successfully!");
         } catch (err) {
             console.error("KYC Reject Error:", err);
-            setShowErrorMessage(true);
+            toast.error(err?.data?.message || "Failed to reject KYC");
         }
     };
 
@@ -198,47 +178,6 @@ export default function KYCVerificationPage() {
 
     return (
         <>
-            <AnimatePresence>
-                {showSuccessMessage && (
-                    <motion.div
-                        initial={{ opacity: 0, y: -50 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="fixed top-4 left-1/2 -translate-x-1/2 z-50 
-               bg-gradient-to-r from-emerald-600 to-emerald-400 text-white px-6 py-4 rounded-lg shadow-2xl 
-               flex items-center gap-3 max-w-md w-[90%] sm:w-auto"
-                    >
-                        <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                            </svg>
-                        </div>
-                        <div>
-                            <p className="font-semibold">Form Approved Successfully!</p>
-                        </div>
-                    </motion.div>
-
-                )}
-
-                {showErrorMessage && (
-                    <motion.div
-                        initial={{ opacity: 0, y: -50 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="fixed top-4 left-1/2 -translate-x-1/2 z-50 
-         bg-gradient-to-r from-red-600 to-red-400 text-white px-6 py-4 rounded-lg shadow-2xl 
-         flex items-center gap-3 max-w-md w-[90%] sm:w-auto"
-                    >
-                        <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                        </div>
-                        <div>
-                            <p className="font-semibold">Submission Failed!</p>
-                            <p className="text-sm text-red-100">Please try again later</p>
-                        </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
 
             <div className="min-h-screen bg-gray-50 font-sans flex flex-col">
                 {/* Header */}

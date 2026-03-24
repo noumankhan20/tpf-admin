@@ -24,7 +24,9 @@ import {
     Trash2,
 } from 'lucide-react';
 import AddAdminModal from "./AddAdminModal";
+import ConfirmModal from "../Common/ConfirmModal";
 import { ADMIN_MODULES } from '../config/adminRoles';
+import { toast } from 'react-toastify';
 import { useGetAllAdminsQuery, useAddAdminMutation, useDisableAdminMutation, useEnableAdminMutation, useEditAdminMutation, useDeleteAdminMutation } from '@/utils/slices/adminApiSlice';
 
 const AdminManagement = () => {
@@ -57,7 +59,6 @@ const AdminManagement = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [roleFilter, setRoleFilter] = useState('All');
     const [sortBy, setSortBy] = useState('Date');
-    const [successAlert, setSuccessAlert] = useState({ show: false, message: '', type: 'success' });
     const [selectedAdmin, setSelectedAdmin] = useState(null);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [confirmDisableAdmin, setConfirmDisableAdmin] = useState(null);
@@ -65,10 +66,6 @@ const AdminManagement = () => {
 
     const router = useRouter();
 
-    const showAlert = (message, type = 'success') => {
-        setSuccessAlert({ show: true, message, type });
-        setTimeout(() => setSuccessAlert({ show: false, message: '', type: 'success' }), 4000);
-    };
 
     const openEditModal = (admin) => {
         console.log("Admin:", admin);
@@ -134,7 +131,7 @@ const AdminManagement = () => {
     const handleDisableAdmin = async (adminId) => {
         const admin = adminData.find((admin) => admin.id === adminId);
         if (admin && admin.status === 'Disabled') {
-            showAlert('This admin is already disabled.', 'error');
+            toast.error('This admin is already disabled.');
             return;
         }
 
@@ -142,27 +139,27 @@ const AdminManagement = () => {
             await disableAdmin({ id: adminId }).unwrap();
             setConfirmDisableAdmin(null);
             refetch();
-            showAlert(`${admin.name} has been disabled successfully.`, 'success');
+            toast.success(`${admin.name} has been disabled successfully.`);
         } catch (error) {
             console.error('Error disabling admin:', error);
-            showAlert('Failed to disable admin. Please try again.', 'error');
+            toast.error('Failed to disable admin. Please try again.');
         }
     };
 
     const handleEnableAdmin = async (adminId) => {
         const admin = adminData.find((admin) => admin.id === adminId);
         if (admin && admin.status === 'Active') {
-            showAlert('This admin is already active.', 'error');
+            toast.error('This admin is already active.');
             return;
         }
 
         try {
             await enableAdmin({ id: adminId }).unwrap();
             refetch();
-            showAlert(`${admin.name} has been enabled successfully.`, 'success');
+            toast.success(`${admin.name} has been enabled successfully.`);
         } catch (error) {
             console.error('Error enabling admin:', error);
-            showAlert('Failed to enable admin. Please try again.', 'error');
+            toast.error('Failed to enable admin. Please try again.');
         }
     };
 
@@ -196,11 +193,11 @@ const AdminManagement = () => {
                 data: updatedAdminData // This goes to request body
             }).unwrap();
             refetch();
-            showAlert('Admin updated successfully!', 'success');
+            toast.success('Admin updated successfully!');
             closeEditModal();
         } catch (error) {
             console.error('Edit Admin Error:', error);
-            showAlert(error?.data?.message || 'Failed to update admin.', 'error');
+            toast.error(error?.data?.message || 'Failed to update admin.');
         }
     };
 
@@ -221,10 +218,10 @@ const AdminManagement = () => {
     const handleDeleteAdmin = async (adminId) => {
         try {
             await deleteAdmin(adminId).unwrap();
-            showAlert("Admin deleted successfully", "success");
+            toast.success("Admin deleted successfully");
             refetch(); // refresh list
         } catch (error) {
-            showAlert(
+            toast.error(
                 error?.data?.message || "Failed to delete admin",
                 "error"
             );
@@ -267,36 +264,6 @@ const AdminManagement = () => {
     return (
         <div className="flex min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
             <div className="flex-1 flex flex-col overflow-hidden">
-
-                {/* Enhanced Alert System */}
-                {successAlert.show && (
-                    <div className="fixed top-4 right-4 z-50 animate-in slide-in-from-top-4 duration-300">
-                        <div className={`${successAlert.type === 'success'
-                            ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
-                            : 'bg-red-50 border-red-200 text-red-800'
-                            } border-2 px-6 py-4 rounded-xl shadow-xl max-w-md`}>
-                            <div className="flex items-center gap-3">
-                                {successAlert.type === 'success' ? (
-                                    <CheckCircle2 className="w-5 h-5 shrink-0" />
-                                ) : (
-                                    <AlertCircle className="w-5 h-5 shrink-0" />
-                                )}
-                                <div>
-                                    <p className="font-semibold">
-                                        {successAlert.type === 'success' ? 'Success!' : 'Error'}
-                                    </p>
-                                    <p className="text-sm">{successAlert.message}</p>
-                                </div>
-                                <button
-                                    onClick={() => setSuccessAlert({ show: false, message: '', type: 'success' })}
-                                    className="ml-auto hover:opacity-70 transition-opacity"
-                                >
-                                    <X className="w-4 h-4" />
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                )}
 
                 <div className="w-full max-w-7xl mx-auto p-4 sm:p-6">
                     {/* Enhanced Header Section - Mobile Responsive */}
@@ -921,98 +888,33 @@ const AdminManagement = () => {
                             position: formData.position,
                         }).unwrap();
 
-                        showAlert(`Admin ${formData.fullname} created successfully!`, 'success');
+                        toast.success(`Admin ${formData.fullname} created successfully!`);
                         setIsModalOpen(false);
                     } catch (err) {
-                        showAlert(err?.data?.message || "Failed to add admin. Please try again.", 'error');
+                        toast.error(err?.data?.message || "Failed to add admin. Please try again.");
                     }
                 }}
             />
 
-            {confirmDisableAdmin && (
-                <div className="fixed inset-0 bg-black/50 backdrop-blur-md flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
-                    <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 animate-in zoom-in-95 duration-200">
-                        <div className="flex items-center justify-center w-14 h-14 bg-red-100 rounded-full mx-auto mb-4">
-                            <AlertCircle className="w-7 h-7 text-red-600" />
-                        </div>
+            <ConfirmModal
+                isOpen={!!confirmDisableAdmin}
+                onClose={() => setConfirmDisableAdmin(null)}
+                onConfirm={() => handleDisableAdmin(confirmDisableAdmin.id)}
+                title="Disable Admin Access"
+                message={`Are you sure you want to disable ${confirmDisableAdmin?.name}? They will lose access to the system immediately.`}
+                confirmText={isDisablingAdmin ? "Disabling..." : "Disable Admin"}
+                type="danger"
+            />
 
-                        <h3 className="text-xl font-bold text-gray-900 mb-2 text-center">Disable Admin Access</h3>
-                        <p className="text-sm text-gray-600 mb-6 text-center">
-                            Are you sure you want to disable <span className="font-semibold text-gray-900">{confirmDisableAdmin.name}</span>?
-                            <br />
-                            <span className="text-red-600">They will lose access to the system immediately.</span>
-                        </p>
-
-                        <div className="flex gap-3">
-                            <button
-                                onClick={() => setConfirmDisableAdmin(null)}
-                                className="flex-1 px-4 py-3 border-2 border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50 font-medium transition-all"
-                            >
-                                Cancel
-                            </button>
-
-                            <button
-                                onClick={() => handleDisableAdmin(confirmDisableAdmin.id)}
-                                disabled={isDisablingAdmin}
-                                className="flex-1 px-4 py-3 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-xl hover:from-red-700 hover:to-red-800 font-medium transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                {isDisablingAdmin ? (
-                                    <span className="flex items-center cursor-pointer justify-center gap-2">
-                                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                                        Disabling...
-                                    </span>
-                                ) : (
-                                    'Disable Admin'
-                                )}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-            {confirmDeleteAdmin && (
-                <div className="fixed inset-0 bg-black/50 backdrop-blur-md flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
-                        <div className="flex items-center justify-center w-14 h-14 bg-red-100 rounded-full mx-auto mb-4">
-                            <AlertCircle className="w-7 h-7 text-red-600" />
-                        </div>
-
-                        <h3 className="text-xl font-bold text-gray-900 mb-2 text-center">
-                            Delete Admin Permanently
-                        </h3>
-
-                        <p className="text-sm text-gray-600 mb-6 text-center">
-                            Are you sure you want to delete{" "}
-                            <span className="font-semibold text-gray-900">
-                                {confirmDeleteAdmin.name}
-                            </span>?
-                            <br />
-                            <span className="text-red-600 font-semibold">
-                                This action cannot be undone.
-                            </span>
-                        </p>
-
-                        <div className="flex gap-3">
-                            <button
-                                onClick={() => setConfirmDeleteAdmin(null)}
-                                className="flex-1 px-4 py-3 border-2 border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50 font-medium"
-                            >
-                                Cancel
-                            </button>
-
-                            <button
-                                onClick={() => {
-                                    handleDeleteAdmin(confirmDeleteAdmin.id);
-                                    setConfirmDeleteAdmin(null);
-                                }}
-                                disabled={isDeletingAdmin}
-                                className="flex-1 px-4 py-3 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-xl font-medium disabled:opacity-50"
-                            >
-                                {isDeletingAdmin ? "Deleting..." : "Delete"}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
+            <ConfirmModal
+                isOpen={!!confirmDeleteAdmin}
+                onClose={() => setConfirmDeleteAdmin(null)}
+                onConfirm={() => handleDeleteAdmin(confirmDeleteAdmin.id)}
+                title="Delete Admin Permanently"
+                message={`Are you sure you want to delete ${confirmDeleteAdmin?.name}? This action cannot be undone.`}
+                confirmText={isDeletingAdmin ? "Deleting..." : "Delete"}
+                type="danger"
+            />
 
         </div >
     );

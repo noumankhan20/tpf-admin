@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import NotificationBell from '../../Common/NotificationBell';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft } from 'lucide-react';
+import { toast } from 'react-toastify';
 import { useGetAllFormsQuery, useUpdateFormStatusMutation } from '@/utils/slices/financialAidApiSlice';
 
 // Components
@@ -28,9 +29,6 @@ export default function FinancialAidVerifyPage() {
    const [imagePreviews, setImagePreviews] = useState([]);
    const [groundImages, setGroundImages] = useState([]); // File objects
 
-   // UI State
-   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
-   const [showErrorMessage, setShowErrorMessage] = useState(false);
 
    // Filtering & Sorting State
    const [searchQuery, setSearchQuery] = useState('');
@@ -172,7 +170,7 @@ export default function FinancialAidVerifyPage() {
 
    const handleSubmitGroundReport = async () => {
       if (!groundReportReason.trim()) {
-         alert("Please enter a message.");
+         toast.warning("Please enter a message.");
          return;
       }
 
@@ -192,16 +190,14 @@ export default function FinancialAidVerifyPage() {
          await updateFormStatus({ id: selectedForm._id, formData }).unwrap();
 
          setIsGroundReportModalOpen(false);
-         setShowSuccessMessage(true);
-         setTimeout(() => setShowSuccessMessage(false), 3000);
+         toast.success("Form status updated successfully!");
 
          // Invalidate/Refetch handled by tag invalidation in slice
          // Refetch handled automatically by RTK Query
          setSelectedForm(null); // Clear selection or keep? Clearing feels safer
       } catch (error) {
          console.error('Failed to update status:', error);
-         setShowErrorMessage(true);
-         setTimeout(() => setShowErrorMessage(false), 3000);
+         toast.error(error?.data?.message || "Action failed! Please try again.");
       }
    };
 
@@ -223,24 +219,6 @@ export default function FinancialAidVerifyPage() {
          <style>{printStyles}</style>
 
          {/* Notifications / Alerts */}
-         <AnimatePresence>
-            {showSuccessMessage && (
-               <motion.div
-                  initial={{ opacity: 0, y: -50 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -50 }}
-                  className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-gradient-to-r from-emerald-600 to-emerald-400 text-white px-6 py-4 rounded-lg shadow-2xl flex items-center gap-3"
-               >
-                  <span>Form Status Updated Successfully!</span>
-               </motion.div>
-            )}
-            {showErrorMessage && (
-               <motion.div
-                  initial={{ opacity: 0, y: -50 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -50 }}
-                  className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-gradient-to-r from-red-600 to-red-400 text-white px-6 py-4 rounded-lg shadow-2xl flex items-center gap-3"
-               >
-                  <span>Action Failed! Please try again.</span>
-               </motion.div>
-            )}
-         </AnimatePresence>
 
          {/* Header */}
          <header className="flex items-center justify-between px-6 py-4 bg-white border-b border-gray-200 shrink-0 shadow-sm">

@@ -422,14 +422,7 @@ export const MODULES = [
     route: "/tpf-management/permanent-donors",
     category: 'tpf-management'
   },
-  {
-    id: "volunteers",
-    name: "Volunteer",
-    desc: "Volunteer profiles, status, and reimbursement workflows.",
-    icon: Users,
-    route: "/tpf-management/volunteers",
-    category: 'tpf-management'
-  },
+  
   {
     id: "employees",
     name: "Employee",

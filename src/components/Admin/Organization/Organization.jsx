@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import NotificationBell from '../../Common/NotificationBell';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft } from 'lucide-react';
+import { toast } from 'react-toastify';
 import {
    useGetAllOrganizationsQuery,
    useUpdateOrganizationVerificationStatusMutation,
@@ -38,9 +39,6 @@ export default function OrganizationVerifyPage() {
    const [groundReportStatus, setGroundReportStatus] = useState(null); // 'verified', 'rejected', 'pending', 'approved', 'clarification'
    const [groundReportReason, setGroundReportReason] = useState('');
 
-   // UI State
-   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
-   const [showErrorMessage, setShowErrorMessage] = useState(false);
 
    // Filtering & Sorting State
    const [searchQuery, setSearchQuery] = useState('');
@@ -195,7 +193,7 @@ export default function OrganizationVerifyPage() {
 
    const handleSubmitGroundReport = async () => {
       if (!groundReportReason.trim()) {
-         alert("Please enter a message.");
+         toast.warning("Please enter a message.");
          return;
       }
 
@@ -219,36 +217,16 @@ export default function OrganizationVerifyPage() {
          }
 
          setIsGroundReportModalOpen(false);
-         setShowSuccessMessage(true);
-         setTimeout(() => setShowSuccessMessage(false), 3000);
+         toast.success("Request status updated successfully!");
       } catch (error) {
          console.error('Failed to update status:', error);
-         setShowErrorMessage(true);
-         setTimeout(() => setShowErrorMessage(false), 3000);
+         toast.error(error?.data?.message || "Action failed! Please try again.");
       }
    };
 
    return (
       <div className="min-h-screen bg-gray-50 font-sans flex flex-col">
          {/* Notifications / Alerts */}
-         <AnimatePresence>
-            {showSuccessMessage && (
-               <motion.div
-                  initial={{ opacity: 0, y: -50 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -50 }}
-                  className="fixed top-4 left-1/2 -translate-x-1/2 z-[60] bg-gradient-to-r from-emerald-600 to-emerald-400 text-white px-6 py-4 rounded-lg shadow-2xl flex items-center gap-3"
-               >
-                  <span>Request Status Updated!</span>
-               </motion.div>
-            )}
-            {showErrorMessage && (
-               <motion.div
-                  initial={{ opacity: 0, y: -50 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -50 }}
-                  className="fixed top-4 left-1/2 -translate-x-1/2 z-[60] bg-gradient-to-r from-red-600 to-red-400 text-white px-6 py-4 rounded-lg shadow-2xl flex items-center gap-3"
-               >
-                  <span>Action Failed! Please try again.</span>
-               </motion.div>
-            )}
-         </AnimatePresence>
 
          {/* Header */}
          <header className="flex items-center justify-between px-6 py-4 bg-white border-b border-gray-200 shrink-0 shadow-sm">
