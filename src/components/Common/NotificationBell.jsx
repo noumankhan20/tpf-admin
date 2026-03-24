@@ -195,7 +195,7 @@ const NotificationBell = ({ moduleFilter = null }) => {
                     : allInitial;
 
                 setNotifications(filtered);
-                setUnreadCount(filtered.length);
+                setUnreadCount(filtered.filter(n => !n.read).length);
             } catch (err) {
                 console.error('Failed to fetch initial notifications:', err);
             }
@@ -301,6 +301,12 @@ const NotificationBell = ({ moduleFilter = null }) => {
 
     const handleNotificationClick = (notification) => {
         setShowDropdown(false);
+        
+        // Mark as read locally
+        if (!notification.read) {
+            setNotifications(prev => prev.map(n => n.id === notification.id ? { ...n, read: true } : n));
+            setUnreadCount(prev => Math.max(0, prev - 1));
+        }
 
         // Navigation logic based on type
         if (notification.type === 'TASK') {
@@ -367,9 +373,13 @@ const NotificationBell = ({ moduleFilter = null }) => {
                                     <div
                                         key={n.id}
                                         onClick={() => handleNotificationClick(n)}
-                                        className="px-4 py-3 hover:bg-gray-50 transition-colors cursor-pointer border-b border-gray-50 last:border-0 relative bg-blue-50/20"
+                                        className={`px-4 py-3 transition-all duration-300 cursor-pointer border-b border-gray-50 last:border-0 relative 
+                                            ${n.read 
+                                                ? 'bg-white opacity-60 hover:opacity-100 hover:bg-gray-50' 
+                                                : 'bg-blue-50/40 hover:bg-blue-50/60 shadow-sm font-medium'
+                                            }`}
                                     >
-                                        <div className="absolute left-1 top-1/2 -translate-y-1/2 w-1 h-8 bg-blue-500 rounded-full" />
+                                        {!n.read && <div className="absolute left-0.5 top-1/2 -translate-y-1/2 w-1 h-10 bg-blue-600 rounded-full shadow-[0_0_8px_rgba(37,99,235,0.4)]" />}
                                         <div className="flex gap-3">
                                             <div className="w-9 h-9 bg-gray-100 rounded-xl flex items-center justify-center shrink-0">
                                                 {getIcon(n.type, n.module)}
