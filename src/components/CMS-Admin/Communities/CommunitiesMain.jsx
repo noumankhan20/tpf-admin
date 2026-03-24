@@ -175,7 +175,7 @@ export default function CommunitiesMain() {
             toast.success(res?.message || "Operation successful");
         } catch (error) {
             console.error("Delete error:", error);
-            setShowErrorMessage(true);
+            toast.error("Operation Failed! Please try again later");
         }
     };
 
@@ -203,30 +203,6 @@ export default function CommunitiesMain() {
 
     return (
         <>
-            {/* Success Toast */}
-            {showSuccessMessage && (
-                <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-gradient-to-r from-emerald-600 to-emerald-400 text-white px-6 py-4 rounded-lg shadow-2xl flex items-center gap-3 max-w-md w-[90%] sm:w-auto animate-in slide-in-from-top-2 fade-in duration-300">
-                    <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
-                        <CheckCircle className="w-5 h-5" />
-                    </div>
-                    <div>
-                        <p className="font-semibold">{successText}</p>
-                    </div>
-                </div>
-            )}
-
-            {/* Error Toast */}
-            {showErrorMessage && (
-                <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-gradient-to-r from-red-600 to-red-400 text-white px-6 py-4 rounded-lg shadow-2xl flex items-center gap-3 max-w-md w-[90%] sm:w-auto animate-in slide-in-from-top-2 fade-in duration-300">
-                    <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
-                        <XCircle className="w-5 h-5" />
-                    </div>
-                    <div>
-                        <p className="font-semibold">Operation Failed!</p>
-                        <p className="text-sm text-red-100">Please try again later</p>
-                    </div>
-                </div>
-            )}
 
             <div className="flex h-screen bg-gray-50 overflow-hidden">
                 <div className="flex-1 flex flex-col overflow-hidden">
