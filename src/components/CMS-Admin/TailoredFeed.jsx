@@ -215,13 +215,14 @@ export default function TailoredFeedCMS() {
     setIsDeletingModal(true);
   };
 
+  // ✅ FIX
   const confirmDelete = async () => {
     if (!itemToDelete) return;
     try {
-      await deleteTailored(item._id).unwrap();
+      await deleteTailored(itemToDelete._id).unwrap();
       showMessage("Item deleted successfully!");
     } catch (error) {
-      showMessage(error.message, "error");
+      showMessage(error?.data?.message || "Something went wrong", "error");
     } finally {
       setIsDeletingModal(false);
       setItemToDelete(null);
@@ -408,8 +409,8 @@ export default function TailoredFeedCMS() {
                                   onClick={() => !item.pendingDelete && handleEditItem(item)}
                                   disabled={isLoading || item.pendingDelete}
                                   className={`flex cursor-pointer items-center justify-center gap-2 flex-1 py-2.5 rounded-xl font-semibold transition-all duration-200 ${item.pendingDelete
-                                      ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                                      : "bg-emerald-500 text-white hover:bg-emerald-600 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                                    ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                                    : "bg-emerald-500 text-white hover:bg-emerald-600 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
                                     }`}
                                 >
                                   <Edit2 size={16} />
