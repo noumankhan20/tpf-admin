@@ -47,7 +47,7 @@ export default function CommunitiesMain() {
         name: "",
         image: null,
         imagePreview: null,
-        route:"",
+        route: "",
     });
 
     useEffect(() => {
@@ -70,10 +70,11 @@ export default function CommunitiesMain() {
         return data.communities.map((item, index) => ({
             id: item._id,
             name: item.title,
-            route:item.route || "",
+            route: item.route || "",
             image: getMediaUrl(item.image),
             lastUpdated: new Date(item.updatedAt).toLocaleString(),
             order: index + 1,
+            pendingDelete: item.pendingDelete || false, // 🔥 ADD THIS
         }));
     }, [data]);
 
@@ -97,7 +98,7 @@ export default function CommunitiesMain() {
             name: "",
             image: null,
             imagePreview: null,
-            route:"",
+            route: "",
         });
         setSelectedCommunity(null);
         setViewMode("add-community");
@@ -109,7 +110,7 @@ export default function CommunitiesMain() {
             name: community.name,
             image: null,
             imagePreview: community.image,
-            route:community.route || "",
+            route: community.route || "",
         });
         setViewMode("edit-community");
     };
@@ -180,11 +181,11 @@ export default function CommunitiesMain() {
         if (!confirmDelete) return;
 
         try {
-            await deleteCommunity(id).unwrap();
-            setSuccessText("Community deleted successfully!");
+            const res = await deleteCommunity(id).unwrap();
+            setSuccessText(res?.message || "Operation successful");
             setShowSuccessMessage(true);
         } catch (error) {
-            console.error("Delete error:", error);
+            setSuccessText(error?.data?.message || "Delete failed");
             setShowErrorMessage(true);
         }
     };
@@ -232,7 +233,7 @@ export default function CommunitiesMain() {
                         <XCircle className="w-5 h-5" />
                     </div>
                     <div>
-                        <p className="font-semibold">Operation Failed!</p>
+                        <p className="font-semibold">{successText}</p>
                         <p className="text-sm text-red-100">Please try again later</p>
                     </div>
                 </div>
@@ -381,13 +382,22 @@ export default function CommunitiesMain() {
                                                                 <Edit2 size={14} />
                                                                 <span>Edit</span>
                                                             </button>
-                                                            <button
-                                                                onClick={() => handleDeleteCommunity(community.id)}
-                                                                className="flex-1 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 flex items-center justify-center gap-2 text-sm font-semibold transition-all"
-                                                            >
-                                                                <Trash2 size={14} />
-                                                                <span>Delete</span>
-                                                            </button>
+                                                            {community.pendingDelete ? (
+                                                                <button
+                                                                    disabled
+                                                                    className="flex-1 py-2 bg-yellow-400 text-white rounded-lg text-sm font-semibold cursor-not-allowed"
+                                                                >
+                                                                    ⏳ Pending
+                                                                </button>
+                                                            ) : (
+                                                                <button
+                                                                    onClick={() => handleDeleteCommunity(community.id)}
+                                                                    className="flex-1 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 flex items-center justify-center gap-2 text-sm font-semibold"
+                                                                >
+                                                                    <Trash2 size={14} />
+                                                                    Delete
+                                                                </button>
+                                                            )}
                                                         </div>
                                                     </div>
                                                 </div>

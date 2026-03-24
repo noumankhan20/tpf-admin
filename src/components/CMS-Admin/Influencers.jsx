@@ -35,6 +35,7 @@ export default function InfluencerGalleryCMS() {
       imagePreview: getMediaUrl(item.image),
       lastUpdated: new Date(item.updatedAt).toLocaleString(),
       order: index + 1,
+      pendingDelete: item.pendingDelete,
     })) ?? [];
 
 
@@ -75,11 +76,14 @@ export default function InfluencerGalleryCMS() {
     if (!confirm("Delete this image?")) return;
 
     try {
-      await deleteInfluencer(id).unwrap();
-      alert("Deleted successfully");
+      const res = await deleteInfluencer(id).unwrap(); // ✅ FIX
+
+      alert(res.message); // ✅ dynamic message
+
     } catch (err) {
       console.error(err);
-      alert("Delete failed");
+
+      alert(err?.data?.message || "Delete failed"); // ✅ FIX
     }
   };
 
@@ -235,19 +239,33 @@ export default function InfluencerGalleryCMS() {
                       {/* Action Buttons */}
                       <div className="flex gap-2">
                         <button
-                          onClick={() => handleEditImage(img)}
-                          className="flex-1 py-2.5 cursor-pointer bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 font-semibold flex items-center justify-center gap-2 text-sm transition-all duration-300 hover:shadow-lg hover:shadow-emerald-500/30"
+                          onClick={() => !img.pendingDelete && handleEditImage(img)}
+                          disabled={img.pendingDelete}
+                          className={`flex-1 py-2.5 cursor-pointer rounded-xl font-semibold flex items-center justify-center gap-2 text-sm transition-all duration-300 ${img.pendingDelete
+                            ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                            : "bg-emerald-600 text-white hover:bg-emerald-700 hover:shadow-lg hover:shadow-emerald-500/30"
+                            }`}
                         >
                           <Edit2 size={14} />
                           Edit
                         </button>
-                        <button
-                          onClick={() => handleDeleteImage(img.id)}
-                          className="flex-1 py-2.5 cursor-pointer bg-white text-red-600 border-2 border-red-200 rounded-xl hover:bg-red-50 hover:border-red-300 font-semibold flex items-center justify-center gap-2 text-sm transition-all duration-300"
-                        >
-                          <Trash2 size={14} />
-                          Delete
-                        </button>
+
+                        {img.pendingDelete ? (
+                          <button
+                            disabled
+                            className="flex-1 py-2.5 bg-amber-50 text-amber-500 border-2 border-amber-200 rounded-xl font-semibold flex items-center justify-center gap-2 text-sm cursor-not-allowed"
+                          >
+                            ⏳ Pending
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => handleDeleteImage(img.id)}
+                            className="flex-1 py-2.5 cursor-pointer bg-white text-red-600 border-2 border-red-200 rounded-xl hover:bg-red-50 hover:border-red-300 font-semibold flex items-center justify-center gap-2 text-sm transition-all duration-300"
+                          >
+                            <Trash2 size={14} />
+                            Delete
+                          </button>
+                        )}
                       </div>
                     </div>
                   ))}

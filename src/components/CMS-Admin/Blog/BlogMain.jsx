@@ -65,8 +65,8 @@ export default function BlogMain() {
     if (!confirm("Are you sure you want to delete this blog post?")) return;
 
     try {
-      await deleteBlog(blogId).unwrap();
-      setSuccessText("Blog deleted successfully!");
+      const res = await deleteBlog(blogId).unwrap();
+      setSuccessText(res?.message || "Operation successful");
       setShowSuccessMessage(true);
       refetch();
     } catch (err) {
@@ -142,7 +142,7 @@ export default function BlogMain() {
                 </p>
               </div>
             </div>
-            
+
             <div className="flex items-center gap-2 sm:gap-3">
               {viewMode === "list" && (
                 <button
@@ -180,14 +180,14 @@ export default function BlogMain() {
               )}
 
               {(viewMode === "create" || viewMode === "edit") && (
-                  <BlogForm
-                    selectedBlog={selectedBlog}
-                    isEditMode={viewMode === "edit"}
-                    onSuccess={handleSuccess}
-                    onError={handleError}
-                    onCancel={handleCancel}
-                  />
-                  
+                <BlogForm
+                  selectedBlog={selectedBlog}
+                  isEditMode={viewMode === "edit"}
+                  onSuccess={handleSuccess}
+                  onError={handleError}
+                  onCancel={handleCancel}
+                />
+
               )}
             </div>
           </main>

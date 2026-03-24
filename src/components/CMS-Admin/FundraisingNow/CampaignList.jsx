@@ -85,19 +85,33 @@ export default function CampaignList({ campaigns, categoryColors, onEdit, onDele
             {/* Actions */}
             <div className="flex gap-2">
               <button
-                onClick={() => onEdit(card)}
-                className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-emerald-50 text-emerald-700 rounded-lg hover:bg-emerald-100 transition-colors font-medium"
+                onClick={() => !card.pendingDelete && onEdit(card)}
+                disabled={card.pendingDelete}
+                className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg transition-colors font-medium ${card.pendingDelete
+                    ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                    : "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                  }`}
               >
                 <Edit2 size={16} />
                 <span>Edit</span>
               </button>
-              <button
-                onClick={() => onDelete(card._id)}
-                className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-red-50 text-red-700 rounded-lg hover:bg-red-100 transition-colors font-medium"
-              >
-                <Trash2 size={16} />
-                <span>Delete</span>
-              </button>
+
+              {card.pendingDelete ? (
+                <button
+                  disabled
+                  className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-amber-50 text-amber-500 rounded-lg font-medium cursor-not-allowed"
+                >
+                  <span>⏳ Pending</span>
+                </button>
+              ) : (
+                <button
+                  onClick={() => onDelete(card._id)}
+                  className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-red-50 text-red-700 rounded-lg hover:bg-red-100 transition-colors font-medium"
+                >
+                  <Trash2 size={16} />
+                  <span>Delete</span>
+                </button>
+              )}
             </div>
           </div>
         </div>

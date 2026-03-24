@@ -5,10 +5,10 @@ const AddAdminModal = ({ isOpen, onClose, onSubmit }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [focusedField, setFocusedField] = useState(null);
   const [formData, setFormData] = useState({
-    fullname: "",
+    fullName: "",
     email: "",
     password: "",
-    contact: "",
+    mobileNo: "",
     modules: [],
     isSuperAdmin: false,
     department: "",
@@ -37,14 +37,15 @@ const AddAdminModal = ({ isOpen, onClose, onSubmit }) => {
     "Photo-Editing",
     "Disbursement-Tasks",
     "Internal Communication",
-    "Communication Audit"
+    "Communication Audit",
+    "Apporve Delete Request"
   ];
 
   const isFormValid =
-    formData.fullname.trim() &&
+    formData.fullName.trim() &&
     formData.email.trim() &&
     formData.password.trim() &&
-    formData.contact.trim() &&
+    formData.mobileNo.trim() &&
     formData.department.trim() &&
     formData.position.trim() &&
     (formData.isSuperAdmin || formData.modules.length > 0);
@@ -54,10 +55,10 @@ const AddAdminModal = ({ isOpen, onClose, onSubmit }) => {
     console.log(formData);
     onSubmit(formData);
     setFormData({
-      fullname: "",
+      fullName: "",
       email: "",
       password: "",
-      contact: "",
+      mobileNo: "",
       modules: [],
       department: "",
       position: "",
@@ -127,13 +128,13 @@ const AddAdminModal = ({ isOpen, onClose, onSubmit }) => {
                 <label className="block text-sm font-medium text-gray-700">
                   Full Name <span className="text-red-500">*</span>
                 </label>
-                <div className={`relative transition-all duration-200 ${focusedField === 'fullname' ? 'scale-[1.01]' : ''}`}>
+                <div className={`relative transition-all duration-200 ${focusedField === 'fullName' ? 'scale-[1.01]' : ''}`}>
                   <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                   <input
                     type="text"
-                    value={formData.fullname}
-                    onChange={(e) => setFormData({ ...formData, fullname: e.target.value })}
-                    onFocus={() => setFocusedField('fullname')}
+                    value={formData.fullName}
+                    onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                    onFocus={() => setFocusedField('fullName')}
                     onBlur={() => setFocusedField(null)}
                     className="w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 outline-none"
                     placeholder="John Doe"
@@ -191,13 +192,13 @@ const AddAdminModal = ({ isOpen, onClose, onSubmit }) => {
                 <label className="block text-sm font-medium text-gray-700">
                   Contact Number <span className="text-red-500">*</span>
                 </label>
-                <div className={`relative transition-all duration-200 ${focusedField === 'contact' ? 'scale-[1.01]' : ''}`}>
+                <div className={`relative transition-all duration-200 ${focusedField === 'mobileNo' ? 'scale-[1.01]' : ''}`}>
                   <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                   <input
                     type="tel"
-                    value={formData.contact}
-                    onChange={(e) => setFormData({ ...formData, contact: e.target.value })}
-                    onFocus={() => setFocusedField('contact')}
+                    value={formData.mobileNo}
+                    onChange={(e) => setFormData({ ...formData, mobileNo: e.target.value })}
+                    onFocus={() => setFocusedField('mobileNo')}
                     onBlur={() => setFocusedField(null)}
                     className="w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 outline-none"
                     placeholder="+1 (555) 000-0000"

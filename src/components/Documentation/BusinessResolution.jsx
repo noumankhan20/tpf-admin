@@ -115,12 +115,17 @@ const BusinessResolutions = () => {
 
     const handleDelete = async (id) => {
         try {
-            await deleteResolution(id).unwrap();
+            const res = await deleteResolution(id).unwrap(); // ✅ capture response
+
+            alert(res.message); // 🔥 show correct backend message
+
             refetch();
             setShowDeleteConfirm(null);
-        } catch (error) {
-            console.error('Failed to delete resolution:', error);
-            alert('Failed to delete resolution. Please try again.');
+
+        } catch (err) {
+            console.error('Failed to delete resolution:', err);
+
+            alert(err?.data?.message || 'Failed to delete resolution'); // ✅ proper error
         }
     };
 
@@ -134,10 +139,10 @@ const BusinessResolutions = () => {
 
     const formatDate = (dateString) => {
         const date = new Date(dateString);
-        return date.toLocaleDateString('en-US', { 
-            year: 'numeric', 
-            month: 'short', 
-            day: 'numeric' 
+        return date.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
         });
     };
 
@@ -267,21 +272,34 @@ const BusinessResolutions = () => {
                                         <td className="px-6 py-4">
                                             <div className="flex items-center justify-end gap-1">
                                                 <button
-                                                    onClick={() => handleOpenModal(resolution)}
-                                                    disabled={isUpdating}
-                                                    className="p-2 text-gray-500 cursor-pointer hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all disabled:opacity-50"
-                                                    title="Edit"
+                                                    onClick={() => !resolution.pendingDelete && handleOpenModal(resolution)}
+                                                    disabled={isUpdating || resolution.pendingDelete}
+                                                    className={`p-2 rounded-lg transition-all ${resolution.pendingDelete
+                                                        ? "text-gray-300 cursor-not-allowed"
+                                                        : "text-gray-500 cursor-pointer hover:text-emerald-600 hover:bg-emerald-50 disabled:opacity-50"
+                                                        }`}
+                                                    title={resolution.pendingDelete ? "Pending deletion" : "Edit"}
                                                 >
                                                     <Edit2 className="w-4 h-4" />
                                                 </button>
-                                                <button
-                                                    onClick={() => setShowDeleteConfirm(resolution._id)}
-                                                    disabled={isDeleting}
-                                                    className="p-2 text-gray-500 cursor-pointer hover:text-red-600 hover:bg-red-50 rounded-lg transition-all disabled:opacity-50"
-                                                    title="Delete"
-                                                >
-                                                    <Trash2 className="w-4 h-4" />
-                                                </button>
+
+                                                {resolution.pendingDelete ? (
+                                                    <button
+                                                        disabled
+                                                        className="px-2.5 py-1 bg-amber-50 text-amber-500 border border-amber-200 rounded-lg text-xs font-semibold cursor-not-allowed"
+                                                    >
+                                                        ⏳ Pending
+                                                    </button>
+                                                ) : (
+                                                    <button
+                                                        onClick={() => setShowDeleteConfirm(resolution._id)}
+                                                        disabled={isDeleting}
+                                                        className="p-2 text-gray-500 cursor-pointer hover:text-red-600 hover:bg-red-50 rounded-lg transition-all disabled:opacity-50"
+                                                        title="Delete"
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </button>
+                                                )}
                                             </div>
                                         </td>
                                     </tr>
@@ -316,11 +334,11 @@ const BusinessResolutions = () => {
                                     </button>
                                 </div>
                             </div>
-                            
+
                             <p className="text-gray-600 text-sm mb-4 leading-relaxed">
                                 {truncateText(resolution.agenda, 120)}
                             </p>
-                            
+
                             <div className="flex items-center gap-4 text-sm">
                                 <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 text-emerald-700 rounded-md text-xs font-medium">
                                     <FileText className="w-3.5 h-3.5" />
@@ -355,7 +373,7 @@ const BusinessResolutions = () => {
 
             {/* Modal */}
             {isModalOpen && (
-                <div 
+                <div
                     className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn"
                     onClick={(e) => {
                         if (e.target === e.currentTarget) handleCloseModal();
@@ -545,7 +563,7 @@ const BusinessResolutions = () => {
 
             {/* Delete Confirmation Modal */}
             {showDeleteConfirm && (
-                <div 
+                <div
                     className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn"
                     onClick={(e) => {
                         if (e.target === e.currentTarget) setShowDeleteConfirm(null);

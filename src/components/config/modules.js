@@ -234,6 +234,7 @@ import {
   UserCheck,
   Building2,
   Briefcase,
+  Trash2,
 } from "lucide-react";
 
 export const MODULES = [
@@ -443,6 +444,14 @@ export const MODULES = [
     desc: "Organization details based on backend models.",
     icon: Building2,
     route: "/tpf-management/organizations",
+    category: 'tpf-management'
+  },
+  {
+    id: "deletion",
+    name: "Approve Delete Requests",
+    desc: "Approve the delete requests coming from different modules .",
+    icon: Trash2,
+    route: "/tpf-management/approve-request",
     category: 'tpf-management'
   },
 

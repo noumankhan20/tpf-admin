@@ -118,10 +118,14 @@ export default function Documentation() {
     if (!confirmDelete) return;
 
     try {
-      await deleteAgreement(id).unwrap();
+      const res = await deleteAgreement(id).unwrap(); // ✅ capture response
+
+      alert(res.message); // 🔥 dynamic message
+
     } catch (err) {
       console.error('Delete failed:', err);
-      alert('Failed to delete agreement');
+
+      alert(err?.data?.message || 'Failed to delete agreement'); // ✅ proper error
     }
   };
 
@@ -470,6 +474,7 @@ export default function Documentation() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <div className="flex items-center gap-2">
+                          {/* View - always accessible */}
                           <button
                             onClick={() => handleView(agreement.id)}
                             className="p-2 text-emerald-600 cursor-pointer hover:bg-emerald-50 rounded-lg transition-all"
@@ -477,21 +482,39 @@ export default function Documentation() {
                           >
                             <Eye className="w-5 h-5" />
                           </button>
+
+                          {/* Edit - disabled when pendingDelete */}
                           <button
-                            onClick={() => handleEdit(agreement.id)}
-                            className="p-2 text-blue-600 cursor-pointer hover:bg-blue-50 rounded-lg transition-all"
-                            title="Edit"
+                            onClick={() => !agreement.pendingDelete && handleEdit(agreement.id)}
+                            disabled={agreement.pendingDelete}
+                            className={`p-2 rounded-lg transition-all ${agreement.pendingDelete
+                              ? "text-gray-300 cursor-not-allowed"
+                              : "text-blue-600 cursor-pointer hover:bg-blue-50"
+                              }`}
+                            title={agreement.pendingDelete ? "Pending deletion" : "Edit"}
                           >
                             <Edit className="w-5 h-5" />
                           </button>
-                          <button
-                            onClick={() => handleDelete(agreement.id)}
-                            disabled={isDeleting}
-                            className="p-2 text-red-600 cursor-pointer hover:bg-red-50 rounded-lg transition-all"
-                            title="Delete"
-                          >
-                            <Trash2 className="w-5 h-5" />
-                          </button>
+
+                          {/* Delete / Pending */}
+                          {agreement.pendingDelete ? (
+                            <button
+                              disabled
+                              className="px-3 py-1.5 bg-amber-50 text-amber-500 border border-amber-200 rounded-lg text-xs font-semibold cursor-not-allowed"
+                              title="Deletion pending"
+                            >
+                              ⏳ Pending
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => handleDelete(agreement.id)}
+                              disabled={isDeleting}
+                              className="p-2 text-red-600 cursor-pointer hover:bg-red-50 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                              title="Delete"
+                            >
+                              <Trash2 className="w-5 h-5" />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>

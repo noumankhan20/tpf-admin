@@ -56,7 +56,7 @@ export default function TailoredFeedCMS() {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
-
+  const [errorMessage, setErrorMessage] = useState("");
   // Alert Component with enhanced styling
   const Alert = ({ type, message, onDismiss }) => {
     const isSuccess = type === "success";
@@ -216,7 +216,7 @@ export default function TailoredFeedCMS() {
 
     try {
       await deleteTailored(item._id).unwrap();
-      showMessage("Item deleted successfully!");
+      showMessage(res.message);
     } catch (error) {
       showMessage(error.message, "error");
     } finally {
@@ -290,7 +290,7 @@ export default function TailoredFeedCMS() {
           <Alert
             type="error"
             message={error}
-            onDismiss={() => setError(null)}
+            onDismiss={() => setErrorMessage(null)}
           />
         )}
         {successMessage && (
@@ -400,22 +400,34 @@ export default function TailoredFeedCMS() {
 
                               <div className="flex gap-2">
                                 <button
-                                  onClick={() => handleEditItem(item)}
-                                  disabled={isLoading}
-                                  className="flex cursor-pointer items-center justify-center gap-2 flex-1 py-2.5 bg-emerald-500 text-white rounded-xl hover:bg-emerald-600 hover:shadow-lg transition-all duration-200 font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                                  onClick={() => !item.pendingDelete && handleEditItem(item)}
+                                  disabled={isLoading || item.pendingDelete}
+                                  className={`flex cursor-pointer items-center justify-center gap-2 flex-1 py-2.5 rounded-xl font-semibold transition-all duration-200 ${item.pendingDelete
+                                      ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                                      : "bg-emerald-500 text-white hover:bg-emerald-600 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                                    }`}
                                 >
                                   <Edit2 size={16} />
                                   <span>Edit</span>
                                 </button>
 
-                                <button
-                                  onClick={() => handleDeleteItem(item)}
-                                  disabled={isLoading}
-                                  className="flex cursor-pointer items-center justify-center gap-2 flex-1 py-2.5 bg-red-500 text-white rounded-xl hover:bg-red-600 hover:shadow-lg transition-all duration-200 font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                  <Trash2 size={16} />
-                                  <span>Delete</span>
-                                </button>
+                                {item.pendingDelete ? (
+                                  <button
+                                    disabled
+                                    className="flex items-center justify-center gap-2 flex-1 py-2.5 bg-amber-50 text-amber-500 border-2 border-amber-200 rounded-xl font-semibold cursor-not-allowed"
+                                  >
+                                    <span>⏳ Pending</span>
+                                  </button>
+                                ) : (
+                                  <button
+                                    onClick={() => handleDeleteItem(item)}
+                                    disabled={isLoading}
+                                    className="flex cursor-pointer items-center justify-center gap-2 flex-1 py-2.5 bg-red-500 text-white rounded-xl hover:bg-red-600 hover:shadow-lg transition-all duration-200 font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                                  >
+                                    <Trash2 size={16} />
+                                    <span>Delete</span>
+                                  </button>
+                                )}
                               </div>
                             </div>
                           </div>

@@ -19,7 +19,8 @@ export const ADMIN_MODULES = [
   "Disbursement-Tasks",
   "Photo-Editing",
   "Internal Communication",
-  "Communication Audit"
+  "Communication Audit",
+  "Approve Delete Request"
 ];
 
 // export const ADMIN_MODULES = [
