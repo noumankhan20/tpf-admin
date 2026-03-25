@@ -18,7 +18,8 @@ import {
     TrendingDown,
     Loader2,
     AlertCircle,
-    CheckCircle2
+    CheckCircle2,
+    Clock
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-toastify';
@@ -77,7 +78,9 @@ export default function ExpenseManagement() {
         volunteerLocation: '',
         volunteerId: '',
         voucherId: '',
-        proofFile: null
+        proofFile: null,
+        transactionDate: new Date().toISOString().split('T')[0],
+        transactionTime: ''
     });
 
     const { data: volunteersResponse } = useGetVolunteersQuery();
@@ -123,6 +126,8 @@ export default function ExpenseManagement() {
 
             if (formData.transactionId) formDataToSend.append('transactionId', formData.transactionId);
             if (formData.notes) formDataToSend.append('notes', formData.notes);
+            formDataToSend.append('transactionDate', formData.transactionDate);
+            if (formData.transactionTime) formDataToSend.append('transactionTime', formData.transactionTime);
 
             if (formData.expenseType === 'SALARY' && formData.adminId) {
                 formDataToSend.append('adminId', formData.adminId);
@@ -185,7 +190,9 @@ export default function ExpenseManagement() {
             volunteerLocation: '',
             volunteerId: '',
             voucherId: '',
-            proofFile: null
+            proofFile: null,
+            transactionDate: new Date().toISOString().split('T')[0],
+            transactionTime: ''
         });
     };
 
@@ -440,6 +447,37 @@ export default function ExpenseManagement() {
                                                     <option value="CARD">Card</option>
                                                     <option value="OTHER">Other</option>
                                                 </select>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-6">
+                                        {/* Transaction Date */}
+                                        <div>
+                                            <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">Date of Transaction *</label>
+                                            <div className="relative">
+                                                <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                                                <input
+                                                    type="date"
+                                                    required
+                                                    value={formData.transactionDate}
+                                                    onChange={(e) => setFormData(p => ({ ...p, transactionDate: e.target.value }))}
+                                                    className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        {/* Transaction Time */}
+                                        <div>
+                                            <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">Transaction Time (Optional)</label>
+                                            <div className="relative">
+                                                <Clock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                                                <input
+                                                    type="time"
+                                                    value={formData.transactionTime}
+                                                    onChange={(e) => setFormData(p => ({ ...p, transactionTime: e.target.value }))}
+                                                    className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all"
+                                                />
                                             </div>
                                         </div>
                                     </div>
