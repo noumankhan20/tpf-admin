@@ -878,10 +878,10 @@ const AdminManagement = () => {
                 onSubmit={async (formData) => {
                     try {
                         await addAdmin({
-                            fullName: formData.fullname,
+                            fullName: formData.fullName,
                             email: formData.email,
                             password: formData.password,
-                            mobileNo: formData.contact,
+                            mobileNo: formData.mobileNo,
                             modules: formData.modules,
                             isSuperAdmin: formData.isSuperAdmin,
                             department: formData.department,

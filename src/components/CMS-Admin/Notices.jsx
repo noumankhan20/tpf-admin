@@ -480,6 +480,7 @@ function NoticesTable({ notices, isLoading, onView, onEdit, onDelete }) {
                                 </td>
                                 <td className="px-6 py-5 whitespace-nowrap">
                                     <div className="flex items-center gap-2">
+                                        {/* View button - always visible */}
                                         <button
                                             onClick={() => onView(notice._id)}
                                             className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all"
@@ -490,24 +491,42 @@ function NoticesTable({ notices, isLoading, onView, onEdit, onDelete }) {
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                                             </svg>
                                         </button>
+
+                                        {/* Edit button - disabled when pendingDelete */}
                                         <button
-                                            onClick={() => onEdit(notice._id)}
-                                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
-                                            title="Edit notice"
+                                            onClick={() => !notice.pendingDelete && onEdit(notice._id)}
+                                            disabled={notice.pendingDelete}
+                                            className={`p-2 rounded-lg transition-all ${notice.pendingDelete
+                                                    ? "text-gray-300 cursor-not-allowed"
+                                                    : "text-blue-600 hover:bg-blue-50"
+                                                }`}
+                                            title={notice.pendingDelete ? "Pending deletion" : "Edit notice"}
                                         >
                                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                                             </svg>
                                         </button>
-                                        <button
-                                            onClick={() => onDelete(notice._id, notice.title)}
-                                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-all"
-                                            title="Delete notice"
-                                        >
-                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                            </svg>
-                                        </button>
+
+                                        {/* Delete / Pending button */}
+                                        {notice.pendingDelete ? (
+                                            <button
+                                                disabled
+                                                className="px-3 py-1.5 bg-amber-50 text-amber-500 border border-amber-200 rounded-lg text-xs font-semibold cursor-not-allowed"
+                                                title="Deletion pending"
+                                            >
+                                                ⏳ Pending
+                                            </button>
+                                        ) : (
+                                            <button
+                                                onClick={() => onDelete(notice._id, notice.title)}
+                                                className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                                                title="Delete notice"
+                                            >
+                                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                </svg>
+                                            </button>
+                                        )}
                                     </div>
                                 </td>
                             </tr>
@@ -525,7 +544,7 @@ function NoticesTable({ notices, isLoading, onView, onEdit, onDelete }) {
 export default function AdminNoticesPage() {
     const { data, isLoading, isError, error } = useGetAllNoticesQuery();
     const notices = Array.isArray(data?.data) ? data.data : [];
-    const router= useRouter();
+    const router = useRouter();
     const [viewModalOpen, setViewModalOpen] = useState(false);
     const [formModalOpen, setFormModalOpen] = useState(false);
     const [deleteModalOpen, setDeleteModalOpen] = useState(false);
