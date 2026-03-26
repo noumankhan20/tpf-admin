@@ -184,8 +184,34 @@ const NotificationBell = ({ moduleFilter = null }) => {
                                 }));
                             allInitial = [...allInitial, ...campNotifications];
                         }
-                    } catch (err) {
+                  } catch (err) {
                         console.error('Campaign Notification fetch failed:', err);
+                    }
+                }
+
+                // Fetch Delete Requests (Super Admin only)
+                if (admin?.isSuperAdmin && (!moduleFilter || moduleFilter === 'deletion')) {
+                    try {
+                        const deleteRes = await fetch(`${apiBase}/delete/getall`, {
+                            credentials: 'include'
+                        });
+                        const deleteResult = await deleteRes.json();
+                        if (deleteResult.success && deleteResult.data) {
+                            const deleteNotifications = deleteResult.data
+                                .filter(req => req.status === 'pending')
+                                .map(req => ({
+                                    id: req.id,
+                                    type: 'DELETE_REQUEST',
+                                    title: `Pending Delete: ${req.entityName}`,
+                                    subtitle: `Module: ${req.module}`,
+                                    time: req.requestedAt,
+                                    read: false,
+                                    data: req
+                                }));
+                            allInitial = [...allInitial, ...deleteNotifications];
+                        }
+                    } catch (err) {
+                        console.error('Delete Notification fetch failed:', err);
                     }
                 }
 
@@ -278,12 +304,34 @@ const NotificationBell = ({ moduleFilter = null }) => {
             }
         };
 
+        const handleDeleteRequestCreated = (data) => {
+            if (admin?.isSuperAdmin) {
+                const newNotification = {
+                    id: data.id,
+                    type: 'DELETE_REQUEST',
+                    title: `Pending Delete: ${data.entityName}`,
+                    subtitle: `Module: ${data.module}`,
+                    time: new Date().toISOString(),
+                    read: false,
+                    data: data
+                };
+
+                if (!moduleFilter || moduleFilter === 'deletion') {
+                    setNotifications(prev => [newNotification, ...prev]);
+                    setUnreadCount(prev => prev + 1);
+                    toast.warning(newNotification.title);
+                }
+            }
+        };
+
         socket.on('taskAssigned', handleTaskAssigned);
         socket.on('formSubmitted', handleFormSubmitted);
+        socket.on('deleteRequestCreated', handleDeleteRequestCreated);
 
         return () => {
             socket.off('taskAssigned', handleTaskAssigned);
             socket.off('formSubmitted', handleFormSubmitted);
+            socket.off('deleteRequestCreated', handleDeleteRequestCreated);
         };
     }, [socket, admin, moduleFilter]);
 
@@ -315,6 +363,8 @@ const NotificationBell = ({ moduleFilter = null }) => {
             if (notification.formType === 'KYC') router.push('/verify/kyc');
             else if (notification.formType === 'ORGANIZATION' || notification.formType === 'ORGANIZATION_EDIT' || notification.formType === 'CAMPAIGN_REQUEST' || notification.formType === 'CAMPAIGN_RESUBMITTED') router.push('/verify/organization');
             else router.push('/verify/financial'); // Adjust path as needed
+        } else if (notification.type === 'DELETE_REQUEST') {
+            router.push('/tpf-management/approve-request');
         }
     };
 
@@ -325,6 +375,7 @@ const NotificationBell = ({ moduleFilter = null }) => {
             case 'CMS_TASK': return <Star className="w-4 h-4 text-purple-500" />;
             case 'SOCIAL_TASK': return <Share2 className="w-4 h-4 text-blue-500" />;
             case 'FINANCE_TASK': return <Wallet className="w-4 h-4 text-orange-500" />;
+            case 'DELETE_REQUEST': return <X className="w-4 h-4 text-red-500" />;
             default: return <Bell className="w-4 h-4 text-gray-500" />;
         }
     };
