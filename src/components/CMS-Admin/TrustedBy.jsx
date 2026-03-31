@@ -51,6 +51,7 @@ export default function PartnersCMS() {
     image: getMediaUrl(item.image),
     lastUpdated: new Date(item.updatedAt).toLocaleString(),
     order: index + 1,
+    pendingDelete: item.pendingDelete,
   }));
 
 
@@ -135,13 +136,10 @@ export default function PartnersCMS() {
   const confirmDelete = async () => {
     if (!deleteId) return;
     try {
-      await deleteTrustedBy(deleteId).unwrap();
-      toast.success("Partner deleted");
+      await deleteTrustedBy(id).unwrap();
+      alert("Partner deleted");
     } catch {
-      toast.error("Failed to delete partner");
-    } finally {
-      setIsDeleting(false);
-      setDeleteId(null);
+      alert("Failed to delete partner");
     }
   };
 
@@ -324,19 +322,33 @@ export default function PartnersCMS() {
                                 {/* Enhanced Action Buttons */}
                                 <div className="flex gap-2">
                                   <button
-                                    onClick={() => handleEditPartner(partner)}
-                                    className="flex-1 cursor-pointer py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 hover:shadow-lg transition-all duration-200 font-medium flex items-center justify-center gap-2"
+                                    onClick={() => !partner.pendingDelete && handleEditPartner(partner)}
+                                    disabled={partner.pendingDelete}
+                                    className={`flex-1 cursor-pointer py-2.5 rounded-xl font-medium flex items-center justify-center gap-2 transition-all duration-200 ${partner.pendingDelete
+                                        ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                                        : "bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 hover:shadow-lg"
+                                      }`}
                                   >
                                     <Edit2 size={16} />
                                     <span>Edit</span>
                                   </button>
-                                  <button
-                                    onClick={() => handleDeletePartner(partner.id)}
-                                    className="flex-1 py-2.5 cursor-pointer bg-gradient-to-r from-red-500 to-red-600 text-white rounded-xl hover:from-red-600 hover:to-red-700 hover:shadow-lg transition-all duration-200 font-medium flex items-center justify-center gap-2"
-                                  >
-                                    <Trash2 size={16} />
-                                    <span>Delete</span>
-                                  </button>
+
+                                  {partner.pendingDelete ? (
+                                    <button
+                                      disabled
+                                      className="flex-1 py-2.5 bg-amber-50 text-amber-500 border-2 border-amber-200 rounded-xl font-medium flex items-center justify-center gap-2 cursor-not-allowed"
+                                    >
+                                      <span>⏳ Pending</span>
+                                    </button>
+                                  ) : (
+                                    <button
+                                      onClick={() => handleDeletePartner(partner.id)}
+                                      className="flex-1 py-2.5 cursor-pointer bg-gradient-to-r from-red-500 to-red-600 text-white rounded-xl hover:from-red-600 hover:to-red-700 hover:shadow-lg transition-all duration-200 font-medium flex items-center justify-center gap-2"
+                                    >
+                                      <Trash2 size={16} />
+                                      <span>Delete</span>
+                                    </button>
+                                  )}
                                 </div>
                               </div>
                             </div>

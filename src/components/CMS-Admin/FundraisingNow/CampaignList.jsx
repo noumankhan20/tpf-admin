@@ -65,88 +65,91 @@ export default function CampaignList({
           return (
             <div
               key={card._id}
-              className={`bg-white rounded-xl border-2 transition-all duration-200 flex items-center gap-4 px-4 py-3 group ${
+              className={`bg-white rounded-xl border-2 transition-all duration-200 group ${
                 expired
                   ? 'border-gray-200 opacity-75'
                   : 'border-gray-200 hover:border-emerald-400'
               }`}
             >
-              {/* Thumbnail */}
-              <div className="w-14 h-14 rounded-lg overflow-hidden flex-shrink-0 bg-gray-100">
-                {card.mediaType === 'video' ? (
-                  <video
-                    src={getMediaUrl(card.videoUrl)}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <img
-                    src={getMediaUrl(card.imageUrl)}
-                    className="w-full h-full object-cover"
-                    alt={card.title}
-                  />
-                )}
-              </div>
+              {/* Top row */}
+              <div className="flex items-center gap-4 px-4 py-3">
+                {/* Thumbnail */}
+                <div className="w-14 h-14 rounded-lg overflow-hidden flex-shrink-0 bg-gray-100">
+                  {card.mediaType === 'video' ? (
+                    <video
+                      src={getMediaUrl(card.videoUrl)}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <img
+                      src={getMediaUrl(card.imageUrl)}
+                      className="w-full h-full object-cover"
+                      alt={card.title}
+                    />
+                  )}
+                </div>
 
-              {/* Main Info */}
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap mb-0.5">
-                  <h3 className="font-semibold text-gray-900 text-sm truncate">
-                    {card.title}
-                  </h3>
-                  {card.isUrgent && (
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-600 flex-shrink-0">
-                      Urgent
+                {/* Main Info */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap mb-0.5">
+                    <h3 className="font-semibold text-gray-900 text-sm truncate">
+                      {card.title}
+                    </h3>
+                    {card.isUrgent && (
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-600 flex-shrink-0">
+                        Urgent
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-gray-500 truncate mb-1">{card.organization}</p>
+
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${categoryColors[card.category]}`}>
+                      {card.category}
+                    </span>
+                    <span className="text-xs text-gray-600 font-medium">
+                      ₹{(card.requiredAmount || 0).toLocaleString()}
+                    </span>
+                    {card.deadline && (
+                      <span className="flex items-center gap-1 text-xs text-gray-500">
+                        <Clock size={12} />
+                        {new Date(card.deadline).toLocaleDateString()}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Status Badge */}
+                <div className="flex-shrink-0">
+                  {expired ? (
+                    <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-500">
+                      <AlertCircle size={12} />
+                      Expired
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700">
+                      <CheckCircle2 size={12} />
+                      Active
                     </span>
                   )}
                 </div>
-                <p className="text-xs text-gray-500 truncate mb-1">{card.organization}</p>
-
-                <div className="flex items-center gap-3 flex-wrap">
-                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${categoryColors[card.category]}`}>
-                    {card.category}
-                  </span>
-                  <span className="text-xs text-gray-600 font-medium">
-                    ₹{(card.requiredAmount || 0).toLocaleString()}
-                  </span>
-                  {card.deadline && (
-                    <span className="flex items-center gap-1 text-xs text-gray-500">
-                      <Clock size={12} />
-                      {new Date(card.deadline).toLocaleDateString()}
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              {/* Status Badge */}
-              <div className="flex-shrink-0">
-                {expired ? (
-                  <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-500">
-                    <AlertCircle size={12} />
-                    Expired
-                  </span>
-                ) : (
-                  <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700">
-                    <CheckCircle2 size={12} />
-                    Active
-                  </span>
-                )}
               </div>
 
               {/* Actions */}
-              <div className="flex items-center gap-2 flex-shrink-0">
+              <div className="flex gap-2 px-4 pb-3">
                 <button
                   onClick={() => onEdit(card)}
-                  className="p-2 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors"
-                  title="Edit"
+                  className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-emerald-50 text-emerald-700 rounded-lg hover:bg-emerald-100 transition-colors font-medium"
                 >
-                  <Edit2 size={15} />
+                  <Edit2 size={16} />
+                  <span>Edit</span>
                 </button>
                 <button
                   onClick={() => onDelete(card._id)}
-                  className="p-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-colors"
-                  title="Delete"
+                  className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-red-50 text-red-700 rounded-lg hover:bg-red-100 transition-colors font-medium"
                 >
-                  <Trash2 size={15} />
+                  <Trash2 size={16} />
+                  <span>Delete</span>
                 </button>
               </div>
             </div>

@@ -58,6 +58,42 @@ export default function TailoredFeedCMS() {
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
+
+  // Alert Component with enhanced styling
+  const Alert = ({ type, message, onDismiss }) => {
+    const isSuccess = type === "success";
+
+    return (
+      <div className={`fixed top-4 right-4 z-50 max-w-sm w-full mx-4 sm:mx-0 ${isSuccess
+        ? "bg-emerald-50 border-2 border-emerald-500 text-emerald-900"
+        : "bg-red-50 border-2 border-red-500 text-red-900"
+        } rounded-2xl p-4 shadow-2xl animate-in slide-in-from-top-2 duration-300`}>
+        <div className="flex items-start gap-3">
+          {isSuccess ? (
+            <div className="bg-emerald-500 rounded-full p-1">
+              <CheckCircle size={18} className="text-white" />
+            </div>
+          ) : (
+            <div className="bg-red-500 rounded-full p-1">
+              <AlertCircle size={18} className="text-white" />
+            </div>
+          )}
+          <div className="flex-1">
+            <p className="text-sm font-semibold">{message}</p>
+          </div>
+          {onDismiss && (
+            <button
+              onClick={onDismiss}
+              className="flex-shrink-0 hover:opacity-70 transition-opacity p-1 hover:bg-gray-200 rounded-full"
+            >
+              <X size={16} />
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  };
   // Show success or error message
   const showMessage = (message, type = "success") => {
     if (type === "success") {
@@ -179,13 +215,14 @@ export default function TailoredFeedCMS() {
     setIsDeletingModal(true);
   };
 
+  // ✅ FIX
   const confirmDelete = async () => {
     if (!itemToDelete) return;
     try {
       await deleteTailored(itemToDelete._id).unwrap();
       showMessage("Item deleted successfully!");
     } catch (error) {
-      showMessage(error.message, "error");
+      showMessage(error?.data?.message || "Something went wrong", "error");
     } finally {
       setIsDeletingModal(false);
       setItemToDelete(null);
@@ -254,14 +291,21 @@ export default function TailoredFeedCMS() {
           )}
         </div>
 
-        <ConfirmModal
-          isOpen={isDeletingModal}
-          onClose={() => setIsDeletingModal(false)}
-          onConfirm={confirmDelete}
-          title="Delete Feed Item"
-          message={`Are you sure you want to delete "${itemToDelete?.title}"? This action cannot be undone.`}
-        />
-
+        {/* Alerts */}
+        {error && (
+          <Alert
+            type="error"
+            message={error}
+            onDismiss={() => setError(null)}
+          />
+        )}
+        {successMessage && (
+          <Alert
+            type="success"
+            message={successMessage}
+            onDismiss={() => setSuccessMessage("")}
+          />
+        )}
 
         <main className="flex-1 overflow-y-auto">
           <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
@@ -362,22 +406,34 @@ export default function TailoredFeedCMS() {
 
                               <div className="flex gap-2">
                                 <button
-                                  onClick={() => handleEditItem(item)}
-                                  disabled={isLoading}
-                                  className="flex cursor-pointer items-center justify-center gap-2 flex-1 py-2.5 bg-emerald-500 text-white rounded-xl hover:bg-emerald-600 hover:shadow-lg transition-all duration-200 font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                                  onClick={() => !item.pendingDelete && handleEditItem(item)}
+                                  disabled={isLoading || item.pendingDelete}
+                                  className={`flex cursor-pointer items-center justify-center gap-2 flex-1 py-2.5 rounded-xl font-semibold transition-all duration-200 ${item.pendingDelete
+                                    ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                                    : "bg-emerald-500 text-white hover:bg-emerald-600 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                                    }`}
                                 >
                                   <Edit2 size={16} />
                                   <span>Edit</span>
                                 </button>
 
-                                <button
-                                  onClick={() => handleDeleteItem(item)}
-                                  disabled={isLoading}
-                                  className="flex cursor-pointer items-center justify-center gap-2 flex-1 py-2.5 bg-red-500 text-white rounded-xl hover:bg-red-600 hover:shadow-lg transition-all duration-200 font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                  <Trash2 size={16} />
-                                  <span>Delete</span>
-                                </button>
+                                {item.pendingDelete ? (
+                                  <button
+                                    disabled
+                                    className="flex items-center justify-center gap-2 flex-1 py-2.5 bg-amber-50 text-amber-500 border-2 border-amber-200 rounded-xl font-semibold cursor-not-allowed"
+                                  >
+                                    <span>⏳ Pending</span>
+                                  </button>
+                                ) : (
+                                  <button
+                                    onClick={() => handleDeleteItem(item)}
+                                    disabled={isLoading}
+                                    className="flex cursor-pointer items-center justify-center gap-2 flex-1 py-2.5 bg-red-500 text-white rounded-xl hover:bg-red-600 hover:shadow-lg transition-all duration-200 font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                                  >
+                                    <Trash2 size={16} />
+                                    <span>Delete</span>
+                                  </button>
+                                )}
                               </div>
                             </div>
                           </div>
@@ -619,6 +675,16 @@ export default function TailoredFeedCMS() {
           </div>
         </main>
       </div>
+      <ConfirmModal
+        isOpen={isDeletingModal}
+        onClose={() => {
+          setIsDeletingModal(false);
+          setItemToDelete(null);
+        }}
+        onConfirm={confirmDelete}
+        title="Delete Item"
+        message="Are you sure you want to delete this item? This action cannot be undone."
+      />
     </div>
   );
 }

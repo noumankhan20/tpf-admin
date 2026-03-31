@@ -190,6 +190,17 @@ export default function SelectPanel() {
           }
         }
 
+        // Delete Requests
+        if (admin?.isSuperAdmin) {
+          const deleteRes = await fetch(`${apiBase}/delete/getall`, { credentials: 'include' });
+          const deleteResult = await deleteRes.json();
+          if (deleteResult.success && deleteResult.data) {
+            deleteResult.data.forEach(req => {
+              if (req.status === 'pending') increment('deletion');
+            });
+          }
+        }
+
         setModuleCounts(newCounts);
       } catch (err) {
         console.error('Failed to fetch module notification counts:', err);
@@ -226,12 +237,24 @@ export default function SelectPanel() {
         });
     };
 
+    const handleDeleteRequestCreated = (data) => {
+      if (admin?.isSuperAdmin) {
+        setModuleCounts(prev => {
+          const next = { ...prev };
+          next['deletion'] = (next['deletion'] || 0) + 1;
+          return next;
+        });
+      }
+    };
+
     socket.on('taskAssigned', handleTaskAssigned);
     socket.on('formSubmitted', handleFormSubmitted);
+    socket.on('deleteRequestCreated', handleDeleteRequestCreated);
     
     return () => {
         socket.off('taskAssigned', handleTaskAssigned);
         socket.off('formSubmitted', handleFormSubmitted);
+        socket.off('deleteRequestCreated', handleDeleteRequestCreated);
     };
   }, [socket]);
 

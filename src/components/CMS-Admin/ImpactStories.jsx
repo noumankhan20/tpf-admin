@@ -265,14 +265,11 @@ export default function StoryCardsCMS() {
     const confirmDelete = async () => {
         if (!deleteId) return;
         try {
-            await deleteImpactStory(deleteId).unwrap();
-            toast.success("Story deleted successfully!");
+            await deleteImpactStory(id).unwrap();
+            alert("Story deleted successfully!");
         } catch (err) {
             console.error("Error deleting story:", err);
-            toast.error("Failed to delete story");
-        } finally {
-            setIsDeleting(false);
-            setDeleteId(null);
+            alert("Failed to delete story");
         }
     };
 
@@ -451,19 +448,33 @@ export default function StoryCardsCMS() {
 
                                                     <div className="flex gap-2">
                                                         <button
-                                                            onClick={() => handleEditCard(card)}
-                                                            className="flex-1 cursor-pointer py-2.5 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 font-semibold flex items-center justify-center gap-2 text-sm transition-all duration-300 hover:shadow-lg hover:shadow-emerald-500/30"
+                                                            onClick={() => !card.pendingDelete && handleEditCard(card)}
+                                                            disabled={card.pendingDelete}
+                                                            className={`flex-1 cursor-pointer py-2.5 rounded-xl font-semibold flex items-center justify-center gap-2 text-sm transition-all duration-300 ${card.pendingDelete
+                                                                ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                                                                : "bg-emerald-600 text-white hover:bg-emerald-700 hover:shadow-lg hover:shadow-emerald-500/30"
+                                                                }`}
                                                         >
                                                             <Edit2 size={14} />
                                                             Edit
                                                         </button>
-                                                        <button
-                                                            onClick={() => handleDeleteCard(card._id)}
-                                                            className="flex-1 py-2.5 cursor-pointer bg-white text-red-600 border-2 border-red-200 rounded-xl hover:bg-red-50 hover:border-red-300 font-semibold flex items-center justify-center gap-2 text-sm transition-all duration-300"
-                                                        >
-                                                            <Trash2 size={14} />
-                                                            Delete
-                                                        </button>
+
+                                                        {card.pendingDelete ? (
+                                                            <button
+                                                                disabled
+                                                                className="flex-1 py-2.5 bg-amber-50 text-amber-500 border-2 border-amber-200 rounded-xl font-semibold flex items-center justify-center gap-2 text-sm cursor-not-allowed"
+                                                            >
+                                                                <span>⏳ Pending</span>
+                                                            </button>
+                                                        ) : (
+                                                            <button
+                                                                onClick={() => handleDeleteCard(card._id)}
+                                                                className="flex-1 py-2.5 cursor-pointer bg-white text-red-600 border-2 border-red-200 rounded-xl hover:bg-red-50 hover:border-red-300 font-semibold flex items-center justify-center gap-2 text-sm transition-all duration-300"
+                                                            >
+                                                                <Trash2 size={14} />
+                                                                Delete
+                                                            </button>
+                                                        )}
                                                     </div>
                                                 </div>
                                             </div>
