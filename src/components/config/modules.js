@@ -519,4 +519,12 @@ export const MODULES = [
     category: "communication",
     desc: "Admin-to-admin communication",
   },
+  {
+    id: "Direct Contact",
+    name: "Direct Contact",
+    icon: MessageSquare,
+    route: "/admin/communication/direct-contact",
+    category: "communication",
+    desc: "Send personalized emails to users, donors, or volunteers",
+  },
 ];
