@@ -16,6 +16,7 @@ import {
   Trash2,
   Paperclip,
   History,
+  TrendingUp,
   Sparkles
 } from 'lucide-react';
 import axios from 'axios';
