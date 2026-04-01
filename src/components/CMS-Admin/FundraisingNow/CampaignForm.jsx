@@ -97,9 +97,9 @@ export default function CampaignForm({
 
   // ── Tabs ──────────────────────────────────────────────────────────────────
   const tabs = [
-    { id: 'basic',    label: 'Basic Info',       icon: <Layout size={18} /> },
-    { id: 'story',    label: 'Story & Media',    icon: <ImageIcon size={18} /> },
-    { id: 'donation', label: 'Donation Config',  icon: <Settings size={18} /> },
+    { id: 'basic', label: 'Basic Info', icon: <Layout size={18} /> },
+    { id: 'story', label: 'Story & Media', icon: <ImageIcon size={18} /> },
+    { id: 'donation', label: 'Donation Config', icon: <Settings size={18} /> },
   ];
 
   // ── Handlers ──────────────────────────────────────────────────────────────
@@ -290,8 +290,8 @@ export default function CampaignForm({
   const getKitPresets = () => {
     const existing = (uc.presets || []).filter((p) => Number(p.qty) > 0);
     if (existing.length === 4) return existing;
-    const cost   = Number(uc.unitCost) || 0;
-    const name   = uc.unitName || uc.itemName || 'Unit';
+    const cost = Number(uc.unitCost) || 0;
+    const name = uc.unitName || uc.itemName || 'Unit';
     const namePl = uc.unitNamePlural || name + 's';
     return [1, 10, 100, 1000].map((qty) => {
       // Prefer existing preset at that position if available
@@ -309,30 +309,30 @@ export default function CampaignForm({
 
   const updateKitPreset = (index, patch) => {
     setFormData((prev) => {
-      const prevUc   = prev.unitConfig || {};
-      const cost     = Number(prevUc.unitCost) || 0;
-      const name     = prevUc.unitName || prevUc.itemName || 'Unit';
-      const namePl   = prevUc.unitNamePlural || name + 's';
+      const prevUc = prev.unitConfig || {};
+      const cost = Number(prevUc.unitCost) || 0;
+      const name = prevUc.unitName || prevUc.itemName || 'Unit';
+      const namePl = prevUc.unitNamePlural || name + 's';
       const existing = (prevUc.presets || []).filter((p) => Number(p.qty) > 0);
-      const base     =
+      const base =
         existing.length === 4
           ? existing
           : [1, 10, 100, 1000].map((qty) => {
-              const m = existing.find((p) => Number(p.qty) === qty);
-              if (m) return m;
-              const amount = qty * cost;
-              return { qty, amount, label: `${qty} ${qty === 1 ? name : namePl}`, sublabel: `₹${amount.toLocaleString('en-IN')}` };
-            });
+            const m = existing.find((p) => Number(p.qty) === qty);
+            if (m) return m;
+            const amount = qty * cost;
+            return { qty, amount, label: `${qty} ${qty === 1 ? name : namePl}`, sublabel: `₹${amount.toLocaleString('en-IN')}` };
+          });
 
       const updated = base.map((p, i) => {
         if (i !== index) return p;
         const merged = { ...p, ...patch };
         // Auto-recompute label/sublabel after qty or amount change
-        const qty    = Number(merged.qty);
+        const qty = Number(merged.qty);
         const amount = Number(merged.amount);
         return {
           ...merged,
-          label:    `${qty} ${qty === 1 ? name : namePl}`,
+          label: `${qty} ${qty === 1 ? name : namePl}`,
           sublabel: `₹${amount.toLocaleString('en-IN')}`,
         };
       });
@@ -374,11 +374,10 @@ export default function CampaignForm({
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-bold transition-all ${
-                activeTab === tab.id
+              className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-bold transition-all ${activeTab === tab.id
                   ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-200'
                   : 'text-gray-500 hover:bg-gray-50'
-              }`}
+                }`}
             >
               {tab.icon}
               <span className="hidden sm:inline">{tab.label}</span>
@@ -418,11 +417,10 @@ export default function CampaignForm({
                             permanentType: 'Other',
                           }))
                         }
-                        className={`flex-1 py-3 rounded-lg font-semibold transition-all ${
-                          formData.source !== 'FOUNDATION'
+                        className={`flex-1 py-3 rounded-lg font-semibold transition-all ${formData.source !== 'FOUNDATION'
                             ? 'bg-emerald-600 text-white'
                             : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                        }`}
+                          }`}
                       >
                         Public Campaign
                       </button>
@@ -441,11 +439,10 @@ export default function CampaignForm({
                             ribaEligible: false,
                           }))
                         }
-                        className={`flex-1 py-3 rounded-lg font-semibold transition-all ${
-                          formData.source === 'FOUNDATION'
+                        className={`flex-1 py-3 rounded-lg font-semibold transition-all ${formData.source === 'FOUNDATION'
                             ? 'bg-emerald-600 text-white'
                             : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                        }`}
+                          }`}
                       >
                         Foundation (Permanent)
                       </button>
@@ -585,16 +582,15 @@ export default function CampaignForm({
                     </select>
                   </div>
                   <div className="flex flex-wrap gap-2 pt-8">
-                    {['isUrgent', 'taxBenefits', 'zakatVerified', 'ribaEligible'].map((key) => (
+                    {['isUrgent', 'taxBenefits', 'zakatVerified', 'ribaEligible', 'sadaqahEligible', 'lillahEligible', 'imdadEligible'].map((key) => (
                       <button
                         key={key}
                         type="button"
                         onClick={() => setFormData({ ...formData, [key]: !formData[key] })}
-                        className={`px-4 py-1.5 rounded-full text-[10px] font-bold uppercase border-2 transition-all ${
-                          formData[key]
+                        className={`px-4 py-1.5 rounded-full text-[10px] font-bold uppercase border-2 transition-all ${formData[key]
                             ? 'bg-emerald-50 border-emerald-500 text-emerald-700 shadow-sm'
                             : 'bg-white border-gray-100 text-gray-400 opacity-60'
-                        }`}
+                          }`}
                       >
                         {key.replace(/([A-Z])/g, ' $1')}
                       </button>
@@ -631,22 +627,20 @@ export default function CampaignForm({
                       <button
                         type="button"
                         onClick={() => setFormData((p) => ({ ...p, mediaType: 'image' }))}
-                        className={`flex-1 py-1.5 rounded-md text-xs font-bold ${
-                          formData.mediaType === 'image'
+                        className={`flex-1 py-1.5 rounded-md text-xs font-bold ${formData.mediaType === 'image'
                             ? 'bg-white shadow-sm text-emerald-600'
                             : 'text-gray-500'
-                        }`}
+                          }`}
                       >
                         Images
                       </button>
                       <button
                         type="button"
                         onClick={() => setFormData((p) => ({ ...p, mediaType: 'video' }))}
-                        className={`flex-1 py-1.5 rounded-md text-xs font-bold ${
-                          formData.mediaType === 'video'
+                        className={`flex-1 py-1.5 rounded-md text-xs font-bold ${formData.mediaType === 'video'
                             ? 'bg-white shadow-sm text-emerald-600'
                             : 'text-gray-500'
-                        }`}
+                          }`}
                       >
                         Video
                       </button>
@@ -658,11 +652,10 @@ export default function CampaignForm({
                           <div key={i} className="aspect-square relative group">
                             <img
                               src={img.isFromGallery ? getImageUrl(img.url, true) : img.url}
-                              className={`w-full h-full object-cover rounded-lg border-2 ${
-                                formData.selectedImageUrl === img.url
+                              className={`w-full h-full object-cover rounded-lg border-2 ${formData.selectedImageUrl === img.url
                                   ? 'border-emerald-500'
                                   : 'border-transparent'
-                              }`}
+                                }`}
                               alt=""
                             />
                             <button
@@ -884,10 +877,10 @@ export default function CampaignForm({
                       type="button"
                       onClick={() =>
                         setFormData((p) => {
-                          const prevUc  = p.unitConfig || {};
-                          const cost    = Number(prevUc.unitCost) || 0;
-                          const name    = prevUc.unitName || prevUc.itemName || 'Unit';
-                          const namePl  = prevUc.unitNamePlural || name + 's';
+                          const prevUc = p.unitConfig || {};
+                          const cost = Number(prevUc.unitCost) || 0;
+                          const name = prevUc.unitName || prevUc.itemName || 'Unit';
+                          const namePl = prevUc.unitNamePlural || name + 's';
 
                           // Restore kit presets if they exist, else seed defaults
                           const existing = (prevUc.presets || []).filter(
@@ -897,14 +890,14 @@ export default function CampaignForm({
                             existing.length > 0
                               ? existing
                               : [1, 10, 100, 1000].map((qty) => {
-                                  const amount = qty * cost;
-                                  return {
-                                    qty,
-                                    amount,
-                                    label: `${qty} ${qty === 1 ? name : namePl}`,
-                                    sublabel: `₹${amount.toLocaleString('en-IN')}`,
-                                  };
-                                });
+                                const amount = qty * cost;
+                                return {
+                                  qty,
+                                  amount,
+                                  label: `${qty} ${qty === 1 ? name : namePl}`,
+                                  sublabel: `₹${amount.toLocaleString('en-IN')}`,
+                                };
+                              });
 
                           return {
                             ...p,
@@ -916,11 +909,10 @@ export default function CampaignForm({
                           };
                         })
                       }
-                      className={`flex-1 py-3 rounded-xl text-[10px] font-bold uppercase transition-all ${
-                        isUnitMode
+                      className={`flex-1 py-3 rounded-xl text-[10px] font-bold uppercase transition-all ${isUnitMode
                           ? 'bg-white shadow text-emerald-600'
                           : 'text-gray-500'
-                      }`}
+                        }`}
                     >
                       Impact (Kits)
                     </button>
@@ -951,11 +943,10 @@ export default function CampaignForm({
                           };
                         })
                       }
-                      className={`flex-1 py-3 rounded-xl text-[10px] font-bold uppercase transition-all ${
-                        !isUnitMode
+                      className={`flex-1 py-3 rounded-xl text-[10px] font-bold uppercase transition-all ${!isUnitMode
                           ? 'bg-white shadow text-emerald-600'
                           : 'text-gray-500'
-                      }`}
+                        }`}
                     >
                       Simple Amounts
                     </button>
@@ -991,8 +982,8 @@ export default function CampaignForm({
                           type="number"
                           value={uc.unitCost || ''}
                           onChange={(e) => {
-                            const cost   = parseInt(e.target.value) || 0;
-                            const name   = uc.unitName || uc.itemName || 'Unit';
+                            const cost = parseInt(e.target.value) || 0;
+                            const name = uc.unitName || uc.itemName || 'Unit';
                             const namePl = uc.unitNamePlural || name + 's';
                             setFormData((prev) => ({
                               ...prev,
@@ -1002,12 +993,12 @@ export default function CampaignForm({
                                 // Cascade cost change to all kit presets
                                 presets: (prev.unitConfig?.presets || []).map((p) => {
                                   if (!p.qty || Number(p.qty) === 0) return p;
-                                  const qty    = Number(p.qty);
+                                  const qty = Number(p.qty);
                                   const amount = qty * cost;
                                   return {
                                     ...p,
                                     amount,
-                                    label:    `${qty} ${qty === 1 ? name : namePl}`,
+                                    label: `${qty} ${qty === 1 ? name : namePl}`,
                                     sublabel: `₹${amount.toLocaleString('en-IN')}`,
                                   };
                                 }),
@@ -1028,24 +1019,24 @@ export default function CampaignForm({
                           placeholder="Iftaar Kit"
                           value={uc.unitName || uc.itemName || ''}
                           onChange={(e) => {
-                            const val    = e.target.value;
-                            const valPl  = val ? val + 's' : '';
-                            const cost   = Number(uc.unitCost) || 0;
+                            const val = e.target.value;
+                            const valPl = val ? val + 's' : '';
+                            const cost = Number(uc.unitCost) || 0;
                             setFormData((prev) => ({
                               ...prev,
                               unitConfig: {
                                 ...prev.unitConfig,
-                                unitName:       val,
+                                unitName: val,
                                 unitNamePlural: prev.unitConfig?.unitNamePlural || valPl,
-                                itemName:       val, // keep legacy field in sync
+                                itemName: val, // keep legacy field in sync
                                 presets: (prev.unitConfig?.presets || []).map((p) => {
                                   if (!p.qty || Number(p.qty) === 0) return p;
-                                  const qty    = Number(p.qty);
+                                  const qty = Number(p.qty);
                                   const amount = p.amount || qty * cost;
                                   return {
                                     ...p,
                                     amount,
-                                    label:    `${qty} ${qty === 1 ? val : valPl}`,
+                                    label: `${qty} ${qty === 1 ? val : valPl}`,
                                     sublabel: `₹${amount.toLocaleString('en-IN')}`,
                                   };
                                 }),
@@ -1077,10 +1068,10 @@ export default function CampaignForm({
                           (uc.presets?.filter((p) => !p.qty || Number(p.qty) === 0).length === 5
                             ? uc.presets.filter((p) => !p.qty || Number(p.qty) === 0)
                             : [50, 100, 200, 500, 1000].map((amt) => ({
-                                qty: 0,
-                                amount: amt,
-                                label: `₹${amt.toLocaleString('en-IN')}`,
-                              })))
+                              qty: 0,
+                              amount: amt,
+                              label: `₹${amt.toLocaleString('en-IN')}`,
+                            })))
                         ).map((preset, i) => (
                           <div
                             key={i}
@@ -1104,13 +1095,13 @@ export default function CampaignForm({
                                         (p) => !p.qty || Number(p.qty) === 0
                                       ).length === 5
                                         ? [...prev.unitConfig.presets.filter(
-                                            (p) => !p.qty || Number(p.qty) === 0
-                                          )]
+                                          (p) => !p.qty || Number(p.qty) === 0
+                                        )]
                                         : [50, 100, 200, 500, 1000].map((amt) => ({
-                                            qty: 0,
-                                            amount: amt,
-                                            label: `₹${amt.toLocaleString('en-IN')}`,
-                                          }));
+                                          qty: 0,
+                                          amount: amt,
+                                          label: `₹${amt.toLocaleString('en-IN')}`,
+                                        }));
                                     flatPresets[i] = {
                                       ...flatPresets[i],
                                       amount: val,
@@ -1137,9 +1128,9 @@ export default function CampaignForm({
                     {isUnitMode && (
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 animate-in fade-in slide-in-from-bottom-2">
                         {getKitPresets().map((preset, i) => {
-                          const qty    = Number(preset.qty) || 0;
-                          const total  = Number(preset.amount) || 0;
-                          const name   = uc.unitName || uc.itemName || 'Unit';
+                          const qty = Number(preset.qty) || 0;
+                          const total = Number(preset.amount) || 0;
+                          const name = uc.unitName || uc.itemName || 'Unit';
                           const namePl = uc.unitNamePlural || name + 's';
 
                           return (
@@ -1225,13 +1216,12 @@ export default function CampaignForm({
                 onClick={handleSave}
                 disabled={isSaving || !isDirty}
                 title={!isDirty ? 'No changes to save' : ''}
-                className={`px-10 py-4 rounded-2xl font-bold uppercase text-sm shadow-xl transition-all ${
-                  isSaving
+                className={`px-10 py-4 rounded-2xl font-bold uppercase text-sm shadow-xl transition-all ${isSaving
                     ? 'bg-emerald-300 text-white cursor-wait'
                     : !isDirty
-                    ? 'bg-gray-100 text-gray-300 cursor-not-allowed shadow-none'
-                    : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-100 cursor-pointer'
-                }`}
+                      ? 'bg-gray-100 text-gray-300 cursor-not-allowed shadow-none'
+                      : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-100 cursor-pointer'
+                  }`}
               >
                 {isSaving ? 'Processing...' : 'Deploy Campaign'}
               </button>

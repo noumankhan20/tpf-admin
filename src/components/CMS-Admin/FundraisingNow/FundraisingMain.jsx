@@ -68,6 +68,9 @@ export default function FundraisingCMS() {
     taxBenefits: false,
     zakatVerified: false,
     ribaEligible: false,
+    sadaqahEligible: true,
+    lillahEligible: true,
+    imdadEligible: true,
     title: "",
     organization: "",
     beneficiaryName: "",
@@ -187,6 +190,9 @@ export default function FundraisingCMS() {
       taxBenefits: card.taxBenefits,
       zakatVerified: card.zakatVerified,
       ribaEligible: card.ribaEligible,
+      sadaqahEligible: card.sadaqahEligible ?? true,
+      lillahEligible: card.lillahEligible ?? true,
+      imdadEligible: card.imdadEligible ?? true,
       title: card.title,
       organization: card.organization,
       beneficiaryName: card.beneficiaryName || "",
@@ -268,6 +274,9 @@ export default function FundraisingCMS() {
       form.append("taxBenefits", formData.taxBenefits);
       form.append("zakatVerified", formData.zakatVerified);
       form.append("ribaEligible", formData.ribaEligible);
+      form.append("sadaqahEligible", formData.sadaqahEligible);
+      form.append("lillahEligible", formData.lillahEligible);
+      form.append("imdadEligible", formData.imdadEligible);
       form.append("beneficiaryName", formData.beneficiaryName);
       form.append("campaignerName", formData.campaignerName);
       form.append("about", formData.about);
