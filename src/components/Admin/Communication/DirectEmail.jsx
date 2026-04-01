@@ -9,6 +9,7 @@ import {
   Filter, 
   Mail, 
   User, 
+  Heart,
   ChevronRight, 
   CheckCircle, 
   AlertCircle,
