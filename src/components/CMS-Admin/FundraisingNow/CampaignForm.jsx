@@ -1237,6 +1237,7 @@ export default function CampaignForm({
         selectedUrl={formData.selectedImageUrl || formData.selectedVideoUrl}
         onSelect={handleMediaSelect}
         onUploadNew={handleMultipleImageUpload}
+        onVideoUpload={handleVideoUpload}
       />
     </>
   );

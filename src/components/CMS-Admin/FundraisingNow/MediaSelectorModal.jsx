@@ -9,6 +9,7 @@ export default function MediaSelectorModal({
   selectedUrl,
   onSelect,
   onUploadNew,
+  onVideoUpload,
 }) {
   if (!isOpen) return null;
 
@@ -47,7 +48,15 @@ export default function MediaSelectorModal({
                 type="file"
                 accept="image/*,video/*"
                 className="hidden"
-                onChange={onUploadNew}
+                onChange={(e) => {
+                  const file = e.target.files[0];
+                  if (!file) return;
+                  if (file.type.startsWith('video/')) {
+                    onVideoUpload(e);   // ← handle video separately
+                  } else {
+                    onUploadNew(e);     // ← handle image as before
+                  }
+                }}
               />
               <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 hover:border-emerald-500 hover:bg-emerald-50 transition-all cursor-pointer text-center">
                 <Upload size={40} className="mx-auto text-gray-400 mb-3" />
@@ -81,6 +90,10 @@ export default function MediaSelectorModal({
                         <video
                           src={getImageUrl(file.url, true)}
                           className="w-full h-full object-cover"
+                          controls
+                          playsInline
+                          preload="metadata"
+                          onError={(e) => console.log("Video failed:", e)}
                         />
                       ) : (
                         <img
