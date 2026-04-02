@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Users, 
@@ -9,7 +9,6 @@ import {
   Filter, 
   Mail, 
   User, 
-  Heart,
   ChevronRight, 
   CheckCircle, 
   AlertCircle,
@@ -17,11 +16,18 @@ import {
   Trash2,
   Paperclip,
   History,
+  Sparkles,
   TrendingUp,
-  Sparkles
+  Heart,
+  X
 } from 'lucide-react';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
+
+// Import ReactQuill
+import dynamic from 'next/dynamic';
+const ReactQuill = dynamic(() => import('react-quill-new'), { ssr: false });
+import 'react-quill-new/dist/quill.snow.css';
 
 const CATEGORIES = [
   { id: 'all', name: 'Normal Users', icon: Users, color: 'blue' },
@@ -43,7 +49,10 @@ const DirectEmail = () => {
   
   const [subject, setSubject] = useState('');
   const [message, setMessage] = useState('');
+  const [attachments, setAttachments] = useState([]);
   const [sendingEmail, setSendingEmail] = useState(false);
+  
+  const fileInputRef = useRef(null);
 
   const apiBase = process.env.NEXT_PUBLIC_BACKEND_API || 'http://localhost:7000/api';
 
@@ -69,6 +78,17 @@ const DirectEmail = () => {
     }
   };
 
+  const handleFileChange = (e) => {
+    const files = Array.from(e.target.files);
+    setAttachments(prev => [...prev, ...files]);
+    // Reset file input value to allow same file selection
+    e.target.value = '';
+  };
+
+  const removeAttachment = (index) => {
+    setAttachments(prev => prev.filter((_, i) => i !== index));
+  };
+
   const handleSendEmail = async () => {
     if (!selectedUser) {
       toast.error('Please select a recipient');
@@ -78,26 +98,35 @@ const DirectEmail = () => {
       toast.error('Please enter a subject');
       return;
     }
-    if (!message.trim()) {
+    if (!message.trim() || message === '<p><br></p>') {
       toast.error('Please enter a message');
       return;
     }
 
     setSendingEmail(true);
     try {
-      const response = await axios.post(`${apiBase}/communication/send-email`, {
-        email: selectedUser.email,
-        fullName: selectedUser.fullName,
-        subject,
-        message
-      }, {
-        withCredentials: true
+      const formData = new FormData();
+      formData.append('email', selectedUser.email);
+      formData.append('fullName', selectedUser.fullName || '');
+      formData.append('subject', subject);
+      formData.append('message', message);
+      
+      attachments.forEach(file => {
+        formData.append('attachments', file);
+      });
+
+      const response = await axios.post(`${apiBase}/communication/send-email`, formData, {
+        withCredentials: true,
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
       });
 
       if (response.data.success) {
         toast.success(`Email sent to ${selectedUser.fullName || selectedUser.email}`);
         setSubject('');
         setMessage('');
+        setAttachments([]);
         setSelectedUser(null);
       }
     } catch (error) {
@@ -113,6 +142,14 @@ const DirectEmail = () => {
     user.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     user.mobileNo?.includes(searchQuery)
   );
+
+  const quillModules = {
+    toolbar: [
+      ['bold', 'italic', 'underline', 'strike'],
+      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+      ['clean']
+    ],
+  };
 
   return (
     <div className="max-w-7xl mx-auto p-4 md:p-8">
@@ -139,7 +176,7 @@ const DirectEmail = () => {
                     }`}
                   >
                     <Icon className={`w-6 h-6 mb-2 ${isSelected ? 'text-white' : 'text-gray-400'}`} />
-                    <span className="text-xs font-bold text-center leading-tight">{cat.name}</span>
+                    <span className="text-[10px] sm:text-xs font-bold text-center leading-tight">{cat.name}</span>
                   </button>
                 );
               })}
@@ -220,7 +257,7 @@ const DirectEmail = () => {
                </div>
             </div>
 
-            <div className="p-6 md:p-8 space-y-6">
+            <div className="p-6 md:p-8 space-y-6 flex flex-col flex-1">
               {/* Recipient Display */}
               <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-2xl border border-gray-100">
                 <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center border border-gray-200 shadow-sm">
@@ -252,33 +289,71 @@ const DirectEmail = () => {
                 />
               </div>
 
-              {/* Message Input */}
-              <div className="space-y-2 flex-1 flex flex-col">
-                <div className="flex items-center justify-between ml-1">
-                  <label className="text-sm font-bold text-gray-600">Your Message</label>
+              {/* Message Input with Quill */}
+              <div className="space-y-2 flex-1 flex flex-col quill-container">
+                <label className="text-sm font-bold text-gray-600 ml-1">Your Message</label>
+                <div className="flex-1 min-h-[300px]">
+                  <ReactQuill 
+                    theme="snow"
+                    value={message}
+                    onChange={setMessage}
+                    modules={quillModules}
+                    placeholder="Compose your message here..."
+                    style={{ height: 'calc(100% - 42px)' }}
+                    className="h-full bg-white rounded-2xl overflow-hidden border border-gray-200"
+                  />
                 </div>
-                <textarea
-                  placeholder="Compose your message here..."
-                  rows={8}
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                  className="w-full flex-1 px-6 py-4 bg-white border border-gray-200 rounded-2xl text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all outline-none shadow-sm resize-none"
-                />
               </div>
 
+              {/* Attachments Display */}
+              {attachments.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">Attachments</p>
+                  <div className="flex flex-wrap gap-2">
+                    {attachments.map((file, idx) => (
+                      <div key={idx} className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 text-blue-700 rounded-lg border border-blue-100 text-sm">
+                        <Paperclip className="w-3 h-3" />
+                        <span className="max-w-[150px] truncate">{file.name}</span>
+                        <button onClick={() => removeAttachment(idx)} className="p-0.5 hover:bg-blue-100 rounded-full transition-colors">
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Actions */}
-              <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-                <button 
-                  onClick={() => {
-                    setSubject('');
-                    setMessage('');
-                    setSelectedUser(null);
-                  }}
-                  className="px-6 py-3 text-gray-400 hover:text-red-500 font-bold text-sm flex items-center gap-2 transition-colors"
-                >
-                  <Trash2 className="w-4 h-4" />
-                  Discard Draft
-                </button>
+              <div className="flex items-center justify-between pt-6 border-t border-gray-100">
+                <div className="flex items-center gap-4">
+                  <button 
+                    onClick={() => {
+                      setSubject('');
+                      setMessage('');
+                      setAttachments([]);
+                      setSelectedUser(null);
+                    }}
+                    className="p-3 text-gray-400 hover:text-red-500 transition-colors"
+                    title="Discard Draft"
+                  >
+                    <Trash2 className="w-5 h-5" />
+                  </button>
+                  
+                  <button 
+                    onClick={() => fileInputRef.current?.click()}
+                    className="p-3 text-gray-400 hover:text-blue-600 transition-colors"
+                    title="Attach Files"
+                  >
+                    <Paperclip className="w-5 h-5" />
+                  </button>
+                  <input 
+                    type="file" 
+                    multiple 
+                    className="hidden" 
+                    ref={fileInputRef}
+                    onChange={handleFileChange}
+                  />
+                </div>
                 
                 <button
                   onClick={handleSendEmail}
@@ -306,6 +381,29 @@ const DirectEmail = () => {
           </div>
         </div>
       </div>
+
+      <style jsx global>{`
+        .quill-container .ql-toolbar {
+          border-top-left-radius: 12px;
+          border-top-right-radius: 12px;
+          border-color: #e5e7eb;
+          background-color: #f9fafb;
+        }
+        .quill-container .ql-container {
+          border-bottom-left-radius: 12px;
+          border-bottom-right-radius: 12px;
+          border-color: #e5e7eb;
+          font-family: inherit;
+        }
+        .quill-container .ql-editor {
+          font-size: 1rem;
+          line-height: 1.6;
+        }
+        .quill-container .ql-editor.ql-blank::before {
+          color: #9ca3af;
+          font-style: normal;
+        }
+      `}</style>
     </div>
   );
 };
