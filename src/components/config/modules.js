@@ -235,6 +235,7 @@ import {
   Building2,
   Briefcase,
   Trash2,
+  IndianRupee,
 } from "lucide-react";
 
 export const MODULES = [
@@ -475,6 +476,14 @@ export const MODULES = [
     route: "/tpf-management/communication-audit",
     category: "administration",
     desc: "Monitor internal admin communications",
+  },
+  {
+    id: "Transaction Ledger",
+    name: "Transaction Ledger",
+    icon: IndianRupee,
+    route: "/transaction-ledger",
+    category: "administration",
+    desc: "Ledger Report for Transactions",
   },
 
 
