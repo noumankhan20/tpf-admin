@@ -200,7 +200,16 @@ export default function SelectPanel() {
             });
           }
         }
-
+        
+        // Offline Donations
+        if (admin?.isSuperAdmin || adminModules.includes('Donation Management')) {
+          const offlineRes = await fetch(`${apiBase}/offline-donations/pending-count`, { credentials: 'include' });
+          const offlineResult = await offlineRes.json();
+          if (offlineResult.count !== undefined) {
+             newCounts['Donation Management'] = (newCounts['Donation Management'] || 0) + offlineResult.count;
+          }
+        }
+        
         setModuleCounts(newCounts);
       } catch (err) {
         console.error('Failed to fetch module notification counts:', err);
@@ -247,14 +256,34 @@ export default function SelectPanel() {
       }
     };
 
+    const handleOfflineDonationCreated = () => {
+        setModuleCounts(prev => {
+            const next = { ...prev };
+            next['Donation Management'] = (next['Donation Management'] || 0) + 1;
+            return next;
+        });
+    };
+
+    const handleOfflineDonationProcessed = () => {
+        setModuleCounts(prev => {
+            const next = { ...prev };
+            next['Donation Management'] = Math.max(0, (next['Donation Management'] || 0) - 1);
+            return next;
+        });
+    };
+
     socket.on('taskAssigned', handleTaskAssigned);
     socket.on('formSubmitted', handleFormSubmitted);
     socket.on('deleteRequestCreated', handleDeleteRequestCreated);
+    socket.on('offlineDonationCreated', handleOfflineDonationCreated);
+    socket.on('offlineDonationProcessed', handleOfflineDonationProcessed);
     
     return () => {
         socket.off('taskAssigned', handleTaskAssigned);
         socket.off('formSubmitted', handleFormSubmitted);
         socket.off('deleteRequestCreated', handleDeleteRequestCreated);
+        socket.off('offlineDonationCreated', handleOfflineDonationCreated);
+        socket.off('offlineDonationProcessed', handleOfflineDonationProcessed);
     };
   }, [socket]);
 

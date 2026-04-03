@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Bell, Camera, FileText, Share2, Wallet, Star, X, CheckCircle } from 'lucide-react';
+import { Bell, Camera, FileText, Share2, Wallet, Star, X, CheckCircle, HandHeart } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSelector } from 'react-redux';
 import { useSocket } from '@/utils/context/SocketContext';
@@ -215,6 +215,30 @@ const NotificationBell = ({ moduleFilter = null }) => {
                     }
                 }
 
+                // Fetch Offline Donations
+                if (admin?.isSuperAdmin || admin?.modules?.includes('Donation Management')) {
+                    try {
+                        const offlineRes = await fetch(`${apiBase}/offline-donations/get?status=pending`, {
+                            credentials: 'include'
+                        });
+                        const offlineResult = await offlineRes.json();
+                        if (offlineResult.donations) {
+                            const offlineNotifications = offlineResult.donations.map(donation => ({
+                                id: donation.id,
+                                type: 'OFFLINE_DONATION',
+                                title: `Pending Donation: ₹${donation.amount}`,
+                                subtitle: `From: ${donation.fullName} (${donation.method})`,
+                                time: donation.submittedOn,
+                                read: false,
+                                data: donation
+                            }));
+                            allInitial = [...allInitial, ...offlineNotifications];
+                        }
+                    } catch (err) {
+                        console.error('Offline Donation Notification fetch failed:', err);
+                    }
+                }
+
                 // Filter by module if needed
                 const filtered = moduleFilter
                     ? allInitial.filter(n => n.type === 'FORM' || n.module === moduleFilter)
@@ -324,14 +348,49 @@ const NotificationBell = ({ moduleFilter = null }) => {
             }
         };
 
+        const handleOfflineDonationCreated = (data) => {
+            const hasAccess = admin?.isSuperAdmin || admin?.modules?.includes('Donation Management');
+            if (hasAccess) {
+                const newNotification = {
+                    id: data.id,
+                    type: 'OFFLINE_DONATION',
+                    title: `New Pending Donation: ₹${data.amount}`,
+                    subtitle: `From: ${data.fullName}`,
+                    time: data.time,
+                    read: false,
+                    data: data
+                };
+
+                if (!moduleFilter || moduleFilter === 'Donation Management') {
+                    setNotifications(prev => [newNotification, ...prev]);
+                    setUnreadCount(prev => prev + 1);
+                    toast.info(newNotification.title);
+                }
+            }
+        };
+
+        const handleOfflineDonationProcessed = (data) => {
+            setNotifications(prev => {
+                const filtered = prev.filter(n => n.id !== data.id);
+                if (prev.length !== filtered.length) {
+                    setUnreadCount(prevUnread => Math.max(0, prevUnread - 1));
+                }
+                return filtered;
+            });
+        };
+
         socket.on('taskAssigned', handleTaskAssigned);
         socket.on('formSubmitted', handleFormSubmitted);
         socket.on('deleteRequestCreated', handleDeleteRequestCreated);
+        socket.on('offlineDonationCreated', handleOfflineDonationCreated);
+        socket.on('offlineDonationProcessed', handleOfflineDonationProcessed);
 
         return () => {
             socket.off('taskAssigned', handleTaskAssigned);
             socket.off('formSubmitted', handleFormSubmitted);
             socket.off('deleteRequestCreated', handleDeleteRequestCreated);
+            socket.off('offlineDonationCreated', handleOfflineDonationCreated);
+            socket.off('offlineDonationProcessed', handleOfflineDonationProcessed);
         };
     }, [socket, admin, moduleFilter]);
 
@@ -365,6 +424,8 @@ const NotificationBell = ({ moduleFilter = null }) => {
             else router.push('/verify/financial'); // Adjust path as needed
         } else if (notification.type === 'DELETE_REQUEST') {
             router.push('/tpf-management/approve-request');
+        } else if (notification.type === 'OFFLINE_DONATION') {
+            router.push('/donation-management');
         }
     };
 
@@ -376,6 +437,7 @@ const NotificationBell = ({ moduleFilter = null }) => {
             case 'SOCIAL_TASK': return <Share2 className="w-4 h-4 text-blue-500" />;
             case 'FINANCE_TASK': return <Wallet className="w-4 h-4 text-orange-500" />;
             case 'DELETE_REQUEST': return <X className="w-4 h-4 text-red-500" />;
+            case 'OFFLINE_DONATION': return <HandHeart className="w-4 h-4 text-pink-500" />;
             default: return <Bell className="w-4 h-4 text-gray-500" />;
         }
     };
