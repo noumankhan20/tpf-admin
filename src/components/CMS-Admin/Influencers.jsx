@@ -86,7 +86,7 @@ export default function InfluencerGalleryCMS() {
   const confirmDelete = async () => {
     if (!deleteId) return;
     try {
-      await deleteInfluencer(id).unwrap();
+      await deleteInfluencer(deleteId).unwrap();
       alert("Deleted successfully");
     } catch (err) {
       console.error(err);
