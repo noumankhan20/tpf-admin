@@ -30,15 +30,24 @@ const AddAdminModal = ({ isOpen, onClose, onSubmit }) => {
     "Document Management",
     "CMS-Admin",
     "Legal and Compliance",
-    "Financial Aid",
+    "Beneficiary Form Verification",
     "KYC Verification",
     "Tickets-Queries",
     "Downloads",
     "Photo-Editing",
-    "Disbursement-Tasks",
+    "Fund Disbursement",
     "Internal Communication",
     "Communication Audit",
-    "Apporve Delete Request"
+    "Approve Delete Request",
+    "Task Management",
+    "Organization Approvals",
+    "Career & Job Opportunities",
+    "Employee Management",
+    "Volunteer Management",
+    "Communication Audit",
+    "Transaction Ledger",
+    "Direct Contact"
+
   ];
 
   const isFormValid =

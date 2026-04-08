@@ -351,8 +351,8 @@ export const MODULES = [
     desc: "Manage financial records and accounting",
   },
   {
-    id: "Career & Job Opportunites",
-    name: "Career & Job Opportunites",
+    id: "Career & Job Opportunities",
+    name: "Career & Job Opportunities",
     icon: Briefcase,
     route: "/career-opportunities",
     category: "hr",
@@ -447,7 +447,7 @@ export const MODULES = [
   
   {
     id: "deletion",
-    name: "Approve Delete Requests",
+    name: "Approve Delete Request", 
     desc: "Approve the delete requests coming from different modules .",
     icon: Trash2,
     route: "/tpf-management/approve-request",
