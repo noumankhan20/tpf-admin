@@ -299,7 +299,7 @@ export const MODULES = [
   },
   {
     id: "Photo-Editing",
-    name: "Photo Editing",
+    name: "Photo-Editing",
     icon: Edit,
     route: "/photo-editing",
     category: "work",
@@ -315,7 +315,7 @@ export const MODULES = [
   },
   {
     id: "Social-Media",
-    name: "Social Media",
+    name: "Social-Media",
     icon: Share2,
     route: "/social-media",
     category: "work",
@@ -463,7 +463,7 @@ export const MODULES = [
   },
   {
     id: "Tickets-Queries",
-    name: "Tickets & Queries",
+    name: "Tickets-Queries",
     icon: MessageSquare,
     route: "/tickets-queries",
     category: "communication",
@@ -501,12 +501,12 @@ export const MODULES = [
   },
   {
     id: "Legal and Compliance",
-    name: "Legal & Compliance",
+    name: "Legal and Compliance",
     icon: Scale,
     route: "/legal",
     category: "legal",
     desc: "Manage compliance and approvals",
-  },
+  },  
   {
     id: "Downloads",
     name: "Downloads",
