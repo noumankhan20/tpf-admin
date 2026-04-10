@@ -9,13 +9,20 @@ import {
   Shield,
   Clock,
 } from 'lucide-react';
-
-export default function CampaignPreview({ formData, categoryColors, getImageUrl }) {
+import { getMediaUrl } from '@/utils/media';
+export default function CampaignPreview({ formData, categoryColors }) {
   const calculatePercentage = (current, required) => {
     const req = Number(required) || 0;
     const cur = Number(current) || 0;
     if (req <= 0) return 0;
     return Math.min(Math.round((cur / req) * 100), 100);
+  };
+
+  const getImageUrl = (preview, isExisting) => {
+    if (!preview) return null;
+    if (preview.startsWith('blob:') || preview.startsWith('data:')) return preview;
+    if (isExisting) return getMediaUrl(preview);
+    return preview;
   };
 
   const formatCurrency = (amount) => {
@@ -26,6 +33,7 @@ export default function CampaignPreview({ formData, categoryColors, getImageUrl 
       minimumFractionDigits: 0,
     }).format(num);
   };
+  
 
   return (
     <div className="bg-white rounded-xl border-2 border-gray-200 p-6">

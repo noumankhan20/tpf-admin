@@ -182,9 +182,11 @@ export default function CampaignForm({
       ...prev,
       mediaType: 'image',
       images: [...prev.images, ...files],
-      imagePreview: prev.imagePreview || URL.createObjectURL(files[0]),
+      imagePreview: URL.createObjectURL(files[0]),
       selectedImageUrl: prev.selectedImageUrl || '',
+      isExistingImage: false,
     }));
+    setShowMediaModal(false);
   };
 
   const handleVideoUpload = (e) => {
@@ -204,6 +206,7 @@ export default function CampaignForm({
         imagePreview: null,
         selectedImageUrl: '',
       }));
+      setShowMediaModal(false);
     };
     reader.readAsDataURL(file);
   };
@@ -375,8 +378,8 @@ export default function CampaignForm({
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-bold transition-all ${activeTab === tab.id
-                  ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-200'
-                  : 'text-gray-500 hover:bg-gray-50'
+                ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-200'
+                : 'text-gray-500 hover:bg-gray-50'
                 }`}
             >
               {tab.icon}
@@ -418,8 +421,8 @@ export default function CampaignForm({
                           }))
                         }
                         className={`flex-1 py-3 rounded-lg font-semibold transition-all ${formData.source !== 'FOUNDATION'
-                            ? 'bg-emerald-600 text-white'
-                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                          ? 'bg-emerald-600 text-white'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                           }`}
                       >
                         Public Campaign
@@ -440,8 +443,8 @@ export default function CampaignForm({
                           }))
                         }
                         className={`flex-1 py-3 rounded-lg font-semibold transition-all ${formData.source === 'FOUNDATION'
-                            ? 'bg-emerald-600 text-white'
-                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                          ? 'bg-emerald-600 text-white'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                           }`}
                       >
                         Foundation (Permanent)
@@ -588,8 +591,8 @@ export default function CampaignForm({
                         type="button"
                         onClick={() => setFormData({ ...formData, [key]: !formData[key] })}
                         className={`px-4 py-1.5 rounded-full text-[10px] font-bold uppercase border-2 transition-all ${formData[key]
-                            ? 'bg-emerald-50 border-emerald-500 text-emerald-700 shadow-sm'
-                            : 'bg-white border-gray-100 text-gray-400 opacity-60'
+                          ? 'bg-emerald-50 border-emerald-500 text-emerald-700 shadow-sm'
+                          : 'bg-white border-gray-100 text-gray-400 opacity-60'
                           }`}
                       >
                         {key.replace(/([A-Z])/g, ' $1')}
@@ -628,8 +631,8 @@ export default function CampaignForm({
                         type="button"
                         onClick={() => setFormData((p) => ({ ...p, mediaType: 'image' }))}
                         className={`flex-1 py-1.5 rounded-md text-xs font-bold ${formData.mediaType === 'image'
-                            ? 'bg-white shadow-sm text-emerald-600'
-                            : 'text-gray-500'
+                          ? 'bg-white shadow-sm text-emerald-600'
+                          : 'text-gray-500'
                           }`}
                       >
                         Images
@@ -638,8 +641,8 @@ export default function CampaignForm({
                         type="button"
                         onClick={() => setFormData((p) => ({ ...p, mediaType: 'video' }))}
                         className={`flex-1 py-1.5 rounded-md text-xs font-bold ${formData.mediaType === 'video'
-                            ? 'bg-white shadow-sm text-emerald-600'
-                            : 'text-gray-500'
+                          ? 'bg-white shadow-sm text-emerald-600'
+                          : 'text-gray-500'
                           }`}
                       >
                         Video
@@ -653,8 +656,8 @@ export default function CampaignForm({
                             <img
                               src={img.isFromGallery ? getImageUrl(img.url, true) : img.url}
                               className={`w-full h-full object-cover rounded-lg border-2 ${formData.selectedImageUrl === img.url
-                                  ? 'border-emerald-500'
-                                  : 'border-transparent'
+                                ? 'border-emerald-500'
+                                : 'border-transparent'
                                 }`}
                               alt=""
                             />
@@ -910,8 +913,8 @@ export default function CampaignForm({
                         })
                       }
                       className={`flex-1 py-3 rounded-xl text-[10px] font-bold uppercase transition-all ${isUnitMode
-                          ? 'bg-white shadow text-emerald-600'
-                          : 'text-gray-500'
+                        ? 'bg-white shadow text-emerald-600'
+                        : 'text-gray-500'
                         }`}
                     >
                       Impact (Kits)
@@ -944,8 +947,8 @@ export default function CampaignForm({
                         })
                       }
                       className={`flex-1 py-3 rounded-xl text-[10px] font-bold uppercase transition-all ${!isUnitMode
-                          ? 'bg-white shadow text-emerald-600'
-                          : 'text-gray-500'
+                        ? 'bg-white shadow text-emerald-600'
+                        : 'text-gray-500'
                         }`}
                     >
                       Simple Amounts
@@ -1217,10 +1220,10 @@ export default function CampaignForm({
                 disabled={isSaving || !isDirty}
                 title={!isDirty ? 'No changes to save' : ''}
                 className={`px-10 py-4 rounded-2xl font-bold uppercase text-sm shadow-xl transition-all ${isSaving
-                    ? 'bg-emerald-300 text-white cursor-wait'
-                    : !isDirty
-                      ? 'bg-gray-100 text-gray-300 cursor-not-allowed shadow-none'
-                      : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-100 cursor-pointer'
+                  ? 'bg-emerald-300 text-white cursor-wait'
+                  : !isDirty
+                    ? 'bg-gray-100 text-gray-300 cursor-not-allowed shadow-none'
+                    : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-100 cursor-pointer'
                   }`}
               >
                 {isSaving ? 'Processing...' : 'Deploy Campaign'}
@@ -1234,6 +1237,10 @@ export default function CampaignForm({
         isOpen={showMediaModal}
         onClose={() => setShowMediaModal(false)}
         media={availableMedia}
+        uploadedImages={allImages}        // ← ADD THIS
+        uploadedVideo={formData.videoPreview && !formData.isExistingVideo
+          ? formData.videoPreview
+          : null}                          // ← ADD THIS
         selectedUrl={formData.selectedImageUrl || formData.selectedVideoUrl}
         onSelect={handleMediaSelect}
         onUploadNew={handleMultipleImageUpload}
