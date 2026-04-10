@@ -29,6 +29,7 @@ import {
     useDeleteItemMutation,
 } from '../../../../utils/slices/InventoryAndAsset/itemApiSlice';
 import { useGetVendorsQuery } from '../../../../utils/slices/InventoryAndAsset/vendorApiSlice';
+import { useGetInventoryDashboardStatsQuery } from '../../../../utils/slices/InventoryAndAsset/dashboardApiSlice';
 
 export default function ItemManagement() {
     const router = useRouter();
@@ -52,10 +53,14 @@ export default function ItemManagement() {
     // API Hooks
     const { data: itemsResponse, isLoading, isError, error } = useGetItemsQuery({
         page: currentPage,
-        limit: 12,
+        limit: 10,
         search: searchQuery || undefined,
         itemType: filterType !== 'all' ? filterType.toUpperCase() : undefined,
     });
+
+    const { data: dashboardStats } = useGetInventoryDashboardStatsQuery();
+    const assetStats = dashboardStats?.data?.assets || { total: 0 };
+    const stockStats = dashboardStats?.data?.inventory || { totalStock: 0, lowStockCount: 0 };
 
     const { data: vendorsData } = useGetVendorsQuery();
     const [createItem, { isLoading: isCreating }] = useCreateItemMutation();
@@ -250,30 +255,73 @@ export default function ItemManagement() {
             </header>
 
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                {/* Summary Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                    <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm transition-all hover:shadow-md">
+                        <div className="flex items-center gap-4 mb-2">
+                            <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+                                <HardDrive size={20} />
+                            </div>
+                            <p className="text-sm font-bold text-gray-500 uppercase tracking-wider">Total Assets</p>
+                        </div>
+                        <p className="text-3xl font-black text-gray-900">{assetStats.total}</p>
+                    </div>
+
+                    <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm transition-all hover:shadow-md">
+                        <div className="flex items-center gap-4 mb-2">
+                            <div className="w-10 h-10 rounded-xl bg-orange-50 text-orange-600 flex items-center justify-center">
+                                <ShoppingBag size={20} />
+                            </div>
+                            <p className="text-sm font-bold text-gray-500 uppercase tracking-wider">Stock Items</p>
+                        </div>
+                        <p className="text-3xl font-black text-gray-900">{stockStats.totalStock}</p>
+                    </div>
+
+                    <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm transition-all hover:shadow-md">
+                        <div className="flex items-center gap-4 mb-2">
+                            <div className="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center">
+                                <AlertCircle size={20} />
+                            </div>
+                            <p className="text-sm font-bold text-gray-500 uppercase tracking-wider">Low Stock</p>
+                        </div>
+                        <p className="text-3xl font-black text-gray-900">{stockStats.lowStockCount}</p>
+                    </div>
+
+                    <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm transition-all hover:shadow-md">
+                        <div className="flex items-center gap-4 mb-2">
+                            <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                                <Package size={20} />
+                            </div>
+                            <p className="text-sm font-bold text-gray-500 uppercase tracking-wider">Active Items</p>
+                        </div>
+                        <p className="text-3xl font-black text-gray-900">{meta.total}</p>
+                    </div>
+                </div>
+
                 {/* Filters & Actions */}
-                <div className="flex flex-col sm:flex-row gap-4 mb-8">
-                    <div className="relative flex-1">
+                <div className="flex flex-col md:flex-row gap-4 mb-8 items-center justify-between">
+                    <div className="relative flex-1 w-full max-w-md">
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
                         <input
                             type="text"
                             placeholder="Search items by name..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full pl-12 pr-4 py-3 bg-white border border-gray-200 rounded-2xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all shadow-sm"
+                            className="w-full pl-12 pr-4 py-3 bg-white border border-gray-200 rounded-2xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all shadow-sm font-medium"
                         />
                     </div>
 
-                    <div className="flex gap-2">
+                    <div className="flex bg-white p-1 rounded-2xl border border-gray-200 shadow-sm">
                         {['all', 'asset', 'inventory'].map((type) => (
                             <button
                                 key={type}
                                 onClick={() => setFilterType(type)}
-                                className={`px-4 py-3 rounded-2xl text-sm font-bold transition-all border ${filterType === type
-                                    ? 'bg-emerald-600 text-white border-emerald-600 shadow-md scale-105'
-                                    : 'bg-white text-gray-500 border-gray-200 hover:border-emerald-200'
+                                className={`px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${filterType === type
+                                    ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-200'
+                                    : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'
                                     }`}
                             >
-                                {type.charAt(0).toUpperCase() + type.slice(1)}
+                                {type}
                             </button>
                         ))}
                     </div>
@@ -283,7 +331,7 @@ export default function ItemManagement() {
                 {isLoading && (
                     <div className="text-center py-20">
                         <Loader2 className="animate-spin text-emerald-600 mx-auto mb-4" size={48} />
-                        <p className="text-gray-500">Loading items...</p>
+                        <p className="text-gray-500 font-medium">Loading items...</p>
                     </div>
                 )}
 
@@ -294,97 +342,86 @@ export default function ItemManagement() {
                             <AlertCircle className="text-red-500" size={32} />
                         </div>
                         <h3 className="text-lg font-bold text-gray-900">Error Loading Items</h3>
-                        <p className="text-gray-500">{error?.data?.message || 'Something went wrong'}</p>
+                        <p className="text-gray-500 font-medium">{error?.data?.message || 'Something went wrong'}</p>
                     </div>
                 )}
 
-                {/* Items Grid */}
+                {/* Items List View */}
                 {!isLoading && !isError && (
-                    <>
-                        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                            <AnimatePresence mode="popLayout">
-                                {items.map((item) => (
-                                    <motion.div
-                                        layout
-                                        initial={{ opacity: 0, y: 20 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        exit={{ opacity: 0, scale: 0.95 }}
-                                        key={item._id}
-                                        className={`bg-white rounded-3xl border p-6 relative group transition-all hover:shadow-xl hover:-translate-y-1 ${item.status === 'INACTIVE'
-                                            ? 'border-gray-200 opacity-60 grayscale'
-                                            : 'border-gray-100'
-                                            }`}
-                                    >
-                                        <div className="flex justify-between items-start mb-6">
-                                            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-inner ${item.itemType === 'ASSET'
-                                                ? 'bg-blue-50 text-blue-600'
-                                                : item.itemType === 'INVENTORY'
-                                                    ? 'bg-orange-50 text-orange-600'
-                                                    : 'bg-purple-50 text-purple-600'
-                                                }`}>
-                                                {item.itemType === 'ASSET' ? (
-                                                    <HardDrive size={24} />
-                                                ) : (
-                                                    <ShoppingBag size={24} />
-                                                )}
+                    <div className="bg-white border border-gray-200 rounded-3xl overflow-hidden shadow-sm">
+                        <div className="grid grid-cols-12 gap-4 border-b border-gray-100 bg-gray-50/50 p-4 text-xs font-bold text-gray-400 uppercase tracking-wider">
+                            <div className="col-span-4">Item Details</div>
+                            <div className="col-span-2">Type</div>
+                            <div className="col-span-2">Stock/Unit</div>
+                            <div className="col-span-2">Status</div>
+                            <div className="col-span-2 text-right">Actions</div>
+                        </div>
+
+                        <div className="divide-y divide-gray-100">
+                            {items.length === 0 ? (
+                                <div className="p-8 text-center text-gray-500">
+                                    No items found. Define your master items to begin.
+                                </div>
+                            ) : (
+                                items.map(item => (
+                                    <div key={item._id} className="grid grid-cols-12 gap-4 p-4 items-center hover:bg-gray-50 transition-colors group">
+                                        <div className="col-span-4 flex items-center gap-3">
+                                            <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${item.itemType === 'ASSET' ? 'bg-blue-50 text-blue-600' : 'bg-orange-50 text-orange-600'}`}>
+                                                {item.itemType === 'ASSET' ? <HardDrive size={20} /> : <ShoppingBag size={20} />}
                                             </div>
-                                            <div className="flex gap-1">
-                                                <button
-                                                    onClick={() => handleEdit(item)}
-                                                    className="p-2 hover:bg-emerald-50 text-emerald-600 rounded-lg transition-colors"
-                                                    title="Edit"
-                                                >
-                                                    <Edit2 size={16} />
-                                                </button>
-                                                <button
-                                                    onClick={() => handleDelete(item._id)}
-                                                    className="p-2 hover:bg-rose-50 text-rose-600 rounded-lg transition-colors"
-                                                    title="Delete"
-                                                >
-                                                    <Trash2 size={16} />
-                                                </button>
+                                            <div className="overflow-hidden">
+                                                <p className="font-bold text-gray-900 truncate">{item.name}</p>
+                                                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">
+                                                    ID: {item._id.slice(-6).toUpperCase()}
+                                                </p>
                                             </div>
                                         </div>
 
-                                        <div className="mb-4">
-                                            <p className={`text-[10px] font-bold uppercase tracking-widest mb-1 ${item.itemType === 'ASSET'
-                                                ? 'text-blue-500'
-                                                : item.itemType === 'INVENTORY'
-                                                    ? 'text-orange-500'
-                                                    : 'text-purple-500'
-                                                }`}>
+                                        <div className="col-span-2">
+                                            <span className={`px-2 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest ${item.itemType === 'ASSET' ? 'bg-blue-50 text-blue-700' : 'bg-orange-50 text-orange-700'}`}>
                                                 {item.itemType}
-                                            </p>
-                                            <h3 className="text-lg font-bold text-gray-900 line-clamp-1">{item.name}</h3>
-                                        </div>
-
-                                        <div className="flex items-center justify-between pt-4 border-t border-gray-50">
-                                            <div className="flex items-center gap-1.5 text-gray-400">
-                                                <Scale size={14} />
-                                                <span className="text-xs font-bold uppercase tracking-tight">Unit:</span>
-                                            </div>
-                                            <span className="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-xs font-bold">
-                                                {item.unit}
                                             </span>
                                         </div>
 
-                                        {item.status === 'INACTIVE' && (
-                                            <div className="absolute top-4 right-4 text-[10px] font-bold bg-gray-100 text-gray-500 px-2 py-1 rounded uppercase tracking-widest">
-                                                Inactive
-                                            </div>
-                                        )}
-                                    </motion.div>
-                                ))}
-                            </AnimatePresence>
-                        </div>
+                                        <div className="col-span-2">
+                                            <p className="text-sm font-black text-gray-900">
+                                                {item.itemType === 'INVENTORY' ? item.currentStock : '-'} 
+                                                <span className="text-[10px] font-bold text-gray-400 ml-1 uppercase">{item.unit}</span>
+                                            </p>
+                                        </div>
 
-                        {/* Pagination */}
+                                        <div className="col-span-2">
+                                            <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest ${item.status === 'ACTIVE' ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-100 text-gray-500'}`}>
+                                                {item.status}
+                                            </span>
+                                        </div>
+
+                                        <div className="col-span-2 flex items-center justify-end gap-1">
+                                            <button
+                                                onClick={() => handleEdit(item)}
+                                                className="p-2 hover:bg-emerald-50 text-emerald-600 rounded-lg transition-colors"
+                                                title="Edit Item"
+                                            >
+                                                <Edit2 size={16} />
+                                            </button>
+                                            <button
+                                                onClick={() => handleDelete(item._id)}
+                                                className="p-2 hover:bg-rose-50 text-gray-300 hover:text-rose-600 transition-colors"
+                                                title="Deactivate"
+                                            >
+                                                <Trash2 size={16} />
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))
+                            )}
+                        </div>
                         <Pagination
                             currentPage={currentPage}
                             totalPages={meta.totalPages}
                             onPageChange={(page) => setCurrentPage(page)}
                         />
-                    </>
+                    </div>
                 )}
 
                 {!isLoading && !isError && items.length === 0 && (

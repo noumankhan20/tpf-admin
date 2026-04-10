@@ -12,6 +12,7 @@ import {
     IndianRupee,
     Trash2,
     FileText,
+    Clock,
     User,
     CheckCircle2,
     Loader2,
@@ -25,12 +26,14 @@ import Pagination from '../Common/Pagination';
 import { useGetPurchasesQuery, useCreatePurchaseMutation, useDeletePurchaseMutation } from '../../../../utils/slices/InventoryAndAsset/purchaseApiSlice';
 import { useGetVendorsQuery } from '../../../../utils/slices/InventoryAndAsset/vendorApiSlice';
 import { useGetItemsQuery } from '../../../../utils/slices/InventoryAndAsset/itemApiSlice';
+import { useGetInventoryDashboardStatsQuery } from '../../../../utils/slices/InventoryAndAsset/dashboardApiSlice';
 import { getMediaUrl } from '../../../../utils/media';
 
 export default function PurchaseManagement() {
     const router = useRouter();
     const [isMounted, setIsMounted] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
+    const [statusFilter, setStatusFilter] = useState('ALL');
     const [showAddModal, setShowAddModal] = useState(false);
     const [viewPurchase, setViewPurchase] = useState(null);
     const [currentPage, setCurrentPage] = useState(1);
@@ -49,10 +52,15 @@ export default function PurchaseManagement() {
     const { data: purchasesResponse, isLoading, isError } = useGetPurchasesQuery({
         page: currentPage,
         limit: 10,
-        search: searchQuery
+        search: searchQuery,
+        paymentStatus: statusFilter !== 'ALL' ? statusFilter : undefined
     });
-    const { data: vendorsResponse } = useGetVendorsQuery();
-    const { data: itemsResponse } = useGetItemsQuery({}); // Fetch all items (Inventory + Asset)
+
+    const { data: dashboardStats } = useGetInventoryDashboardStatsQuery();
+    const supplyStats = dashboardStats?.data?.supplyChain || { totalPurchases: 0, totalSpend: 0, pendingAmount: 0, pendingPurchases: 0 };
+
+    const { data: vendorsResponse } = useGetVendorsQuery({ status: 'ACTIVE' });
+    const { data: itemsResponse } = useGetItemsQuery({ status: 'ACTIVE' }); // Also only show active items for new purchases
 
     const [createPurchase, { isLoading: isCreating }] = useCreatePurchaseMutation();
     const [deletePurchase] = useDeletePurchaseMutation();
@@ -231,16 +239,76 @@ export default function PurchaseManagement() {
             </header>
 
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                {/* Search */}
-                <div className="mb-8 relative max-w-md">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
-                    <input
-                        type="text"
-                        placeholder="Search PO number or vendor..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full pl-12 pr-4 py-3 bg-white border border-gray-200 rounded-2xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all shadow-sm"
-                    />
+                {/* Summary Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                    <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm transition-all hover:shadow-md">
+                        <div className="flex items-center gap-4 mb-2">
+                            <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+                                <ShoppingCart size={20} />
+                            </div>
+                            <p className="text-sm font-bold text-gray-500 uppercase tracking-wider">Total Orders</p>
+                        </div>
+                        <p className="text-3xl font-black text-gray-900">{supplyStats.totalPurchases}</p>
+                    </div>
+
+                    <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm transition-all hover:shadow-md">
+                        <div className="flex items-center gap-4 mb-2">
+                            <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                                <IndianRupee size={20} />
+                            </div>
+                            <p className="text-sm font-bold text-gray-500 uppercase tracking-wider">Total Spend</p>
+                        </div>
+                        <p className="text-3xl font-black text-gray-900">₹{supplyStats.totalSpend?.toLocaleString()}</p>
+                    </div>
+
+                    <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm transition-all hover:shadow-md">
+                        <div className="flex items-center gap-4 mb-2">
+                            <div className="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center">
+                                <Clock size={20} />
+                            </div>
+                            <p className="text-sm font-bold text-gray-500 uppercase tracking-wider">Pending Dues</p>
+                        </div>
+                        <p className="text-3xl font-black text-gray-900">₹{supplyStats.pendingAmount?.toLocaleString()}</p>
+                    </div>
+
+                    <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm transition-all hover:shadow-md">
+                        <div className="flex items-center gap-4 mb-2">
+                            <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
+                                <AlertCircle size={20} />
+                            </div>
+                            <p className="text-sm font-bold text-gray-500 uppercase tracking-wider">Pending Orders</p>
+                        </div>
+                        <p className="text-3xl font-black text-gray-900">{supplyStats.pendingPurchases}</p>
+                    </div>
+                </div>
+
+                {/* Search & Filters */}
+                <div className="mb-8 flex flex-col md:flex-row gap-4 items-center justify-between">
+                    <div className="relative w-full max-w-md">
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+                        <input
+                            type="text"
+                            placeholder="Search PO number or vendor..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="w-full pl-12 pr-4 py-3 bg-white border border-gray-200 rounded-2xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all shadow-sm font-medium"
+                        />
+                    </div>
+
+                    <div className="flex bg-white p-1 rounded-2xl border border-gray-200 shadow-sm shrink-0">
+                        {['ALL', 'PENDING', 'PAID', 'PARTIALLY_PAID'].map((status) => (
+                            <button
+                                key={status}
+                                onClick={() => setStatusFilter(status)}
+                                className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${statusFilter === status
+                                    ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-200'
+                                    : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'
+                                    }`}
+                            >
+                                {status.replace('_', ' ')}
+                            </button>
+                        ))}
+                    </div>
                 </div>
 
                 {/* Loading State */}

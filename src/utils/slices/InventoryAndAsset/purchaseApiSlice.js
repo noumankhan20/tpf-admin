@@ -8,6 +8,7 @@ export const purchaseApiSlice = apiSlice.injectEndpoints({
                 if (params?.page) queryParams.append("page", params.page);
                 if (params?.limit) queryParams.append("limit", params.limit);
                 if (params?.search) queryParams.append("search", params.search);
+                if (params?.paymentStatus) queryParams.append("paymentStatus", params.paymentStatus);
                 return `/inventory/purchases?${queryParams.toString()}`;
             },
             providesTags: ['Purchases'],

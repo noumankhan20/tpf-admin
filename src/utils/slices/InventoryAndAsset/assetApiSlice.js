@@ -8,6 +8,8 @@ export const assetApiSlice = apiSlice.injectEndpoints({
                 if (params?.page) queryParams.append("page", params.page);
                 if (params?.limit) queryParams.append("limit", params.limit);
                 if (params?.search) queryParams.append("search", params.search);
+                if (params?.status) queryParams.append("assetStatus", params.status);
+                if (params?.assetStatus) queryParams.append("assetStatus", params.assetStatus);
                 return `/inventory/assets?${queryParams.toString()}`;
             },
             providesTags: ['Assets'],
@@ -28,10 +30,10 @@ export const assetApiSlice = apiSlice.injectEndpoints({
             invalidatesTags: ['Assets', 'Items'],
         }),
         updateAssetIncome: builder.mutation({
-            query: ({ assetId, monthlyIncome }) => ({
+            query: ({ assetId, ...incomeData }) => ({
                 url: `/inventory/assets/${assetId}/income`,
                 method: 'PUT',
-                body: { monthlyIncome },
+                body: incomeData,
             }),
             invalidatesTags: ['Assets'],
         }),
