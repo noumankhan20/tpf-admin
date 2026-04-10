@@ -10,6 +10,8 @@ export const assetApiSlice = apiSlice.injectEndpoints({
                 if (params?.search) queryParams.append("search", params.search);
                 if (params?.status) queryParams.append("assetStatus", params.status);
                 if (params?.assetStatus) queryParams.append("assetStatus", params.assetStatus);
+                if (params?.startDate) queryParams.append("startDate", params.startDate);
+                if (params?.endDate) queryParams.append("endDate", params.endDate);
                 return `/inventory/assets?${queryParams.toString()}`;
             },
             providesTags: ['Assets'],

@@ -14,6 +14,7 @@ import {
     ShoppingBag,
     Scale,
     Loader2,
+    Briefcase,
     AlertCircle,
     ChevronLeft,
     ChevronRight
@@ -39,6 +40,7 @@ export default function ItemManagement() {
     const [editingItem, setEditingItem] = useState(null);
     const [filterType, setFilterType] = useState('all');
     const [currentPage, setCurrentPage] = useState(1);
+    const [vendorFilter, setVendorFilter] = useState('all');
 
     // Confirmation Modals State
     const [confirmModal, setConfirmModal] = useState({
@@ -56,6 +58,7 @@ export default function ItemManagement() {
         limit: 10,
         search: searchQuery || undefined,
         itemType: filterType !== 'all' ? filterType.toUpperCase() : undefined,
+        vendorId: vendorFilter !== 'all' ? vendorFilter : undefined
     });
 
     const { data: dashboardStats } = useGetInventoryDashboardStatsQuery();
@@ -85,7 +88,7 @@ export default function ItemManagement() {
     // Reset to page 1 when filters change
     useEffect(() => {
         setCurrentPage(1);
-    }, [searchQuery, filterType]);
+    }, [searchQuery, filterType, vendorFilter]);
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -299,19 +302,35 @@ export default function ItemManagement() {
                 </div>
 
                 {/* Filters & Actions */}
-                <div className="flex flex-col md:flex-row gap-4 mb-8 items-center justify-between">
-                    <div className="relative flex-1 w-full max-w-md">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
-                        <input
-                            type="text"
-                            placeholder="Search items by name..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full pl-12 pr-4 py-3 bg-white border border-gray-200 rounded-2xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all shadow-sm font-medium"
-                        />
+                <div className="flex flex-col xl:flex-row gap-4 mb-8 items-center justify-between">
+                    <div className="flex flex-col md:flex-row gap-4 w-full xl:w-auto flex-1">
+                        <div className="relative flex-1 max-w-md">
+                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+                            <input
+                                type="text"
+                                placeholder="Search items by name..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="w-full pl-12 pr-4 py-3 bg-white border border-gray-200 rounded-2xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all shadow-sm font-medium"
+                            />
+                        </div>
+
+                        <div className="relative flex-1 max-w-xs">
+                            <Briefcase className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                            <select
+                                value={vendorFilter}
+                                onChange={(e) => setVendorFilter(e.target.value)}
+                                className="w-full pl-11 pr-4 py-3 bg-white border border-gray-200 rounded-2xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all shadow-sm font-medium appearance-none"
+                            >
+                                <option value="all">All Vendors</option>
+                                {vendors.map(v => (
+                                    <option key={v._id} value={v._id}>{v.fullName}</option>
+                                ))}
+                            </select>
+                        </div>
                     </div>
 
-                    <div className="flex bg-white p-1 rounded-2xl border border-gray-200 shadow-sm">
+                    <div className="flex bg-white p-1 rounded-2xl border border-gray-200 shadow-sm shrink-0">
                         {['all', 'asset', 'inventory'].map((type) => (
                             <button
                                 key={type}

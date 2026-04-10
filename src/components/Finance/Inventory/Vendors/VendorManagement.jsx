@@ -16,7 +16,8 @@ import {
     Phone,
     Calendar,
     Briefcase,
-    Loader2
+    Loader2,
+    ChevronDown
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Pagination from '../Common/Pagination';
@@ -29,6 +30,7 @@ import {
     useDeleteVendorMutation,
 } from '../../../../utils/slices/InventoryAndAsset/vendorApiSlice';
 import { useGetInventoryDashboardStatsQuery } from '../../../../utils/slices/InventoryAndAsset/dashboardApiSlice';
+import { INDIAN_LOCATIONS, STATES } from '../../../../utils/locations';
 
 export default function VendorManagement() {
     const router = useRouter();
@@ -38,6 +40,8 @@ export default function VendorManagement() {
     const [showAddModal, setShowAddModal] = useState(false);
     const [editingVendor, setEditingVendor] = useState(null);
     const [currentPage, setCurrentPage] = useState(1);
+    const [stateFilter, setStateFilter] = useState('');
+    const [cityFilter, setCityFilter] = useState('');
 
     // Confirmation Modals State
     const [confirmModal, setConfirmModal] = useState({
@@ -54,7 +58,9 @@ export default function VendorManagement() {
         page: currentPage,
         limit: 10,
         search: searchQuery,
-        status: statusFilter !== 'ALL' ? statusFilter : undefined
+        status: statusFilter !== 'ALL' ? statusFilter : undefined,
+        state: stateFilter || undefined,
+        city: cityFilter || undefined
     });
 
     const { data: dashboardStats } = useGetInventoryDashboardStatsQuery();
@@ -69,7 +75,8 @@ export default function VendorManagement() {
         fullName: '',
         contactNumber: '',
         vendorGST: '',
-        location: '',
+        state: '',
+        city: '',
         fullAddress: '',
         status: 'ACTIVE'
     });
@@ -77,6 +84,10 @@ export default function VendorManagement() {
     useEffect(() => {
         setIsMounted(true);
     }, []);
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchQuery, statusFilter, stateFilter, cityFilter]);
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -99,6 +110,7 @@ export default function VendorManagement() {
                 return;
             }
 
+            console.log('Submitting Vendor Data:', formData);
             if (editingVendor) {
                 await updateVendor({
                     vendorId: editingVendor._id,
@@ -113,7 +125,8 @@ export default function VendorManagement() {
                 fullName: '',
                 contactNumber: '',
                 vendorGST: '',
-                location: '',
+                state: '',
+                city: '',
                 fullAddress: '',
                 status: 'ACTIVE'
             });
@@ -132,7 +145,8 @@ export default function VendorManagement() {
             fullName: vendor.fullName,
             contactNumber: vendor.contactNumber.toString(),
             vendorGST: vendor.vendorGST || '',
-            location: vendor.location || '',
+            state: vendor.state || '',
+            city: vendor.city || '',
             fullAddress: vendor.fullAddress,
             status: vendor.status
         });
@@ -176,6 +190,10 @@ export default function VendorManagement() {
     const vendors = vendorsData?.data || [];
     const meta = vendorsData?.meta || { totalPages: 1, total: 0 };
 
+    // Extract unique values for filter dropdowns
+    const availableStates = [...new Set(vendors.map(v => v.state).filter(Boolean))].sort();
+    const availableCities = [...new Set(vendors.map(v => v.city).filter(Boolean))].sort();
+
     if (!isMounted) return null;
 
     return (
@@ -202,7 +220,8 @@ export default function VendorManagement() {
                                 fullName: '',
                                 contactNumber: '',
                                 vendorGST: '',
-                                location: '',
+                                state: '',
+                                city: '',
                                 fullAddress: '',
                                 status: 'ACTIVE'
                             });
@@ -251,16 +270,54 @@ export default function VendorManagement() {
                 </div>
 
                 {/* Search & Filters */}
-                <div className="mb-8 flex flex-col md:flex-row gap-4 items-center justify-between">
-                    <div className="relative w-full max-w-md">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
-                        <input
-                            type="text"
-                            placeholder="Search by name, GST, or contact..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full pl-12 pr-4 py-3 bg-white border border-gray-200 rounded-2xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all shadow-sm font-medium"
-                        />
+                <div className="mb-8 flex flex-col xl:flex-row gap-4 items-center justify-between">
+                    <div className="flex flex-col lg:flex-row gap-4 w-full xl:w-auto flex-1">
+                        <div className="relative flex-1 max-w-md">
+                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+                            <input
+                                type="text"
+                                placeholder="Search by name, GST, or contact..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="w-full pl-12 pr-4 py-3 bg-white border border-gray-200 rounded-2xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all shadow-sm font-medium"
+                            />
+                        </div>
+
+                        <div className="flex flex-1 gap-4 max-w-2xl">
+                            <div className="relative flex-1">
+                                <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={18} />
+                                <select
+                                    value={stateFilter}
+                                    onChange={(e) => {
+                                        setStateFilter(e.target.value);
+                                        setCityFilter('');
+                                    }}
+                                    className="w-full pl-11 pr-10 py-3 bg-white border border-gray-200 rounded-2xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all shadow-sm font-medium appearance-none text-sm cursor-pointer"
+                                >
+                                    <option value="">All States</option>
+                                    {availableStates.map(state => (
+                                        <option key={state} value={state}>{state}</option>
+                                    ))}
+                                </select>
+                                <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
+                            </div>
+ 
+                            <div className="relative flex-1">
+                                <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={18} />
+                                <select
+                                    disabled={!stateFilter && availableCities.length === 0}
+                                    value={cityFilter}
+                                    onChange={(e) => setCityFilter(e.target.value)}
+                                    className="w-full pl-11 pr-10 py-3 bg-white border border-gray-200 rounded-2xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all shadow-sm font-medium appearance-none text-sm disabled:opacity-50 cursor-pointer"
+                                >
+                                    <option value="">All Cities</option>
+                                    {availableCities.map(city => (
+                                        <option key={city} value={city}>{city}</option>
+                                    ))}
+                                </select>
+                                <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
+                            </div>
+                        </div>
                     </div>
 
                     <div className="flex bg-white p-1 rounded-2xl border border-gray-200 shadow-sm shrink-0">
@@ -335,8 +392,8 @@ export default function VendorManagement() {
                                         </div>
 
                                         <div className="col-span-2">
-                                            <p className="text-sm text-gray-600 truncate">{vendor.location || 'N/A'}</p>
-                                            <p className="text-[10px] text-gray-400 font-medium">Regional Office</p>
+                                            <p className="text-sm text-gray-900 font-bold truncate">{vendor.city || 'N/A'}</p>
+                                            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tight">{vendor.state || 'N/A'}</p>
                                         </div>
 
                                         <div className="col-span-2">
@@ -477,18 +534,45 @@ export default function VendorManagement() {
                                     </div>
                                 </div>
 
-                                <div>
-                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">
-                                        Location
-                                    </label>
-                                    <input
-                                        name="location"
-                                        value={formData.location}
-                                        onChange={handleInputChange}
-                                        type="text"
-                                        placeholder="e.g. Mumbai, Maharashtra"
-                                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all"
-                                    />
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">
+                                            State *
+                                        </label>
+                                        <select
+                                            required
+                                            name="state"
+                                            value={formData.state}
+                                            onChange={(e) => {
+                                                handleInputChange(e);
+                                                setFormData(prev => ({ ...prev, city: '' }));
+                                            }}
+                                            className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all appearance-none"
+                                        >
+                                            <option value="">Select State</option>
+                                            {STATES.map(state => (
+                                                <option key={state} value={state}>{state}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">
+                                            City *
+                                        </label>
+                                        <select
+                                            required
+                                            disabled={!formData.state}
+                                            name="city"
+                                            value={formData.city}
+                                            onChange={handleInputChange}
+                                            className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all appearance-none disabled:opacity-50"
+                                        >
+                                            <option value="">Select City</option>
+                                            {formData.state && INDIAN_LOCATIONS[formData.state].map(city => (
+                                                <option key={city} value={city}>{city}</option>
+                                            ))}
+                                        </select>
+                                    </div>
                                 </div>
 
                                 <div>

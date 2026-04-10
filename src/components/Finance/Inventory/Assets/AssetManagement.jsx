@@ -46,6 +46,8 @@ export default function AssetManagement() {
     const [viewAsset, setViewAsset] = useState(null);
     const [selectedAsset, setSelectedAsset] = useState(null);
     const [currentPage, setCurrentPage] = useState(1);
+    const [startDate, setStartDate] = useState('');
+    const [endDate, setEndDate] = useState('');
 
     // Confirmation Modals State
     const [confirmModal, setConfirmModal] = useState({
@@ -62,7 +64,9 @@ export default function AssetManagement() {
         page: currentPage,
         limit: 10,
         search: searchQuery,
-        status: statusFilter !== 'ALL' ? statusFilter : undefined
+        status: statusFilter !== 'ALL' ? statusFilter : undefined,
+        startDate: startDate || undefined,
+        endDate: endDate || undefined
     });
     const { data: adminListData } = useGetAdminListQuery();
     const [assignAsset, { isLoading: isAssigning }] = useAssignAssetMutation();
@@ -95,7 +99,7 @@ export default function AssetManagement() {
     // Reset to page 1 when search or filter changes
     useEffect(() => {
         setCurrentPage(1);
-    }, [searchQuery, statusFilter]);
+    }, [searchQuery, statusFilter, startDate, endDate]);
 
     const handleAssign = async (e) => {
         e.preventDefault();
@@ -240,31 +244,64 @@ export default function AssetManagement() {
                 </div>
 
                 {/* Search & Filters */}
-                <div className="mb-8 flex flex-col md:flex-row gap-4 items-center justify-between">
-                    <div className="relative w-full max-w-md">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
-                        <input
-                            type="text"
-                            placeholder="Search assets by name or ID..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full pl-12 pr-4 py-3 bg-white border border-gray-200 rounded-2xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all shadow-sm font-medium"
-                        />
+                <div className="mb-8 space-y-4">
+                    <div className="flex flex-col xl:flex-row gap-4 items-center justify-between">
+                        <div className="relative w-full max-w-md">
+                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+                            <input
+                                type="text"
+                                placeholder="Search assets by name or ID..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="w-full pl-12 pr-4 py-3 bg-white border border-gray-200 rounded-2xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all shadow-sm font-medium"
+                            />
+                        </div>
+
+                        <div className="flex bg-white p-1 rounded-2xl border border-gray-200 shadow-sm shrink-0">
+                            {['ALL', 'AVAILABLE', 'ASSIGNED', 'MAINTENANCE'].map((status) => (
+                                <button
+                                    key={status}
+                                    onClick={() => setStatusFilter(status)}
+                                    className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${statusFilter === status
+                                        ? 'bg-emerald-600 text-white shadow-lg'
+                                        : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'
+                                        }`}
+                                >
+                                    {status}
+                                </button>
+                            ))}
+                        </div>
                     </div>
 
-                    <div className="flex bg-white p-1 rounded-2xl border border-gray-200 shadow-sm shrink-0">
-                        {['ALL', 'AVAILABLE', 'ASSIGNED', 'MAINTENANCE'].map((status) => (
-                            <button
-                                key={status}
-                                onClick={() => setStatusFilter(status)}
-                                className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${statusFilter === status
-                                    ? 'bg-emerald-600 text-white shadow-lg'
-                                    : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'
-                                    }`}
-                            >
-                                {status}
-                            </button>
-                        ))}
+                    <div className="flex flex-col md:flex-row gap-4 items-center bg-white p-4 rounded-3xl border border-gray-100 shadow-sm">
+                        <div className="flex items-center gap-2 text-sm font-bold text-gray-400 uppercase tracking-widest shrink-0">
+                            <Calendar size={18} className="text-emerald-600" />
+                            Assignment Date:
+                        </div>
+                        <div className="flex flex-1 gap-4 w-full">
+                            <input
+                                type="date"
+                                value={startDate}
+                                onChange={(e) => setStartDate(e.target.value)}
+                                className="flex-1 px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 outline-none text-sm font-medium"
+                            />
+                            <span className="text-gray-300 self-center">to</span>
+                            <input
+                                type="date"
+                                value={endDate}
+                                onChange={(e) => setEndDate(e.target.value)}
+                                className="flex-1 px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 outline-none text-sm font-medium"
+                            />
+                            {(startDate || endDate) && (
+                                <button
+                                    onClick={() => { setStartDate(''); setEndDate(''); }}
+                                    className="p-2 text-gray-400 hover:text-rose-500 transition-colors"
+                                    title="Clear dates"
+                                >
+                                    <X size={20} />
+                                </button>
+                            )}
+                        </div>
                     </div>
                 </div>
 

@@ -11,6 +11,8 @@ export const vendorApiSlice = apiSlice.injectEndpoints({
         if (params?.limit) queryParams.append("limit", params.limit);
         if (params?.search) queryParams.append("search", params.search);
         if (params?.status) queryParams.append("status", params.status);
+        if (params?.state) queryParams.append("state", params.state);
+        if (params?.city) queryParams.append("city", params.city);
         return `/inventory/vendors?${queryParams.toString()}`;
       },
       providesTags: ["Vendors"],

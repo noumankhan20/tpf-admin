@@ -26,7 +26,8 @@ import {
     ExternalLink,
     CheckCircle2,
     Loader2,
-    Heart
+    Heart,
+    ChevronDown
 } from 'lucide-react';
 import {
     useGetVolunteersQuery,
@@ -68,6 +69,11 @@ export default function VolunteerModule() {
 
     const volunteersData = volunteersResponse?.data || [];
     const selectedVolunteer = volunteerDetailResponse?.data;
+
+    // Extract unique values for filters
+    const professions = [...new Set(volunteersData.map(v => v.kycDetails?.profession).filter(Boolean))].sort();
+    const cities = [...new Set(volunteersData.map(v => v.kycDetails?.city).filter(Boolean))].sort();
+    const states = [...new Set(volunteersData.map(v => v.kycDetails?.state).filter(Boolean))].sort();
 
     // Prevent body scroll when modal is open
     useEffect(() => {
@@ -500,34 +506,46 @@ export default function VolunteerModule() {
                             />
                         </div>
                         <div className="relative">
-                            <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                            <input
-                                type="text"
-                                placeholder="Profession..."
+                            <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={18} />
+                            <select
                                 value={professionFilter}
                                 onChange={(e) => { setProfessionFilter(e.target.value); setCurrentPage(1); }}
-                                className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-sm font-bold"
-                            />
+                                className="w-full pl-10 pr-10 py-2.5 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-sm font-bold appearance-none cursor-pointer"
+                            >
+                                <option value="">All Professions</option>
+                                {professions.map(p => (
+                                    <option key={p} value={p}>{p}</option>
+                                ))}
+                            </select>
+                            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
                         </div>
                         <div className="relative">
-                            <MapPinned className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                            <input
-                                type="text"
-                                placeholder="City..."
+                            <MapPinned className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={18} />
+                            <select
                                 value={cityFilter}
                                 onChange={(e) => { setCityFilter(e.target.value); setCurrentPage(1); }}
-                                className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-sm font-bold"
-                            />
+                                className="w-full pl-10 pr-10 py-2.5 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-sm font-bold appearance-none cursor-pointer"
+                            >
+                                <option value="">All Cities</option>
+                                {cities.map(c => (
+                                    <option key={c} value={c}>{c}</option>
+                                ))}
+                            </select>
+                            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
                         </div>
                         <div className="relative">
-                            <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                            <input
-                                type="text"
-                                placeholder="State..."
+                            <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={18} />
+                            <select
                                 value={stateFilter}
                                 onChange={(e) => { setStateFilter(e.target.value); setCurrentPage(1); }}
-                                className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-sm font-bold"
-                            />
+                                className="w-full pl-10 pr-10 py-2.5 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-sm font-bold appearance-none cursor-pointer"
+                            >
+                                <option value="">All States</option>
+                                {states.map(s => (
+                                    <option key={s} value={s}>{s}</option>
+                                ))}
+                            </select>
+                            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
                         </div>
                     </div>
                 </div>
