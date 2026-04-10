@@ -48,6 +48,9 @@ export default function AssetManagement() {
     const [currentPage, setCurrentPage] = useState(1);
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
+    const [incomeHistoryPage, setIncomeHistoryPage] = useState(1);
+    const [activeTab, setActiveTab] = useState('overview');
+    const incomeHistoryPerPage = 8;
 
     // Confirmation Modals State
     const [confirmModal, setConfirmModal] = useState({
@@ -386,7 +389,7 @@ export default function AssetManagement() {
                                                 <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Total Generated</p>
                                             </div>
                                             <button
-                                                onClick={() => setViewAsset(asset)}
+                                                onClick={() => { setViewAsset(asset); setIncomeHistoryPage(1); setActiveTab('overview'); }}
                                                 className="p-2 hover:bg-emerald-50 rounded-lg text-gray-400 hover:text-emerald-600 transition-colors"
                                                 title="View Details"
                                             >
@@ -592,12 +595,12 @@ export default function AssetManagement() {
                             initial={{ scale: 0.95, opacity: 0, y: 20 }}
                             animate={{ scale: 1, opacity: 1, y: 0 }}
                             exit={{ scale: 0.95, opacity: 0, y: 20 }}
-                            className="bg-white rounded-3xl w-full max-w-lg shadow-2xl relative overflow-hidden z-10"
+                            className="bg-white rounded-[2.5rem] w-full max-w-2xl shadow-2xl relative overflow-hidden z-10 flex flex-col max-h-[90vh]"
                         >
                             <div className="px-8 py-6 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
                                 <div>
-                                    <h2 className="text-xl font-bold text-gray-900">Asset Record</h2>
-                                    <p className="text-sm text-gray-500 uppercase tracking-widest font-bold">UID: {viewAsset._id.slice(-8).toUpperCase()}</p>
+                                    <h2 className="text-xl font-bold text-gray-900">Asset Management</h2>
+                                    <p className="text-[10px] text-emerald-600 uppercase tracking-[0.2em] font-black">Record Details & History</p>
                                 </div>
                                 <button
                                     onClick={() => setViewAsset(null)}
@@ -607,96 +610,173 @@ export default function AssetManagement() {
                                 </button>
                             </div>
 
-                            <div className="p-8 space-y-8">
-                                <div className="flex items-center gap-4">
-                                    <div className="w-16 h-16 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center shadow-inner">
-                                        <Laptop size={32} />
-                                    </div>
-                                    <div>
-                                        <h3 className="text-2xl font-bold text-gray-900">{viewAsset.name}</h3>
-                                        <p className="text-sm font-medium text-gray-500">{viewAsset.itemType} • {viewAsset.unit}</p>
-                                    </div>
+                            <div className="p-8 space-y-8 overflow-y-auto flex-1 custom-scrollbar">
+                                 {/* Tab Navigation */}
+                                <div className="flex gap-1 bg-gray-100 p-1 rounded-2xl mb-8">
+                                    <button 
+                                        onClick={() => setActiveTab('overview')}
+                                        className={`flex-1 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'overview' ? 'bg-white text-emerald-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                                    >Overview</button>
+                                    <button 
+                                        onClick={() => setActiveTab('ledger')}
+                                        className={`flex-1 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'ledger' ? 'bg-white text-emerald-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                                    >Income Ledger ({viewAsset.incomeHistory?.length || 0})</button>
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-6">
-                                    <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100">
-                                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Status</p>
-                                        <p className={`text-sm font-bold uppercase ${viewAsset.assetStatus === 'ASSIGNED' ? 'text-indigo-600' : 'text-emerald-600'}`}>
-                                            {viewAsset.assetStatus}
-                                        </p>
-                                    </div>
-                                    <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100">
-                                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Total Income</p>
-                                        <p className="text-sm font-bold text-gray-900">₹{viewAsset.totalIncome?.toLocaleString() || '0'}</p>
-                                    </div>
-                                </div>
+                                <AnimatePresence mode="wait">
+                                    {activeTab === 'overview' ? (
+                                        <motion.div 
+                                            key="overview"
+                                            initial={{ opacity: 0, y: 10 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            exit={{ opacity: 0, y: -10 }}
+                                            className="space-y-8"
+                                        >
+                                            <div className="flex items-center gap-6">
+                                                <div className="w-20 h-20 rounded-3xl bg-emerald-50 text-emerald-600 flex items-center justify-center shadow-inner scale-110">
+                                                    <Laptop size={40} />
+                                                </div>
+                                                <div>
+                                                    <h3 className="text-3xl font-black text-gray-900 tracking-tight">{viewAsset.name}</h3>
+                                                    <p className="text-sm font-bold text-gray-400 uppercase tracking-widest">{viewAsset.itemType} • {viewAsset.unit}</p>
+                                                </div>
+                                            </div>
 
-                                 <div className="space-y-4">
-                                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100 pb-2">Income Ledger / History</p>
-                                    <div className="max-h-48 overflow-y-auto pr-2 space-y-2">
-                                        {(viewAsset.incomeHistory || []).length > 0 ? (
-                                            viewAsset.incomeHistory.map((entry, idx) => (
-                                                <div key={idx} className="flex justify-between items-center p-3 bg-gray-50 rounded-xl border border-gray-100">
-                                                    <div>
-                                                        <p className="text-sm font-bold text-gray-900">{entry.personName}</p>
-                                                        <p className="text-[10px] text-gray-500">{new Date(entry.date).toLocaleDateString()} {entry.note && `• ${entry.note}`}</p>
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div className="p-5 bg-gray-50 rounded-[2rem] border border-gray-100">
+                                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Current Status</p>
+                                                    <span className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-black uppercase ${viewAsset.assetStatus === 'ASSIGNED' ? 'bg-indigo-100 text-indigo-700' : 'bg-emerald-100 text-emerald-700'}`}>
+                                                        <div className={`w-2 h-2 rounded-full animate-pulse ${viewAsset.assetStatus === 'ASSIGNED' ? 'bg-indigo-600' : 'bg-emerald-600'}`} />
+                                                        {viewAsset.assetStatus}
+                                                    </span>
+                                                </div>
+                                                <div className="p-5 bg-gray-50 rounded-[2rem] border border-gray-100">
+                                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Financial Impact</p>
+                                                    <p className="text-2xl font-black text-gray-900">₹{viewAsset.totalIncome?.toLocaleString() || '0'}</p>
+                                                </div>
+                                            </div>
+
+                                            <div className="space-y-4">
+                                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100 pb-2">Primary Assignment</p>
+                                                <div className="p-6 bg-white rounded-[2rem] border border-gray-200 shadow-sm">
+                                                    {viewAsset.assetStatus === 'ASSIGNED' && viewAsset.assignedTo ? (
+                                                        <div className="flex gap-4">
+                                                            <div className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+                                                                <User size={24} />
+                                                            </div>
+                                                            <div>
+                                                                <p className="text-sm border-b border-gray-100 pb-1 mb-1"><span className="font-black text-gray-900">{viewAsset.assignedTo.fullName}</span></p>
+                                                                <p className="text-xs text-gray-400 font-medium">
+                                                                    Assigned on <span className="text-indigo-600 font-bold">{new Date(viewAsset.assignmentDate).toLocaleDateString(undefined, { dateStyle: 'long' })}</span>
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="flex items-center gap-3 text-gray-400 py-2 italic text-sm">
+                                                            <CheckCircle2 size={18} className="text-emerald-500" />
+                                                            Currently available in organization inventory.
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </motion.div>
+                                    ) : (
+                                        <motion.div 
+                                            key="ledger"
+                                            initial={{ opacity: 0, y: 10 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            exit={{ opacity: 0, y: -10 }}
+                                            className="space-y-6"
+                                        >
+                                            <div className="bg-gray-50 rounded-3xl p-4 border border-gray-100 flex items-center justify-between">
+                                                <div>
+                                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Lifetime Revenue</p>
+                                                    <p className="text-xl font-black text-emerald-600">₹{viewAsset.totalIncome?.toLocaleString() || '0'}</p>
+                                                </div>
+                                                <div className="text-right">
+                                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Entry Volume</p>
+                                                    <p className="text-xl font-black text-gray-900">{viewAsset.incomeHistory?.length || 0} Records</p>
+                                                </div>
+                                            </div>
+
+                                            <div className="space-y-2 min-h-[400px]">
+                                                {(viewAsset.incomeHistory || []).length > 0 ? (
+                                                    <>
+                                                        <div className="grid grid-cols-12 px-4 py-2 text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100 mb-2">
+                                                            <div className="col-span-5">Payer / Source</div>
+                                                            <div className="col-span-4">Date</div>
+                                                            <div className="col-span-3 text-right">Amount</div>
+                                                        </div>
+                                                        <div className="space-y-2">
+                                                            {viewAsset.incomeHistory
+                                                                .slice((incomeHistoryPage - 1) * incomeHistoryPerPage, incomeHistoryPage * incomeHistoryPerPage)
+                                                                .map((entry, idx) => (
+                                                                <motion.div 
+                                                                    initial={{ opacity: 0, x: -10 }}
+                                                                    animate={{ opacity: 1, x: 0 }}
+                                                                    transition={{ delay: idx * 0.05 }}
+                                                                    key={idx} 
+                                                                    className="grid grid-cols-12 items-center p-4 bg-gray-50 rounded-2xl border border-gray-100 hover:bg-white hover:border-emerald-200 transition-all group"
+                                                                >
+                                                                    <div className="col-span-5 flex items-center gap-3">
+                                                                        <div className="w-8 h-8 rounded-lg bg-white shadow-sm text-emerald-600 flex items-center justify-center shrink-0 group-hover:bg-emerald-600 group-hover:text-white transition-all">
+                                                                            <TrendingUp size={14} />
+                                                                        </div>
+                                                                        <div>
+                                                                            <p className="text-xs font-black text-gray-900 group-hover:text-emerald-600 transition-colors uppercase tracking-tight">{entry.personName}</p>
+                                                                            {entry.note && <p className="text-[10px] text-gray-400 italic line-clamp-1">{entry.note}</p>}
+                                                                        </div>
+                                                                    </div>
+                                                                    <div className="col-span-4 text-[10px] font-bold text-gray-500">
+                                                                        {new Date(entry.date).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}
+                                                                    </div>
+                                                                    <div className="col-span-3 text-right text-sm font-black text-gray-900">
+                                                                        ₹{entry.amount.toLocaleString()}
+                                                                    </div>
+                                                                </motion.div>
+                                                            ))}
+                                                        </div>
+
+                                                        {/* Ledger Pagination */}
+                                                        {viewAsset.incomeHistory.length > incomeHistoryPerPage && (
+                                                            <div className="flex items-center justify-between pt-6 mt-4 border-t border-gray-100">
+                                                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">
+                                                                    Page {incomeHistoryPage} of {Math.ceil(viewAsset.incomeHistory.length / incomeHistoryPerPage)}
+                                                                </p>
+                                                                <div className="flex gap-2">
+                                                                    <button 
+                                                                        onClick={() => setIncomeHistoryPage(p => Math.max(1, p - 1))}
+                                                                        disabled={incomeHistoryPage === 1}
+                                                                        className="px-4 py-2 bg-white border border-gray-200 rounded-xl text-[10px] font-black uppercase text-gray-400 hover:text-emerald-600 disabled:opacity-30 transition-all hover:bg-gray-50 shadow-sm"
+                                                                    >Prev</button>
+                                                                    <button 
+                                                                        onClick={() => setIncomeHistoryPage(p => Math.min(Math.ceil(viewAsset.incomeHistory.length / incomeHistoryPerPage), p + 1))}
+                                                                        disabled={incomeHistoryPage === Math.ceil(viewAsset.incomeHistory.length / incomeHistoryPerPage)}
+                                                                        className="px-4 py-2 bg-white border border-gray-200 rounded-xl text-[10px] font-black uppercase text-gray-400 hover:text-emerald-600 disabled:opacity-30 transition-all hover:bg-gray-50 shadow-sm"
+                                                                    >Next</button>
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                    </>
+                                                ) : (
+                                                    <div className="flex flex-col items-center justify-center py-20 bg-gray-50 rounded-[2.5rem] border border-dashed border-gray-200">
+                                                        <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mb-4 text-gray-200 shadow-inner">
+                                                            <TrendingUp size={32} />
+                                                        </div>
+                                                        <p className="text-xs text-gray-400 font-black uppercase tracking-widest">No income records found</p>
                                                     </div>
-                                                    <p className="text-sm font-black text-emerald-600">₹{entry.amount.toLocaleString()}</p>
-                                                </div>
-                                            ))
-                                        ) : (
-                                            <p className="text-xs text-center text-gray-400 py-4 italic">No income history recorded.</p>
-                                        )}
-                                    </div>
-                                </div>
-
-                                <div className="space-y-4 pt-4 border-t border-gray-100">
-                                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100 pb-2">Assignment Activity</p>
-
-                                    <div className="space-y-4">
-                                        {viewAsset.assignmentDate && (
-                                            <div className="flex gap-4">
-                                                <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
-                                                    <UserPlus size={16} />
-                                                </div>
-                                                <div>
-                                                    <p className="text-sm font-bold text-gray-900">Assigned To {viewAsset.assignedTo?.fullName || 'User'}</p>
-                                                    <p className="text-xs text-gray-500">
-                                                        {new Date(viewAsset.assignmentDate).toLocaleDateString(undefined, { dateStyle: 'full' })} at {new Date(viewAsset.assignmentDate).toLocaleTimeString()}
-                                                    </p>
-                                                </div>
+                                                )}
                                             </div>
-                                        )}
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
 
-                                        {viewAsset.unassignmentDate && (
-                                            <div className="flex gap-4">
-                                                <div className="w-8 h-8 rounded-lg bg-orange-50 text-orange-600 flex items-center justify-center shrink-0">
-                                                    <UserMinus size={16} />
-                                                </div>
-                                                <div>
-                                                    <p className="text-sm font-bold text-gray-900">Last Returned/Unassigned</p>
-                                                    <p className="text-xs text-gray-500">
-                                                        {new Date(viewAsset.unassignmentDate).toLocaleDateString(undefined, { dateStyle: 'full' })} at {new Date(viewAsset.unassignmentDate).toLocaleTimeString()}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {!viewAsset.assignmentDate && !viewAsset.unassignmentDate && (
-                                            <div className="flex items-center gap-3 text-gray-400 py-4 italic text-sm">
-                                                <Clock size={16} />
-                                                No assignment history recorded yet.
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-
-                                <div className="pt-4">
+                                <div className="pt-8">
                                     <button
                                         onClick={() => setViewAsset(null)}
-                                        className="w-full py-4 bg-gray-900 text-white rounded-2xl font-bold hover:bg-black transition-all shadow-xl active:scale-[0.98]"
+                                        className="w-full py-4 bg-gray-900 text-white rounded-[1.5rem] text-[10px] font-black uppercase tracking-[0.3em] hover:bg-black transition-all shadow-2xl active:scale-[0.98] flex items-center justify-center gap-2"
                                     >
-                                        Close Details
+                                        Dismiss Record
                                     </button>
                                 </div>
                             </div>
