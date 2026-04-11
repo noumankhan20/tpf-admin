@@ -265,7 +265,7 @@ export default function StoryCardsCMS() {
     const confirmDelete = async () => {
         if (!deleteId) return;
         try {
-            await deleteImpactStory(id).unwrap();
+            await deleteImpactStory(deleteId).unwrap();
             alert("Story deleted successfully!");
         } catch (err) {
             console.error("Error deleting story:", err);
