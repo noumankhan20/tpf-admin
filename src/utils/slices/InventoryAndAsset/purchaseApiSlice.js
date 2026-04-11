@@ -8,6 +8,10 @@ export const purchaseApiSlice = apiSlice.injectEndpoints({
                 if (params?.page) queryParams.append("page", params.page);
                 if (params?.limit) queryParams.append("limit", params.limit);
                 if (params?.search) queryParams.append("search", params.search);
+                if (params?.paymentStatus) queryParams.append("paymentStatus", params.paymentStatus);
+                if (params?.vendorId) queryParams.append("vendorId", params.vendorId);
+                if (params?.startDate) queryParams.append("startDate", params.startDate);
+                if (params?.endDate) queryParams.append("endDate", params.endDate);
                 return `/inventory/purchases?${queryParams.toString()}`;
             },
             providesTags: ['Purchases'],

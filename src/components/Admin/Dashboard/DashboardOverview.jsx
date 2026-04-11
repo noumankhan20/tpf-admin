@@ -541,7 +541,7 @@ export default function DashboardOverview() {
                     <div className="hidden lg:block">
                         <SalesGoalGauge
                             progress={metrics.targetProgress}
-                            targetLabel={`₹${(metrics.totalDonationCollected / 100000).toFixed(1)}L / ₹${(metrics.monthlyTarget / 100000).toFixed(0)}L Goal`}
+                            targetLabel={`₹${(metrics.monthlyDonationCollected / 100000).toFixed(1)}L / ₹${(metrics.monthlyTarget / 100000).toFixed(0)}L Goal`}
                         />
                     </div>
                 </div>

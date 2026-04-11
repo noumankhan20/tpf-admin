@@ -16,7 +16,8 @@ import {
     Phone,
     Calendar,
     Briefcase,
-    Loader2
+    Loader2,
+    ChevronDown
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Pagination from '../Common/Pagination';
@@ -28,14 +29,19 @@ import {
     useUpdateVendorMutation,
     useDeleteVendorMutation,
 } from '../../../../utils/slices/InventoryAndAsset/vendorApiSlice';
+import { useGetInventoryDashboardStatsQuery } from '../../../../utils/slices/InventoryAndAsset/dashboardApiSlice';
+import { INDIAN_LOCATIONS, STATES } from '../../../../utils/locations';
 
 export default function VendorManagement() {
     const router = useRouter();
     const [isMounted, setIsMounted] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
+    const [statusFilter, setStatusFilter] = useState('ALL');
     const [showAddModal, setShowAddModal] = useState(false);
     const [editingVendor, setEditingVendor] = useState(null);
     const [currentPage, setCurrentPage] = useState(1);
+    const [stateFilter, setStateFilter] = useState('');
+    const [cityFilter, setCityFilter] = useState('');
 
     // Confirmation Modals State
     const [confirmModal, setConfirmModal] = useState({
@@ -50,9 +56,16 @@ export default function VendorManagement() {
     // API Hooks
     const { data: vendorsData, isLoading, isError, error } = useGetVendorsQuery({
         page: currentPage,
-        limit: 12,
-        search: searchQuery
+        limit: 10,
+        search: searchQuery,
+        status: statusFilter !== 'ALL' ? statusFilter : undefined,
+        state: stateFilter || undefined,
+        city: cityFilter || undefined
     });
+
+    const { data: dashboardStats } = useGetInventoryDashboardStatsQuery();
+    const supplyStats = dashboardStats?.data?.supplyChain || { activeVendors: 0, newVendorsYearly: 0 };
+
     const [createVendor, { isLoading: isCreating }] = useCreateVendorMutation();
     const [updateVendor, { isLoading: isUpdating }] = useUpdateVendorMutation();
     const [deleteVendor, { isLoading: isDeleting }] = useDeleteVendorMutation();
@@ -62,7 +75,8 @@ export default function VendorManagement() {
         fullName: '',
         contactNumber: '',
         vendorGST: '',
-        location: '',
+        state: '',
+        city: '',
         fullAddress: '',
         status: 'ACTIVE'
     });
@@ -70,6 +84,10 @@ export default function VendorManagement() {
     useEffect(() => {
         setIsMounted(true);
     }, []);
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchQuery, statusFilter, stateFilter, cityFilter]);
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -92,6 +110,7 @@ export default function VendorManagement() {
                 return;
             }
 
+            console.log('Submitting Vendor Data:', formData);
             if (editingVendor) {
                 await updateVendor({
                     vendorId: editingVendor._id,
@@ -106,7 +125,8 @@ export default function VendorManagement() {
                 fullName: '',
                 contactNumber: '',
                 vendorGST: '',
-                location: '',
+                state: '',
+                city: '',
                 fullAddress: '',
                 status: 'ACTIVE'
             });
@@ -125,7 +145,8 @@ export default function VendorManagement() {
             fullName: vendor.fullName,
             contactNumber: vendor.contactNumber.toString(),
             vendorGST: vendor.vendorGST || '',
-            location: vendor.location || '',
+            state: vendor.state || '',
+            city: vendor.city || '',
             fullAddress: vendor.fullAddress,
             status: vendor.status
         });
@@ -167,7 +188,11 @@ export default function VendorManagement() {
 
     // Get vendors from API response
     const vendors = vendorsData?.data || [];
-    const meta = vendorsData?.meta || { totalPages: 1 };
+    const meta = vendorsData?.meta || { totalPages: 1, total: 0 };
+
+    // Extract unique values for filter dropdowns
+    const availableStates = [...new Set(vendors.map(v => v.state).filter(Boolean))].sort();
+    const availableCities = [...new Set(vendors.map(v => v.city).filter(Boolean))].sort();
 
     if (!isMounted) return null;
 
@@ -195,7 +220,8 @@ export default function VendorManagement() {
                                 fullName: '',
                                 contactNumber: '',
                                 vendorGST: '',
-                                location: '',
+                                state: '',
+                                city: '',
                                 fullAddress: '',
                                 status: 'ACTIVE'
                             });
@@ -210,23 +236,111 @@ export default function VendorManagement() {
             </header>
 
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                {/* Summary Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm transition-all hover:shadow-md">
+                        <div className="flex items-center gap-4 mb-2">
+                            <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+                                <Users size={20} />
+                            </div>
+                            <p className="text-sm font-bold text-gray-500 uppercase tracking-wider">Total Vendors</p>
+                        </div>
+                        <p className="text-3xl font-black text-gray-900">{meta.total}</p>
+                    </div>
+
+                    <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm transition-all hover:shadow-md">
+                        <div className="flex items-center gap-4 mb-2">
+                            <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                                <CheckCircle size={20} />
+                            </div>
+                            <p className="text-sm font-bold text-gray-500 uppercase tracking-wider">Active Vendors</p>
+                        </div>
+                        <p className="text-3xl font-black text-gray-900">{supplyStats.activeVendors}</p>
+                    </div>
+
+                    <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm transition-all hover:shadow-md">
+                        <div className="flex items-center gap-4 mb-2">
+                            <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
+                                <Calendar size={20} />
+                            </div>
+                            <p className="text-sm font-bold text-gray-500 uppercase tracking-wider">New This Year</p>
+                        </div>
+                        <p className="text-3xl font-black text-gray-900">{supplyStats.newVendorsYearly}</p>
+                    </div>
+                </div>
+
                 {/* Search & Filters */}
-                <div className="mb-8 relative max-w-md">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
-                    <input
-                        type="text"
-                        placeholder="Search by name, GST, or contact..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full pl-12 pr-4 py-3 bg-white border border-gray-200 rounded-2xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all shadow-sm"
-                    />
+                <div className="mb-8 flex flex-col xl:flex-row gap-4 items-center justify-between">
+                    <div className="flex flex-col lg:flex-row gap-4 w-full xl:w-auto flex-1">
+                        <div className="relative flex-1 max-w-md">
+                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+                            <input
+                                type="text"
+                                placeholder="Search by name, GST, or contact..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="w-full pl-12 pr-4 py-3 bg-white border border-gray-200 rounded-2xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all shadow-sm font-medium"
+                            />
+                        </div>
+
+                        <div className="flex flex-1 gap-4 max-w-2xl">
+                            <div className="relative flex-1">
+                                <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={18} />
+                                <select
+                                    value={stateFilter}
+                                    onChange={(e) => {
+                                        setStateFilter(e.target.value);
+                                        setCityFilter('');
+                                    }}
+                                    className="w-full pl-11 pr-10 py-3 bg-white border border-gray-200 rounded-2xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all shadow-sm font-medium appearance-none text-sm cursor-pointer"
+                                >
+                                    <option value="">All States</option>
+                                    {availableStates.map(state => (
+                                        <option key={state} value={state}>{state}</option>
+                                    ))}
+                                </select>
+                                <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
+                            </div>
+ 
+                            <div className="relative flex-1">
+                                <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={18} />
+                                <select
+                                    disabled={!stateFilter && availableCities.length === 0}
+                                    value={cityFilter}
+                                    onChange={(e) => setCityFilter(e.target.value)}
+                                    className="w-full pl-11 pr-10 py-3 bg-white border border-gray-200 rounded-2xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all shadow-sm font-medium appearance-none text-sm disabled:opacity-50 cursor-pointer"
+                                >
+                                    <option value="">All Cities</option>
+                                    {availableCities.map(city => (
+                                        <option key={city} value={city}>{city}</option>
+                                    ))}
+                                </select>
+                                <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="flex bg-white p-1 rounded-2xl border border-gray-200 shadow-sm shrink-0">
+                        {['ALL', 'ACTIVE', 'INACTIVE'].map((status) => (
+                            <button
+                                key={status}
+                                onClick={() => setStatusFilter(status)}
+                                className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${statusFilter === status
+                                    ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-200'
+                                    : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'
+                                    }`}
+                            >
+                                {status}
+                            </button>
+                        ))}
+                    </div>
                 </div>
 
                 {/* Loading State */}
                 {isLoading && (
                     <div className="text-center py-20">
                         <Loader2 className="animate-spin text-emerald-600 mx-auto mb-4" size={48} />
-                        <p className="text-gray-500">Loading vendors...</p>
+                        <p className="text-gray-500 font-medium">Loading vendors...</p>
                     </div>
                 )}
 
@@ -237,97 +351,93 @@ export default function VendorManagement() {
                             <X className="text-red-500" size={32} />
                         </div>
                         <h3 className="text-lg font-bold text-gray-900">Error Loading Vendors</h3>
-                        <p className="text-gray-500">{error?.data?.message || 'Something went wrong'}</p>
+                        <p className="text-gray-500 font-medium">{error?.data?.message || 'Something went wrong'}</p>
                     </div>
                 )}
 
-                {/* Vendors Grid */}
+                {/* Vendors List View */}
                 {!isLoading && !isError && (
-                    <>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            <AnimatePresence mode="popLayout">
-                                {vendors.map((vendor) => (
-                                    <motion.div
-                                        layout
-                                        initial={{ opacity: 0, scale: 0.9 }}
-                                        animate={{ opacity: 1, scale: 1 }}
-                                        exit={{ opacity: 0, scale: 0.9 }}
-                                        key={vendor._id}
-                                        className={`bg-white rounded-2xl border ${vendor.status === 'INACTIVE' ? 'border-gray-200 grayscale-[0.6] opacity-80' : 'border-gray-100 shadow-sm'} p-6 relative group transition-all hover:shadow-md`}
-                                    >
-                                        <div className="flex justify-between items-start mb-4">
-                                            <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${vendor.status === 'INACTIVE' ? 'bg-gray-100 text-gray-400' : 'bg-emerald-50 text-emerald-600'}`}>
-                                                <Briefcase size={24} />
-                                            </div>
-                                            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <button
-                                                    onClick={() => handleEdit(vendor)}
-                                                    className="p-2 hover:bg-emerald-50 text-emerald-600 rounded-lg transition-colors"
-                                                    title="Edit"
-                                                >
-                                                    <Edit2 size={16} />
-                                                </button>
-                                                <button
-                                                    onClick={() => toggleStatus(vendor)}
-                                                    className={`p-2 rounded-lg transition-colors ${vendor.status === 'ACTIVE' ? 'hover:bg-rose-50 text-rose-600' : 'hover:bg-emerald-50 text-emerald-600'}`}
-                                                    title={vendor.status === 'ACTIVE' ? 'Deactivate' : 'Activate'}
-                                                >
-                                                    {vendor.status === 'ACTIVE' ? <Ban size={16} /> : <CheckCircle size={16} />}
-                                                </button>
-                                            </div>
-                                        </div>
+                    <div className="bg-white border border-gray-200 rounded-3xl overflow-hidden shadow-sm">
+                        <div className="grid grid-cols-12 gap-4 border-b border-gray-100 bg-gray-50/50 p-4 text-xs font-bold text-gray-400 uppercase tracking-wider">
+                            <div className="col-span-4">Vendor Details</div>
+                            <div className="col-span-2">Contact</div>
+                            <div className="col-span-2">Location</div>
+                            <div className="col-span-2">Status</div>
+                            <div className="col-span-2 text-right">Actions</div>
+                        </div>
 
-                                        <h3 className="text-lg font-bold text-gray-900 mb-1">{vendor.fullName}</h3>
-                                        {vendor.vendorGST && (
-                                            <p className="text-xs font-bold text-emerald-600 mb-3 tracking-wider">{vendor.vendorGST}</p>
-                                        )}
-
-                                        <div className="space-y-3">
-                                            <div className="flex items-center gap-2 text-gray-500">
-                                                <Phone size={14} className="shrink-0" />
-                                                <p className="text-sm">{vendor.contactNumber}</p>
+                        <div className="divide-y divide-gray-100">
+                            {vendors.length === 0 ? (
+                                <div className="p-8 text-center text-gray-500">
+                                    {searchQuery ? 'No vendors match your search.' : 'No vendors found. Add your first vendor to see them here.'}
+                                </div>
+                            ) : (
+                                vendors.map(vendor => (
+                                    <div key={vendor._id} className="grid grid-cols-12 gap-4 p-4 items-center hover:bg-gray-50 transition-colors group">
+                                        <div className="col-span-4 flex items-center gap-3">
+                                            <div className="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                                                <Briefcase size={20} />
                                             </div>
-                                            {vendor.location && (
-                                                <div className="flex items-center gap-2 text-gray-500">
-                                                    <MapPin size={14} className="shrink-0" />
-                                                    <p className="text-sm truncate">{vendor.location}</p>
-                                                </div>
-                                            )}
-                                            <p className="text-xs text-gray-400 line-clamp-2 leading-relaxed">
-                                                {vendor.fullAddress}
-                                            </p>
-                                            <div className="flex items-center gap-2 text-gray-400 pt-2 border-t border-gray-100">
-                                                <Calendar size={12} className="shrink-0" />
-                                                <p className="text-xs">
-                                                    Joined {new Date(vendor.joinedAt).toLocaleDateString('en-IN', {
-                                                        day: 'numeric',
-                                                        month: 'short',
-                                                        year: 'numeric'
-                                                    })}
+                                            <div className="overflow-hidden">
+                                                <p className="font-bold text-gray-900 truncate">{vendor.fullName}</p>
+                                                <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">
+                                                    {vendor.vendorGST || 'No GST Record'}
                                                 </p>
                                             </div>
                                         </div>
 
-                                        {vendor.status === 'INACTIVE' && (
-                                            <div className="absolute top-4 right-4 text-[10px] font-bold bg-gray-100 text-gray-500 px-2 py-1 rounded uppercase tracking-widest">
-                                                Inactive
-                                            </div>
-                                        )}
-                                        {vendor.status === 'SUSPENDED' && (
-                                            <div className="absolute top-4 right-4 text-[10px] font-bold bg-red-100 text-red-600 px-2 py-1 rounded uppercase tracking-widest">
-                                                Suspended
-                                            </div>
-                                        )}
-                                    </motion.div>
-                                ))}
-                            </AnimatePresence>
+                                        <div className="col-span-2">
+                                            <p className="text-sm font-medium text-gray-900">{vendor.contactNumber}</p>
+                                            <p className="text-[10px] text-gray-400 font-medium">Verified Number</p>
+                                        </div>
+
+                                        <div className="col-span-2">
+                                            <p className="text-sm text-gray-900 font-bold truncate">{vendor.city || 'N/A'}</p>
+                                            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tight">{vendor.state || 'N/A'}</p>
+                                        </div>
+
+                                        <div className="col-span-2">
+                                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest ${vendor.status === 'ACTIVE' ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-100 text-gray-500'
+                                                }`}>
+                                                {vendor.status === 'ACTIVE' ? <CheckCircle size={10} /> : <Ban size={10} />}
+                                                {vendor.status}
+                                            </span>
+                                        </div>
+
+                                        <div className="col-span-2 flex items-center justify-end gap-1">
+                                            <button
+                                                onClick={() => handleEdit(vendor)}
+                                                className="p-2 hover:bg-emerald-50 text-emerald-600 rounded-lg transition-colors"
+                                                title="Edit Vendor"
+                                            >
+                                                <Edit2 size={16} />
+                                            </button>
+                                            <button
+                                                onClick={() => toggleStatus(vendor)}
+                                                className={`p-2 rounded-lg transition-colors ${vendor.status === 'ACTIVE' ? 'hover:bg-rose-50 text-rose-600' : 'hover:bg-emerald-50 text-emerald-600'}`}
+                                                title={vendor.status === 'ACTIVE' ? 'Deactivate' : 'Activate'}
+                                            >
+                                                {vendor.status === 'ACTIVE' ? <Ban size={16} /> : <CheckCircle size={16} />}
+                                            </button>
+                                            <button
+                                                onClick={() => handleDelete(vendor._id)}
+                                                disabled={isDeleting}
+                                                className="p-2 hover:bg-rose-50 text-gray-300 hover:text-rose-600 transition-colors"
+                                                title="Delete permanently"
+                                            >
+                                                <Trash2 size={16} />
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))
+                            )}
                         </div>
                         <Pagination
                             currentPage={currentPage}
                             totalPages={meta.totalPages}
                             onPageChange={(page) => setCurrentPage(page)}
                         />
-                    </>
+                    </div>
                 )}
 
                 {!isLoading && !isError && vendors.length === 0 && (
@@ -424,18 +534,45 @@ export default function VendorManagement() {
                                     </div>
                                 </div>
 
-                                <div>
-                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">
-                                        Location
-                                    </label>
-                                    <input
-                                        name="location"
-                                        value={formData.location}
-                                        onChange={handleInputChange}
-                                        type="text"
-                                        placeholder="e.g. Mumbai, Maharashtra"
-                                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all"
-                                    />
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">
+                                            State *
+                                        </label>
+                                        <select
+                                            required
+                                            name="state"
+                                            value={formData.state}
+                                            onChange={(e) => {
+                                                handleInputChange(e);
+                                                setFormData(prev => ({ ...prev, city: '' }));
+                                            }}
+                                            className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all appearance-none"
+                                        >
+                                            <option value="">Select State</option>
+                                            {STATES.map(state => (
+                                                <option key={state} value={state}>{state}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">
+                                            City *
+                                        </label>
+                                        <select
+                                            required
+                                            disabled={!formData.state}
+                                            name="city"
+                                            value={formData.city}
+                                            onChange={handleInputChange}
+                                            className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all appearance-none disabled:opacity-50"
+                                        >
+                                            <option value="">Select City</option>
+                                            {formData.state && INDIAN_LOCATIONS[formData.state].map(city => (
+                                                <option key={city} value={city}>{city}</option>
+                                            ))}
+                                        </select>
+                                    </div>
                                 </div>
 
                                 <div>

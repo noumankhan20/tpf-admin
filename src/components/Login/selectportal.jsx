@@ -215,7 +215,7 @@ export default function SelectPanel() {
         console.error('Failed to fetch module notification counts:', err);
       }
     };
-    
+    console.log("Allowed Modules:", allowedModules);
     fetchInitialCounts();
   }, [admin, adminModules]);
 
@@ -291,8 +291,9 @@ export default function SelectPanel() {
   const allowedModules = useMemo(() => {
     if (admin?.isSuperAdmin) return MODULES;
     return MODULES.filter((mod) =>
-      adminModules.includes(mod.id) ||
+      adminModules.includes(mod.name) ||
       (adminModules.includes("Admin Dashboard") && mod.category === "dashboard") ||
+      (adminModules.includes("TPF Management") && mod.category === "tpf-management") ||
       mod.id === "Internal Communication"
     );
   }, [adminModules, admin?.isSuperAdmin]);

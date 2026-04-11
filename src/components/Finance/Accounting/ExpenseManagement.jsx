@@ -19,7 +19,11 @@ import {
     Loader2,
     AlertCircle,
     CheckCircle2,
-    Clock
+    Clock,
+    Filter,
+    ChevronDown,
+    Banknote,
+    CreditCard
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-toastify';
@@ -45,11 +49,21 @@ export default function ExpenseManagement() {
     const [searchQuery, setSearchQuery] = useState('');
     const [showAddModal, setShowAddModal] = useState(false);
     const [selectedExpenseType, setSelectedExpenseType] = useState('ALL');
+    const [startDate, setStartDate] = useState('');
+    const [endDate, setEndDate] = useState('');
+    const [paymentMethodFilter, setPaymentMethodFilter] = useState('ALL');
+    const [minAmount, setMinAmount] = useState('');
+    const [maxAmount, setMaxAmount] = useState('');
 
     // API Hooks
     const { data: expensesResponse, isLoading, refetch } = useGetExpensesQuery({
-        type: selectedExpenseType,
-        search: searchQuery
+        type: selectedExpenseType !== 'ALL' ? selectedExpenseType : undefined,
+        search: searchQuery,
+        startDate: startDate || undefined,
+        endDate: endDate || undefined,
+        paymentMethod: paymentMethodFilter !== 'ALL' ? paymentMethodFilter : undefined,
+        minAmount: minAmount || undefined,
+        maxAmount: maxAmount || undefined
     });
     const { data: adminsResponse } = useGetAdminListQuery();
     const { data: campaignsResponse } = useGetCampaignListQuery();
@@ -98,6 +112,39 @@ export default function ExpenseManagement() {
     const vendors = vendorsResponse?.data || [];
     const agreements = agreementsResponse?.data || [];
 
+    // Extract unique values for dynamic filters
+    const availablePaymentMethods = [...new Set(expenses.map(e => e.paymentMethod).filter(Boolean))].sort();
+
+
+    // Local Filtering for robust UI behavior
+    const filteredExpenses = expenses.filter(expense => {
+        // Search
+        const searchStr = searchQuery.toLowerCase();
+        const matchesSearch = !searchQuery ||
+            expense.description?.toLowerCase().includes(searchStr) ||
+            expense.transactionId?.toLowerCase().includes(searchStr) ||
+            expense.amount?.toString().includes(searchStr);
+
+        // Expense Type
+        const matchesType = selectedExpenseType === 'ALL' || expense.expenseType === selectedExpenseType;
+
+        // Payment Method
+        const matchesPayment = paymentMethodFilter === 'ALL' || expense.paymentMethod === paymentMethodFilter;
+
+        // Date Range
+        const expDate = new Date(expense.date).setHours(0, 0, 0, 0);
+        const start = startDate ? new Date(startDate).setHours(0, 0, 0, 0) : null;
+        const end = endDate ? new Date(endDate).setHours(23, 59, 59, 999) : null;
+
+        const matchesStartDate = !start || expDate >= start;
+        const matchesEndDate = !end || expDate <= end;
+
+        // Amount Range
+        const matchesMinAmount = !minAmount || expense.amount >= parseFloat(minAmount);
+        const matchesMaxAmount = !maxAmount || expense.amount <= parseFloat(maxAmount);
+
+        return matchesSearch && matchesType && matchesPayment && matchesStartDate && matchesEndDate && matchesMinAmount && matchesMaxAmount;
+    });
 
     const expenseTypes = [
         { value: 'ALL', label: 'All Expenses', color: 'gray' },
@@ -196,6 +243,16 @@ export default function ExpenseManagement() {
         });
     };
 
+    const clearFilters = () => {
+        setSearchQuery('');
+        setSelectedExpenseType('ALL');
+        setStartDate('');
+        setEndDate('');
+        setPaymentMethodFilter('ALL');
+        setMinAmount('');
+        setMaxAmount('');
+    };
+
     const getExpenseTypeColor = (type) => {
         const typeInfo = expenseTypes.find(t => t.value === type);
         return typeInfo?.color || 'gray';
@@ -232,34 +289,106 @@ export default function ExpenseManagement() {
 
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 {/* Search & Filters */}
-                <div className="mb-8 flex flex-col sm:flex-row gap-4">
-                    <div className="relative flex-1 max-w-md">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
-                        <input
-                            type="text"
-                            placeholder="Search expenses..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full pl-12 pr-4 py-3 bg-white border border-gray-200 rounded-2xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all shadow-sm"
-                        />
-                    </div>
+                <div className="bg-white p-6 rounded-3xl border border-gray-200 shadow-sm mb-8 space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                        {/* Search */}
+                        <div className="relative">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                            <input
+                                type="text"
+                                placeholder="Search description, TXN ID..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-sm font-bold"
+                            />
+                        </div>
 
-                    <div className="flex gap-2 overflow-x-auto pb-2">
-                        {expenseTypes.map((type) => {
-                            const isSelected = selectedExpenseType === type.value;
-                            return (
-                                <button
-                                    key={type.value}
-                                    onClick={() => setSelectedExpenseType(type.value)}
-                                    className={`px-4 py-2 rounded-xl font-medium text-sm whitespace-nowrap transition-all ${isSelected
-                                        ? 'bg-emerald-600 text-white shadow-md'
-                                        : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
-                                        }`}
-                                >
-                                    {type.label}
-                                </button>
-                            );
-                        })}
+                        {/* Category Dropdown */}
+                        <div className="relative">
+                            <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={18} />
+                            <select
+                                value={selectedExpenseType}
+                                onChange={(e) => setSelectedExpenseType(e.target.value)}
+                                className="w-full pl-10 pr-10 py-2.5 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-sm font-bold appearance-none cursor-pointer"
+                            >
+                                {expenseTypes.map(type => (
+                                    <option key={type.value} value={type.value}>{type.label}</option>
+                                ))}
+                            </select>
+                            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
+                        </div>
+
+                        {/* Payment Method Dropdown */}
+                        <div className="relative">
+                            <Banknote className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={18} />
+                            <select
+                                value={paymentMethodFilter}
+                                onChange={(e) => setPaymentMethodFilter(e.target.value)}
+                                className="w-full pl-10 pr-10 py-2.5 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-sm font-bold appearance-none cursor-pointer"
+                            >
+                                <option value="ALL">All Payment Methods</option>
+                                {availablePaymentMethods.map(method => (
+                                    <option key={method} value={method}>{method}</option>
+                                ))}
+                            </select>
+                            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
+                        </div>
+
+                        {/* Date Range - Start */}
+                        <div className="relative">
+                            <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={18} />
+                            <input
+                                type="date"
+                                value={startDate}
+                                onChange={(e) => setStartDate(e.target.value)}
+                                className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-sm font-bold"
+                            />
+                        </div>
+
+                        {/* Date Range - End */}
+                        <div className="relative">
+                            <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={18} />
+                            <input
+                                type="date"
+                                value={endDate}
+                                onChange={(e) => setEndDate(e.target.value)}
+                                className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-sm font-bold"
+                                placeholder="End Date"
+                            />
+                        </div>
+
+                        {/* Amount Range */}
+                        <div className="flex gap-2">
+                            <div className="relative flex-1">
+                                <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
+                                <input
+                                    type="number"
+                                    placeholder="Min"
+                                    value={minAmount}
+                                    onChange={(e) => setMinAmount(e.target.value)}
+                                    className="w-full pl-8 pr-2 py-2.5 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-sm font-bold"
+                                />
+                            </div>
+                            <div className="relative flex-1">
+                                <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
+                                <input
+                                    type="number"
+                                    placeholder="Max"
+                                    value={maxAmount}
+                                    onChange={(e) => setMaxAmount(e.target.value)}
+                                    className="w-full pl-8 pr-2 py-2.5 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-sm font-bold"
+                                />
+                            </div>
+                        </div>
+
+                        {/* Clear Filters Button */}
+                        <button
+                            onClick={clearFilters}
+                            className="flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-100 text-gray-600 rounded-xl text-sm font-bold hover:bg-gray-200 transition-all"
+                        >
+                            <X size={16} />
+                            Clear Filters
+                        </button>
                     </div>
                 </div>
 
@@ -274,20 +403,25 @@ export default function ExpenseManagement() {
                 {/* Expenses List */}
                 {!isLoading && (
                     <div className="space-y-4">
-                        <h2 className="text-lg font-bold text-gray-800 mb-4">Recent Expenses</h2>
+                        <div className="flex items-center justify-between mb-4">
+                            <h2 className="text-lg font-bold text-gray-800">Recent Expenses</h2>
+                            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest bg-gray-100 px-3 py-1 rounded-full">
+                                {filteredExpenses.length} Results
+                            </p>
+                        </div>
                         <AnimatePresence>
-                            {expenses.length === 0 ? (
+                            {filteredExpenses.length === 0 ? (
                                 <div className="text-center py-20 bg-white rounded-3xl border border-dashed border-gray-200">
                                     <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-300">
                                         <TrendingDown size={32} />
                                     </div>
-                                    <h3 className="text-lg font-bold text-gray-900">No expenses recorded</h3>
-                                    <p className="text-gray-500">Record an expense to start tracking.</p>
+                                    <h3 className="text-lg font-bold text-gray-900">No results found</h3>
+                                    <p className="text-gray-500">Try adjusting your filters to find what you're looking for.</p>
                                 </div>
                             ) : (
-                                expenses.map((expense) => {
+                                filteredExpenses.map((expense) => {
                                     const typeColor = getExpenseTypeColor(expense.expenseType);
-
+ 
                                     return (
                                         <motion.div
                                             key={expense._id}
@@ -297,20 +431,20 @@ export default function ExpenseManagement() {
                                         >
                                             <div className="flex flex-col md:flex-row justify-between md:items-center mb-4">
                                                 <div className="flex items-center gap-4 mb-4 md:mb-0">
-                                                    <div className={`w-12 h-12 rounded-xl bg-${typeColor}-50 text-${typeColor}-600 flex items-center justify-center`}>
+                                                    <div className={`w-12 h-12 rounded-xl bg-gray-50 text-emerald-600 flex items-center justify-center`}>
                                                         <TrendingDown size={20} />
                                                     </div>
                                                     <div>
                                                         <div className="flex items-center gap-2 mb-1">
                                                             <h3 className="text-lg font-bold text-gray-900">{expense.description}</h3>
-                                                            <span className={`px-2.5 py-1 rounded-lg text-xs font-bold bg-${typeColor}-50 text-${typeColor}-700`}>
+                                                            <span className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest bg-emerald-50 text-emerald-700`}>
                                                                 {expense.expenseType}
                                                             </span>
                                                         </div>
                                                         <div className="flex flex-wrap gap-3 text-xs font-medium text-gray-500">
                                                             <span className="flex items-center gap-1">
                                                                 <Calendar size={12} />
-                                                                {new Date(expense.date).toLocaleDateString()}
+                                                                {new Date(expense.date || expense.transactionDate).toLocaleDateString()}
                                                             </span>
                                                             {expense.adminId && (
                                                                 <span className="flex items-center gap-1 text-blue-600">
@@ -337,7 +471,7 @@ export default function ExpenseManagement() {
                                                                 </span>
                                                             )}
                                                             <span className="flex items-center gap-1 text-gray-400">
-                                                                <Receipt size={12} />
+                                                                <Banknote size={12} />
                                                                 {expense.paymentMethod}
                                                             </span>
                                                         </div>
@@ -346,14 +480,14 @@ export default function ExpenseManagement() {
                                                 <div className="text-right">
                                                     <p className="text-2xl font-bold text-gray-900">₹{expense.amount.toLocaleString()}</p>
                                                     {expense.transactionId && (
-                                                        <p className="text-xs text-gray-400 mt-1">TXN: {expense.transactionId}</p>
+                                                        <p className="text-xs text-gray-400 mt-1 uppercase tracking-tighter">TXN: {expense.transactionId}</p>
                                                     )}
                                                 </div>
                                             </div>
                                             {expense.notes && (
-                                                <div className="bg-gray-50 rounded-xl p-4 mt-4">
-                                                    <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Notes</p>
-                                                    <p className="text-sm text-gray-600">{expense.notes}</p>
+                                                <div className="bg-gray-50 rounded-xl p-4 mt-4 border border-gray-100/50">
+                                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Notes</p>
+                                                    <p className="text-sm text-gray-600 italic">"{expense.notes}"</p>
                                                 </div>
                                             )}
                                         </motion.div>

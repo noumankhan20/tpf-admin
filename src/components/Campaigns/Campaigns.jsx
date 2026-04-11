@@ -1,8 +1,226 @@
 "use client"
 import React, { useState, useEffect } from 'react';
-import { AlertCircle, CheckCircle, FileText, MessageSquare, Users, TrendingUp, Clock, Shield, Receipt, Search, Filter, Eye, Trash2, Download, ChevronRight, ChevronDown, MoreVertical, Loader2, ArrowLeft, X, Menu, Edit, ExternalLink, User } from 'lucide-react';
+import { AlertCircle, CheckCircle, FileText, MessageSquare, Users, TrendingUp, Clock, Shield, Receipt, Search, Filter, Eye, Trash2, Download, ChevronRight, ChevronDown, MoreVertical, Loader2, ArrowLeft, X, Menu, Edit, ExternalLink, User, SlidersHorizontal, ChevronLeft } from 'lucide-react';
 import { useFetchCampaignsQuery, useFetchCampaignByIdQuery } from '@/utils/slices/campaignSlice';
 import { useRouter } from 'next/navigation';
+
+// ─────────────────────────────────────────────────────────
+// FILTER DRAWER
+// ─────────────────────────────────────────────────────────
+const CAMPAIGN_STATUSES = [
+  'DRAFT',
+  'ACTIVE',
+  'COMPLETED'
+];
+const CATEGORIES = ['Education', 'Health', 'Orphan', 'Masjid', 'Food', 'Disaster', 'Other'];
+const DEADLINE_OPTIONS = [
+  { label: 'All', value: '' },
+  { label: 'Active (not expired)', value: 'active' },
+  { label: 'Expired', value: 'expired' },
+];
+
+const EMPTY_FILTERS = {
+  campaignStatus: '',
+  category: '',
+  isUrgent: '',
+  zakatVerified: '',
+  taxBenefits: '',
+  deadline: '',
+  minAmount: '',
+  maxAmount: '',
+  minRaised: '',
+  maxRaised: '',
+  isActive:'',
+};
+const TogglePill = ({ val, active, onClick, label }) => (
+  <button
+    onClick={onClick}
+    className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${active
+      ? 'bg-emerald-500 border-emerald-500 text-white'
+      : 'bg-white border-gray-200 text-gray-500 hover:border-gray-300 hover:bg-gray-50'
+      }`}
+  >
+    {label || val || 'All'}
+  </button>
+);
+
+const Section = ({ title, children }) => (
+  <div className="space-y-2.5">
+    <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">{title}</p>
+    {children}
+  </div>
+);
+
+const FilterDrawer = ({ open, onClose, filters, onApply }) => {
+  const [local, setLocal] = useState(filters);
+  useEffect(() => { setLocal(filters); }, [filters]);
+
+  if (!open) return null;
+
+  const set = (key, val) => setLocal((p) => ({ ...p, [key]: val }));
+
+  const reset = () => {
+    setLocal(EMPTY_FILTERS);
+    onApply(EMPTY_FILTERS);
+    onClose();
+  };
+
+  const apply = () => { onApply(local); onClose(); };
+
+
+  return (
+    <div className="fixed inset-0 z-50 flex" onClick={onClose}>
+      <div className="flex-1 bg-black/30 backdrop-blur-sm" />
+      <div
+        className="w-full max-w-sm bg-white h-full shadow-2xl flex flex-col overflow-hidden"
+        style={{ borderLeft: '1px solid #e5e7eb' }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 flex-shrink-0">
+          <div className="flex items-center gap-2">
+            <SlidersHorizontal size={16} className="text-emerald-500" />
+            <h3 className="text-[15px] font-semibold text-gray-900">Filter Campaigns</h3>
+          </div>
+          <button onClick={onClose} className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-gray-100 text-gray-400">
+            <X size={15} />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6">
+
+          <Section title="Active Status">
+            <div className="flex flex-wrap gap-2">
+              {[
+                { val: '', label: 'All' },
+                { val: 'true', label: 'Active' },
+                { val: 'false', label: 'Inactive' },
+              ].map(({ val, label }) => (
+                <TogglePill key={val} val={val} label={label} active={local.isActive === val} onClick={() => set('isActive', val)} />
+              ))}
+            </div>
+          </Section>
+
+          <Section title="Campaign Status">
+            <div className="flex flex-wrap gap-2">
+              <TogglePill val="" label="All" active={local.campaignStatus === ''} onClick={() => set('campaignStatus', '')} />
+              {CAMPAIGN_STATUSES.map((s) => (
+                <TogglePill key={s} val={s} label={s.replace(/_/g, ' ')} active={local.campaignStatus === s} onClick={() => set('campaignStatus', s)} />
+              ))}
+            </div>
+          </Section>
+
+          <Section title="Category">
+            <div className="flex flex-wrap gap-2">
+              <TogglePill val="" label="All" active={local.category === ''} onClick={() => set('category', '')} />
+              {CATEGORIES.map((c) => (
+                <TogglePill key={c} val={c} label={c} active={local.category === c} onClick={() => set('category', c)} />
+              ))}
+            </div>
+          </Section>
+
+          <Section title="Deadline">
+            <div className="flex flex-wrap gap-2">
+              {DEADLINE_OPTIONS.map(({ value, label }) => (
+                <TogglePill key={value} val={value} label={label} active={local.deadline === value} onClick={() => set('deadline', value)} />
+              ))}
+            </div>
+          </Section>
+
+          <Section title="Flags">
+            <div className="grid grid-cols-1 gap-3">
+              {[
+                { key: 'isUrgent', label: 'Urgency' },
+                { key: 'zakatVerified', label: 'Zakat Verified' },
+                { key: 'taxBenefits', label: 'Tax Benefits (80G)' },
+              ].map(({ key, label }) => (
+                <div key={key}>
+                  <p className="text-[11px] text-gray-400 font-medium mb-1.5">{label}</p>
+                  <div className="flex gap-2">
+                    {[
+                      { val: '', label: 'All' },
+                      { val: 'true', label: 'Yes' },
+                      { val: 'false', label: 'No' },
+                    ].map(({ val, label: lbl }) => (
+                      <TogglePill key={val} val={val} label={lbl} active={local[key] === val} onClick={() => set(key, val)} />
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Section>
+
+          <Section title="Target Amount Range (₹)">
+            <div className="grid grid-cols-2 gap-3">
+              {[['minAmount', 'Min'], ['maxAmount', 'Max']].map(([k, lbl]) => (
+                <div key={k}>
+                  <label className="text-[11px] text-gray-400 font-medium mb-1 block">{lbl}</label>
+                  <input
+                    type="number"
+                    placeholder={lbl}
+                    value={local[k]}
+                    onChange={(e) => set(k, e.target.value)}
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/10 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  />
+                </div>
+              ))}
+            </div>
+          </Section>
+
+          <Section title="Raised Amount Range (₹)">
+            <div className="grid grid-cols-2 gap-3">
+              {[['minRaised', 'Min'], ['maxRaised', 'Max']].map(([k, lbl]) => (
+                <div key={k}>
+                  <label className="text-[11px] text-gray-400 font-medium mb-1 block">{lbl}</label>
+                  <input
+                    type="number"
+                    placeholder={lbl}
+                    value={local[k]}
+                    onChange={(e) => set(k, e.target.value)}
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/10 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  />
+                </div>
+              ))}
+            </div>
+          </Section>
+
+        </div>
+
+        {/* Footer */}
+        <div className="flex items-center gap-3 px-6 py-4 border-t border-gray-100 flex-shrink-0">
+          <button
+            onClick={reset}
+            className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+          >
+            Reset All
+          </button>
+          <button
+            onClick={apply}
+            className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white transition-colors"
+            style={{ background: 'linear-gradient(135deg, #10b981, #059669)' }}
+          >
+            Apply Filters
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Filter chip component
+const FilterChip = ({ label, onRemove }) => (
+  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-50 border border-emerald-200 text-emerald-700">
+    {label}
+    <button onClick={onRemove} className="hover:text-emerald-900 ml-0.5">
+      <X size={10} strokeWidth={2.5} />
+    </button>
+  </span>
+);
+
+// ─────────────────────────────────────────────────────────
+// MAIN COMPONENT
+// ─────────────────────────────────────────────────────────
 export default function CampaignAdminDashboard() {
   const [view, setView] = useState('list');
   const [selectedCampaignId, setSelectedCampaignId] = useState(null);
@@ -11,13 +229,31 @@ export default function CampaignAdminDashboard() {
   const [expandedRow, setExpandedRow] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [appliedFilters, setAppliedFilters] = useState(EMPTY_FILTERS);
   const limit = 50;
   const router = useRouter();
-  const { data: apiResponse, isLoading, isError, error, refetch, } = useFetchCampaignsQuery({
-    page: currentPage,
-    limit: limit,
-    search: debouncedSearch
-  });
+
+  // Build query params from applied filters
+  const queryParams = React.useMemo(() => {
+    const params = {
+      page: currentPage,
+      limit,
+      search: debouncedSearch,
+    };
+
+    Object.entries(appliedFilters).forEach(([k, v]) => {
+      if (v !== '') {
+        if (v === 'true') params[k] = 'true';
+        else if (v === 'false') params[k] = 'false';
+        else params[k] = v;
+      }
+    });
+
+    return params;
+  }, [currentPage, limit, debouncedSearch, appliedFilters]);
+
+  const { data: apiResponse, isLoading, isError, error, refetch } = useFetchCampaignsQuery(queryParams);
   const totalPages = apiResponse?.pagination?.totalPages || 1;
 
   const {
@@ -28,25 +264,24 @@ export default function CampaignAdminDashboard() {
     skip: !selectedCampaignId,
   });
 
-
   const campaigns = apiResponse?.campaigns || [];
 
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric'
-    });
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
 
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(searchQuery);
+      setCurrentPage(1);
     }, 600);
     return () => clearTimeout(timer);
   }, [searchQuery]);
+
+  // Reset page on filter change
+  useEffect(() => { setCurrentPage(1); }, [appliedFilters]);
 
   const getProgressPercentage = (raised, goal) => {
     if (!goal || goal === 0) return 0;
@@ -55,16 +290,49 @@ export default function CampaignAdminDashboard() {
 
   const getStatusColor = (status) => {
     const colors = {
-      'FORM_VERIFIED': 'bg-blue-100 text-blue-800 border-blue-200',
-      'FORM_SUBMITTED': 'bg-purple-100 text-purple-800 border-purple-200',
-      'APPROVED': 'bg-emerald-100 text-emerald-800 border-emerald-200',
-      'UNDER_REVIEW': 'bg-yellow-100 text-yellow-800 border-yellow-200',
-      'PENDING_DOCS': 'bg-orange-100 text-orange-800 border-orange-200',
-      'REJECTED': 'bg-red-100 text-red-800 border-red-200'
+      ACTIVE: 'bg-emerald-100 text-emerald-800 border-emerald-200',
+      COMPLETED: 'bg-blue-100 text-blue-800 border-blue-200',
+      DRAFT: 'bg-gray-100 text-gray-800 border-gray-200',
     };
     return colors[status] || 'bg-gray-100 text-gray-800 border-gray-200';
   };
 
+  // Active filter chips for display
+  const activeChips = React.useMemo(() => {
+    const chips = [];
+    const labels = {
+      isActive: (v) => `Status: ${v === 'true' ? 'Active' : 'Inactive'}`,
+      campaignStatus: (v) => `Campaign: ${v.replace(/_/g, ' ')}`,
+      category: (v) => `Category: ${v}`,
+      isUrgent: (v) => `Urgent: ${v === 'true' ? 'Yes' : 'No'}`,
+      zakatVerified: (v) => `Zakat: ${v === 'true' ? 'Yes' : 'No'}`,
+      taxBenefits: (v) => `80G: ${v === 'true' ? 'Yes' : 'No'}`,
+      deadline: (v) => `Deadline: ${v === 'active' ? 'Active' : 'Expired'}`,
+    };
+    Object.entries(labels).forEach(([k, fn]) => {
+      if (appliedFilters[k] !== '') chips.push({ key: k, label: fn(appliedFilters[k]) });
+    });
+    if (appliedFilters.minAmount || appliedFilters.maxAmount) {
+      chips.push({ key: 'targetAmount', label: `Target: ₹${appliedFilters.minAmount || '0'} – ₹${appliedFilters.maxAmount || '∞'}` });
+    }
+    if (appliedFilters.minRaised || appliedFilters.maxRaised) {
+      chips.push({ key: 'raisedAmount', label: `Raised: ₹${appliedFilters.minRaised || '0'} – ₹${appliedFilters.maxRaised || '∞'}` });
+    }
+    return chips;
+  }, [appliedFilters]);
+
+  const removeChip = (key) => {
+    if (key === 'targetAmount') setAppliedFilters((p) => ({ ...p, minAmount: '', maxAmount: '' }));
+    else if (key === 'raisedAmount') setAppliedFilters((p) => ({ ...p, minRaised: '', maxRaised: '' }));
+    else setAppliedFilters((p) => ({ ...p, [key]: '' }));
+  };
+
+  const applyFilters = (f) => {
+    setAppliedFilters(f);
+    setCurrentPage(1);
+  };
+
+  // Client-side active/inactive filter (kept for the tab buttons at top)
   const filteredCampaigns = campaigns.filter(campaign => {
     if (filterStatus === 'active') return campaign.isActive;
     if (filterStatus === 'inactive') return !campaign.isActive;
@@ -79,6 +347,7 @@ export default function CampaignAdminDashboard() {
   const totalRaised = apiResponse?.totalRaised || 0;
   const totalNetRaised = apiResponse?.netRaised || 0;
   const totalExpenses = apiResponse?.totalExpenses || 0;
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50 flex items-center justify-center p-4">
@@ -128,7 +397,6 @@ export default function CampaignAdminDashboard() {
     }
 
     const campaign = campaignDetailResponse.campaign;
-
     const progressPercentage = getProgressPercentage(campaign.netRaisedAmount || 0, campaign.targetAmount || 0);
 
     return (
@@ -136,10 +404,7 @@ export default function CampaignAdminDashboard() {
         <div className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-10">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
             <button
-              onClick={() => {
-                setView('list');
-                setSelectedCampaignId(null);
-              }}
+              onClick={() => { setView('list'); setSelectedCampaignId(null); }}
               className="flex items-center cursor-pointer gap-2 text-sm font-medium text-gray-600 hover:text-emerald-600 mb-4 transition-colors group"
             >
               <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
@@ -158,15 +423,9 @@ export default function CampaignAdminDashboard() {
                   </p>
                 )}
               </div>
-
               <div className="flex flex-wrap gap-2">
-                <span
-                  className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border ${getStatusColor(campaign.campaignStatus)}`}
-                >
+                <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border ${getStatusColor(campaign.campaignStatus)}`}>
                   {campaign.campaignStatus?.replace(/_/g, ' ')}
-                </span>
-                <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold border ${getStatusColor(campaign.workflowStatus)}`}>
-                  {campaign.workflowStatus?.replace(/_/g, ' ') || 'Unknown'}
                 </span>
               </div>
             </div>
@@ -181,31 +440,25 @@ export default function CampaignAdminDashboard() {
                   <TrendingUp className="w-5 h-5 text-emerald-600" />
                   Fundraising Progress
                 </h2>
-
                 <div className="space-y-5">
                   <div className="flex items-baseline justify-between flex-wrap gap-4">
                     <div>
                       <p className="text-3xl sm:text-4xl font-bold text-emerald-600">
                         ₹{(campaign.netRaisedAmount || 0).toLocaleString('en-IN')}
                       </p>
-                      <p className="text-sm text-gray-500 mt-2">
-                        raised of ₹{(campaign.targetAmount || 0).toLocaleString('en-IN')} goal
-                      </p>
+                      <p className="text-sm text-gray-500 mt-2">raised of ₹{(campaign.targetAmount || 0).toLocaleString('en-IN')} goal</p>
                     </div>
-
                     <div className="text-right">
                       <p className="text-3xl sm:text-4xl font-bold text-gray-900">{progressPercentage.toFixed(0)}%</p>
                       <p className="text-sm text-gray-500 mt-2">funded</p>
                     </div>
                   </div>
-
                   <div className="relative w-full h-4 bg-gray-100 rounded-full overflow-hidden shadow-inner">
                     <div
                       className="absolute top-0 left-0 h-full bg-gradient-to-r from-emerald-500 via-emerald-600 to-emerald-500 transition-all duration-700 rounded-full shadow-sm"
                       style={{ width: `${Math.min(progressPercentage, 100)}%` }}
                     />
                   </div>
-
                   <div className="flex items-center justify-between pt-2 flex-wrap gap-3">
                     <div className="flex items-center gap-2">
                       <Users className="w-5 h-5 text-gray-400" />
@@ -217,16 +470,14 @@ export default function CampaignAdminDashboard() {
                       <div className="flex items-center gap-1.5">
                         <span className="text-gray-400">•</span>
                         <span className="text-sm font-semibold text-red-600">
-                          Tip from this Campaign ₹{campaign.totalTips.toLocaleString("en-IN")}
+                          Tip from this Campaign ₹{campaign.totalTips.toLocaleString('en-IN')}
                         </span>
                       </div>
                     )}
                     {campaign.deadline && (
                       <div className="flex items-center gap-2">
                         <Clock className="w-5 h-5 text-gray-400" />
-                        <span className="text-sm font-medium text-gray-700">
-                          Ends {formatDate(campaign.deadline)}
-                        </span>
+                        <span className="text-sm font-medium text-gray-700">Ends {formatDate(campaign.deadline)}</span>
                       </div>
                     )}
                   </div>
@@ -236,11 +487,7 @@ export default function CampaignAdminDashboard() {
               {campaign.about && (
                 <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 sm:p-8 hover:shadow-md transition-shadow">
                   <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-4">About This Campaign</h2>
-                  <div className="prose prose-sm sm:prose max-w-none">
-                    <p className="text-sm sm:text-base text-gray-700 leading-relaxed whitespace-pre-line">
-                      {campaign.about}
-                    </p>
-                  </div>
+                  <p className="text-sm sm:text-base text-gray-700 leading-relaxed whitespace-pre-line">{campaign.about}</p>
                 </div>
               )}
 
@@ -249,9 +496,7 @@ export default function CampaignAdminDashboard() {
                   <div className="flex items-start justify-between">
                     <div>
                       <p className="text-xs sm:text-sm font-medium text-gray-500 mb-1">Tax Benefits</p>
-                      <p className="text-base sm:text-lg font-bold text-gray-900">
-                        {campaign.taxBenefits ? '80G Available' : 'Not Available'}
-                      </p>
+                      <p className="text-base sm:text-lg font-bold text-gray-900">{campaign.taxBenefits ? '80G Available' : 'Not Available'}</p>
                     </div>
                     <div className={`p-3 rounded-xl ${campaign.taxBenefits ? 'bg-emerald-100' : 'bg-gray-100'}`}>
                       <Receipt className={`w-5 h-5 ${campaign.taxBenefits ? 'text-emerald-600' : 'text-gray-400'}`} />
@@ -263,9 +508,7 @@ export default function CampaignAdminDashboard() {
                   <div className="flex items-start justify-between">
                     <div>
                       <p className="text-xs sm:text-sm font-medium text-gray-500 mb-1">Zakat Verified</p>
-                      <p className="text-base sm:text-lg font-bold text-gray-900">
-                        {campaign.zakatVerified ? 'Verified' : 'Not Verified'}
-                      </p>
+                      <p className="text-base sm:text-lg font-bold text-gray-900">{campaign.zakatVerified ? 'Verified' : 'Not Verified'}</p>
                     </div>
                     <div className={`p-3 rounded-xl ${campaign.zakatVerified ? 'bg-emerald-100' : 'bg-gray-100'}`}>
                       <Shield className={`w-5 h-5 ${campaign.zakatVerified ? 'text-emerald-600' : 'text-gray-400'}`} />
@@ -277,9 +520,7 @@ export default function CampaignAdminDashboard() {
                   <div className="flex items-start justify-between">
                     <div>
                       <p className="text-xs sm:text-sm font-medium text-gray-500 mb-1">Last Updated</p>
-                      <p className="text-sm sm:text-base font-bold text-gray-900">
-                        {formatDate(campaign.updatedAt)}
-                      </p>
+                      <p className="text-sm sm:text-base font-bold text-gray-900">{formatDate(campaign.updatedAt)}</p>
                     </div>
                     <div className="p-3 rounded-xl bg-gray-100">
                       <Clock className="w-5 h-5 text-gray-400" />
@@ -293,7 +534,6 @@ export default function CampaignAdminDashboard() {
                   <h2 className="text-lg sm:text-xl font-bold text-gray-900">Impact Goals</h2>
                   <TrendingUp className="w-5 h-5 text-emerald-600" />
                 </div>
-
                 {!campaign.impactGoals || campaign.impactGoals.length === 0 ? (
                   <div className="text-center py-12">
                     <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gray-100 mb-4">
@@ -305,9 +545,7 @@ export default function CampaignAdminDashboard() {
                   <div className="space-y-3">
                     {campaign.impactGoals.map((goal, index) => (
                       <div key={index} className="flex gap-3 p-4 bg-gradient-to-r from-emerald-50 to-transparent rounded-xl border border-emerald-100 hover:border-emerald-200 transition-colors">
-                        <div className="flex-shrink-0 w-6 h-6 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center text-xs font-bold">
-                          {index + 1}
-                        </div>
+                        <div className="flex-shrink-0 w-6 h-6 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center text-xs font-bold">{index + 1}</div>
                         <p className="text-sm text-gray-900 flex-1">{goal}</p>
                       </div>
                     ))}
@@ -317,12 +555,9 @@ export default function CampaignAdminDashboard() {
 
               <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 sm:p-8 hover:shadow-md transition-shadow">
                 <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-lg sm:text-xl font-bold text-gray-900">
-                    Donor Messages ({campaign.donorMessages?.length || 0})
-                  </h2>
+                  <h2 className="text-lg sm:text-xl font-bold text-gray-900">Donor Messages ({campaign.donorMessages?.length || 0})</h2>
                   <MessageSquare className="w-5 h-5 text-gray-400" />
                 </div>
-
                 {!campaign.donorMessages || campaign.donorMessages.length === 0 ? (
                   <div className="text-center py-12">
                     <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gray-100 mb-4">
@@ -333,21 +568,14 @@ export default function CampaignAdminDashboard() {
                 ) : (
                   <div className="space-y-3">
                     {campaign.donorMessages.map((msg, index) => (
-                      <div
-                        key={index}
-                        className="p-4 bg-gray-50 rounded-xl border border-gray-100 hover:border-gray-200 transition-colors"
-                      >
+                      <div key={index} className="p-4 bg-gray-50 rounded-xl border border-gray-100 hover:border-gray-200 transition-colors">
                         <div className="flex items-center gap-2 mb-1">
                           <User className="w-4 h-4 text-gray-400" />
-                          <span className="text-xs font-semibold text-gray-600">
-                            {msg.userName || "Anonymous"}
-                          </span>
+                          <span className="text-xs font-semibold text-gray-600">{msg.userName || 'Anonymous'}</span>
                         </div>
-
                         <p className="text-sm text-gray-900">{msg.message}</p>
                       </div>
                     ))}
-
                   </div>
                 )}
               </div>
@@ -364,11 +592,8 @@ export default function CampaignAdminDashboard() {
               <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5 sm:p-6 hover:shadow-md transition-shadow">
                 <h3 className="text-sm font-bold text-gray-900 mb-4 flex items-center justify-between">
                   <span>Documents</span>
-                  <span className="text-xs font-semibold px-2.5 py-1 bg-gray-100 text-gray-600 rounded-full">
-                    {campaign.documents?.length || 0}
-                  </span>
+                  <span className="text-xs font-semibold px-2.5 py-1 bg-gray-100 text-gray-600 rounded-full">{campaign.documents?.length || 0}</span>
                 </h3>
-
                 {!campaign.documents || campaign.documents.length === 0 ? (
                   <div className="text-center py-8">
                     <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-gray-100 mb-3">
@@ -384,16 +609,9 @@ export default function CampaignAdminDashboard() {
                           <div className="flex-shrink-0 w-8 h-8 bg-white rounded-lg flex items-center justify-center shadow-sm">
                             <FileText className="w-4 h-4 text-emerald-600" />
                           </div>
-                          <span className="text-sm text-gray-900 truncate font-medium">
-                            {doc.name || doc}
-                          </span>
+                          <span className="text-sm text-gray-900 truncate font-medium">{doc.name || doc}</span>
                         </div>
-                        <a
-                          href={doc.fileUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          download
-                        >
+                        <a href={doc.fileUrl} target="_blank" rel="noopener noreferrer" download>
                           <Download className="w-4 h-4 text-gray-400 group-hover:text-emerald-600 flex-shrink-0 cursor-pointer transition-colors" />
                         </a>
                       </div>
@@ -401,92 +619,53 @@ export default function CampaignAdminDashboard() {
                   </div>
                 )}
               </div>
-              {/* Donation Type Breakdown */}
+
               {campaign.donationSummary && campaign.donationSummary.length > 0 && (
                 <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5 sm:p-6 hover:shadow-md transition-shadow">
                   <h3 className="text-sm font-bold text-gray-900 mb-4 flex items-center justify-between">
                     <span>Donation Breakdown</span>
-                    <span className="text-xs font-semibold px-2.5 py-1 bg-emerald-50 text-emerald-700 rounded-full">
-                      {campaign.donationSummary.length} types
-                    </span>
+                    <span className="text-xs font-semibold px-2.5 py-1 bg-emerald-50 text-emerald-700 rounded-full">{campaign.donationSummary.length} types</span>
                   </h3>
-
                   <div className="space-y-3">
                     {campaign.donationSummary.map((item, index) => (
-                      <div
-                        key={index}
-                        className="flex items-center justify-between p-4 rounded-xl border border-gray-100 bg-gradient-to-r from-gray-50 to-white hover:border-emerald-200 transition-all"
-                      >
-                        {/* Left */}
+                      <div key={index} className="flex items-center justify-between p-4 rounded-xl border border-gray-100 bg-gradient-to-r from-gray-50 to-white hover:border-emerald-200 transition-all">
                         <div>
-                          <p className="text-xs uppercase tracking-wide text-gray-500 font-semibold">
-                            {item.donationType}
-                          </p>
-                          <p className="text-sm text-gray-600 mt-1">
-                            {item.count} donation{item.count > 1 ? "s" : ""}
-                          </p>
+                          <p className="text-xs uppercase tracking-wide text-gray-500 font-semibold">{item.donationType}</p>
+                          <p className="text-sm text-gray-600 mt-1">{item.count} donation{item.count > 1 ? 's' : ''}</p>
                         </div>
-
-                        {/* Right */}
                         <div className="text-right">
-                          <p className="text-lg font-bold text-gray-900">
-                            ₹{item.totalAmount.toLocaleString("en-IN")}
-                          </p>
+                          <p className="text-lg font-bold text-gray-900">₹{item.totalAmount.toLocaleString('en-IN')}</p>
                         </div>
                       </div>
                     ))}
                   </div>
                 </div>
               )}
-              {/* Campaign Expenses */}
+
               <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5 sm:p-6 hover:shadow-md transition-shadow">
                 <h3 className="text-sm font-bold text-gray-900 mb-4 flex items-center justify-between">
                   <span>Campaign Expenses</span>
-                  <span className="text-xs font-semibold px-2.5 py-1 bg-red-50 text-red-700 rounded-full">
-                    {campaign.campaignExpenses?.length || 0} entries
-                  </span>
+                  <span className="text-xs font-semibold px-2.5 py-1 bg-red-50 text-red-700 rounded-full">{campaign.campaignExpenses?.length || 0} entries</span>
                 </h3>
-
                 {!campaign.campaignExpenses || campaign.campaignExpenses.length === 0 ? (
                   <div className="text-center py-8">
                     <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-gray-100 mb-3">
                       <Receipt className="w-6 h-6 text-gray-400" />
                     </div>
-                    <p className="text-xs text-gray-500 font-medium">
-                      No expenses recorded yet
-                    </p>
+                    <p className="text-xs text-gray-500 font-medium">No expenses recorded yet</p>
                   </div>
                 ) : (
                   <div className="space-y-3">
                     {campaign.campaignExpenses.map((expense, index) => (
-                      <div
-                        key={index}
-                        className="flex items-center justify-between p-4 rounded-xl border border-gray-100 bg-gradient-to-r from-red-50 to-white hover:border-red-200 transition-all"
-                      >
-                        {/* Left */}
+                      <div key={index} className="flex items-center justify-between p-4 rounded-xl border border-gray-100 bg-gradient-to-r from-red-50 to-white hover:border-red-200 transition-all">
                         <div>
-                          <p className="text-sm font-semibold text-gray-900">
-                            {expense.title || "Expense"}
-                          </p>
-                          {expense.date && (
-                            <p className="text-xs text-gray-500 mt-1">
-                              {formatDate(expense.date)}
-                            </p>
-                          )}
+                          <p className="text-sm font-semibold text-gray-900">{expense.title || 'Expense'}</p>
+                          {expense.date && <p className="text-xs text-gray-500 mt-1">{formatDate(expense.date)}</p>}
                         </div>
-
-                        {/* Right */}
                         <div className="text-right">
-                          <p className="text-lg font-bold text-red-600">
-                            ₹{(expense.amount || 0).toLocaleString("en-IN")}
-                          </p>
-
+                          <p className="text-lg font-bold text-red-600">₹{(expense.amount || 0).toLocaleString('en-IN')}</p>
                           {expense.proofUrl && (
-                            <a
-                              href={expense.proofUrl}
-                              target="_blank"
-                              className="text-xs text-emerald-600 hover:underline flex items-center justify-end gap-1 mt-1"
-                            >
+                            <a href={expense.proofUrl} target="_blank" className="text-xs text-emerald-600 hover:underline flex items-center justify-end gap-1 mt-1">
                               View Proof <ExternalLink className="w-3 h-3" />
                             </a>
                           )}
@@ -496,8 +675,6 @@ export default function CampaignAdminDashboard() {
                   </div>
                 )}
               </div>
-
-
             </div>
           </div>
         </div>
@@ -510,7 +687,6 @@ export default function CampaignAdminDashboard() {
       <div className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
           <div className="relative flex items-center justify-between flex-wrap gap-4">
-            {/* Back Button (Left) */}
             <button
               onClick={() => router.push('/select-portal?category=work')}
               className="flex items-center cursor-pointer gap-2 px-4 py-2 rounded-xl text-sm font-medium text-gray-600 hover:text-gray-800 hover:bg-white transition-all border border-gray-300 shadow-sm"
@@ -519,17 +695,11 @@ export default function CampaignAdminDashboard() {
               Back
             </button>
 
-            {/* Center Heading */}
             <div className="absolute left-1/2 -translate-x-1/2 text-center">
-              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-1">
-                Campaign Management
-              </h1>
-              <p className="text-sm sm:text-base text-gray-500">
-                Manage and track all donation campaigns
-              </p>
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-1">Campaign Management</h1>
+              <p className="text-sm sm:text-base text-gray-500">Manage and track all donation campaigns</p>
             </div>
 
-            {/* Refresh Button (Right) */}
             <button
               onClick={refetch}
               className="px-4 sm:px-6 py-2.5 sm:py-3 cursor-pointer bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-xl transition-all duration-200 shadow-sm hover:shadow-md flex items-center gap-2 transform hover:-translate-y-0.5"
@@ -538,63 +708,106 @@ export default function CampaignAdminDashboard() {
               <span className="hidden sm:inline">Refresh</span>
             </button>
           </div>
-
         </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+
+        {/* Stats */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4 mb-6 sm:mb-8">
           <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-200 p-4 sm:p-6 hover:shadow-md transition-all transform hover:-translate-y-1">
             <p className="text-xs sm:text-sm font-medium text-gray-500 mb-1 sm:mb-2">Total</p>
             <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">{totalCampaigns}</p>
           </div>
-
           <div className="bg-gradient-to-br from-emerald-50 to-white rounded-xl sm:rounded-2xl shadow-sm border border-emerald-200 p-4 sm:p-6 hover:shadow-md transition-all transform hover:-translate-y-1">
             <p className="text-xs sm:text-sm font-medium text-emerald-600 mb-1 sm:mb-2">Active</p>
             <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-emerald-600">{activeCampaigns}</p>
           </div>
-
           <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-200 p-4 sm:p-6 hover:shadow-md transition-all transform hover:-translate-y-1">
             <p className="text-xs sm:text-sm font-medium text-gray-500 mb-1 sm:mb-2">Inactive</p>
             <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">{inactiveCampaigns}</p>
           </div>
-
           <div className="bg-gradient-to-br from-red-50 to-white rounded-xl sm:rounded-2xl shadow-sm border border-red-200 p-4 sm:p-6 hover:shadow-md transition-all transform hover:-translate-y-1">
             <p className="text-xs sm:text-sm font-medium text-red-600 mb-1 sm:mb-2">Total Tip</p>
             <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-red-600">₹{overallTotalTips.toLocaleString('en-IN')}</p>
           </div>
-
           <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-200 p-4 sm:p-6 hover:shadow-md transition-all transform hover:-translate-y-1">
             <p className="text-xs sm:text-sm font-medium text-gray-500 mb-1 sm:mb-2">Raised</p>
-            <p className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 break-words leading-tight">
-              ₹{Math.round(totalNetRaised).toLocaleString('en-IN')}
-            </p>
+            <p className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 break-words leading-tight">₹{Math.round(totalNetRaised).toLocaleString('en-IN')}</p>
           </div>
-
           <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-200 p-4 sm:p-6 hover:shadow-md transition-all transform hover:-translate-y-1">
             <p className="text-xs sm:text-sm font-medium text-gray-500 mb-1 sm:mb-2">Donors</p>
             <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">{totalDonors}</p>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-200 p-4 sm:p-6 mb-6 hover:shadow-md transition-shadow">
-          <div className="flex flex-col gap-4">
-            <div className="relative">
-              <Search className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
-              <input
-                type="text"
-                placeholder="Search by name, title or ID..."
-                value={searchQuery}
-                onChange={(e) => {
-                  setSearchQuery(e.target.value);
-                  setCurrentPage(1); // ← reset to page 1 on search
-                }}
-                className="w-full pl-10 sm:pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm"
-              />
+        {/* ── Search + Filter Toolbar ── */}
+        <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-200 p-4 sm:p-5 mb-6 hover:shadow-md transition-shadow">
+          <div className="flex flex-col gap-3">
+            <div className="flex gap-2">
+              {/* Search */}
+              <div className="relative flex-1">
+                <Search className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                <input
+                  type="text"
+                  placeholder="Search by name, title or ID..."
+                  value={searchQuery}
+                  onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
+                  className="w-full pl-10 sm:pl-12 pr-10 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 text-sm transition-all"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-300 hover:text-gray-500"
+                  >
+                    <X size={13} />
+                  </button>
+                )}
+              </div>
+
+              {/* Filter button */}
+              <button
+                onClick={() => setFilterOpen(true)}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold border transition-all flex-shrink-0"
+                style={activeChips.length > 0
+                  ? { background: '#ecfdf5', borderColor: '#6ee7b7', color: '#059669' }
+                  : { background: 'white', borderColor: '#e5e7eb', color: '#374151' }}
+              >
+                <SlidersHorizontal size={14} />
+                <span className="hidden sm:inline">Filters</span>
+                {activeChips.length > 0 && (
+                  <span className="w-5 h-5 rounded-full bg-emerald-500 text-white text-[10px] font-bold flex items-center justify-center">
+                    {activeChips.length}
+                  </span>
+                )}
+              </button>
             </div>
+
+            {/* Active filter chips */}
+            {activeChips.length > 0 && (
+              <div className="flex flex-wrap gap-2 pt-2 border-t border-gray-100">
+                {activeChips.map((c) => (
+                  <FilterChip key={c.key} label={c.label} onRemove={() => removeChip(c.key)} />
+                ))}
+                <button
+                  onClick={() => setAppliedFilters(EMPTY_FILTERS)}
+                  className="text-xs text-gray-400 hover:text-gray-600 underline"
+                >
+                  Clear all
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
+        {/* Count row */}
+        <div className="flex items-center justify-between mb-3 px-1">
+          <p className="text-xs text-gray-400">
+            Showing {filteredCampaigns.length} of {apiResponse?.pagination?.totalCount || campaigns.length} campaigns
+          </p>
+        </div>
+
+        {/* ── Desktop Table ── */}
         <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
           <div className="hidden lg:block overflow-x-auto">
             <table className="w-full">
@@ -612,32 +825,21 @@ export default function CampaignAdminDashboard() {
               <tbody className="divide-y divide-gray-200">
                 {filteredCampaigns.map((campaign) => {
                   const progress = getProgressPercentage(campaign.netRaisedAmount || 0, campaign.targetAmount || 0);
-
                   return (
                     <tr key={campaign._id} className="hover:bg-gray-50 transition-colors">
                       <td className="px-6 py-4">
                         <div>
-                          <p className="text-sm font-semibold text-gray-900">
-                            {campaign.title || campaign.beneficiaryName || 'Untitled Campaign'}
-                          </p>
+                          <p className="text-sm font-semibold text-gray-900">{campaign.title || campaign.beneficiaryName || 'Untitled Campaign'}</p>
                           {campaign.title && campaign.beneficiaryName && (
                             <p className="text-xs text-gray-500 mt-0.5">{campaign.beneficiaryName}</p>
                           )}
                         </div>
                       </td>
-
                       <td className="px-6 py-4">
-                        <div className="flex flex-wrap gap-1.5">
-                          <span
-                            className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border ${getStatusColor(campaign.campaignStatus)}`}
-                          >
-                            {/* {campaign.campaignStatus?.replace(/_/g, ' ')}
-                             */}
-                            {campaign.isActive ? 'Active' : 'Inactive'}
-                          </span>
-                        </div>
+                        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border ${getStatusColor(campaign.campaignStatus)}`}>
+                          {campaign.isActive ? 'Active' : 'Inactive'}
+                        </span>
                       </td>
-
                       <td className="px-6 py-4">
                         <div className="w-full max-w-xs">
                           <div className="flex items-center justify-between text-xs text-gray-600 mb-1.5">
@@ -651,33 +853,22 @@ export default function CampaignAdminDashboard() {
                           </div>
                         </div>
                       </td>
-
                       <td className="px-6 py-4">
                         <div>
-                          <p className="text-sm font-bold text-gray-900">
-                            ₹{(campaign.netRaisedAmount || 0).toLocaleString('en-IN')}
-                          </p>
-                          <p className="text-xs text-gray-500 mt-0.5">
-                            of ₹{(campaign.targetAmount || 0).toLocaleString('en-IN')}
-                          </p>
+                          <p className="text-sm font-bold text-gray-900">₹{(campaign.netRaisedAmount || 0).toLocaleString('en-IN')}</p>
+                          <p className="text-xs text-gray-500 mt-0.5">of ₹{(campaign.targetAmount || 0).toLocaleString('en-IN')}</p>
                         </div>
                       </td>
-
                       <td className="px-6 py-4">
                         <p className="text-sm font-medium text-gray-900">{campaign.totalDonors || 0}</p>
                       </td>
-
                       <td className="px-6 py-4">
                         <p className="text-sm text-gray-900">{formatDate(campaign.updatedAt)}</p>
                       </td>
-
                       <td className="px-6 py-4">
                         <div className="flex items-center justify-end gap-2">
                           <button
-                            onClick={() => {
-                              setSelectedCampaignId(campaign._id);
-                              setView('detail');
-                            }}
+                            onClick={() => { setSelectedCampaignId(campaign._id); setView('detail'); }}
                             className="p-2 text-gray-600 cursor-pointer hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all"
                             title="View Details"
                           >
@@ -691,25 +882,22 @@ export default function CampaignAdminDashboard() {
               </tbody>
             </table>
           </div>
+
+          {/* ── Mobile Cards ── */}
           <div className="lg:hidden divide-y divide-gray-200">
             {filteredCampaigns.map((campaign) => {
               const progress = getProgressPercentage(campaign.netRaisedAmount || 0, campaign.targetAmount || 0);
               const isExpanded = expandedRow === campaign._id;
-
               return (
                 <div key={campaign._id} className="p-4 hover:bg-gray-50 transition-colors">
                   <div className="mb-3">
                     <div className="flex items-start justify-between mb-2 gap-3">
                       <div className="flex-1 min-w-0">
-                        <h3 className="text-sm font-bold text-gray-900 mb-1 break-words">
-                          {campaign.title || campaign.beneficiaryName || 'Untitled Campaign'}
-                        </h3>
+                        <h3 className="text-sm font-bold text-gray-900 mb-1 break-words">{campaign.title || campaign.beneficiaryName || 'Untitled Campaign'}</h3>
                         {campaign.title && campaign.beneficiaryName && (
                           <p className="text-xs text-gray-500 mb-1">{campaign.beneficiaryName}</p>
                         )}
-                        <p className="text-xs text-gray-400 font-mono">
-                          ID: {campaign._id.slice(0, 8)}...
-                        </p>
+                        <p className="text-xs text-gray-400 font-mono">ID: {campaign._id.slice(0, 8)}...</p>
                       </div>
                       <button
                         onClick={() => setExpandedRow(isExpanded ? null : campaign._id)}
@@ -720,13 +908,8 @@ export default function CampaignAdminDashboard() {
                     </div>
 
                     <div className="flex flex-wrap gap-1.5 mb-3">
-                      <span
-                        className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border ${getStatusColor(campaign.campaignStatus)}`}
-                      >
+                      <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border ${getStatusColor(campaign.campaignStatus)}`}>
                         {campaign.campaignStatus?.replace(/_/g, ' ')}
-                      </span>
-                      <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border ${getStatusColor(campaign.workflowStatus)}`}>
-                        {campaign.workflowStatus?.replace(/_/g, ' ') || 'Unknown'}
                       </span>
                     </div>
                   </div>
@@ -734,10 +917,7 @@ export default function CampaignAdminDashboard() {
                   <div className="mb-3">
                     <div className="flex items-center justify-between text-xs font-medium text-gray-600 mb-2">
                       <span>{progress.toFixed(0)}% funded</span>
-                      <span className="flex items-center gap-1">
-                        <Users className="w-3.5 h-3.5" />
-                        {campaign.totalDonors || 0}
-                      </span>
+                      <span className="flex items-center gap-1"><Users className="w-3.5 h-3.5" />{campaign.totalDonors || 0}</span>
                     </div>
                     <div className="w-full h-2.5 bg-gray-100 rounded-full overflow-hidden shadow-inner">
                       <div
@@ -749,19 +929,12 @@ export default function CampaignAdminDashboard() {
 
                   <div className="flex items-center justify-between mb-3">
                     <div>
-                      <p className="text-base font-bold text-gray-900">
-                        ₹{(campaign.netRaisedAmount || 0).toLocaleString('en-IN')}
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        of ₹{(campaign.targetAmount || 0).toLocaleString('en-IN')}
-                      </p>
+                      <p className="text-base font-bold text-gray-900">₹{(campaign.netRaisedAmount || 0).toLocaleString('en-IN')}</p>
+                      <p className="text-xs text-gray-500">of ₹{(campaign.targetAmount || 0).toLocaleString('en-IN')}</p>
                     </div>
-
                     <div className="text-right">
                       <p className="text-xs text-gray-500">Updated</p>
-                      <p className="text-xs font-semibold text-gray-700">
-                        {formatDate(campaign.updatedAt)}
-                      </p>
+                      <p className="text-xs font-semibold text-gray-700">{formatDate(campaign.updatedAt)}</p>
                     </div>
                   </div>
 
@@ -773,34 +946,25 @@ export default function CampaignAdminDashboard() {
                           <div className="space-y-2">
                             {campaign.impactGoals.map((goal, idx) => (
                               <div key={idx} className="flex gap-2 p-2.5 bg-gradient-to-r from-emerald-50 to-transparent rounded-lg border border-emerald-100">
-                                <div className="flex-shrink-0 w-5 h-5 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center text-xs font-bold">
-                                  {idx + 1}
-                                </div>
+                                <div className="flex-shrink-0 w-5 h-5 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center text-xs font-bold">{idx + 1}</div>
                                 <p className="text-xs text-gray-700 flex-1">{goal}</p>
                               </div>
                             ))}
                           </div>
                         </div>
                       )}
-
                       <div className="grid grid-cols-3 gap-2">
                         <div className="text-center p-2.5 bg-gray-50 rounded-lg border border-gray-100">
                           <p className="text-xs text-gray-500 mb-1">Tax</p>
-                          <p className="text-xs font-bold text-gray-900">
-                            {campaign.taxBenefits ? '80G' : 'N/A'}
-                          </p>
+                          <p className="text-xs font-bold text-gray-900">{campaign.taxBenefits ? '80G' : 'N/A'}</p>
                         </div>
                         <div className="text-center p-2.5 bg-gray-50 rounded-lg border border-gray-100">
                           <p className="text-xs text-gray-500 mb-1">Zakat</p>
-                          <p className="text-xs font-bold text-gray-900">
-                            {campaign.zakatVerified ? 'Yes' : 'No'}
-                          </p>
+                          <p className="text-xs font-bold text-gray-900">{campaign.zakatVerified ? 'Yes' : 'No'}</p>
                         </div>
                         <div className="text-center p-2.5 bg-gray-50 rounded-lg border border-gray-100">
                           <p className="text-xs text-gray-500 mb-1">Docs</p>
-                          <p className="text-xs font-bold text-gray-900">
-                            {campaign.documents?.length || 0}
-                          </p>
+                          <p className="text-xs font-bold text-gray-900">{campaign.documents?.length || 0}</p>
                         </div>
                       </div>
                     </div>
@@ -808,15 +972,11 @@ export default function CampaignAdminDashboard() {
 
                   <div className="flex items-center gap-2 mt-4 pt-3 border-t border-gray-200">
                     <button
-                      onClick={() => {
-                        setSelectedCampaignId(campaign._id);
-                        setView('detail');
-                      }}
+                      onClick={() => { setSelectedCampaignId(campaign._id); setView('detail'); }}
                       className="flex-1 py-2.5 px-3 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600 text-white text-sm font-semibold rounded-xl transition-all shadow-sm hover:shadow-md transform hover:-translate-y-0.5"
                     >
                       View Details
                     </button>
-
                     <button className="p-2.5 border border-gray-300 hover:bg-gray-50 rounded-xl transition-colors">
                       <MoreVertical className="w-4 h-4 text-gray-600" />
                     </button>
@@ -832,9 +992,11 @@ export default function CampaignAdminDashboard() {
                 <Search className="w-10 h-10 text-gray-400" />
               </div>
               <h3 className="text-xl font-bold text-gray-900 mb-2">No campaigns found</h3>
+              <p className="text-sm text-gray-500">Try adjusting your search or filters</p>
             </div>
           )}
         </div>
+
         {/* Pagination */}
         {totalPages > 1 && (
           <div className="flex justify-center items-center gap-4 mt-6">
@@ -845,9 +1007,7 @@ export default function CampaignAdminDashboard() {
             >
               Previous
             </button>
-            <span className="text-sm font-semibold text-gray-700">
-              Page {currentPage} of {totalPages}
-            </span>
+            <span className="text-sm font-semibold text-gray-700">Page {currentPage} of {totalPages}</span>
             <button
               disabled={currentPage === totalPages}
               onClick={() => setCurrentPage((prev) => prev + 1)}
@@ -857,14 +1017,24 @@ export default function CampaignAdminDashboard() {
             </button>
           </div>
         )}
+
         {filteredCampaigns.length > 0 && (
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-500">
-              Showing <span className="font-semibold text-gray-900">{filteredCampaigns.length}</span> of <span className="font-semibold text-gray-900">{campaigns.length}</span> campaigns
+              Showing <span className="font-semibold text-gray-900">{filteredCampaigns.length}</span> of{' '}
+              <span className="font-semibold text-gray-900">{campaigns.length}</span> campaigns
             </p>
           </div>
         )}
       </div>
+
+      {/* Filter Drawer */}
+      <FilterDrawer
+        open={filterOpen}
+        onClose={() => setFilterOpen(false)}
+        filters={appliedFilters}
+        onApply={applyFilters}
+      />
     </div>
   );
-}
+}   
