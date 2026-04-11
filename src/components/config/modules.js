@@ -1,214 +1,10 @@
-// // /config/modules.js
-// import {
-//   TrendingUp,
-//   Settings,
-//   Shield,
-//   CreditCard,
-//   Users,
-//   UserCheck,
-//   MapPin,
-//   UserCog,
-//   Heart,
-//   Calculator,
-//   Package,
-//   FolderKanban,
-//   Bell,
-//   FileText,
-//   Scale,
-//   Globe,
-//   ShieldCheck,
-//   HandHeart,
-//   Book,
-//   ClipboardList,
-//   LayoutDashboard,
-//   LayoutGrid,
-//   Calendar,
-//   Download,
-//   Edit,
-//   MessageSquare,
-// } from "lucide-react";
-
-// export const MODULES = [
-//   {
-//     id: "Dashboard Overview",
-//     name: "Overview",
-//     icon: TrendingUp,
-//     route: "/admin/dashboard/overview",
-//     category: "dashboard",
-//     desc: "Detailed charts and analytics",
-//   },
-//   {
-//     id: "Dashboard Summary",
-//     name: "Summary Cards",
-//     icon: LayoutGrid,
-//     route: "/admin/dashboard/summary",
-//     category: "dashboard",
-//     desc: "Key metrics and recent transactions",
-//   },
-//   {
-//     id: "Security & Access",
-//     name: "Security & Access",
-//     icon: Shield,
-//     route: "/add-admin",
-//     category: "administration",
-//     desc: "Manage system security",
-//   },
-//   {
-//     id: "task-management",
-//     name: "Task Management",
-//     icon: ClipboardList,
-//     route: "/admin/task-management",
-//     category: "administration",
-//     desc: "Monitor and track all campaign tasks",
-//   },
-//   {
-//     id: "TPF Management",
-//     name: "TPF Management",
-//     icon: Users,
-//     route: "/tpf-management",
-//     category: "people",
-//     desc: "Manage TPF content",
-//   },
-//   {
-//     id: "Donation Management",
-//     name: "Donation Management",
-//     icon: HandHeart,
-//     route: "/donation-management",
-//     category: "quick-access",
-//     desc: "Track donor details & activity",
-//   },
-//   {
-//     id: "Finance & Accounting",
-//     name: "Finance & Accounting",
-//     icon: Calculator,
-//     route: "/finance/expenses",
-//     category: "finance",
-//     desc: "Budgets and expense reporting",
-//   },
-//   {
-//     id: "Inventory",
-//     name: "Inventory",
-//     icon: Package,
-//     route: "/inventory",
-//     category: "quick-access",
-//     desc: "Asset and inventory tracking",
-//   },
-//   {
-//     id: "Financial Aid",
-//     name: "Financial Aid",
-//     icon: ShieldCheck,
-//     route: "/verify/financial",
-//     category: "operations",
-//     desc: "Verify financial aid forms",
-//   },
-//   {
-//     id: "KYC Verification",
-//     name: "KYC Verification",
-//     icon: Book,
-//     route: "/verify/kyc",
-//     category: "operations",
-//     desc: "Verify user KYC documents",
-//   },
-//   {
-//     id: "Photography",
-//     name: "Photography",
-//     icon: Bell,
-//     route: "/photography",
-//     category: "operations",
-//     desc: "Manage photography content",
-//   },
-//   {
-//     id: "Photo-Editing",
-//     name: "Photo Editing",
-//     icon: Edit,
-//     route: "/photo-editing",
-//     category: "operations",
-//     desc: "Process and edit campaign photos",
-//   },
-//   {
-//     id: "CMS-Admin",
-//     name: "CMS",
-//     icon: Globe,
-//     route: "/cms-admin",
-//     category: "operations",
-//     desc: "Manage content & pages",
-//   },
-//   {
-//     id: "Social-Media",
-//     name: "Social Media",
-//     icon: Bell,
-//     route: "/social-media",
-//     category: "operations",
-//     desc: "Manage Social-Media content",
-//   },
-//   {
-//     id: "Campaign Management",
-//     name: "Campaign Management",
-//     icon: Bell,
-//     route: "/campaigns",
-//     category: "operations",
-//     desc: "Campaign tracking and execution",
-//   },
-//   {
-//     id: "Document Management",
-//     name: "Document Management",
-//     icon: FileText,
-//     route: "/documentation-management",
-//     category: "documentation",
-//     desc: "Document storage and access",
-//   },
-//   {
-//     id: "Downloads",
-//     name: "Downloads",
-//     icon: Download,
-//     route: "/downloads",
-//     category: "quick-access",
-//     desc: "Export data to CSV/PDF",
-//   },
-//   {
-//     id: "Legal and Compliance",
-//     name: "Legal & Compliance",
-//     icon: Scale,
-//     route: "/legal",
-//     category: "documentation",
-//     desc: "Legal approvals and compliance",
-//   },
-//   {
-//     id: "Tickets-Queries",
-//     name: "Tickets & Queries",
-//     icon: Book,
-//     route: "/tickets-queries",
-//     category: "communication",
-//     desc: "Respond to the Tickets and Queries of the Users",
-//   },
-//   {
-//     id: 'Disbursement-Tasks',
-//     name: 'Disbursement Tasks',
-//     desc: 'Process beneficiary payments and transaction proofs',
-//     icon: CreditCard,
-//     category: 'operations',
-//     route: '/finance/disbursement',
-//   },
-
-//   {
-//     id: "Internal Communication",
-//     name: "Internal Chat",
-//     icon: MessageSquare,
-//     route: "/admin/communication",
-//     category: "communication",
-//     desc: "Admin-to-admin internal messaging system",
-//   },
-//   {
-//     id: "Communication Audit",
-//     name: "Communication Audit",
-//     icon: Shield,
-//     route: "/tpf-management/communication-audit",
-//     category: "communication",
-//     desc: "Monitor all internal admin conversations",
-//   },
-// ];
-
-// /config/modules.js
+/**
+ * MODULES REGISTRY
+ *
+ * Rule: every `id` here MUST exist in ADMIN_MODULES (adminRoles.js).
+ * The `id` is what gets stored in MongoDB and used for permission checks.
+ * The `name` is only for display.
+ */
 
 import {
   TrendingUp,
@@ -225,7 +21,6 @@ import {
   HandHeart,
   Users,
   Shield,
-  UserCog,
   FileText,
   Scale,
   Download,
@@ -240,13 +35,12 @@ import {
 
 export const MODULES = [
 
-  // ===============================
-  // DASHBOARD (Insights Only)
-  // ===============================
-
+  // ═══════════════════════════════════════
+  // DASHBOARD
+  // ═══════════════════════════════════════
   {
-    id: "Admin Dashboard",
-    name: "Overview",
+    id: "Admin Dashboard",           // ← stored in DB
+    name: "Overview",                // ← display only
     icon: TrendingUp,
     route: "/admin/dashboard/overview",
     category: "dashboard",
@@ -261,10 +55,9 @@ export const MODULES = [
     desc: "Key metrics and quick stats",
   },
 
-  // ===============================
-  // WORK (Task Execution Modules)
-  // ===============================
-
+  // ═══════════════════════════════════════
+  // WORK
+  // ═══════════════════════════════════════
   {
     id: "Financial Aid",
     name: "Beneficiary Form Verification",
@@ -275,7 +68,7 @@ export const MODULES = [
   },
   {
     id: "KYC Verification",
-    name: "User Kyc Verification",
+    name: "User KYC Verification",
     icon: ClipboardCheck,
     route: "/verify/kyc",
     category: "work",
@@ -299,7 +92,7 @@ export const MODULES = [
   },
   {
     id: "Photo-Editing",
-    name: "Photo-Editing",
+    name: "Photo Editing",
     icon: Edit,
     route: "/photo-editing",
     category: "work",
@@ -315,7 +108,7 @@ export const MODULES = [
   },
   {
     id: "Social-Media",
-    name: "Social-Media",
+    name: "Social Media",
     icon: Share2,
     route: "/social-media",
     category: "work",
@@ -330,10 +123,9 @@ export const MODULES = [
     desc: "Process beneficiary payments",
   },
 
-  // ===============================
-  // RESOURCE MANAGEMENT (Full CRUD Systems)
-  // ===============================
-
+  // ═══════════════════════════════════════
+  // RESOURCE MANAGEMENT
+  // ═══════════════════════════════════════
   {
     id: "Inventory",
     name: "Inventory",
@@ -355,9 +147,13 @@ export const MODULES = [
     name: "Career & Job Opportunities",
     icon: Briefcase,
     route: "/career-opportunities",
-    category: "hr",
+    category: "resource",
     desc: "Manage career and job opportunities",
   },
+
+  // ═══════════════════════════════════════
+  // HUMAN RESOURCES
+  // ═══════════════════════════════════════
   {
     id: "Employee Management",
     name: "Employee Management",
@@ -375,10 +171,9 @@ export const MODULES = [
     desc: "Manage volunteer profiles and tasks",
   },
 
-  // ===============================
-  // MONITORING (Read-only / Tracking)
-  // ===============================
-
+  // ═══════════════════════════════════════
+  // MONITORING
+  // ═══════════════════════════════════════
   {
     id: "task-management",
     name: "Task Management",
@@ -404,54 +199,60 @@ export const MODULES = [
     desc: "Monitor campaign performance and status",
   },
 
-  // ===============================
-  // TPF-Management
-  // ===============================
+  // ═══════════════════════════════════════
+  // TPF MANAGEMENT
+  // ═══════════════════════════════════════
+  {
+    id: "TPF Management",
+    name: "TPF Management",
+    icon: Users,
+    route: "/tpf-management",
+    category: "tpf-management",
+    desc: "Manage TPF data and operations",
+  },
   {
     id: "Donor",
     name: "Donor",
-    desc: "All users are donors by default. View donor profiles and donation statistics.",
     icon: Heart,
     route: "/tpf-management/donors",
-    category: 'tpf-management'
+    category: "tpf-management",
+    desc: "View donor profiles and donation statistics",
   },
   {
     id: "permanent-donors",
     name: "Permanent Donor",
-    desc: "Manage donor plans and track recurring donations.",
     icon: UserCheck,
     route: "/tpf-management/permanent-donors",
-    category: 'tpf-management'
+    category: "tpf-management",
+    desc: "Manage donor plans and track recurring donations",
   },
-  
   {
     id: "employees",
     name: "Employee",
-    desc: "Attendance, salary, expenses, and login records.",
     icon: Briefcase,
     route: "/tpf-management/employee-management",
-    category: 'tpf-management'
+    category: "tpf-management",
+    desc: "Attendance, salary, expenses, and login records",
   },
   {
     id: "organizations",
     name: "Organization",
-    desc: "Organization details based on backend models.",
     icon: Building2,
     route: "/tpf-management/organizations",
-    category: 'tpf-management'
+    category: "tpf-management",
+    desc: "Organization details based on backend models",
   },
-  
-  // ===============================
-  // ADMINISTRATION (System Control)
-  // ===============================
-  
+
+  // ═══════════════════════════════════════
+  // ADMINISTRATION
+  // ═══════════════════════════════════════
   {
     id: "deletion",
-    name: "Approve Delete Request", 
-    desc: "Approve the delete requests coming from different modules .",
+    name: "Approve Delete Request",
     icon: Trash2,
     route: "/tpf-management/approve-request",
-    category: 'administration'
+    category: "administration",
+    desc: "Approve delete requests from different modules",
   },
   {
     id: "Security & Access",
@@ -460,14 +261,6 @@ export const MODULES = [
     route: "/add-admin",
     category: "administration",
     desc: "Manage roles and permissions",
-  },
-  {
-    id: "Tickets-Queries",
-    name: "Tickets-Queries",
-    icon: MessageSquare,
-    route: "/tickets-queries",
-    category: "communication",
-    desc: "Respond to user tickets and support queries",
   },
   {
     id: "Communication Audit",
@@ -483,14 +276,12 @@ export const MODULES = [
     icon: IndianRupee,
     route: "/transaction-ledger",
     category: "administration",
-    desc: "Ledger Report for Transactions",
+    desc: "Ledger report for transactions",
   },
 
-
-  // ===============================
-  // LEGAL & RECORDS (Compliance / Export)
-  // ===============================
-
+  // ═══════════════════════════════════════
+  // LEGAL & RECORDS
+  // ═══════════════════════════════════════
   {
     id: "Document Management",
     name: "Document Management",
@@ -506,7 +297,7 @@ export const MODULES = [
     route: "/legal",
     category: "legal",
     desc: "Manage compliance and approvals",
-  },  
+  },
   {
     id: "Downloads",
     name: "Downloads",
@@ -516,10 +307,17 @@ export const MODULES = [
     desc: "Export system data and reports",
   },
 
-  // ===============================
+  // ═══════════════════════════════════════
   // COMMUNICATION
-  // ===============================
-
+  // ═══════════════════════════════════════
+  {
+    id: "Tickets-Queries",
+    name: "Tickets & Queries",
+    icon: MessageSquare,
+    route: "/tickets-queries",
+    category: "communication",
+    desc: "Respond to user tickets and support queries",
+  },
   {
     id: "Internal Communication",
     name: "Internal Chat",
@@ -534,6 +332,18 @@ export const MODULES = [
     icon: MessageSquare,
     route: "/admin/communication/direct-contact",
     category: "communication",
-    desc: "Send personalized emails to users, donors, or volunteers",
+    desc: "Send personalised emails to users, donors, or volunteers",
   },
 ];
+
+/**
+ * O(1) lookup map: id → module object.
+ * Use this instead of MODULES.find() in hot render paths.
+ */
+export const MODULE_MAP = Object.fromEntries(MODULES.map((m) => [m.id, m]));
+
+/**
+ * Resolve a stored module ID to its human-readable display name.
+ * Falls back to the raw ID so nothing ever shows as blank.
+ */
+export const getModuleName = (id) => MODULE_MAP[id]?.name ?? id;

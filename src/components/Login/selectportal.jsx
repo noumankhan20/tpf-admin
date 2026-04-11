@@ -80,7 +80,7 @@ export default function SelectPanel() {
   const [mounted, setMounted] = useState(false);
   const [showLoading, setShowLoading] = useState(false);
   const [moduleCounts, setModuleCounts] = useState({});
-  
+
   const socketContext = useSocket();
   const socket = socketContext?.socket;
 
@@ -130,7 +130,7 @@ export default function SelectPanel() {
       try {
         const apiBase = process.env.NEXT_PUBLIC_BACKEND_API || 'http://localhost:7000/api';
         let newCounts = {};
-        
+
         const increment = (id) => {
           newCounts[id] = (newCounts[id] || 0) + 1;
         };
@@ -172,7 +172,7 @@ export default function SelectPanel() {
           if (orgResult.success && orgResult.data) {
             orgResult.data.forEach(() => increment('Organization Verification'));
           }
-          
+
           const allOrgRes = await fetch(`${apiBase}/organizations`, { credentials: 'include' });
           const allOrgResult = await allOrgRes.json();
           if (allOrgResult.success && allOrgResult.data) {
@@ -200,16 +200,16 @@ export default function SelectPanel() {
             });
           }
         }
-        
+
         // Offline Donations
         if (admin?.isSuperAdmin || adminModules.includes('Donation Management')) {
           const offlineRes = await fetch(`${apiBase}/offline-donations/pending-count`, { credentials: 'include' });
           const offlineResult = await offlineRes.json();
           if (offlineResult.count !== undefined) {
-             newCounts['Donation Management'] = (newCounts['Donation Management'] || 0) + offlineResult.count;
+            newCounts['Donation Management'] = (newCounts['Donation Management'] || 0) + offlineResult.count;
           }
         }
-        
+
         setModuleCounts(newCounts);
       } catch (err) {
         console.error('Failed to fetch module notification counts:', err);
@@ -222,28 +222,28 @@ export default function SelectPanel() {
   // Handle Socket Updates for counts
   useEffect(() => {
     if (!socket) return;
-    
+
     const handleTaskAssigned = (data) => {
-        setModuleCounts(prev => {
-            const next = { ...prev };
-            const inc = (id) => next[id] = (next[id] || 0) + 1;
-            if (data.module === 'PHOTO_TASK') { inc('Photography'); inc('Photo-Editing'); }
-            if (data.module === 'CMS_TASK') inc('CMS-Admin');
-            if (data.module === 'SOCIAL_TASK') inc('Social-Media');
-            if (data.module === 'FINANCE_TASK') inc('Disbursement-Tasks');
-            return next;
-        });
+      setModuleCounts(prev => {
+        const next = { ...prev };
+        const inc = (id) => next[id] = (next[id] || 0) + 1;
+        if (data.module === 'PHOTO_TASK') { inc('Photography'); inc('Photo-Editing'); }
+        if (data.module === 'CMS_TASK') inc('CMS-Admin');
+        if (data.module === 'SOCIAL_TASK') inc('Social-Media');
+        if (data.module === 'FINANCE_TASK') inc('Disbursement-Tasks');
+        return next;
+      });
     };
 
     const handleFormSubmitted = (data) => {
-        setModuleCounts(prev => {
-            const next = { ...prev };
-            const inc = (id) => next[id] = (next[id] || 0) + 1;
-            if (data.type === 'KYC') inc('KYC Verification');
-            else if (['ORGANIZATION', 'ORGANIZATION_EDIT', 'CAMPAIGN_REQUEST', 'CAMPAIGN_RESUBMITTED'].includes(data.type)) inc('Organization Verification');
-            else inc('Financial Aid');
-            return next;
-        });
+      setModuleCounts(prev => {
+        const next = { ...prev };
+        const inc = (id) => next[id] = (next[id] || 0) + 1;
+        if (data.type === 'KYC') inc('KYC Verification');
+        else if (['ORGANIZATION', 'ORGANIZATION_EDIT', 'CAMPAIGN_REQUEST', 'CAMPAIGN_RESUBMITTED'].includes(data.type)) inc('Organization Verification');
+        else inc('Financial Aid');
+        return next;
+      });
     };
 
     const handleDeleteRequestCreated = (data) => {
@@ -257,19 +257,19 @@ export default function SelectPanel() {
     };
 
     const handleOfflineDonationCreated = () => {
-        setModuleCounts(prev => {
-            const next = { ...prev };
-            next['Donation Management'] = (next['Donation Management'] || 0) + 1;
-            return next;
-        });
+      setModuleCounts(prev => {
+        const next = { ...prev };
+        next['Donation Management'] = (next['Donation Management'] || 0) + 1;
+        return next;
+      });
     };
 
     const handleOfflineDonationProcessed = () => {
-        setModuleCounts(prev => {
-            const next = { ...prev };
-            next['Donation Management'] = Math.max(0, (next['Donation Management'] || 0) - 1);
-            return next;
-        });
+      setModuleCounts(prev => {
+        const next = { ...prev };
+        next['Donation Management'] = Math.max(0, (next['Donation Management'] || 0) - 1);
+        return next;
+      });
     };
 
     socket.on('taskAssigned', handleTaskAssigned);
@@ -277,25 +277,20 @@ export default function SelectPanel() {
     socket.on('deleteRequestCreated', handleDeleteRequestCreated);
     socket.on('offlineDonationCreated', handleOfflineDonationCreated);
     socket.on('offlineDonationProcessed', handleOfflineDonationProcessed);
-    
+
     return () => {
-        socket.off('taskAssigned', handleTaskAssigned);
-        socket.off('formSubmitted', handleFormSubmitted);
-        socket.off('deleteRequestCreated', handleDeleteRequestCreated);
-        socket.off('offlineDonationCreated', handleOfflineDonationCreated);
-        socket.off('offlineDonationProcessed', handleOfflineDonationProcessed);
+      socket.off('taskAssigned', handleTaskAssigned);
+      socket.off('formSubmitted', handleFormSubmitted);
+      socket.off('deleteRequestCreated', handleDeleteRequestCreated);
+      socket.off('offlineDonationCreated', handleOfflineDonationCreated);
+      socket.off('offlineDonationProcessed', handleOfflineDonationProcessed);
     };
   }, [socket]);
 
 
   const allowedModules = useMemo(() => {
     if (admin?.isSuperAdmin) return MODULES;
-    return MODULES.filter((mod) =>
-      adminModules.includes(mod.name) ||
-      (adminModules.includes("Admin Dashboard") && mod.category === "dashboard") ||
-      (adminModules.includes("TPF Management") && mod.category === "tpf-management") ||
-      mod.id === "Internal Communication"
-    );
+    return MODULES.filter((mod) => adminModules.includes(mod.id));
   }, [adminModules, admin?.isSuperAdmin]);
 
 
@@ -636,9 +631,9 @@ function BentoView({ categories, getModulesByCategory, isLoaded, moduleCounts })
                     </div>
                     <span className="text-xs font-semibold text-gray-700 truncate">{m.name}</span>
                     {moduleCounts?.[m.id] > 0 && (
-                        <div className="absolute -top-2 -right-2 bg-emerald-500 text-white min-w-[20px] h-5 rounded-full px-1 flex items-center justify-center text-[10px] font-bold shadow-md z-10 border-2 border-white">
-                            {moduleCounts[m.id]}
-                        </div>
+                      <div className="absolute -top-2 -right-2 bg-emerald-500 text-white min-w-[20px] h-5 rounded-full px-1 flex items-center justify-center text-[10px] font-bold shadow-md z-10 border-2 border-white">
+                        {moduleCounts[m.id]}
+                      </div>
                     )}
                   </button>
                 ))}
@@ -672,9 +667,9 @@ function CardView({ modules, isLoaded, moduleCounts }) {
 
             <div className="relative">
               {moduleCounts?.[p.id] > 0 && (
-                  <div className="absolute -top-3 -right-3 bg-emerald-500 text-white min-w-[24px] h-6 rounded-full px-2 flex items-center justify-center text-xs font-bold shadow-md border-2 border-white z-10">
-                      {moduleCounts[p.id]}
-                  </div>
+                <div className="absolute -top-3 -right-3 bg-emerald-500 text-white min-w-[24px] h-6 rounded-full px-2 flex items-center justify-center text-xs font-bold shadow-md border-2 border-white z-10">
+                  {moduleCounts[p.id]}
+                </div>
               )}
               <div className="w-14 h-14 rounded-2xl bg-emerald-600 flex items-center justify-center shadow-lg mb-4 group-hover:scale-110 transition-transform">
                 <Icon className="w-6 h-6 text-white" />
