@@ -31,7 +31,7 @@ import {
     Building2,
     MoreVertical,
 } from 'lucide-react';
-import { useGetEmployeesQuery, useGetAdminSalaryQuery, useGetAdminExpensesQuery, useGetEmployeeLoginLogoutTimeQuery } from '@/utils/slices/adminApiSlice';
+import { useGetEmployeesQuery, useGetAdminSalaryQuery, useGetAdminExpensesQuery, useGetEmployeeLoginLogoutTimeQuery, useGetAdminFilterOptionsQuery } from '@/utils/slices/adminApiSlice';
 import DetailsModal from "./popupModal"
 
 const STATUS_OPTIONS = ["Active", "Disabled"];
@@ -50,8 +50,8 @@ const Pill = ({ val, active, onClick, label }) => (
     <button
         onClick={onClick}
         className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all duration-150 ${active
-                ? 'bg-emerald-500 border-emerald-500 text-white shadow-sm'
-                : 'bg-white border-gray-200 text-gray-500 hover:border-emerald-300 hover:text-emerald-600 hover:bg-emerald-50'
+            ? 'bg-emerald-500 border-emerald-500 text-white shadow-sm'
+            : 'bg-white border-gray-200 text-gray-500 hover:border-emerald-300 hover:text-emerald-600 hover:bg-emerald-50'
             }`}
     >
         {label || val || "All"}
@@ -65,7 +65,7 @@ const Section = ({ title, children }) => (
     </div>
 );
 
-const EmployeeFilterDrawer = ({ open, onClose, filters, onApply }) => {
+const EmployeeFilterDrawer = ({ open, onClose, filters, onApply, filterOptions }) => {
     const [local, setLocal] = useState(filters);
 
     useEffect(() => setLocal(filters), [filters]);
@@ -132,12 +132,19 @@ const EmployeeFilterDrawer = ({ open, onClose, filters, onApply }) => {
                     <Section title="Department">
                         <div className="relative">
                             <Building2 size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-                            <input
-                                placeholder="e.g. Engineering, Marketing..."
+                            <select
                                 value={local.department}
                                 onChange={(e) => set('department', e.target.value)}
-                                className="w-full pl-9 pr-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/10 transition-all placeholder:text-gray-300"
-                            />
+                                className="w-full pl-9 pr-3 py-2.5 border border-gray-200 rounded-lg text-sm"
+                            >
+                                <option value="">All Departments</option>
+
+                                {filterOptions?.departments?.map((dept) => (
+                                    <option key={dept} value={dept}>
+                                        {dept}
+                                    </option>
+                                ))}
+                            </select>
                         </div>
                     </Section>
 
@@ -145,12 +152,19 @@ const EmployeeFilterDrawer = ({ open, onClose, filters, onApply }) => {
                     <Section title="Position">
                         <div className="relative">
                             <Briefcase size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-                            <input
-                                placeholder="e.g. Manager, Developer..."
+                            <select
                                 value={local.position}
                                 onChange={(e) => set('position', e.target.value)}
-                                className="w-full pl-9 pr-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/10 transition-all placeholder:text-gray-300"
-                            />
+                                className="w-full pl-9 pr-3 py-2.5 border border-gray-200 rounded-lg text-sm"
+                            >
+                                <option value="">All Positions</option>
+
+                                {filterOptions?.positions?.map((pos) => (
+                                    <option key={pos} value={pos}>
+                                        {pos}
+                                    </option>
+                                ))}
+                            </select>
                         </div>
                     </Section>
 
@@ -251,6 +265,8 @@ export default function EmployeeManagement() {
         selectedEmployee?._id,
         { skip: !selectedEmployee?._id }
     );
+
+    const { data: filterOptions } = useGetAdminFilterOptionsQuery();
 
     useEffect(() => {
         if (expensesData?.data && selectedEmployee && !selectedEmployee.expenses) {
@@ -929,6 +945,7 @@ export default function EmployeeManagement() {
                     onClose={() => setFilterOpen(false)}
                     filters={appliedFilters}
                     onApply={applyFilters}
+                    filterOptions={filterOptions}
                 />
             </div>
         </div>

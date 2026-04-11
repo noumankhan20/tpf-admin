@@ -167,6 +167,10 @@ export const adminApiSlice = apiSlice.injectEndpoints({
       }),
     }),
 
+    getAdminFilterOptions: builder.query({
+      query: () => "/adminAuth/filter-options",
+    }),
+
 
 
 
@@ -191,5 +195,6 @@ export const {
   useGetEmployeeLoginLogoutTimeQuery,
   useDeleteAdminMutation,
   useForgotPasswordAdminMutation,
-  useResetPasswordAdminMutation
+  useResetPasswordAdminMutation,
+  useGetAdminFilterOptionsQuery
 } = adminApiSlice;
