@@ -43,7 +43,7 @@ function EmptyState({ message }) {
 // ─────────────────────────────────────────────
 
 export function ApplicantsPage({ job, onBack }) {
-  const { data, isLoading, isError,refetch } =
+  const { data, isLoading, isError, refetch } =
     useGetApplicationsByJobQuery(job._id);
   const applicants = data?.data || [];
   const [selected, setSelected] = useState(null);
@@ -177,8 +177,10 @@ export function ApplicantsPage({ job, onBack }) {
 
                 {/* Actions */}
                 <div className="flex items-center gap-2">
-                  <a 
-                  href={applicant.resumeUrl}
+                  <a
+                    href={applicant.resumeUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors"
                   >
                     <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

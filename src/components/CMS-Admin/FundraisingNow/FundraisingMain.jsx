@@ -473,6 +473,21 @@ export default function FundraisingCMS() {
       toast.error(errorMessage);
     }
   };
+  const handleActive = async (id) => {
+  try {
+    await updateCampaignStatus({
+      id,
+      action: "active",
+    }).unwrap();
+
+    toast.success("Campaign activated successfully");
+  } catch (err) {
+    console.error(err);
+    const errorMessage = err?.data?.message || "Failed to update campaign";
+    toast.error(errorMessage);
+  }
+};
+
 
   const handleCancel = () => {
     setViewMode("view");
@@ -539,6 +554,7 @@ export default function FundraisingCMS() {
               onDelete={handleDelete}
               onMarkInactive={handleInactive}
               onMarkComplete={handleComplete}
+              onMarkActive={handleActive}
 
             />
           </>

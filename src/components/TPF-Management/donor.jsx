@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { ArrowLeft, Search, Users, IndianRupee, TrendingUp, User, ChevronDown, SlidersHorizontal } from 'lucide-react';
 import { useGetAllDonorsQuery, useGetDonorDetailsQuery } from '@/utils/slices/donationApiSlice';
+import KYCVerificationPage from '../Admin/KYCDetails/KYCDetails';
 
 export default function DonorModule() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -18,6 +19,7 @@ export default function DonorModule() {
     selectedDate: "",
     joinedSince: "",
     kycPending: "",
+    kycStatus: "",
   });
 
   const setFilter = (key, val) => setFilters(prev => ({ ...prev, [key]: val }));
@@ -31,6 +33,7 @@ export default function DonorModule() {
       selectedDate: "",
       joinedSince: "",
       kycPending: "",
+      kycStatus: "",
     });
     setCurrentPage(1);
   };
@@ -233,11 +236,10 @@ export default function DonorModule() {
             </div>
             <button
               onClick={() => setIsFilterOpen(prev => !prev)}
-              className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border rounded-xl transition-all ${
-                isFilterOpen || activeFilterCount > 0
-                  ? "bg-emerald-50 border-emerald-300 text-emerald-700"
-                  : "bg-white border-gray-200 text-gray-600 hover:bg-gray-50"
-              }`}
+              className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border rounded-xl transition-all ${isFilterOpen || activeFilterCount > 0
+                ? "bg-emerald-50 border-emerald-300 text-emerald-700"
+                : "bg-white border-gray-200 text-gray-600 hover:bg-gray-50"
+                }`}
             >
               <SlidersHorizontal className="w-4 h-4" />
               Filters
@@ -251,7 +253,7 @@ export default function DonorModule() {
           {/* Inline Filter Panel — expands below search bar */}
           {isFilterOpen && (
             <div className="mt-3 border border-gray-200 rounded-2xl bg-gray-50/70 p-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
 
                 {/* Joined on exact date */}
                 <div>
@@ -275,21 +277,21 @@ export default function DonorModule() {
                   />
                 </div>
 
-                {/* KYC Pending */}
+                {/* KYC Status */}
                 <div>
-                  <label className="block text-[11px] font-medium text-gray-400 uppercase tracking-wider mb-1.5">KYC status</label>
-                  <div className="flex items-center justify-between px-3 py-2.5 bg-white border border-gray-200 rounded-lg h-[38px]">
-                    <span className="text-sm text-gray-600">KYC Pending only</span>
+                  <label className="block text-[11px] font-medium text-gray-400 uppercase tracking-wider mb-1.5">KYC Status</label>
+                  <div className="flex items-center justify-between w-full px-3 py-2 bg-white border border-gray-200 rounded-lg">
+                    <span className="text-sm text-gray-600">KYC Verified Only</span>
                     <button
-                      onClick={() => { setFilter("kycPending", filters.kycPending === "true" ? "" : "true"); setCurrentPage(1); }}
-                      className={`relative w-9 h-5 rounded-full transition-colors ${filters.kycPending === "true" ? "bg-emerald-500" : "bg-gray-200"}`}
+                      onClick={() => { setFilter("kycStatus", filters.kycStatus === "verified" ? "" : "verified"); setCurrentPage(1); }}
+                      className={`relative shrink-0 w-9 h-5 rounded-full transition-colors duration-200 focus:outline-none ${filters.kycStatus === "verified" ? "bg-emerald-500" : "bg-gray-200"}`}
                     >
-                      <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${filters.kycPending === "true" ? "translate-x-4" : "translate-x-0.5"}`} />
+                      <span className={`absolute top-[2px] left-[2px] w-4 h-4 bg-white rounded-full shadow transition-transform duration-200 ${filters.kycStatus === "verified" ? "translate-x-4" : ""}`} />
                     </button>
                   </div>
                 </div>
 
-                {/* Total Donation Range */}
+                {/* Donation Range */}
                 <div>
                   <label className="block text-[11px] font-medium text-gray-400 uppercase tracking-wider mb-1.5">Donation range</label>
                   <div className="flex items-center gap-2">
@@ -317,7 +319,7 @@ export default function DonorModule() {
                   </div>
                 </div>
 
-                {/* Reset button */}
+                {/* Reset button — aligned with other fields */}
                 {activeFilterCount > 0 && (
                   <div className="flex items-end">
                     <button
@@ -358,8 +360,7 @@ export default function DonorModule() {
                   <th className="px-5 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Name</th>
                   <th className="px-5 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Email</th>
                   <th className="px-5 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Phone</th>
-                  <th className="px-5 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">City</th>
-                  <th className="px-5 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">State</th>
+                  <th className="px-5 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">City/State</th>
                   <th className="px-5 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Joined Since</th>
                   <th className="px-5 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Total Donations</th>
                   <th className="px-5 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
@@ -371,8 +372,12 @@ export default function DonorModule() {
                     <td className="px-5 py-3.5 text-sm font-semibold text-gray-800">{donor.fullName}</td>
                     <td className="px-5 py-3.5 text-sm text-gray-500">{donor.email}</td>
                     <td className="px-5 py-3.5 text-sm text-gray-500">{donor.mobileNo}</td>
-                    <td className="px-5 py-3.5 text-sm text-gray-500">{donor.city || "—"}</td>
-                    <td className="px-5 py-3.5 text-sm text-gray-500">{donor.state || "—"}</td>
+                    <td className="px-5 py-3.5 text-sm text-gray-500">
+                      {[...new Set([donor.city, donor.state])]
+                        .filter(Boolean)
+                        .map(val => val.charAt(0).toUpperCase() + val.slice(1))
+                        .join(", ") || "—"}
+                    </td>
                     <td className="px-5 py-3.5 text-sm text-gray-500">{new Date(donor.createdDate).toLocaleDateString()}</td>
                     <td className="px-5 py-3.5 text-sm">
                       <span className="inline-flex items-center gap-1 font-semibold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-lg">

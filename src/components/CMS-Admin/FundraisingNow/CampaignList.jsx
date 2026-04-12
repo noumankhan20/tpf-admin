@@ -1,5 +1,5 @@
 import React from 'react';
-import { Edit2, Trash2, Calendar, AlertCircle, CheckCircle2,PauseCircle,CheckCircle, Clock, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Edit2, Trash2, Calendar, AlertCircle, CheckCircle2, PauseCircle, CheckCircle, Clock, ChevronLeft, ChevronRight } from 'lucide-react';
 import { getMediaUrl } from '@/utils/media';
 
 export default function CampaignList({
@@ -10,7 +10,8 @@ export default function CampaignList({
   pagination,       // { total, page, limit, totalPages, hasNextPage, hasPrevPage }
   onPageChange,     // (newPage) => void
   onMarkComplete,
-  onMarkInactive
+  onMarkInactive,
+  onMarkActive
 }) {
   if (campaigns.length === 0) {
     return (
@@ -170,21 +171,35 @@ export default function CampaignList({
 
                 {/* Status Actions Row */}
                 <div className="flex gap-2">
-                  <button
-                    onClick={() => onMarkInactive(card.campaignId?._id)}
-                    className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-yellow-50 text-yellow-700 rounded-lg hover:bg-yellow-100 transition-all text-sm font-medium"
-                  >
-                    <PauseCircle size={14} />
-                    <span>Mark Inactive</span>
-                  </button>
 
-                  <button
-                    onClick={() => onMarkComplete(card.campaignId?._id)}
-                    className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-all text-sm font-medium"
-                  >
-                    <CheckCircle size={14} />
-                    <span>Mark Complete</span>
-                  </button>
+                  {card.campaignId?.campaignStatus === "INACTIVE" ? (
+                    <button
+                      onClick={() => onMarkActive(card.campaignId?._id)}
+                      className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-emerald-50 text-emerald-700 rounded-lg hover:bg-emerald-100 transition-all text-sm font-medium"
+                    >
+                      <CheckCircle2 size={14} />
+                      <span>Activate</span>
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => onMarkInactive(card.campaignId?._id)}
+                      className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-yellow-50 text-yellow-700 rounded-lg hover:bg-yellow-100 transition-all text-sm font-medium"
+                    >
+                      <PauseCircle size={14} />
+                      <span>Mark Inactive</span>
+                    </button>
+                  )}
+
+                  {card.campaignId?.campaignStatus !== "COMPLETED" && (
+                    <button
+                      onClick={() => onMarkComplete(card.campaignId?._id)}
+                      className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-all text-sm font-medium"
+                    >
+                      <CheckCircle size={14} />
+                      <span>Mark Complete</span>
+                    </button>
+                  )}
+
                 </div>
               </div>
             </div>
