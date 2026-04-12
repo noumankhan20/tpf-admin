@@ -95,7 +95,7 @@ export default function CampaignForm({
     return !deepEqual(formData, initialDataRef.current);
   }, [formData]);
 
-  // ── Tabs ──────────────────────────────────────────────────────────────────
+  // ── Tabs ── ────────────────────────────────────────────────────────────────
   const tabs = [
     { id: 'basic', label: 'Basic Info', icon: <Layout size={18} /> },
     { id: 'story', label: 'Story & Media', icon: <ImageIcon size={18} /> },
@@ -741,21 +741,100 @@ export default function CampaignForm({
                         />
                       ))}
                     </div>
-                    <div className="pt-2">
-                      <label className="block text-xs font-bold text-gray-400 uppercase mb-2">
-                        Current Status Update
-                      </label>
-                      <textarea
-                        value={formData.currentStatus}
-                        onChange={(e) =>
-                          setFormData((p) => ({ ...p, currentStatus: e.target.value }))
-                        }
-                        className="w-full p-3 bg-emerald-50/30 border border-emerald-100 rounded-xl text-xs font-medium focus:border-emerald-400 outline-none"
-                        rows={2}
-                        placeholder="Quick update..."
-                      />
-                    </div>
                   </div>
+                </div>
+
+                {/* STATUS MANAGEMENT - Add this after social links */}
+                <div className="space-y-4">
+                  <label className="block text-xs font-bold text-gray-400 uppercase mb-2 flex items-center gap-2">
+                    <History size={14} /> Campaign Status Updates
+                  </label>
+
+                  {/* Add New Status */}
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="Enter new status update..."
+                      value={formData.currentStatus}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          currentStatus: e.target.value,
+                        }))
+                      }
+                      className="flex-1 px-3 py-2 border-2 border-gray-200 rounded-lg text-sm focus:border-emerald-500 outline-none"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (!formData.currentStatus.trim()) return;
+
+                        setFormData((prev) => ({
+                          ...prev,
+                          statusHistory: [
+                            ...(prev.statusHistory || []),
+                            {
+                              status: prev.currentStatus.trim(),
+                              createdAt: new Date().toISOString(),
+                            },
+                          ],
+                          currentStatus: "", // Clear input after adding
+                        }));
+                      }}
+                      className="px-4 py-2 bg-emerald-600 text-white rounded-lg font-bold text-xs uppercase hover:bg-emerald-700 transition-all"
+                    >
+                      Add Status
+                    </button>
+                  </div>
+
+                  {/* Status History List */}
+                  {formData.statusHistory?.length > 0 && (
+                    <div className="max-h-48 overflow-y-auto border-2 border-gray-100 rounded-xl p-3 bg-gray-50">
+                      <div className="space-y-2">
+                        {[...formData.statusHistory].reverse().map((item, index) => (
+                          <div
+                            key={index}
+                            className="flex items-start justify-between p-3 rounded-lg border-l-4 border-emerald-500 bg-white group hover:shadow-sm transition-all"
+                          >
+                            <div className="flex-1">
+                              <div className="text-sm font-semibold text-gray-700">
+                                {item.status}
+                              </div>
+                              <div className="text-[10px] text-gray-400 mt-1">
+                                {new Date(item.createdAt).toLocaleString('en-IN', {
+                                  dateStyle: 'medium',
+                                  timeStyle: 'short'
+                                })}
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setFormData((prev) => ({
+                                  ...prev,
+                                  statusHistory: prev.statusHistory.filter(
+                                    (_, i) => i !== (prev.statusHistory.length - 1 - index)
+                                  ),
+                                }));
+                              }}
+                              className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover:opacity-100"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {!formData.statusHistory?.length && (
+                    <div className="h-20 flex flex-col items-center justify-center border-2 border-dotted border-gray-100 rounded-xl">
+                      <History className="text-gray-100 mb-2" size={24} />
+                      <p className="text-[10px] font-bold text-gray-300 uppercase">
+                        No status updates yet
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 {/* Documents */}

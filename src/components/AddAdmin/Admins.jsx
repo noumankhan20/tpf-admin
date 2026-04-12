@@ -25,9 +25,14 @@ import {
 } from 'lucide-react';
 import AddAdminModal from "./AddAdminModal";
 import ConfirmModal from "../Common/ConfirmModal";
-import { ADMIN_MODULES } from '../config/adminRoles';
+import { MODULES } from '../config/modules';
 import { toast } from 'react-toastify';
 import { useGetAllAdminsQuery, useAddAdminMutation, useDisableAdminMutation, useEnableAdminMutation, useEditAdminMutation, useDeleteAdminMutation } from '@/utils/slices/adminApiSlice';
+
+// Helper: resolve a module ID to its display name
+const getModuleName = (id) => {
+    return MODULES.find((m) => m.id === id)?.name || id;
+};
 
 const AdminManagement = () => {
     const {
@@ -66,7 +71,6 @@ const AdminManagement = () => {
 
     const router = useRouter();
 
-
     const openEditModal = (admin) => {
         console.log("Admin:", admin);
         setSelectedAdmin({
@@ -75,7 +79,6 @@ const AdminManagement = () => {
             position: admin.position || "",
             mobileNo: admin.mobileNo || '',
         });
-        // console.log("Selected Admin:", selectedAdmin);
         setIsEditModalOpen(true);
     };
 
@@ -175,11 +178,11 @@ const AdminManagement = () => {
             department: selectedAdmin?.department,
             position: selectedAdmin?.position,
         });
-        // Create the updated data object matching backend expectations
+
         const updatedAdminData = {
             email: selectedAdmin.email,
             mobileNo: selectedAdmin.mobileNo || '',
-            fullName: selectedAdmin.name, // Map frontend's 'name' to backend's 'fullName'
+            fullName: selectedAdmin.name,
             modules: selectedAdmin.modules || [],
             isSuperAdmin: selectedAdmin.isSuperAdmin || false,
             department: selectedAdmin.department || '',
@@ -187,10 +190,9 @@ const AdminManagement = () => {
         };
 
         try {
-            // Send only the data object, adminId will be in URL
             await editAdmin({
-                id: selectedAdmin.id, // This goes to URL params
-                data: updatedAdminData // This goes to request body
+                id: selectedAdmin.id,
+                data: updatedAdminData
             }).unwrap();
             refetch();
             toast.success('Admin updated successfully!');
@@ -201,25 +203,11 @@ const AdminManagement = () => {
         }
     };
 
-    // Handle toggle change for SuperAdmin
-    const handleSuperAdminToggle = () => {
-        setSelectedAdmin((prevState) => {
-            const newIsSuperAdmin = !prevState.isSuperAdmin;
-            return {
-                ...prevState,
-                isSuperAdmin: newIsSuperAdmin,
-                // If turned off, clear the modules array
-                modules: newIsSuperAdmin ? ADMIN_MODULES : [],
-            };
-        });
-    };
-
-
     const handleDeleteAdmin = async (adminId) => {
         try {
             await deleteAdmin(adminId).unwrap();
             toast.success("Admin deleted successfully");
-            refetch(); // refresh list
+            refetch();
         } catch (error) {
             toast.error(
                 error?.data?.message || "Failed to delete admin",
@@ -227,7 +215,6 @@ const AdminManagement = () => {
             );
         }
     };
-
 
     if (isLoading) {
         return (
@@ -266,7 +253,7 @@ const AdminManagement = () => {
             <div className="flex-1 flex flex-col overflow-hidden">
 
                 <div className="w-full max-w-7xl mx-auto p-4 sm:p-6">
-                    {/* Enhanced Header Section - Mobile Responsive */}
+                    {/* Header Section */}
                     <div className="mb-6">
                         {/* Mobile Layout */}
                         <div className="lg:hidden space-y-4">
@@ -312,7 +299,6 @@ const AdminManagement = () => {
                         <div className="hidden lg:block relative">
                             <button
                                 onClick={() => router.push('/select-portal?category=administration')}
-
                                 className="absolute left-0 top-1/2 -translate-y-1/2 flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-medium text-gray-600 hover:text-gray-800 hover:bg-white transition-all border border-gray-300 shadow-sm"
                             >
                                 <ArrowLeft className="w-4 h-4" />
@@ -353,10 +339,9 @@ const AdminManagement = () => {
                         </div>
                     </div>
 
-
                     {/* Activity Table */}
                     <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
-                        {/* Search and Filter Bar - Mobile Responsive */}
+                        {/* Search and Filter Bar */}
                         <div className="bg-gradient-to-r from-emerald-50 to-blue-50 p-4 border-b border-gray-200">
                             <div className="flex flex-col sm:flex-row gap-3">
                                 <div className="flex-1 relative">
@@ -377,9 +362,9 @@ const AdminManagement = () => {
                                         className="appearance-none w-full sm:w-auto bg-white border border-gray-200 rounded-xl px-4 py-3 pr-10 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all duration-200 cursor-pointer text-sm"
                                     >
                                         <option value="All">All Roles</option>
-                                        {ADMIN_MODULES.map((role) => (
-                                            <option key={role} value={role}>
-                                                {role}
+                                        {MODULES.map((module) => (
+                                            <option key={module.id} value={module.id}>
+                                                {module.name}
                                             </option>
                                         ))}
                                     </select>
@@ -430,12 +415,12 @@ const AdminManagement = () => {
                                                             </span>
                                                         ) : (
                                                             Array.isArray(admin.modules) && admin.modules.length > 0 ? (
-                                                                admin.modules.slice(0, 2).map((module, index) => (
+                                                                admin.modules.slice(0, 2).map((moduleId, index) => (
                                                                     <span
                                                                         key={index}
                                                                         className="px-3 py-1 rounded-lg text-xs font-medium whitespace-nowrap bg-blue-100 text-blue-800 border border-blue-200"
                                                                     >
-                                                                        {module}
+                                                                        {getModuleName(moduleId)}
                                                                     </span>
                                                                 ))
                                                             ) : (
@@ -491,10 +476,10 @@ const AdminManagement = () => {
                                                         >
                                                             <EyeOff className="w-4 h-4" />
                                                         </button>
-                                                        {/* Enable Button */}
+
                                                         {admin.status === 'Disabled' && (
                                                             <button
-                                                                onClick={() => handleEnableAdmin(admin.id)}  // Call the enable handler
+                                                                onClick={() => handleEnableAdmin(admin.id)}
                                                                 disabled={isEnabingAdmin}
                                                                 className={`p-2 rounded-lg cursor-pointer transition-all duration-200 ${isEnabingAdmin
                                                                     ? 'text-gray-300 cursor-not-allowed'
@@ -504,15 +489,15 @@ const AdminManagement = () => {
                                                                 <CheckCircle2 className="w-4 h-4" />
                                                             </button>
                                                         )}
+
                                                         <button
                                                             onClick={() => setConfirmDeleteAdmin(admin)}
                                                             disabled={isDeletingAdmin}
                                                             className="p-2 rounded-lg transition-all cursor-pointer duration-200 text-red-700 hover:bg-red-100 hover:scale-110"
                                                             title="Delete Admin"
                                                         >
-                                                            <Trash2 className="w-4 h-4" /> {/* you can replace with Trash2 icon later */}
+                                                            <Trash2 className="w-4 h-4" />
                                                         </button>
-
                                                     </div>
                                                 </td>
                                             </tr>
@@ -534,7 +519,7 @@ const AdminManagement = () => {
                             </table>
                         </div>
 
-                        {/* Mobile Card View - Enhanced */}
+                        {/* Mobile Card View */}
                         <div className="lg:hidden">
                             {filteredData.length > 0 ? (
                                 filteredData.map((admin) => (
@@ -570,12 +555,12 @@ const AdminManagement = () => {
                                                 ) : (
                                                     Array.isArray(admin.modules) && admin.modules.length > 0 ? (
                                                         <>
-                                                            {admin.modules.slice(0, 2).map((module, index) => (
+                                                            {admin.modules.slice(0, 2).map((moduleId, index) => (
                                                                 <span
                                                                     key={index}
                                                                     className="px-2.5 py-1 rounded-lg text-xs font-medium bg-blue-100 text-blue-800 border border-blue-200"
                                                                 >
-                                                                    {module}
+                                                                    {getModuleName(moduleId)}
                                                                 </span>
                                                             ))}
                                                             {admin.modules.length > 2 && (
@@ -633,7 +618,6 @@ const AdminManagement = () => {
                         </div>
 
                         {/* Edit Modal */}
-                        {/* Edit Modal */}
                         {isEditModalOpen && selectedAdmin && (
                             <div
                                 className="fixed inset-0 bg-black/50 backdrop-blur-md flex items-center justify-center z-50 p-4 animate-in fade-in duration-200"
@@ -657,7 +641,6 @@ const AdminManagement = () => {
                                     </div>
 
                                     <div className="p-6 space-y-4">
-                                        {/* Basic Information */}
                                         <div>
                                             <label className="block text-sm font-semibold text-gray-700 mb-3">Name</label>
                                             <input
@@ -689,39 +672,23 @@ const AdminManagement = () => {
                                         </div>
 
                                         <div>
-                                            <label className="block text-sm font-semibold text-gray-700 mb-3">
-                                                Department
-                                            </label>
+                                            <label className="block text-sm font-semibold text-gray-700 mb-3">Department</label>
                                             <input
                                                 type="text"
                                                 value={selectedAdmin.department}
-                                                onChange={(e) =>
-                                                    setSelectedAdmin({
-                                                        ...selectedAdmin,
-                                                        department: e.target.value,
-                                                    })
-                                                }
-                                                className="w-full px-4 py-3 border border-gray-200 rounded-xl
-      focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                                onChange={(e) => setSelectedAdmin({ ...selectedAdmin, department: e.target.value })}
+                                                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500"
                                                 placeholder="e.g. IT, HR, Operations"
                                             />
                                         </div>
 
                                         <div>
-                                            <label className="block text-sm font-semibold text-gray-700 mb-3">
-                                                Position
-                                            </label>
+                                            <label className="block text-sm font-semibold text-gray-700 mb-3">Position</label>
                                             <input
                                                 type="text"
                                                 value={selectedAdmin.position}
-                                                onChange={(e) =>
-                                                    setSelectedAdmin({
-                                                        ...selectedAdmin,
-                                                        position: e.target.value,
-                                                    })
-                                                }
-                                                className="w-full px-4 py-3 border border-gray-200 rounded-xl
-      focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                                onChange={(e) => setSelectedAdmin({ ...selectedAdmin, position: e.target.value })}
+                                                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500"
                                                 placeholder="e.g. Manager, Executive"
                                             />
                                         </div>
@@ -735,20 +702,18 @@ const AdminManagement = () => {
                                                         SuperAdmins have full access to all modules
                                                     </p>
                                                 </div>
-                                                <div className="flex items-center">
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setSelectedAdmin({
-                                                            ...selectedAdmin,
-                                                            isSuperAdmin: !selectedAdmin.isSuperAdmin
-                                                        })}
-                                                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${selectedAdmin.isSuperAdmin ? 'bg-purple-600' : 'bg-gray-300'}`}
-                                                    >
-                                                        <span
-                                                            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${selectedAdmin.isSuperAdmin ? 'translate-x-6' : 'translate-x-1'}`}
-                                                        />
-                                                    </button>
-                                                </div>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setSelectedAdmin({
+                                                        ...selectedAdmin,
+                                                        isSuperAdmin: !selectedAdmin.isSuperAdmin
+                                                    })}
+                                                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${selectedAdmin.isSuperAdmin ? 'bg-purple-600' : 'bg-gray-300'}`}
+                                                >
+                                                    <span
+                                                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${selectedAdmin.isSuperAdmin ? 'translate-x-6' : 'translate-x-1'}`}
+                                                    />
+                                                </button>
                                             </div>
 
                                             {selectedAdmin.isSuperAdmin && (
@@ -763,7 +728,7 @@ const AdminManagement = () => {
                                             )}
                                         </div>
 
-                                        {/* Modules Selection - Only show if not SuperAdmin */}
+                                        {/* Modules Selection - only when not SuperAdmin */}
                                         {!selectedAdmin.isSuperAdmin && (
                                             <>
                                                 <label className="block text-sm font-semibold text-gray-700 mb-3">
@@ -771,15 +736,16 @@ const AdminManagement = () => {
                                                 </label>
 
                                                 <div className="grid grid-cols-1 gap-2 max-h-96 overflow-y-auto p-1">
-                                                    {ADMIN_MODULES.map((role) => {
-                                                        const isSelected = selectedAdmin.modules.includes(role);
+                                                    {MODULES.map((module) => {
+                                                        const isSelected = selectedAdmin.modules.includes(module.id);
                                                         return (
                                                             <label
-                                                                key={role}
-                                                                className={`flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all ${isSelected
-                                                                    ? 'border-emerald-300 bg-emerald-50'
-                                                                    : 'border-gray-200 hover:border-gray-300 bg-white'
-                                                                    }`}
+                                                                key={module.id}
+                                                                className={`flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all ${
+                                                                    isSelected
+                                                                        ? 'border-emerald-300 bg-emerald-50'
+                                                                        : 'border-gray-200 hover:border-gray-300 bg-white'
+                                                                }`}
                                                             >
                                                                 <input
                                                                     type="checkbox"
@@ -788,19 +754,19 @@ const AdminManagement = () => {
                                                                         if (isSelected) {
                                                                             setSelectedAdmin({
                                                                                 ...selectedAdmin,
-                                                                                modules: selectedAdmin.modules.filter((r) => r !== role),
+                                                                                modules: selectedAdmin.modules.filter((m) => m !== module.id),
                                                                             });
                                                                         } else {
                                                                             setSelectedAdmin({
                                                                                 ...selectedAdmin,
-                                                                                modules: [...selectedAdmin.modules, role],
+                                                                                modules: [...selectedAdmin.modules, module.id],
                                                                             });
                                                                         }
                                                                     }}
                                                                     className="w-4 h-4 text-emerald-600 border-gray-300 rounded focus:ring-2 focus:ring-emerald-500 cursor-pointer"
                                                                 />
                                                                 <span className={`text-sm flex-1 ${isSelected ? 'text-gray-900 font-medium' : 'text-gray-700'}`}>
-                                                                    {role}
+                                                                    {module.name}
                                                                 </span>
                                                             </label>
                                                         );
@@ -854,7 +820,7 @@ const AdminManagement = () => {
                             </div>
                         )}
 
-                        {/* Pagination - Mobile Responsive */}
+                        {/* Pagination */}
                         <div className="p-4 sm:p-6 bg-gray-50 border-t border-gray-200">
                             <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
                                 <div className="text-sm text-gray-600 text-center sm:text-left">
@@ -869,7 +835,6 @@ const AdminManagement = () => {
                         </div>
                     </div>
                 </div>
-
             </div>
 
             <AddAdminModal
@@ -888,7 +853,7 @@ const AdminManagement = () => {
                             position: formData.position,
                         }).unwrap();
 
-                        toast.success(`Admin ${formData.fullname} created successfully!`);
+                        toast.success(`Admin ${formData.fullName} created successfully!`);
                         setIsModalOpen(false);
                     } catch (err) {
                         toast.error(err?.data?.message || "Failed to add admin. Please try again.");
@@ -915,8 +880,7 @@ const AdminManagement = () => {
                 confirmText={isDeletingAdmin ? "Deleting..." : "Delete"}
                 type="danger"
             />
-
-        </div >
+        </div>
     );
 };
 

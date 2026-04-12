@@ -103,11 +103,24 @@ export const adminApiSlice = apiSlice.injectEndpoints({
       }),
     }),
 
+    // ✅ Fixed
     getEmployees: builder.query({
-      query: () => ({
-        url: "/adminAuth/getemployees", // The GET request for /getall
-        method: "GET",
-      }),
+      query: (params) => {
+        const searchParams = new URLSearchParams();
+
+        const filterKeys = [
+          'search', 'status', 'isActive', 'department',
+          'position', 'module', 'minTasks', 'maxTasks'
+        ];
+
+        filterKeys.forEach((key) => {
+          if (params[key] !== undefined && params[key] !== '') {
+            searchParams.set(key, params[key]);
+          }
+        });
+
+        return `/adminAuth/getemployees?${searchParams.toString()}`;
+      },
     }),
 
     getAdminSalary: builder.query({
@@ -154,6 +167,10 @@ export const adminApiSlice = apiSlice.injectEndpoints({
       }),
     }),
 
+    getAdminFilterOptions: builder.query({
+      query: () => "/adminAuth/filter-options",
+    }),
+
 
 
 
@@ -178,5 +195,6 @@ export const {
   useGetEmployeeLoginLogoutTimeQuery,
   useDeleteAdminMutation,
   useForgotPasswordAdminMutation,
-  useResetPasswordAdminMutation
+  useResetPasswordAdminMutation,
+  useGetAdminFilterOptionsQuery
 } = adminApiSlice;

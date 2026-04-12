@@ -8,12 +8,14 @@ import {
     Receipt,
     Calendar,
     Search,
+    SlidersHorizontal,
     Filter,
     Download,
     Plus,
     CheckCircle,
     XCircle,
     Eye,
+    X,
     FileText,
     TrendingUp,
     AlertCircle,
@@ -29,8 +31,190 @@ import {
     Building2,
     MoreVertical,
 } from 'lucide-react';
-import { useGetEmployeesQuery, useGetAdminSalaryQuery, useGetAdminExpensesQuery, useGetEmployeeLoginLogoutTimeQuery } from '@/utils/slices/adminApiSlice';
+import { useGetEmployeesQuery, useGetAdminSalaryQuery, useGetAdminExpensesQuery, useGetEmployeeLoginLogoutTimeQuery, useGetAdminFilterOptionsQuery } from '@/utils/slices/adminApiSlice';
 import DetailsModal from "./popupModal"
+
+const STATUS_OPTIONS = ["Active", "Disabled"];
+
+const EMPTY_FILTERS = {
+    status: '',
+    isActive: '',
+    department: '',
+    position: '',
+    module: '',
+    minTasks: '',
+    maxTasks: '',
+};
+
+const Pill = ({ val, active, onClick, label }) => (
+    <button
+        onClick={onClick}
+        className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all duration-150 ${active
+            ? 'bg-emerald-500 border-emerald-500 text-white shadow-sm'
+            : 'bg-white border-gray-200 text-gray-500 hover:border-emerald-300 hover:text-emerald-600 hover:bg-emerald-50'
+            }`}
+    >
+        {label || val || "All"}
+    </button>
+);
+
+const Section = ({ title, children }) => (
+    <div className="space-y-2.5">
+        <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">{title}</p>
+        {children}
+    </div>
+);
+
+const EmployeeFilterDrawer = ({ open, onClose, filters, onApply, filterOptions }) => {
+    const [local, setLocal] = useState(filters);
+
+    useEffect(() => setLocal(filters), [filters]);
+
+    if (!open) return null;
+
+    const set = (k, v) => setLocal(p => ({ ...p, [k]: v }));
+
+    const apply = () => {
+        onApply(local);
+        onClose();
+    };
+
+    const reset = () => {
+        onApply(EMPTY_FILTERS);
+        onClose();
+    };
+
+    const activeCount = Object.entries(local).filter(([, v]) => v !== '').length;
+
+    return (
+        <div className="fixed inset-0 z-50 flex" onClick={onClose}>
+            <div className="flex-1 bg-black/30 backdrop-blur-sm" />
+            <div
+                className="w-full max-w-sm bg-white h-full shadow-2xl flex flex-col overflow-hidden"
+                style={{ borderLeft: '1px solid #e5e7eb' }}
+                onClick={(e) => e.stopPropagation()}
+            >
+                {/* Header */}
+                <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 flex-shrink-0">
+                    <div className="flex items-center gap-2.5">
+                        <div className="p-1.5 bg-emerald-50 rounded-lg">
+                            <Filter size={14} className="text-emerald-600" />
+                        </div>
+                        <div>
+                            <h3 className="text-[15px] font-semibold text-gray-900">Filter Employees</h3>
+                            {activeCount > 0 && (
+                                <p className="text-[11px] text-emerald-600 font-medium">{activeCount} filter{activeCount > 1 ? 's' : ''} active</p>
+                            )}
+                        </div>
+                    </div>
+                    <button
+                        onClick={onClose}
+                        className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
+                    >
+                        <X size={15} />
+                    </button>
+                </div>
+
+                {/* Body */}
+                <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6">
+
+                    {/* STATUS */}
+                    <Section title="Status">
+                        <div className="flex flex-wrap gap-2">
+                            <Pill val="" label="All" active={local.status === ''} onClick={() => set('status', '')} />
+                            {STATUS_OPTIONS.map(s => (
+                                <Pill key={s} val={s} label={s} active={local.status === s} onClick={() => set('status', s)} />
+                            ))}
+                        </div>
+                    </Section>
+
+                    {/* DEPARTMENT */}
+                    <Section title="Department">
+                        <div className="relative">
+                            <Building2 size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                            <select
+                                value={local.department}
+                                onChange={(e) => set('department', e.target.value)}
+                                className="w-full pl-9 pr-3 py-2.5 border border-gray-200 rounded-lg text-sm"
+                            >
+                                <option value="">All Departments</option>
+
+                                {filterOptions?.departments?.map((dept) => (
+                                    <option key={dept} value={dept}>
+                                        {dept}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                    </Section>
+
+                    {/* POSITION */}
+                    <Section title="Position">
+                        <div className="relative">
+                            <Briefcase size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                            <select
+                                value={local.position}
+                                onChange={(e) => set('position', e.target.value)}
+                                className="w-full pl-9 pr-3 py-2.5 border border-gray-200 rounded-lg text-sm"
+                            >
+                                <option value="">All Positions</option>
+
+                                {filterOptions?.positions?.map((pos) => (
+                                    <option key={pos} value={pos}>
+                                        {pos}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                    </Section>
+
+                    {/* TASK RANGE */}
+                    {/* <div className="flex gap-2">
+                        <input
+                            type="number"
+                            placeholder="Min Tasks"
+                            value={local.minTasks}
+                            onChange={(e) => set('minTasks', e.target.value)}
+                            className="border p-2 w-full"
+                        />
+                        <input
+                            type="number"
+                            placeholder="Max Tasks"
+                            value={local.maxTasks}
+                            onChange={(e) => set('maxTasks', e.target.value)}
+                            className="border p-2 w-full"
+                        />
+                    </div> */}
+
+                </div>
+
+                {/* Footer */}
+                <div className="px-6 py-4 border-t border-gray-100 flex-shrink-0 space-y-3">
+                    {activeCount > 0 && (
+                        <p className="text-center text-xs text-gray-400">
+                            {activeCount} filter{activeCount > 1 ? 's' : ''} will be applied
+                        </p>
+                    )}
+                    <div className="flex gap-3">
+                        <button
+                            onClick={reset}
+                            className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-colors"
+                        >
+                            Reset All
+                        </button>
+                        <button
+                            onClick={apply}
+                            className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white transition-all hover:shadow-md"
+                            style={{ background: 'linear-gradient(135deg, #10b981, #059669)' }}
+                        >
+                            Apply Filters
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
 
 export default function EmployeeManagement() {
     const [employees, setEmployees] = useState([]);
@@ -46,8 +230,29 @@ export default function EmployeeManagement() {
     const [isEditing, setIsEditing] = useState(false);
     const [editedEmployee, setEditedEmployee] = useState(null);
     const [selectedExpense, setSelectedExpense] = useState(null);
+    const [appliedFilters, setAppliedFilters] = useState(EMPTY_FILTERS);
+    const [debouncedSearch, setDebouncedSearch] = useState("");
+    const [filterOpen, setFilterOpen] = useState(false);
+    const queryParams = useMemo(() => {
+        const params = {
+            search: debouncedSearch,
+        };
 
-    const { data, error, isLoading } = useGetEmployeesQuery();
+        Object.entries(appliedFilters).forEach(([k, v]) => {
+            if (v !== '') {
+                if (v === 'true') params[k] = 'true';
+                else if (v === 'false') params[k] = 'false';
+                else params[k] = v;
+            }
+        });
+
+        return params;
+    }, [appliedFilters, debouncedSearch]);
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [debouncedSearch]);
+
+    const { data, error, isLoading } = useGetEmployeesQuery(queryParams);
     const { data: salaryData, isLoading: isSalaryLoading, error: salaryError } = useGetAdminSalaryQuery(
         selectedEmployee?._id,
         { skip: !selectedEmployee?._id }
@@ -60,6 +265,8 @@ export default function EmployeeManagement() {
         selectedEmployee?._id,
         { skip: !selectedEmployee?._id }
     );
+
+    const { data: filterOptions } = useGetAdminFilterOptionsQuery();
 
     useEffect(() => {
         if (expensesData?.data && selectedEmployee && !selectedEmployee.expenses) {
@@ -74,6 +281,11 @@ export default function EmployeeManagement() {
         }
     }, [data]);
 
+    const applyFilters = (f) => {
+        setAppliedFilters(f);
+        setCurrentPage(1);
+    };
+
     useEffect(() => {
         if (selectedEmployee) {
             console.log("Fetching login/logout data for:", selectedEmployee._id);
@@ -85,6 +297,13 @@ export default function EmployeeManagement() {
             console.log("Login/Logout Data:", loginLogoutData);
         }
     }, [loginLogoutData, selectedEmployee]);
+    useEffect(() => {
+        const t = setTimeout(() => {
+            setDebouncedSearch(searchQuery);
+        }, 500);
+
+        return () => clearTimeout(t);
+    }, [searchQuery]);
 
     const handleViewSalaryDetails = (salary) => {
         setSelectedSalary(salary);
@@ -102,22 +321,10 @@ export default function EmployeeManagement() {
         setSelectedExpense(null);
     };
 
-    const filteredEmployees = useMemo(() => {
-        return employees.filter(emp => {
-            const searchLower = searchQuery.toLowerCase();
-            return (
-                (emp.name && emp.name.toLowerCase().includes(searchLower)) ||
-                (emp.email && emp.email.toLowerCase().includes(searchLower)) ||
-                (emp.department && emp.department.toLowerCase().includes(searchLower)) ||
-                (emp.position && emp.position.toLowerCase().includes(searchLower))
-            );
-        });
-    }, [employees, searchQuery]);
-
-    const totalPages = Math.ceil(filteredEmployees.length / itemsPerPage);
+    const totalPages = Math.ceil(employees.length / itemsPerPage);
     const indexOfLastItem = currentPage * itemsPerPage;
     const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-    const currentEmployees = filteredEmployees.slice(indexOfFirstItem, indexOfLastItem);
+    const currentEmployees = employees.slice(indexOfFirstItem, indexOfLastItem);
 
     const handlePageChange = (pageNumber) => {
         setCurrentPage(pageNumber);
@@ -536,23 +743,55 @@ export default function EmployeeManagement() {
                 </div>
             </div>
 
-            <div className="bg-white rounded-2xl shadow-lg border border-slate-200 p-6 mb-6">
-                <div className="relative">
-                    <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
-                    <input
-                        type="text"
-                        placeholder="Search by name, email, department, or position..."
-                        value={searchQuery}
-                        onChange={(e) => {
-                            setSearchQuery(e.target.value);
-                            setCurrentPage(1);
-                        }}
-                        className="w-full pl-12 pr-4 py-3.5 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                    />
+            <div className="bg-white rounded-2xl shadow-lg border border-slate-200 p-4 sm:p-5 mb-6">
+                <div className="flex gap-2">
+                    {/* Search */}
+                    <div className="relative flex-1">
+                        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4 pointer-events-none" />
+                        <input
+                            type="text"
+                            placeholder="Search by name, email, department, or position..."
+                            value={searchQuery}
+                            onChange={(e) => {
+                                setSearchQuery(e.target.value);
+                                setCurrentPage(1);
+                            }}
+                            className="w-full pl-10 pr-9 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 transition-all placeholder:text-slate-300"
+                        />
+                        {searchQuery && (
+                            <button
+                                onClick={() => { setSearchQuery(''); setCurrentPage(1); }}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-500 transition-colors"
+                            >
+                                <X size={13} />
+                            </button>
+                        )}
+                    </div>
+
+                    {/* Filter Button */}
+                    <button
+                        onClick={() => setFilterOpen(true)}
+                        className="flex items-center cursor-pointer gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold border transition-all flex-shrink-0"
+                        style={
+                            Object.values(appliedFilters).some(v => v !== '')
+                                ? { background: '#ecfdf5', borderColor: '#6ee7b7', color: '#059669' }
+                                : { background: 'white', borderColor: '#e2e8f0', color: '#475569' }
+                        }
+                    >
+                        <SlidersHorizontal size={14} />
+                        <span className="hidden sm:inline">Filters</span>
+                        {Object.values(appliedFilters).filter(v => v !== '').length > 0 && (
+                            <span className="w-5 h-5 rounded-full bg-emerald-500 text-white text-[10px] font-bold flex items-center justify-center">
+                                {Object.values(appliedFilters).filter(v => v !== '').length}
+                            </span>
+                        )}
+                    </button>
                 </div>
+
+                {/* Search result count */}
                 {searchQuery && (
-                    <p className="text-sm text-slate-600 mt-3 font-medium">
-                        Found {filteredEmployees.length} employee{filteredEmployees.length !== 1 ? 's' : ''}
+                    <p className="text-xs text-slate-400 mt-2.5 pl-1">
+                        Found <span className="font-semibold text-slate-600">{employees.length}</span> employee{employees.length !== 1 ? 's' : ''}
                     </p>
                 )}
             </div>
@@ -561,7 +800,7 @@ export default function EmployeeManagement() {
                 <div className="flex justify-between items-center mb-6">
                     <h2 className="text-xl font-bold text-slate-900">All Employees</h2>
                     <div className="text-sm text-slate-600 font-medium">
-                        {indexOfFirstItem + 1}-{Math.min(indexOfLastItem, filteredEmployees.length)} of {filteredEmployees.length}
+                        {indexOfFirstItem + 1}-{Math.min(indexOfLastItem, employees.length)} of {employees.length}
                     </div>
                 </div>
 
@@ -685,7 +924,7 @@ export default function EmployeeManagement() {
                     </div>
                 )}
 
-                {filteredEmployees.length === 0 && (
+                {employees.length === 0 && (
                     <div className="text-center py-16">
                         <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
                             <Users className="w-10 h-10 text-slate-400" />
@@ -701,6 +940,13 @@ export default function EmployeeManagement() {
                         )}
                     </div>
                 )}
+                <EmployeeFilterDrawer
+                    open={filterOpen}
+                    onClose={() => setFilterOpen(false)}
+                    filters={appliedFilters}
+                    onApply={applyFilters}
+                    filterOptions={filterOptions}
+                />
             </div>
         </div>
     );

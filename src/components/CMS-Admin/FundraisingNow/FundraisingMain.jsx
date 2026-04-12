@@ -12,6 +12,7 @@ import {
   useCreateFundraiserMutation,
   useUpdateFundraiserMutation,
   useDeleteFundraiserMutation,
+  useUpdateCampaignStatusMutation
 } from "@/utils/slices/cms/fundraiserApi";
 import { toast } from "react-toastify";
 import ConfirmModal from "@/components/Common/ConfirmModal";
@@ -128,6 +129,7 @@ export default function FundraisingCMS() {
   const isSaving = isCreating || isUpdating;
 
   const [deleteFundraiser] = useDeleteFundraiserMutation();
+  const [updateCampaignStatus] = useUpdateCampaignStatusMutation();
 
   const fundraisingCards = fundraisersResponse?.data || [];
 
@@ -212,7 +214,8 @@ export default function FundraisingCMS() {
       isExistingVideo: !!card.videoUrl,
       existingDocuments: card.documents || [],
       documents: [],
-      currentStatus: card.currentStatus || "",
+      currentStatus: "", // Keep this empty for new input
+      statusHistory: card.statusHistory || [], // ✅ Load existing history
       selectedImageUrl: card.imageUrl || "",
       selectedVideoUrl: card.videoUrl || "",
       imageGallery: card.imageGallery || [],
@@ -257,7 +260,9 @@ export default function FundraisingCMS() {
   const handleSave = async () => {
     try {
       const form = new FormData();
-
+      console.log("🚀 FORM DATA BEFORE SAVE:");
+      console.log("currentStatus:", formData.currentStatus);
+      console.log("formData:", formData);
       form.append("title", formData.title);
       form.append("organization", formData.organization);
       form.append("category", finalCategory);
@@ -280,7 +285,9 @@ export default function FundraisingCMS() {
       form.append("beneficiaryName", formData.beneficiaryName);
       form.append("campaignerName", formData.campaignerName);
       form.append("about", formData.about);
-      form.append("currentStatus", formData.currentStatus);
+      if (formData.statusHistory && formData.statusHistory.length > 0) {
+        form.append("statusHistory", JSON.stringify(formData.statusHistory));
+      }
       if (formData.socialLinks) {
         form.append("socialLinks", JSON.stringify(formData.socialLinks));
       }
@@ -375,7 +382,7 @@ export default function FundraisingCMS() {
           console.error("Task completion failed (non-fatal):", taskErr);
         }
       }
-
+      console.log("📦 Sending currentStatus:", formData.currentStatus);
       toast.success(editingCard ? "Updated Successfully!" : "Created Successfully!");
       resetForm();
       setEditingCard(null);
@@ -418,6 +425,7 @@ export default function FundraisingCMS() {
       selectedVideoUrl: "",
       taskId: "",
       currentStatus: "",
+      statusHistory: [],
       imageGallery: [],
       socialLinks: {
         instagram: "",
@@ -437,6 +445,33 @@ export default function FundraisingCMS() {
       },
     });
     setSelectedCampaign(null);
+  };
+
+  const handleInactive = async (id) => {
+    try {
+      await updateCampaignStatus({
+        id,
+        action: "inactive",
+      }).unwrap();
+      toast.success("Campaign marked as inactive");
+    } catch (err) {
+      console.error(err);
+      const errorMessage = err?.data?.message || "Failed to update campaign";
+      toast.error(errorMessage);
+    }
+  };
+  const handleComplete = async (id) => {
+    try {
+      await updateCampaignStatus({
+        id,
+        action: "complete",
+      }).unwrap();
+      toast.success("Campaign marked as complete");
+    } catch (err) {
+      console.error(err);
+      const errorMessage = err?.data?.message || "Failed to update campaign";
+      toast.error(errorMessage);
+    }
   };
 
   const handleCancel = () => {
@@ -502,6 +537,9 @@ export default function FundraisingCMS() {
               imageUrl={undefined}
               onEdit={handleEdit}
               onDelete={handleDelete}
+              onMarkInactive={handleInactive}
+              onMarkComplete={handleComplete}
+
             />
           </>
         ) : (

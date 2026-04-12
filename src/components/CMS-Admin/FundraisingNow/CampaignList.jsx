@@ -1,5 +1,5 @@
 import React from 'react';
-import { Edit2, Trash2, Calendar, AlertCircle, CheckCircle2, Clock, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Edit2, Trash2, Calendar, AlertCircle, CheckCircle2,PauseCircle,CheckCircle, Clock, ChevronLeft, ChevronRight } from 'lucide-react';
 import { getMediaUrl } from '@/utils/media';
 
 export default function CampaignList({
@@ -9,6 +9,8 @@ export default function CampaignList({
   onDelete,
   pagination,       // { total, page, limit, totalPages, hasNextPage, hasPrevPage }
   onPageChange,     // (newPage) => void
+  onMarkComplete,
+  onMarkInactive
 }) {
   if (campaigns.length === 0) {
     return (
@@ -65,11 +67,10 @@ export default function CampaignList({
           return (
             <div
               key={card._id}
-              className={`bg-white rounded-xl border-2 transition-all duration-200 group ${
-                expired
-                  ? 'border-gray-200 opacity-75'
-                  : 'border-gray-200 hover:border-emerald-400'
-              }`}
+              className={`bg-white rounded-xl border-2 transition-all duration-200 group ${expired
+                ? 'border-gray-200 opacity-75'
+                : 'border-gray-200 hover:border-emerald-400'
+                }`}
             >
               {/* Top row */}
               <div className="flex items-center gap-4 px-4 py-3">
@@ -126,14 +127,20 @@ export default function CampaignList({
 
                 {/* Status Badge */}
                 <div className="flex-shrink-0">
-                  {expired ? (
-                    <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-500">
-                      <AlertCircle size={12} />
+                  {card.campaignId?.campaignStatus === "COMPLETED" ? (
+                    <span className="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded-full">
+                      Completed
+                    </span>
+                  ) : !card.campaignId?.isActive ? (
+                    <span className="px-2 py-1 text-xs bg-yellow-100 text-yellow-700 rounded-full">
+                      Inactive
+                    </span>
+                  ) : expired ? (
+                    <span className="px-2 py-1 text-xs bg-gray-100 text-gray-500 rounded-full">
                       Expired
                     </span>
                   ) : (
-                    <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700">
-                      <CheckCircle2 size={12} />
+                    <span className="px-2 py-1 text-xs bg-emerald-50 text-emerald-700 rounded-full">
                       Active
                     </span>
                   )}
@@ -141,21 +148,44 @@ export default function CampaignList({
               </div>
 
               {/* Actions */}
-              <div className="flex gap-2 px-4 pb-3">
-                <button
-                  onClick={() => onEdit(card)}
-                  className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-emerald-50 text-emerald-700 rounded-lg hover:bg-emerald-100 transition-colors font-medium"
-                >
-                  <Edit2 size={16} />
-                  <span>Edit</span>
-                </button>
-                <button
-                  onClick={() => onDelete(card._id)}
-                  className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-red-50 text-red-700 rounded-lg hover:bg-red-100 transition-colors font-medium"
-                >
-                  <Trash2 size={16} />
-                  <span>Delete</span>
-                </button>
+              <div className="px-4 pb-3 space-y-2">
+                {/* Primary Actions Row */}
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => onEdit(card)}
+                    className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-emerald-50 text-emerald-700 rounded-lg hover:bg-emerald-100 transition-all font-medium"
+                  >
+                    <Edit2 size={16} />
+                    <span>Edit</span>
+                  </button>
+
+                  <button
+                    onClick={() => onDelete(card._id)}
+                    className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-red-50 text-red-700 rounded-lg hover:bg-red-100 transition-all font-medium"
+                  >
+                    <Trash2 size={16} />
+                    <span>Delete</span>
+                  </button>
+                </div>
+
+                {/* Status Actions Row */}
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => onMarkInactive(card.campaignId?._id)}
+                    className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-yellow-50 text-yellow-700 rounded-lg hover:bg-yellow-100 transition-all text-sm font-medium"
+                  >
+                    <PauseCircle size={14} />
+                    <span>Mark Inactive</span>
+                  </button>
+
+                  <button
+                    onClick={() => onMarkComplete(card.campaignId?._id)}
+                    className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-all text-sm font-medium"
+                  >
+                    <CheckCircle size={14} />
+                    <span>Mark Complete</span>
+                  </button>
+                </div>
               </div>
             </div>
           );
@@ -195,11 +225,10 @@ export default function CampaignList({
                 <button
                   key={num}
                   onClick={() => onPageChange(num)}
-                  className={`min-w-[32px] h-8 px-2 rounded-lg text-sm font-medium border transition-colors ${
-                    num === page
-                      ? 'bg-emerald-500 border-emerald-500 text-white'
-                      : 'border-gray-200 text-gray-600 hover:border-emerald-400 hover:text-emerald-600'
-                  }`}
+                  className={`min-w-[32px] h-8 px-2 rounded-lg text-sm font-medium border transition-colors ${num === page
+                    ? 'bg-emerald-500 border-emerald-500 text-white'
+                    : 'border-gray-200 text-gray-600 hover:border-emerald-400 hover:text-emerald-600'
+                    }`}
                 >
                   {num}
                 </button>

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { X, Eye, EyeOff, User, Mail, Lock, Phone, Shield, CheckCircle2 } from "lucide-react";
+import { MODULES } from "../config/modules";
 
 const AddAdminModal = ({ isOpen, onClose, onSubmit }) => {
   const [showPassword, setShowPassword] = useState(false);
@@ -17,38 +18,7 @@ const AddAdminModal = ({ isOpen, onClose, onSubmit }) => {
 
   if (!isOpen) return null;
 
-  const availableModules = [
-    "Security & Access",
-    "Admin Dashboard",
-    "Social-Media",
-    "TPF Management",
-    "Donation Management",
-    "Finance & Accounting",
-    "Inventory",
-    "Photography",
-    "Campaign Management",
-    "Document Management",
-    "Client CMS",
-    "Legal and Compliance",
-    "Beneficiary Form Verification",
-    "User Kyc Verification",
-    "Tickets-Queries",
-    "Downloads",
-    "Photo-Editing",
-    "Fund Disbursement",
-    "Internal Communication",
-    "Communication Audit",
-    "Approve Delete Request",
-    "Task Management",
-    "Organization Approvals",
-    "Career & Job Opportunities",
-    "Employee Management",
-    "Volunteer Management",
-    "Communication Audit",
-    "Transaction Ledger",
-    "Direct Contact"
-
-  ];
+  const availableModules = MODULES;
 
   const isFormValid =
     formData.fullName.trim() &&
@@ -75,11 +45,12 @@ const AddAdminModal = ({ isOpen, onClose, onSubmit }) => {
     });
   };
 
-  const handleModuleChange = (module) => {
+  const handleModuleChange = (moduleId) => {
     setFormData((prevFormData) => {
-      const updatedModules = prevFormData.modules.includes(module)
-        ? prevFormData.modules.filter((m) => m !== module)
-        : [...prevFormData.modules, module];
+      const updatedModules = prevFormData.modules.includes(moduleId)
+        ? prevFormData.modules.filter((m) => m !== moduleId)
+        : [...prevFormData.modules, moduleId];
+
       return { ...prevFormData, modules: updatedModules };
     });
   };
@@ -87,7 +58,10 @@ const AddAdminModal = ({ isOpen, onClose, onSubmit }) => {
   const toggleAllModules = () => {
     setFormData((prev) => ({
       ...prev,
-      modules: prev.modules.length === availableModules.length ? [] : [...availableModules]
+      modules:
+        prev.modules.length === availableModules.length
+          ? []
+          : availableModules.map((m) => m.id),
     }));
   };
 
@@ -214,27 +188,23 @@ const AddAdminModal = ({ isOpen, onClose, onSubmit }) => {
                   />
                 </div>
               </div>
+
               {/* Department */}
               <div className="space-y-2">
                 <label className="block text-sm font-medium text-gray-700">
                   Department <span className="text-red-500">*</span>
                 </label>
                 <div
-                  className={`relative transition-all duration-200 ${focusedField === "department" ? "scale-[1.01]" : ""
-                    }`}
+                  className={`relative transition-all duration-200 ${focusedField === "department" ? "scale-[1.01]" : ""}`}
                 >
                   <Shield className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                   <input
                     type="text"
                     value={formData.department}
-                    onChange={(e) =>
-                      setFormData({ ...formData, department: e.target.value })
-                    }
+                    onChange={(e) => setFormData({ ...formData, department: e.target.value })}
                     onFocus={() => setFocusedField("department")}
                     onBlur={() => setFocusedField(null)}
-                    className="w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg
-        focus:ring-2 focus:ring-blue-500 focus:border-transparent
-        transition-all duration-200 outline-none"
+                    className="w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 outline-none"
                     placeholder="e.g. Operations, IT, HR"
                   />
                 </div>
@@ -246,21 +216,16 @@ const AddAdminModal = ({ isOpen, onClose, onSubmit }) => {
                   Position <span className="text-red-500">*</span>
                 </label>
                 <div
-                  className={`relative transition-all duration-200 ${focusedField === "position" ? "scale-[1.01]" : ""
-                    }`}
+                  className={`relative transition-all duration-200 ${focusedField === "position" ? "scale-[1.01]" : ""}`}
                 >
                   <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                   <input
                     type="text"
                     value={formData.position}
-                    onChange={(e) =>
-                      setFormData({ ...formData, position: e.target.value })
-                    }
+                    onChange={(e) => setFormData({ ...formData, position: e.target.value })}
                     onFocus={() => setFocusedField("position")}
                     onBlur={() => setFocusedField(null)}
-                    className="w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg
-        focus:ring-2 focus:ring-blue-500 focus:border-transparent
-        transition-all duration-200 outline-none"
+                    className="w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 outline-none"
                     placeholder="e.g. Manager, Executive"
                   />
                 </div>
@@ -273,16 +238,21 @@ const AddAdminModal = ({ isOpen, onClose, onSubmit }) => {
             <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
               Administrator Level
             </h3>
-            <div className={`p-4 border-2 rounded-xl transition-all duration-200 ${formData.isSuperAdmin
-              ? 'border-purple-300 bg-purple-50'
-              : 'border-gray-200 bg-gray-50 hover:border-gray-300'
-              }`}>
+            <div
+              className={`p-4 border-2 rounded-xl transition-all duration-200 ${
+                formData.isSuperAdmin
+                  ? "border-purple-300 bg-purple-50"
+                  : "border-gray-200 bg-gray-50 hover:border-gray-300"
+              }`}
+            >
               <label className="flex items-start gap-3 cursor-pointer">
                 <div className="relative flex items-center justify-center mt-0.5">
                   <input
                     type="checkbox"
                     checked={formData.isSuperAdmin}
-                    onChange={(e) => setFormData({ ...formData, isSuperAdmin: e.target.checked })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, isSuperAdmin: e.target.checked })
+                    }
                     className="w-5 h-5 text-purple-600 border-gray-300 rounded focus:ring-2 focus:ring-purple-500 cursor-pointer"
                   />
                 </div>
@@ -311,35 +281,41 @@ const AddAdminModal = ({ isOpen, onClose, onSubmit }) => {
                   onClick={toggleAllModules}
                   className="text-sm text-blue-600 hover:text-blue-700 font-medium transition-colors"
                 >
-                  {formData.modules.length === availableModules.length ? 'Deselect All' : 'Select All'}
+                  {formData.modules.length === availableModules.length
+                    ? "Deselect All"
+                    : "Select All"}
                 </button>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-64 overflow-y-auto p-1">
                 {availableModules.map((module) => {
-                  const isSelected = formData.modules.includes(module);
+                  const isSelected = formData.modules.includes(module.id);
                   return (
                     <label
-                      key={module}
-                      className={`flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all duration-200 ${isSelected
-                        ? 'border-blue-300 bg-blue-50'
-                        : 'border-gray-200 hover:border-gray-300 bg-white'
-                        }`}
+                      key={module.id}
+                      className={`flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all duration-200 ${
+                        isSelected
+                          ? "border-blue-300 bg-blue-50"
+                          : "border-gray-200 hover:border-gray-300 bg-white"
+                      }`}
                     >
                       <div className="relative flex items-center justify-center">
                         <input
                           type="checkbox"
                           checked={isSelected}
-                          onChange={() => handleModuleChange(module)}
+                          onChange={() => handleModuleChange(module.id)}
                           className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500 cursor-pointer"
                         />
                         {isSelected && (
                           <CheckCircle2 className="absolute w-4 h-4 text-blue-600 pointer-events-none" />
                         )}
                       </div>
-                      <span className={`text-sm flex-1 transition-colors ${isSelected ? 'text-gray-900 font-medium' : 'text-gray-700'
-                        }`}>
-                        {module}
+                      <span
+                        className={`text-sm flex-1 transition-colors ${
+                          isSelected ? "text-gray-900 font-medium" : "text-gray-700"
+                        }`}
+                      >
+                        {module.name}
                       </span>
                     </label>
                   );
@@ -348,7 +324,8 @@ const AddAdminModal = ({ isOpen, onClose, onSubmit }) => {
 
               {formData.modules.length > 0 && (
                 <div className="text-sm text-gray-600 bg-blue-50 border border-blue-200 rounded-lg p-3">
-                  <span className="font-medium text-blue-700">{formData.modules.length}</span> module{formData.modules.length !== 1 ? 's' : ''} selected
+                  <span className="font-medium text-blue-700">{formData.modules.length}</span>{" "}
+                  module{formData.modules.length !== 1 ? "s" : ""} selected
                 </div>
               )}
             </div>
@@ -367,10 +344,11 @@ const AddAdminModal = ({ isOpen, onClose, onSubmit }) => {
             <button
               disabled={!isFormValid}
               onClick={handleSubmit}
-              className={`flex-1 rounded-xl py-3 px-4 text-base font-medium transition-all duration-200 ${isFormValid
-                ? "bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40 active:scale-[0.98]"
-                : "bg-gray-200 text-gray-400 cursor-not-allowed"
-                }`}
+              className={`flex-1 rounded-xl py-3 px-4 text-base font-medium transition-all duration-200 ${
+                isFormValid
+                  ? "bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40 active:scale-[0.98]"
+                  : "bg-gray-200 text-gray-400 cursor-not-allowed"
+              }`}
             >
               Create Admin
             </button>

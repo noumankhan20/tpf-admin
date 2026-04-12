@@ -5,9 +5,32 @@ export const campaignApiSlice = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
     // Fetch campaigns with pagination
     fetchCampaigns: builder.query({
-      query: ({ page = 1, limit = 50, search = '' }) => `campaigns/get?page=${page}&limit=${limit}&search=${search}`,
+      query: (params) => {
+        const searchParams = new URLSearchParams();
+
+        // Always include these
+        searchParams.set('page', params.page ?? 1);
+        searchParams.set('limit', params.limit ?? 50);
+        if (params.search) searchParams.set('search', params.search);
+
+        // Append all filter keys if they have a value
+        const filterKeys = [
+          'isActive', 'campaignStatus', 'category',
+          'isUrgent', 'zakatVerified', 'taxBenefits',
+          'deadline', 'minAmount', 'maxAmount',
+          'minRaised', 'maxRaised', 'source'
+        ];
+
+        filterKeys.forEach((key) => {
+          if (params[key] !== undefined && params[key] !== '') {
+            searchParams.set(key, params[key]);
+          }
+        });
+
+        return `campaigns/get?${searchParams.toString()}`;
+      },
       keepUnusedDataFor: 0,
-      providesTags: ['Campaigns'], // This will allow cache management for campaigns
+      providesTags: ['Campaigns'],
     }),
     getCampaignList: builder.query({
       query: () => 'campaigns/list',

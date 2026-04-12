@@ -37,6 +37,15 @@ export const fundraiserApi = apiSlice.injectEndpoints({
       }),
       invalidatesTags: ["Fundraiser"],
     }),
+    updateCampaignStatus: builder.mutation({
+      query: ({ id, action }) => ({
+        url: `/cms/fundraiser/${id}/status`,
+        method: "PATCH",
+        body: { action }, // "inactive" or "complete"
+      }),
+      invalidatesTags: ["Fundraiser"], // refetch list
+    }),
+
 
   }),
 });
@@ -46,4 +55,5 @@ export const {
   useCreateFundraiserMutation,
   useUpdateFundraiserMutation,
   useDeleteFundraiserMutation,
+  useUpdateCampaignStatusMutation
 } = fundraiserApi;
