@@ -8,6 +8,7 @@ import { Badge } from './Badge';
 
 import { useGetFormByIdQuery } from '@/utils/slices/financialAidApiSlice';
 import { getMediaUrl } from '@/utils/media';
+import { formatFieldValue } from '@/utils/formatters';
 
 export const RequestDetail = React.memo(({
     selectedForm: summaryForm, // Recieve summary from list
@@ -42,9 +43,9 @@ export const RequestDetail = React.memo(({
                     <div className="flex justify-between items-start">
                         <div>
                             <h2 className="text-3xl font-bold text-gray-800 mb-2">
-                                {selectedForm.fullName || selectedForm.organizationName}
+                                {formatFieldValue('name', selectedForm.fullName || selectedForm.organizationName)}
                                 {selectedForm.formType === 'other' && selectedForm.relationName && (
-                                    <span className="text-gray-400 font-medium text-lg ml-2"> (For: {selectedForm.relationName})</span>
+                                    <span className="text-gray-400 font-medium text-lg ml-2"> (For: {formatFieldValue('name', selectedForm.relationName)})</span>
                                 )}
                             </h2>
                             <div className="flex items-center gap-3 text-sm">
@@ -287,16 +288,24 @@ export const RequestDetail = React.memo(({
                                     </div>
                                 )}
 
-                                {selectedForm.clarificationDocuments?.length > 0 && (
+                                {(selectedForm.clarificationDocuments?.length > 0 || selectedForm.clarificationComment) && (
                                     <>
                                         <div className="col-span-full mt-4 mb-2">
                                             <div className="flex items-center gap-2 text-purple-600">
                                                 <FileText className="w-4 h-4" />
-                                                <p className="text-sm font-bold uppercase tracking-wider">Clarification Documents</p>
+                                                <p className="text-sm font-bold uppercase tracking-wider">Clarification Response</p>
                                             </div>
                                             <div className="h-px bg-purple-200 mt-2"></div>
                                         </div>
-                                        {selectedForm.clarificationDocuments.map((path, idx) => (
+                                        
+                                        {selectedForm.clarificationComment && (
+                                            <div className="col-span-full bg-purple-50 p-4 rounded-lg border border-purple-100 mb-2">
+                                                <p className="text-xs text-purple-800 uppercase tracking-wider font-bold mb-1">Message from Applicant</p>
+                                                <p className="text-gray-800 whitespace-pre-wrap">{selectedForm.clarificationComment}</p>
+                                            </div>
+                                        )}
+
+                                        {selectedForm.clarificationDocuments?.map((path, idx) => (
                                             <DocLink key={`clarification-${idx}`} label={`Clarification Doc ${idx + 1}`} url={path} />
                                         ))}
                                     </>
@@ -381,7 +390,7 @@ function Field({ label, value, icon, isLink, copyable }) {
                 </a>
             ) : (
                 <p className="text-gray-800 font-medium text-[15px] break-words flex items-center gap-2 print-break-all">
-                    {value}
+                    {formatFieldValue(label, value)}
                     {copyable && (
                         <button
                             onClick={(e) => {

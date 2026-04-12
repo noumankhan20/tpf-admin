@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import NotificationBell from '../../Common/NotificationBell';
+import { formatFieldValue } from '@/utils/formatters';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     ArrowLeft,
@@ -280,7 +281,7 @@ export default function KYCVerificationPage() {
                                             <div className="flex justify-between items-start mb-2">
                                                 <h3 className={`font-semibold text-base truncate ${selectedUser?._id === user._id ? 'text-blue-700' : 'text-gray-800'
                                                     }`}>
-                                                    {user.kycDetails?.fullLegalName || user.fullName}
+                                                    {formatFieldValue('name', user.kycDetails?.fullLegalName || user.fullName)}
                                                 </h3>
                                                 <Badge status={user.kycDetails?.status} />
                                             </div>
@@ -289,7 +290,7 @@ export default function KYCVerificationPage() {
                                                 <p className="flex items-center gap-2"><Phone size={12} /> {user.mobileNo}</p>
                                                 <p className="flex items-center gap-2">
                                                     <Clock size={12} />
-                                                    {user.kycDetails?.submittedAt ? new Date(user.kycDetails.submittedAt).toLocaleDateString() : 'N/A'}
+                                                    {user.kycDetails?.submittedAt ? new Date(user.kycDetails.submittedAt).toLocaleDateString('en-GB') : 'N/A'}
                                                 </p>
                                             </div>
                                         </div>
@@ -316,12 +317,11 @@ export default function KYCVerificationPage() {
                                     <div className="p-6 border-b border-gray-200 bg-white sticky top-0 z-10">
                                         <div className="flex justify-between items-start">
                                             <div>
-                                                <h2 className="text-2xl font-bold text-gray-800 mb-1">{selectedUser.kycDetails?.fullLegalName}</h2>
+                                                <h2 className="text-2xl font-bold text-gray-800 mb-1">{formatFieldValue('name', selectedUser.kycDetails?.fullLegalName)}</h2>
                                                 <div className="flex items-center gap-3 text-sm text-gray-500">
-                                                    <span>ID: {selectedUser._id}</span>
-                                                    <span>•</span>
-                                                    <span>Registered: {new Date(selectedUser.createdAt).toLocaleDateString()}</span>
-                                                    <button
+                                                   
+                                                    <span>Registered: {selectedUser.createdDate ? new Date(selectedUser.createdDate).toLocaleDateString('en-GB') : 'N/A'}</span>
+                                                    <button 
                                                         onClick={() => window.print()}
                                                         className="no-print p-2 hover:bg-gray-100 rounded-full text-gray-600 transition-colors"
                                                         title="Print Form"
@@ -344,7 +344,7 @@ export default function KYCVerificationPage() {
                                                     <Field label="Full Legal Name" value={selectedUser.kycDetails?.fullLegalName} />
                                                     <Field label="PAN Number" value={selectedUser.kycDetails?.panNumber} copyable />
                                                     <Field label="PAN Verified" value={selectedUser.kycDetails?.panVerified ? "Yes" : "No"} />
-                                                    <Field label="Submission Date" value={selectedUser.kycDetails?.submittedAt ? new Date(selectedUser.kycDetails.submittedAt).toLocaleString() : 'N/A'} />
+                                                    <Field label="Submission Date" value={selectedUser.kycDetails?.submittedAt ? new Date(selectedUser.kycDetails.submittedAt).toLocaleString('en-GB') : 'N/A'} />
                                                 </div>
                                             </DetailSection>
 
@@ -452,7 +452,7 @@ function Field({ label, value, icon, copyable }) {
                 {icon} {label}
             </p>
             <p className="flex items-center gap-2 text-gray-800 font-medium print-break-all">
-                {value}
+                {formatFieldValue(label, value)}
                 {copyable && (
                     <button onClick={() => navigator.clipboard.writeText(value)} className="opacity-0 group-hover:opacity-100 p-1 hover:bg-gray-200 rounded text-gray-500 no-print">
                         <FileText size={12} />

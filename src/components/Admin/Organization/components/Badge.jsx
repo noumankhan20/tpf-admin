@@ -8,6 +8,7 @@ export const Badge = ({ status, size = 'normal' }) => {
         rejected: 'bg-red-100 text-red-700 border-red-200',
         pending: 'bg-yellow-100 text-yellow-700 border-yellow-200',
         clarification: 'bg-purple-100 text-purple-700 border-purple-200',
+        clarification_requested: 'bg-purple-100 text-purple-700 border-purple-200',
     };
     const style = styles[status] || 'bg-gray-100 text-gray-600 border-gray-200';
 

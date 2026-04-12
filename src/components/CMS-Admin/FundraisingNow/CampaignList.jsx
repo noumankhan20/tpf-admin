@@ -100,6 +100,11 @@ export default function CampaignList({
                         Urgent
                       </span>
                     )}
+                    {card.source === 'SPONSORED' && (
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-600 flex-shrink-0">
+                        Sponsored
+                      </span>
+                    )}
                   </div>
                   <p className="text-xs text-gray-500 truncate mb-1">{card.organization}</p>
 

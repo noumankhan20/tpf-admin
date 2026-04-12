@@ -1,6 +1,7 @@
 import React from 'react';
 import { Mail, Calendar, FileText, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Badge } from './Badge';
+import { toTitleCase } from '@/utils/formatters';
 
 const PageBtn = ({ onClick, disabled, icon }) => (
     <button
@@ -59,11 +60,11 @@ export const RequestsList = React.memo(({
                         <div className="flex justify-between items-start mb-2">
                             <div className="flex flex-col min-w-0">
                                 <span className={`font-semibold text-lg truncate ${selectedForm?._id === form._id ? 'text-blue-600' : 'text-gray-800'}`}>
-                                    {form.fullName || form.organizationName}
+                                    {toTitleCase(form.fullName || form.organizationName)}
                                 </span>
                                 {form.formType === 'other' && form.relationName && (
                                     <span className="text-[10px] bg-blue-100 text-blue-600 font-bold px-2 py-0.5 rounded-full w-fit mt-1">
-                                        For: {form.relationName}
+                                        For: {toTitleCase(form.relationName)}
                                     </span>
                                 )}
                             </div>

@@ -8,6 +8,7 @@ import { Badge } from './Badge';
 
 import { useGetOrganizationByIdQuery } from '@/utils/slices/organizationApiSlice';
 import { getMediaUrl } from '@/utils/media';
+import { formatFieldValue } from '@/utils/formatters';
 
 export const RequestDetail = React.memo(({
     selectedForm: summaryOrg,
@@ -57,7 +58,7 @@ export const RequestDetail = React.memo(({
                             )}
                             <div>
                                 <h2 className="text-3xl font-bold text-gray-800 mb-2">
-                                    {org.organizationName}
+                                    {formatFieldValue('name', org.organizationName)}
                                 </h2>
                                 <div className="flex items-center gap-3 text-sm">
                                     <span className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full flex items-center gap-1.5 font-semibold">
@@ -216,6 +217,13 @@ export const RequestDetail = React.memo(({
                                 Reject
                             </button>
                             <button
+                                onClick={() => onOpenGroundReport('clarification_requested')}
+                                className="flex items-center gap-2 px-6 py-3 bg-amber-50 text-amber-600 hover:bg-amber-600 hover:text-white rounded-xl border border-amber-200 transition-all font-semibold"
+                            >
+                                <LucideMessageSquareWarning size={18} />
+                                Request Clarification
+                            </button>
+                            <button
                                 onClick={() => onOpenGroundReport('verified')}
                                 className="flex items-center gap-2 px-8 py-3 bg-emerald-600 text-white hover:bg-emerald-700 rounded-xl shadow-lg shadow-emerald-500/20 transition-all font-bold text-lg hover:-translate-y-1"
                             >
@@ -274,7 +282,7 @@ function Field({ label, value, isLink, copyable }) {
                 </a>
             ) : (
                 <p className="text-gray-800 font-semibold text-sm flex items-center gap-2 break-all">
-                    {value.toString()}
+                    {formatFieldValue(label, value.toString())}
                     {copyable && (
                         <button
                             onClick={(e) => {

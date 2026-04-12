@@ -68,11 +68,18 @@ export default function CampaignPreview({ formData, categoryColors }) {
             )}
 
             {/* Badges */}
-            {formData.isUrgent && (
-              <div className="absolute top-3 left-3 z-20 bg-red-600 text-white px-2.5 py-1 rounded-full text-[10px] font-bold">
-                Urgent
-              </div>
-            )}
+            <div className="flex flex-col gap-2 absolute top-3 left-3 z-20">
+              {formData.isUrgent && (
+                <div className="bg-red-600 text-white px-2.5 py-1 rounded-full text-[10px] font-bold">
+                  Urgent
+                </div>
+              )}
+              {formData.source === 'SPONSORED' && (
+                <div className="bg-blue-600 text-white px-2.5 py-1 rounded-full text-[10px] font-bold">
+                  Sponsored
+                </div>
+              )}
+            </div>
             {formData.taxBenefits && (
               <div className="absolute top-3 right-3 z-20 bg-emerald-600 text-white px-2.5 py-1 rounded-full text-[10px] font-bold">
                 Tax Benefits
@@ -172,12 +179,19 @@ export default function CampaignPreview({ formData, categoryColors }) {
                 </div>
               )}
 
-              {formData.isUrgent && (
-                <div className="absolute top-3 right-3 flex items-center gap-1.5 px-3 py-1.5 bg-red-600 text-white text-xs rounded-full font-bold shadow-md">
-                  <AlertCircle size={14} />
-                  URGENT
-                </div>
-              )}
+              <div className="absolute top-3 right-3 flex flex-col items-end gap-2">
+                {formData.isUrgent && (
+                  <div className="flex items-center gap-1.5 px-3 py-1.5 bg-red-600 text-white text-xs rounded-full font-bold shadow-md">
+                    <AlertCircle size={14} />
+                    URGENT
+                  </div>
+                )}
+                {formData.source === 'SPONSORED' && (
+                  <div className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white text-xs rounded-full font-bold shadow-md">
+                    SPONSORED
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="p-5">

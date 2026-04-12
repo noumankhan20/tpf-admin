@@ -405,53 +405,67 @@ export default function CampaignForm({
             {activeTab === 'basic' && (
               <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
                 {/* Campaign Source */}
-                {!editingCard && (
-                  <div>
-                    <label className="block text-xs font-bold text-gray-500 uppercase mb-2">
-                      Campaign Source <span className="text-red-500">*</span>
-                    </label>
-                    <div className="flex gap-3 mb-4">
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setFormData((prev) => ({
-                            ...prev,
-                            source: 'INTERNAL',
-                            permanentType: 'Other',
-                          }))
-                        }
-                        className={`flex-1 py-3 rounded-lg font-semibold transition-all ${formData.source !== 'FOUNDATION'
-                          ? 'bg-emerald-600 text-white'
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                          }`}
-                      >
-                        Public Campaign
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setFormData((prev) => ({
-                            ...prev,
-                            source: 'FOUNDATION',
-                            organization: 'True Path Foundation',
-                            campaignerName: 'True Path Foundation',
-                            beneficiaryName: 'Multiple Beneficiaries',
-                            permanentType: 'Zakat Campaign',
-                            allowedDonationTypes: ['Zakat'],
-                            zakatVerified: true,
-                            ribaEligible: false,
-                          }))
-                        }
-                        className={`flex-1 py-3 rounded-lg font-semibold transition-all ${formData.source === 'FOUNDATION'
-                          ? 'bg-emerald-600 text-white'
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                          }`}
-                      >
-                        Foundation (Permanent)
-                      </button>
-                    </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 uppercase mb-2">
+                    Campaign Source <span className="text-red-500">*</span>
+                  </label>
+                  <div className="flex flex-wrap gap-3 mb-4">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          source: 'INTERNAL',
+                          permanentType: 'Other',
+                        }))
+                      }
+                      className={`flex-1 py-3 rounded-lg font-semibold transition-all ${formData.source !== 'FOUNDATION' && formData.source !== 'SPONSORED'
+                        ? 'bg-emerald-600 text-white shadow-lg'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                    >
+                      Public Campaign
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          source: 'FOUNDATION',
+                          organization: 'True Path Foundation',
+                          campaignerName: 'True Path Foundation',
+                          beneficiaryName: 'Multiple Beneficiaries',
+                          permanentType: 'Zakat Campaign',
+                          allowedDonationTypes: ['Zakat'],
+                          zakatVerified: true,
+                          ribaEligible: false,
+                        }))
+                      }
+                      className={`flex-1 py-3 rounded-lg font-semibold transition-all ${formData.source === 'FOUNDATION'
+                        ? 'bg-emerald-600 text-white shadow-lg'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                    >
+                      Foundation (Permanent)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          source: 'SPONSORED',
+                          permanentType: 'Other',
+                        }))
+                      }
+                      className={`flex-1 py-3 rounded-lg font-semibold transition-all ${formData.source === 'SPONSORED'
+                        ? 'bg-emerald-600 text-white shadow-lg'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                    >
+                      Sponsored Campaign
+                    </button>
                   </div>
-                )}
+                </div>
 
                 {/* Permanent Campaign Type */}
                 {formData.source === 'FOUNDATION' && (

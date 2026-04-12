@@ -15,16 +15,19 @@ export const GroundReportModal = ({
 
     const isApprove = status === 'verified';
     const isReject = status === 'rejected';
+    const isClarification = status === 'clarification_requested';
 
     const getTitle = () => {
         if (isApprove) return 'Approve & Verify Organization';
         if (isReject) return 'Reject Application';
+        if (isClarification) return 'Request Clarification';
         return 'Update Verification Status';
     };
 
     const getBtnColor = () => {
         if (isApprove) return 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-500/20';
         if (isReject) return 'bg-red-600 hover:bg-red-700 shadow-red-500/20';
+        if (isClarification) return 'bg-amber-500 hover:bg-amber-600 shadow-amber-500/20';
         return 'bg-blue-600 hover:bg-blue-700';
     };
 
@@ -57,7 +60,7 @@ export const GroundReportModal = ({
                         <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-3">Verification Notes</label>
                         <textarea
                             className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition resize-none h-40 text-sm"
-                            placeholder="Enter the reason or any verification notes for this action..."
+                            placeholder={isClarification ? 'Enter exactly what documents or changes are required from the organization...' : 'Enter the reason or any verification notes for this action...'}
                             value={reason}
                             onChange={(e) => setReason(e.target.value)}
                         />

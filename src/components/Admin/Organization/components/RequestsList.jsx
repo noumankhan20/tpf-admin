@@ -1,6 +1,7 @@
 import React from 'react';
 import { Badge } from './Badge';
 import { ChevronLeft, ChevronRight, Inbox, Building } from 'lucide-react';
+import { toTitleCase } from '@/utils/formatters';
 
 export const RequestsList = React.memo(({
     isLoading,
@@ -70,7 +71,7 @@ export const RequestsList = React.memo(({
                             >
                                 <div className="flex justify-between items-start mb-1">
                                     <h4 className="font-bold text-gray-800 truncate flex-1 pr-2">
-                                        {form.organizationName}
+                                        {toTitleCase(form.organizationName)}
                                     </h4>
                                     <Badge status={form.verificationStatus} />
                                 </div>
