@@ -36,7 +36,7 @@ const NotificationBell = ({ moduleFilter = null }) => {
                 if (taskResult.success && taskResult.data) {
                     // Map task modules to admin permissions
                     const TASK_PERMISSION_MAP = {
-                        'PHOTO_TASK': ['Photography', 'Photo-Editing'],
+                        'PHOTO_TASK': ['Photography'],
                         'CMS_TASK': ['CMS-Admin'],
                         'SOCIAL_TASK': ['Social-Media'],
                         'FINANCE_TASK': ['Finance & Accounting', 'Donation Management', 'Disbursement-Tasks'],
@@ -262,7 +262,7 @@ const NotificationBell = ({ moduleFilter = null }) => {
 
             // Map task modules to admin permissions
             const TASK_PERMISSION_MAP = {
-                'PHOTO_TASK': ['Photography', 'Photo-Editing'],
+                'PHOTO_TASK': ['Photography'],
                 'CMS_TASK': ['CMS-Admin'],
                 'SOCIAL_TASK': ['Social-Media'],
                 'FINANCE_TASK': ['Finance & Accounting', 'Donation Management', 'Disbursement-Tasks'],

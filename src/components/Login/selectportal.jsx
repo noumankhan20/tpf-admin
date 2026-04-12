@@ -140,7 +140,7 @@ export default function SelectPanel() {
         const taskResult = await taskRes.json();
         if (taskResult.success && taskResult.data) {
           taskResult.data.forEach(task => {
-            if (task.module === 'PHOTO_TASK') { increment('Photography'); increment('Photo-Editing'); }
+            if (task.module === 'PHOTO_TASK') { increment('Photography'); }
             if (task.module === 'CMS_TASK') increment('CMS-Admin');
             if (task.module === 'SOCIAL_TASK') increment('Social-Media');
             if (task.module === 'FINANCE_TASK') increment('Disbursement-Tasks');
@@ -227,7 +227,7 @@ export default function SelectPanel() {
       setModuleCounts(prev => {
         const next = { ...prev };
         const inc = (id) => next[id] = (next[id] || 0) + 1;
-        if (data.module === 'PHOTO_TASK') { inc('Photography'); inc('Photo-Editing'); }
+        if (data.module === 'PHOTO_TASK') { inc('Photography'); }
         if (data.module === 'CMS_TASK') inc('CMS-Admin');
         if (data.module === 'SOCIAL_TASK') inc('Social-Media');
         if (data.module === 'FINANCE_TASK') inc('Disbursement-Tasks');
