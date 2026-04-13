@@ -30,7 +30,8 @@ import {
     useDeleteVendorMutation,
 } from '../../../../utils/slices/InventoryAndAsset/vendorApiSlice';
 import { useGetInventoryDashboardStatsQuery } from '../../../../utils/slices/InventoryAndAsset/dashboardApiSlice';
-import { INDIAN_LOCATIONS, STATES } from '../../../../utils/locations';
+import { useGetStatesQuery, useLazyGetCitiesQuery } from '../../../../utils/slices/locationApiSlice';
+import { INDIAN_LOCATIONS, STATES as FALLBACK_STATES } from '../../../../utils/locations';
 
 export default function VendorManagement() {
     const router = useRouter();
@@ -69,6 +70,12 @@ export default function VendorManagement() {
     const [createVendor, { isLoading: isCreating }] = useCreateVendorMutation();
     const [updateVendor, { isLoading: isUpdating }] = useUpdateVendorMutation();
     const [deleteVendor, { isLoading: isDeleting }] = useDeleteVendorMutation();
+
+    // Location API
+    const { data: apiStates, isLoading: isLoadingStates } = useGetStatesQuery();
+    const [triggerGetCities, { data: apiCities, isLoading: isLoadingCities }] = useLazyGetCitiesQuery();
+
+    const states = apiStates || FALLBACK_STATES;
 
     // Form State - Aligned with backend model
     const [formData, setFormData] = useState({
@@ -150,6 +157,9 @@ export default function VendorManagement() {
             fullAddress: vendor.fullAddress,
             status: vendor.status
         });
+        if (vendor.state) {
+            triggerGetCities(vendor.state);
+        }
         setShowAddModal(true);
     };
 
@@ -544,13 +554,16 @@ export default function VendorManagement() {
                                             name="state"
                                             value={formData.state}
                                             onChange={(e) => {
+                                                const newState = e.target.value;
                                                 handleInputChange(e);
                                                 setFormData(prev => ({ ...prev, city: '' }));
+                                                if (newState) triggerGetCities(newState);
                                             }}
                                             className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all appearance-none"
+                                            disabled={isLoadingStates}
                                         >
-                                            <option value="">Select State</option>
-                                            {STATES.map(state => (
+                                            <option value="">{isLoadingStates ? 'Loading states...' : 'Select State'}</option>
+                                            {states.map(state => (
                                                 <option key={state} value={state}>{state}</option>
                                             ))}
                                         </select>
@@ -561,16 +574,22 @@ export default function VendorManagement() {
                                         </label>
                                         <select
                                             required
-                                            disabled={!formData.state}
+                                            disabled={!formData.state || isLoadingCities}
                                             name="city"
                                             value={formData.city}
                                             onChange={handleInputChange}
                                             className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all appearance-none disabled:opacity-50"
                                         >
-                                            <option value="">Select City</option>
-                                            {formData.state && INDIAN_LOCATIONS[formData.state].map(city => (
-                                                <option key={city} value={city}>{city}</option>
-                                            ))}
+                                            <option value="">{isLoadingCities ? 'Loading cities...' : 'Select City'}</option>
+                                            {apiCities ? (
+                                                apiCities.map(city => (
+                                                    <option key={city} value={city}>{city}</option>
+                                                ))
+                                            ) : (
+                                                formData.state && INDIAN_LOCATIONS[formData.state] && INDIAN_LOCATIONS[formData.state].map(city => (
+                                                    <option key={city} value={city}>{city}</option>
+                                                ))
+                                            )}
                                         </select>
                                     </div>
                                 </div>
