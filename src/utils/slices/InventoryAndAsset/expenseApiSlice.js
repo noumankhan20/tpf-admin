@@ -3,10 +3,12 @@ import { apiSlice } from './../apiSlice';
 export const expenseApiSlice = apiSlice.injectEndpoints({
     endpoints: (builder) => ({
         getExpenses: builder.query({
-            query: ({ type, search } = {}) => {
+            query: ({ type = 'ALL', search = '', startDate = '', endDate = '' } = {}) => {
                 const params = new URLSearchParams();
                 if (type && type !== 'ALL') params.append('expenseType', type);
                 if (search) params.append('search', search);
+                if (startDate) params.append('startDate', startDate);
+                if (endDate) params.append('endDate', endDate);
                 return {
                     url: `/inventory/expenses?${params.toString()}`,
                     method: 'GET',
@@ -22,10 +24,27 @@ export const expenseApiSlice = apiSlice.injectEndpoints({
             }),
             invalidatesTags: ['Expenses'],
         }),
+        updateExpense: builder.mutation({
+            query: ({ id, data }) => ({
+                url: `/inventory/expenses/${id}`,
+                method: 'PATCH',
+                body: data,
+            }),
+            invalidatesTags: ['Expenses'],
+        }),
+        deleteExpense: builder.mutation({
+            query: (id) => ({
+                url: `/inventory/expenses/${id}`,
+                method: 'DELETE',
+            }),
+            invalidatesTags: ['Expenses'],
+        }),
     }),
 });
 
 export const {
     useGetExpensesQuery,
     useCreateExpenseMutation,
+    useUpdateExpenseMutation,
+    useDeleteExpenseMutation,
 } = expenseApiSlice;

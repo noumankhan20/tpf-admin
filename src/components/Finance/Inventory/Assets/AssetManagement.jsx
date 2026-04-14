@@ -20,7 +20,12 @@ import {
     UserMinus,
     Trash2,
     Loader2,
-    Eye
+    Eye,
+    Edit2,
+    ChevronDown,
+    Building2,
+    Tag,
+    FileText
 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import ConfirmModal from '@/components/Common/ConfirmModal';
@@ -30,6 +35,7 @@ import {
     useAssignAssetMutation,
     useUnassignAssetMutation,
     useUpdateAssetIncomeMutation,
+    useUpdateAssetMutation,
     useDeleteAssetMutation
 } from '../../../../utils/slices/InventoryAndAsset/assetApiSlice';
 import { useGetInventoryDashboardStatsQuery } from '../../../../utils/slices/InventoryAndAsset/dashboardApiSlice';
@@ -45,6 +51,8 @@ export default function AssetManagement() {
     const [showIncomeModal, setShowIncomeModal] = useState(false);
     const [viewAsset, setViewAsset] = useState(null);
     const [selectedAsset, setSelectedAsset] = useState(null);
+    const [editingAsset, setEditingAsset] = useState(null);
+    const [showEditModal, setShowEditModal] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
@@ -75,6 +83,7 @@ export default function AssetManagement() {
     const [assignAsset, { isLoading: isAssigning }] = useAssignAssetMutation();
     const [unassignAsset, { isLoading: isUnassigning }] = useUnassignAssetMutation();
     const [updateIncome, { isLoading: isUpdating }] = useUpdateAssetIncomeMutation();
+    const [updateAsset, { isLoading: isUpdatingAsset }] = useUpdateAssetMutation();
     const [deleteAsset, { isLoading: isDeleting }] = useDeleteAssetMutation();
 
     const assets = assetsResponse?.data || [];
@@ -88,6 +97,12 @@ export default function AssetManagement() {
         amount: '',
         date: new Date().toISOString().split('T')[0],
         note: ''
+    });
+
+    const [editForm, setEditForm] = useState({
+        name: '',
+        unit: 'PIECE',
+        status: 'ACTIVE'
     });
 
     // Get Stats for summary cards
@@ -111,9 +126,36 @@ export default function AssetManagement() {
             setShowAssignModal(false);
             setAssigneeId('');
             setSelectedAsset(null);
+            toast.success('Asset assigned successfully');
         } catch (err) {
             console.error('Failed to assign asset:', err);
             toast.error(err?.data?.message || 'Failed to assign asset');
+        }
+    };
+
+    const handleEditOpen = (asset) => {
+        setEditingAsset(asset);
+        setEditForm({
+            name: asset.name,
+            unit: asset.unit || 'PIECE',
+            status: asset.status || 'ACTIVE'
+        });
+        setShowEditModal(true);
+    };
+
+    const handleEditSubmit = async (e) => {
+        e.preventDefault();
+        try {
+            await updateAsset({
+                assetId: editingAsset._id,
+                data: editForm
+            }).unwrap();
+            setShowEditModal(false);
+            setEditingAsset(null);
+            toast.success('Asset updated successfully');
+        } catch (err) {
+            console.error('Failed to update asset:', err);
+            toast.error(err?.data?.message || 'Failed to update asset');
         }
     };
 
@@ -394,6 +436,13 @@ export default function AssetManagement() {
                                                 title="View Details"
                                             >
                                                 <Eye size={18} />
+                                            </button>
+                                            <button
+                                                onClick={() => handleEditOpen(asset)}
+                                                className="p-2 hover:bg-blue-50 rounded-lg text-gray-400 hover:text-blue-600 transition-colors"
+                                                title="Edit Asset"
+                                            >
+                                                <Edit2 size={18} />
                                             </button>
                                             <button
                                                 onClick={() => {
@@ -780,6 +829,92 @@ export default function AssetManagement() {
                                     </button>
                                 </div>
                             </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+            {/* Edit Asset Modal */}
+            <AnimatePresence>
+                {showEditModal && editingAsset && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => setShowEditModal(false)}
+                            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+                        ></motion.div>
+                        <motion.div
+                            initial={{ scale: 0.95, opacity: 0, y: 20 }}
+                            animate={{ scale: 1, opacity: 1, y: 0 }}
+                            exit={{ scale: 0.95, opacity: 0, y: 20 }}
+                            className="bg-white rounded-3xl w-full max-w-md shadow-2xl relative overflow-hidden"
+                        >
+                            <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+                                <div>
+                                    <h2 className="text-xl font-bold text-gray-900">Edit Asset Details</h2>
+                                    <p className="text-sm text-gray-500">Update naming and status</p>
+                                </div>
+                                <button onClick={() => setShowEditModal(false)} className="p-2 hover:bg-gray-200 rounded-full transition-colors"><X size={20} className="text-gray-400" /></button>
+                            </div>
+
+                            <form onSubmit={handleEditSubmit} className="p-8 space-y-6">
+                                <div>
+                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">Asset Name *</label>
+                                    <input
+                                        required
+                                        type="text"
+                                        value={editForm.name}
+                                        onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:border-emerald-500 outline-none font-medium"
+                                    />
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-6">
+                                    <div>
+                                        <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">Unit *</label>
+                                        <div className="relative">
+                                            <Tag className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                                            <select
+                                                required
+                                                value={editForm.unit}
+                                                onChange={(e) => setEditForm({ ...editForm, unit: e.target.value })}
+                                                className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:border-emerald-500 outline-none appearance-none font-bold text-sm"
+                                            >
+                                                {["KG", "GRAM", "LITRE", "ML", "PIECE", "BOX", "METER", "FEET", "HOUR", "DAY"].map(u => (
+                                                    <option key={u} value={u}>{u}</option>
+                                                ))}
+                                            </select>
+                                            <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">Status *</label>
+                                        <div className="relative">
+                                            <CheckCircle2 className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                                            <select
+                                                required
+                                                value={editForm.status}
+                                                onChange={(e) => setEditForm({ ...editForm, status: e.target.value })}
+                                                className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:border-emerald-500 outline-none appearance-none font-bold text-sm"
+                                            >
+                                                <option value="ACTIVE">Active</option>
+                                                <option value="INACTIVE">Inactive</option>
+                                            </select>
+                                            <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <button
+                                    type="submit"
+                                    disabled={isUpdatingAsset}
+                                    className="w-full py-4 bg-gray-900 text-white rounded-2xl font-black uppercase tracking-widest hover:bg-black transition-all shadow-xl flex items-center justify-center gap-3 disabled:opacity-50"
+                                >
+                                    {isUpdatingAsset ? <Loader2 className="animate-spin" size={20} /> : "Update Asset"}
+                                </button>
+                            </form>
                         </motion.div>
                     </div>
                 )}

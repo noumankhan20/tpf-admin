@@ -24,6 +24,14 @@ export const purchaseApiSlice = apiSlice.injectEndpoints({
             }),
             invalidatesTags: ['Purchases', 'Stock', 'Items'],
         }),
+        updatePurchase: builder.mutation({
+            query: ({ id, data }) => ({
+                url: `/inventory/purchases/${id}`,
+                method: 'PATCH',
+                body: data, // data should be FormData
+            }),
+            invalidatesTags: ['Purchases', 'Stock', 'Items'],
+        }),
         deletePurchase: builder.mutation({
             query: (id) => ({
                 url: `/inventory/purchases/${id}`,
@@ -37,5 +45,6 @@ export const purchaseApiSlice = apiSlice.injectEndpoints({
 export const {
     useGetPurchasesQuery,
     useCreatePurchaseMutation,
+    useUpdatePurchaseMutation,
     useDeletePurchaseMutation,
 } = purchaseApiSlice;

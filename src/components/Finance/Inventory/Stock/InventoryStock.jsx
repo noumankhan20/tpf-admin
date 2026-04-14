@@ -11,10 +11,12 @@ import {
     TrendingDown,
     Info,
     X,
-    Share2,
-    PieChart,
     Trash2,
-    Loader2
+    Loader2,
+    Edit2,
+    ChevronDown,
+    Tag,
+    CheckCircle2
 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import ConfirmModal from '@/components/Common/ConfirmModal';
@@ -23,7 +25,7 @@ import {
     useGetInventoryStockQuery,
     useDistributeStockMutation
 } from '../../../../utils/slices/InventoryAndAsset/stockApiSlice';
-import { useDeleteItemMutation } from '../../../../utils/slices/InventoryAndAsset/itemApiSlice';
+import { useUpdateItemMutation, useDeleteItemMutation } from '../../../../utils/slices/InventoryAndAsset/itemApiSlice';
 import { useGetInventoryDashboardStatsQuery } from '../../../../utils/slices/InventoryAndAsset/dashboardApiSlice';
 import Pagination from '../Common/Pagination';
 
@@ -33,7 +35,9 @@ export default function InventoryStock() {
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState('ALL'); // ALL, LOW_STOCK
     const [showDistributeModal, setShowDistributeModal] = useState(false);
+    const [showEditModal, setShowEditModal] = useState(false);
     const [selectedItem, setSelectedItem] = useState(null);
+    const [editingItem, setEditingItem] = useState(null);
     const [currentPage, setCurrentPage] = useState(1);
 
     // Confirmation Modals State
@@ -58,6 +62,7 @@ export default function InventoryStock() {
     const invStats = dashboardStats?.data?.inventory || { totalStock: 0, lowStockCount: 0 };
 
     const [distributeStock, { isLoading: isDistributing }] = useDistributeStockMutation();
+    const [updateItem, { isLoading: isUpdating }] = useUpdateItemMutation();
     const [deleteItem, { isLoading: isDeleting }] = useDeleteItemMutation();
 
     const stock = stockResponse?.data || [];
@@ -68,6 +73,12 @@ export default function InventoryStock() {
         qty: '',
         purpose: 'Sadaqah',
         notes: ''
+    });
+
+    const [editForm, setEditForm] = useState({
+        name: '',
+        unit: 'PIECE',
+        status: 'ACTIVE'
     });
 
     useEffect(() => {
@@ -105,6 +116,32 @@ export default function InventoryStock() {
         } catch (err) {
             console.error('Failed to distribute stock:', err);
             toast.error(err?.data?.message || 'Failed to distribute stock');
+        }
+    };
+
+    const handleEditOpen = (item) => {
+        setEditingItem(item);
+        setEditForm({
+            name: item.name,
+            unit: item.unit || 'PIECE',
+            status: item.status || 'ACTIVE'
+        });
+        setShowEditModal(true);
+    };
+
+    const handleEditSubmit = async (e) => {
+        e.preventDefault();
+        try {
+            await updateItem({
+                itemId: editingItem._id,
+                data: editForm
+            }).unwrap();
+            setShowEditModal(false);
+            setEditingItem(null);
+            toast.success('Inventory item updated successfully');
+        } catch (err) {
+            console.error('Failed to update item:', err);
+            toast.error(err?.data?.message || 'Failed to update item');
         }
     };
 
@@ -306,6 +343,13 @@ export default function InventoryStock() {
                                                     <Share2 size={14} /> Distribute
                                                 </button>
                                                 <button
+                                                    onClick={() => handleEditOpen(item)}
+                                                    className="p-2 text-gray-300 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
+                                                    title="Edit Item"
+                                                >
+                                                    <Edit2 size={18} />
+                                                </button>
+                                                <button
                                                     onClick={() => handleStockDelete(item._id)}
                                                     disabled={isDeleting}
                                                     className="p-2 text-gray-300 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
@@ -399,6 +443,92 @@ export default function InventoryStock() {
                                     className="w-full py-5 bg-gray-900 text-white rounded-2xl font-black uppercase tracking-widest hover:bg-black transition-all shadow-xl active:scale-[0.98] flex items-center justify-center gap-3 disabled:opacity-50"
                                 >
                                     {isDistributing ? <Loader2 className="animate-spin" size={20} /> : <><Share2 size={20} /> Confirm Distribution</>}
+                                </button>
+                            </form>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+            {/* Edit Item Modal */}
+            <AnimatePresence>
+                {showEditModal && editingItem && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => setShowEditModal(false)}
+                            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+                        ></motion.div>
+                        <motion.div
+                            initial={{ scale: 0.95, opacity: 0, y: 20 }}
+                            animate={{ scale: 1, opacity: 1, y: 0 }}
+                            exit={{ scale: 0.95, opacity: 0, y: 20 }}
+                            className="bg-white rounded-3xl w-full max-w-md shadow-2xl relative overflow-hidden"
+                        >
+                            <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+                                <div>
+                                    <h2 className="text-xl font-bold text-gray-900">Edit Inventory Item</h2>
+                                    <p className="text-sm text-gray-500">Update naming and status</p>
+                                </div>
+                                <button onClick={() => setShowEditModal(false)} className="p-2 hover:bg-gray-200 rounded-full transition-colors"><X size={20} className="text-gray-400" /></button>
+                            </div>
+
+                            <form onSubmit={handleEditSubmit} className="p-8 space-y-6">
+                                <div>
+                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">Item Name *</label>
+                                    <input
+                                        required
+                                        type="text"
+                                        value={editForm.name}
+                                        onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:border-emerald-500 outline-none font-medium"
+                                    />
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-6">
+                                    <div>
+                                        <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">Unit *</label>
+                                        <div className="relative">
+                                            <Tag className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                                            <select
+                                                required
+                                                value={editForm.unit}
+                                                onChange={(e) => setEditForm({ ...editForm, unit: e.target.value })}
+                                                className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:border-emerald-500 outline-none appearance-none font-bold text-sm"
+                                            >
+                                                {["KG", "GRAM", "LITRE", "ML", "PIECE", "BOX", "METER", "FEET", "HOUR", "DAY"].map(u => (
+                                                    <option key={u} value={u}>{u}</option>
+                                                ))}
+                                            </select>
+                                            <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">Status *</label>
+                                        <div className="relative">
+                                            <CheckCircle2 className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                                            <select
+                                                required
+                                                value={editForm.status}
+                                                onChange={(e) => setEditForm({ ...editForm, status: e.target.value })}
+                                                className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:border-emerald-500 outline-none appearance-none font-bold text-sm"
+                                            >
+                                                <option value="ACTIVE">Active</option>
+                                                <option value="INACTIVE">Inactive</option>
+                                            </select>
+                                            <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <button
+                                    type="submit"
+                                    disabled={isUpdating}
+                                    className="w-full py-4 bg-gray-900 text-white rounded-2xl font-black uppercase tracking-widest hover:bg-black transition-all shadow-xl flex items-center justify-center gap-3 disabled:opacity-50"
+                                >
+                                    {isUpdating ? <Loader2 className="animate-spin" size={20} /> : "Update Item"}
                                 </button>
                             </form>
                         </motion.div>

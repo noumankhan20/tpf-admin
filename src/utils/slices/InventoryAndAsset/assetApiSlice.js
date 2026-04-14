@@ -39,9 +39,17 @@ export const assetApiSlice = apiSlice.injectEndpoints({
             }),
             invalidatesTags: ['Assets'],
         }),
+        updateAsset: builder.mutation({
+            query: ({ assetId, data }) => ({
+                url: `/inventory/assets/${assetId}`,
+                method: 'PATCH',
+                body: data,
+            }),
+            invalidatesTags: ['Assets', 'Items'],
+        }),
         deleteAsset: builder.mutation({
-            query: (id) => ({
-                url: `/inventory/assets/${id}`,
+            query: (assetId) => ({
+                url: `/inventory/assets/${assetId}`,
                 method: 'DELETE',
             }),
             invalidatesTags: ['Assets', 'Items'],
@@ -54,5 +62,6 @@ export const {
     useAssignAssetMutation,
     useUnassignAssetMutation,
     useUpdateAssetIncomeMutation,
+    useUpdateAssetMutation,
     useDeleteAssetMutation,
 } = assetApiSlice;

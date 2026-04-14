@@ -53,7 +53,7 @@ export const itemApiSlice = apiSlice.injectEndpoints({
         method: "POST",
         body: data,
       }),
-      invalidatesTags: [{ type: "Items", id: "LIST" }],
+      invalidatesTags: [{ type: "Items", id: "LIST" }, "Assets", "Stock"],
     }),
 
     /* -------------------------------
@@ -68,6 +68,8 @@ export const itemApiSlice = apiSlice.injectEndpoints({
       invalidatesTags: (result, error, { itemId }) => [
         { type: "Items", id: itemId },
         { type: "Items", id: "LIST" },
+        "Assets",
+        "Stock"
       ],
     }),
 
@@ -79,7 +81,7 @@ export const itemApiSlice = apiSlice.injectEndpoints({
         url: `/inventory/items/${itemId}`,
         method: "DELETE",
       }),
-      invalidatesTags: [{ type: "Items", id: "LIST" }],
+      invalidatesTags: [{ type: "Items", id: "LIST" }, "Assets", "Stock"],
     }),
   }),
 });
