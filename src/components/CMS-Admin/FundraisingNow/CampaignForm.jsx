@@ -554,8 +554,8 @@ export default function CampaignForm({
                   />
                 </div>
 
-                {/* Organization */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Organization, Beneficiary & Campaigner */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
                     <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">
                       Organization Name <span className="text-red-500">*</span>
@@ -566,6 +566,19 @@ export default function CampaignForm({
                       onChange={(e) => setFormData({ ...formData, organization: e.target.value })}
                       placeholder="Organization..."
                       className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-emerald-500 outline-none transition-all"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">
+                      Beneficiary Name
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.beneficiaryName}
+                      onChange={(e) => setFormData({ ...formData, beneficiaryName: e.target.value })}
+                      placeholder="Beneficiary..."
+                      disabled={formData.source === 'FOUNDATION'}
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-emerald-500 outline-none transition-all disabled:bg-gray-50"
                     />
                   </div>
                   <div>
