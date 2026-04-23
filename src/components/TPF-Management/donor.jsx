@@ -55,7 +55,11 @@ export default function DonorModule() {
     range: selectedRange,
     includeStats: true,
     ...cleanedFilters,
-  });
+  },
+    {
+      refetchOnMountOrArgChange: true, // 🔥 THIS IS THE FIX
+    }
+  );
 
   const { data: donorDetailsData, isLoading: isLoadingDetails, error: errorDetails } = useGetDonorDetailsQuery(
     selectedDonorId,
@@ -279,15 +283,34 @@ export default function DonorModule() {
 
                 {/* KYC Status */}
                 <div>
-                  <label className="block text-[11px] font-medium text-gray-400 uppercase tracking-wider mb-1.5">KYC Status</label>
-                  <div className="flex items-center justify-between w-full px-3 py-2 bg-white border border-gray-200 rounded-lg">
-                    <span className="text-sm text-gray-600">KYC Verified Only</span>
-                    <button
-                      onClick={() => { setFilter("kycStatus", filters.kycStatus === "verified" ? "" : "verified"); setCurrentPage(1); }}
-                      className={`relative shrink-0 w-9 h-5 rounded-full transition-colors duration-200 focus:outline-none ${filters.kycStatus === "verified" ? "bg-emerald-500" : "bg-gray-200"}`}
-                    >
-                      <span className={`absolute top-[2px] left-[2px] w-4 h-4 bg-white rounded-full shadow transition-transform duration-200 ${filters.kycStatus === "verified" ? "translate-x-4" : ""}`} />
-                    </button>
+                  <label className="block text-[11px] font-medium text-gray-400 uppercase tracking-wider mb-2">
+                    KYC Status
+                  </label>
+                  <div className="space-y-3">
+                    {[
+                      { value: "verified", label: "KYC Verified", color: "emerald" },
+                      { value: "pending", label: "KYC Pending", color: "yellow" },
+                    ].map(({ value, label, color }) => {
+                      const isActive = filters.kycStatus === value;
+                      return (
+                        <div key={value} className="flex items-center justify-between">
+                          <span className="text-sm text-gray-700">{label}</span>
+                          <button
+                            onClick={() => {
+                              setFilter("kycStatus", isActive ? "" : value);
+                              setCurrentPage(1);
+                            }}
+                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-${color}-400 focus:ring-offset-2 ${isActive ? `bg-${color}-500` : 'bg-gray-200'
+                              }`}
+                          >
+                            <span
+                              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200 ${isActive ? 'translate-x-6' : 'translate-x-1'
+                                }`}
+                            />
+                          </button>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
 
@@ -373,10 +396,16 @@ export default function DonorModule() {
                     <td className="px-5 py-3.5 text-sm text-gray-500">{donor.email}</td>
                     <td className="px-5 py-3.5 text-sm text-gray-500">{donor.mobileNo}</td>
                     <td className="px-5 py-3.5 text-sm text-gray-500">
-                      {[...new Set([donor.city, donor.state])]
-                        .filter(Boolean)
-                        .map(val => val.charAt(0).toUpperCase() + val.slice(1))
-                        .join(", ") || "—"}
+                      {(() => {
+                        const values = [donor.city, donor.state]
+                          .filter(val => val && val !== "KYC Pending");
+
+                        if (values.length === 0) return "KYC Pending";
+
+                        return [...new Set(values)]
+                          .map(val => val.charAt(0).toUpperCase() + val.slice(1))
+                          .join(", ");
+                      })()}
                     </td>
                     <td className="px-5 py-3.5 text-sm text-gray-500">{new Date(donor.createdDate).toLocaleDateString()}</td>
                     <td className="px-5 py-3.5 text-sm">
