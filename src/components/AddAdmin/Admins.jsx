@@ -53,6 +53,7 @@ const AdminManagement = () => {
         lastActivity: "Account created",
         department: admin.department || "",
         position: admin.position || "",
+        role: admin.role || "Admin",
     })) || [];
     const [addAdmin, { isLoading: isAddingAdmin }] = useAddAdminMutation();
     const [disableAdmin, { isLoading: isDisablingAdmin }] = useDisableAdminMutation();
@@ -101,7 +102,7 @@ const AdminManagement = () => {
     const filteredData = adminData.filter(admin => {
         const matchesSearch = admin.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
             admin.lastActivity.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesRole = roleFilter === 'All' || admin.modules.includes(roleFilter);
+        const matchesRole = roleFilter === 'All' || admin.role === roleFilter || admin.modules.includes(roleFilter);
         return matchesSearch && matchesRole;
     }).sort((a, b) => {
         if (sortBy === 'Date') {
@@ -177,6 +178,7 @@ const AdminManagement = () => {
             isSuperAdmin: selectedAdmin?.isSuperAdmin,
             department: selectedAdmin?.department,
             position: selectedAdmin?.position,
+            role: selectedAdmin?.role,
         });
 
         const updatedAdminData = {
@@ -187,6 +189,7 @@ const AdminManagement = () => {
             isSuperAdmin: selectedAdmin.isSuperAdmin || false,
             department: selectedAdmin.department || '',
             position: selectedAdmin.position || '',
+            role: selectedAdmin.role || 'Admin',
         };
 
         try {
@@ -362,11 +365,15 @@ const AdminManagement = () => {
                                         className="appearance-none w-full sm:w-auto bg-white border border-gray-200 rounded-xl px-4 py-3 pr-10 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all duration-200 cursor-pointer text-sm"
                                     >
                                         <option value="All">All Roles</option>
-                                        {MODULES.map((module) => (
-                                            <option key={module.id} value={module.id}>
-                                                {module.name}
-                                            </option>
-                                        ))}
+                                        <option value="SuperAdmin">Super Admin</option>
+                                        <option value="CA">Chartered Accountant</option>
+                                        <optgroup label="Modules">
+                                            {MODULES.map((module) => (
+                                                <option key={module.id} value={module.id}>
+                                                    {module.name}
+                                                </option>
+                                            ))}
+                                        </optgroup>
                                     </select>
                                     <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5 pointer-events-none" />
                                 </div>
@@ -408,10 +415,15 @@ const AdminManagement = () => {
                                                 </td>
                                                 <td className="py-4 px-4">
                                                     <div className="flex flex-col gap-1.5">
-                                                        {admin.isSuperAdmin ? (
+                                                        {admin.role === "SuperAdmin" || admin.isSuperAdmin ? (
                                                             <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap bg-gradient-to-r from-purple-600 to-purple-700 text-white shadow-sm">
                                                                 <Shield className="w-3 h-3" />
                                                                 SuperAdmin
+                                                            </span>
+                                                        ) : admin.role === "CA" ? (
+                                                            <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-sm">
+                                                                <User className="w-3 h-3" />
+                                                                CA (Chartered Accountant)
                                                             </span>
                                                         ) : (
                                                             Array.isArray(admin.modules) && admin.modules.length > 0 ? (
@@ -547,10 +559,15 @@ const AdminManagement = () => {
                                             </div>
 
                                             <div className="flex flex-wrap gap-1.5">
-                                                {admin.isSuperAdmin ? (
+                                                {admin.role === "SuperAdmin" || admin.isSuperAdmin ? (
                                                     <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-gradient-to-r from-purple-600 to-purple-700 text-white">
                                                         <Shield className="w-3 h-3" />
                                                         SuperAdmin
+                                                    </span>
+                                                ) : admin.role === "CA" ? (
+                                                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-gradient-to-r from-amber-500 to-amber-600 text-white">
+                                                        <User className="w-3 h-3" />
+                                                        CA
                                                     </span>
                                                 ) : (
                                                     Array.isArray(admin.modules) && admin.modules.length > 0 ? (
@@ -851,6 +868,7 @@ const AdminManagement = () => {
                             isSuperAdmin: formData.isSuperAdmin,
                             department: formData.department,
                             position: formData.position,
+                            role: formData.role,
                         }).unwrap();
 
                         toast.success(`Admin ${formData.fullName} created successfully!`);

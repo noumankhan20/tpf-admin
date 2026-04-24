@@ -289,9 +289,14 @@ export default function SelectPanel() {
 
 
   const allowedModules = useMemo(() => {
+    if (admin?.role === "CA") {
+      return MODULES.filter((m) =>
+        ["Transaction Ledger", "Downloads", "Document Management"].includes(m.id)
+      );
+    }
     if (admin?.isSuperAdmin) return MODULES;
     return MODULES.filter((mod) => adminModules.includes(mod.id));
-  }, [adminModules, admin?.isSuperAdmin]);
+  }, [adminModules, admin?.isSuperAdmin, admin?.role]);
 
 
 

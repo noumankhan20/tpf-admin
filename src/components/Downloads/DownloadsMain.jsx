@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useSelector } from 'react-redux';
 import { useRouter } from 'next/navigation';
 import {
     FileSpreadsheet,
@@ -95,12 +96,35 @@ const RESOURCES = [
         dateKey: 'date'
     },
     {
-        id: 'all_donations',
-        title: 'All Donations',
-        description: 'Consolidated Online, Offline and Expenses',
+        id: 'all_transactions',
+        title: 'All Transactions',
+        description: 'Consolidated Ledger (Credits & Debits)',
         icon: PieChart,
         theme: 'emerald',
-        fileName: 'all_donations_report',
+        endpoint: '/transaction',
+        dataKey: 'transactions',
+        fileName: 'all_transactions_ledger',
+        columns: [
+            { header: 'Date', key: 'date', width: 15, format: (val) => val ? new Date(val).toLocaleDateString() : '-' },
+            { header: 'Name', key: 'user.name', width: 25, fallback: 'Anonymous' },
+            { header: 'Email', key: 'user.email', width: 30, fallback: '-' },
+            { header: 'Mobile', key: 'user.mobile', width: 20, fallback: '-' },
+            { header: 'Type', key: 'type', width: 12 },
+            { header: 'Amount', key: 'amount', width: 15, format: (val) => `₹${val}` },
+            { header: 'Category', key: 'source', width: 15 },
+            { header: 'Description', key: 'description', width: 40 },
+            { header: 'Status', key: 'status', width: 15 },
+            { header: 'Txn ID', key: 'transactionId', width: 30 },
+        ],
+        dateKey: 'date'
+    },
+    {
+        id: 'all_donations',
+        title: 'Summary Report',
+        description: 'Consolidated Online, Offline and Expenses',
+        icon: FileText,
+        theme: 'emerald',
+        fileName: 'summary_report',
         columns: [
             { header: 'Date', key: 'finalDate', width: 15, format: (val) => val ? new Date(val).toLocaleDateString() : '-' },
             { header: 'Description/From', key: 'finalDescription', width: 30 },
@@ -209,7 +233,7 @@ const DOWNLOAD_INSTRUCTIONS = [
     }
 ];
 
-const FINANCIAL_RESOURCE_IDS = ['all_donations', 'offline_donations', 'expenses', 'online_donations'];
+const FINANCIAL_RESOURCE_IDS = ['all_transactions', 'all_donations', 'offline_donations', 'expenses', 'online_donations'];
 
 const PERIODS = [
     { label: 'All Records', value: 'all' },
@@ -305,18 +329,43 @@ export default function DownloadsMain() {
     const router = useRouter();
     const [loading, setLoading] = useState({ id: null, type: null });
     const [createAuditLog] = useCreateAuditLogMutation();
+    const admin = useSelector(state => state.adminAuth.adminInfo);
+    const isCA = admin?.role === 'CA';
 
     const [financialFilters, setFinancialFilters] = useState({
-        typeId: 'all_donations',
+        typeId: 'all_transactions',
         period: 'all',
         startDate: '',
         endDate: ''
     });
 
-    const financialResources = RESOURCES.filter(r => FINANCIAL_RESOURCE_IDS.includes(r.id));
-    const otherResources = RESOURCES.filter(r => !FINANCIAL_RESOURCE_IDS.includes(r.id) && r.id !== 'form_10bd');
+    // Filter resources based on role
+    const filteredResources = RESOURCES.filter(res => {
+        if (isCA && (res.id === 'permanent_donors' || res.id === 'users')) {
+            return false;
+        }
+        return true;
+    }).map(res => {
+        // Redact PII in columns for CA (except for vendors)
+        if (isCA && res.id !== 'vendors') {
+            return {
+                ...res,
+                columns: res.columns.map(col => {
+                    if (col.key === 'email' || col.key === 'mobileNo' || col.key === 'contactNumber' || 
+                        col.key === 'user.email' || col.key === 'user.mobile') {
+                        return { ...col, format: () => 'REDACTED' };
+                    }
+                    return col;
+                })
+            };
+        }
+        return res;
+    });
+
+    const financialResources = filteredResources.filter(r => FINANCIAL_RESOURCE_IDS.includes(r.id));
+    const otherResources = filteredResources.filter(r => !FINANCIAL_RESOURCE_IDS.includes(r.id) && r.id !== 'form_10bd');
     const selectedFinancialResource = financialResources.find(r => r.id === financialFilters.typeId) || financialResources[0];
-    const form10BDResource = RESOURCES.find(r => r.id === 'form_10bd');
+    const form10BDResource = filteredResources.find(r => r.id === 'form_10bd');
 
     const fetchData = async (resource, filters = null) => {
         try {

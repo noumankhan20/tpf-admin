@@ -14,6 +14,7 @@ const AddAdminModal = ({ isOpen, onClose, onSubmit }) => {
     isSuperAdmin: false,
     department: "",
     position: "",
+    role: "Admin",
   });
 
   if (!isOpen) return null;
@@ -42,6 +43,7 @@ const AddAdminModal = ({ isOpen, onClose, onSubmit }) => {
       department: "",
       position: "",
       isSuperAdmin: false,
+      role: "Admin",
     });
   };
 
@@ -233,6 +235,44 @@ const AddAdminModal = ({ isOpen, onClose, onSubmit }) => {
             </div>
           </div>
 
+          {/* Role Selection Section */}
+          <div className="space-y-3">
+            <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
+              Account Role
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">
+                  Select Role <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <Shield className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <select
+                    value={formData.role}
+                    onChange={(e) => {
+                      const newRole = e.target.value;
+                      let updates = { role: newRole };
+                      if (newRole === "CA") {
+                        updates.modules = ["Transaction Ledger", "Downloads", "Document Management"];
+                        updates.isSuperAdmin = false;
+                      } else if (newRole === "SuperAdmin") {
+                        updates.isSuperAdmin = true;
+                      } else {
+                        updates.isSuperAdmin = false;
+                      }
+                      setFormData({ ...formData, ...updates });
+                    }}
+                    className="w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 outline-none appearance-none"
+                  >
+                    <option value="Admin">Standard Admin</option>
+                    <option value="SuperAdmin">Super Admin</option>
+                    <option value="CA">Chartered Accountant (CA)</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* SuperAdmin Section */}
           <div className="space-y-3">
             <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
@@ -270,7 +310,7 @@ const AddAdminModal = ({ isOpen, onClose, onSubmit }) => {
           </div>
 
           {/* Modules Section */}
-          {!formData.isSuperAdmin && (
+          {!formData.isSuperAdmin && formData.role !== "CA" && (
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
@@ -322,7 +362,16 @@ const AddAdminModal = ({ isOpen, onClose, onSubmit }) => {
                 })}
               </div>
 
-              {formData.modules.length > 0 && (
+              {formData.role === "CA" ? (
+                <div className="text-sm text-amber-600 bg-amber-50 border border-amber-200 rounded-lg p-3">
+                  <span className="font-medium text-amber-700">Chartered Accountant</span> role has restricted access to: 
+                  <ul className="list-disc ml-5 mt-1 font-medium">
+                    <li>Transaction Ledger</li>
+                    <li>Downloads</li>
+                    <li>Document Management</li>
+                  </ul>
+                </div>
+              ) : formData.modules.length > 0 && (
                 <div className="text-sm text-gray-600 bg-blue-50 border border-blue-200 rounded-lg p-3">
                   <span className="font-medium text-blue-700">{formData.modules.length}</span>{" "}
                   module{formData.modules.length !== 1 ? "s" : ""} selected

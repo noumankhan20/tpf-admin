@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect, useCallback } from "react";
+import { useSelector } from "react-redux";
 import {
     Search, Filter, X, ChevronDown, ChevronUp, Eye,
     ArrowUpRight, ArrowDownLeft, TrendingUp, TrendingDown,
@@ -339,7 +340,7 @@ const FilterDrawer = ({ open, onClose, filters, onApply }) => {
 // ─────────────────────────────────────────────────────────
 // DETAIL MODAL
 // ─────────────────────────────────────────────────────────
-const TransactionDetailModal = ({ tx, onClose }) => {
+const TransactionDetailModal = ({ tx, onClose, isCA }) => {
     if (!tx) return null;
 
     const isCredit = tx.type === "CREDIT";
@@ -414,8 +415,8 @@ const TransactionDetailModal = ({ tx, onClose }) => {
                             {isCredit ? "Donor" : "Recorded By"}
                         </p>
                         <Row label="Name" value={tx.user?.name} />
-                        <Row label="Email" value={tx.user?.email} />
-                        {tx.user?.mobile && <Row label="Mobile" value={tx.user?.mobile} />}
+                        <Row label="Email" value={isCA ? "REDACTED" : tx.user?.email} />
+                        {tx.user?.mobile && <Row label="Mobile" value={isCA ? "REDACTED" : tx.user?.mobile} />}
                         {tx.user?.location && <Row label="Location" value={tx.user?.location} />}
                     </div>
 
@@ -488,6 +489,8 @@ const Pagination = ({ current, total, onChange }) => {
 // ─────────────────────────────────────────────────────────
 export default function TransactionsPage() {
     const router = useRouter();
+    const admin = useSelector(state => state.adminAuth.adminInfo);
+    const isCA = admin?.role === 'CA';
 
     // Search
     const [search, setSearch] = useState("");
@@ -628,7 +631,7 @@ export default function TransactionsPage() {
                             <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                             <input
                                 type="text"
-                                placeholder="Search name, email, mobile, TXN ID…"
+                                placeholder={isCA ? "Search name, TXN ID…" : "Search name, email, mobile, TXN ID…"}
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
                                 className="w-full pl-9 pr-4 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/10 transition-all"
@@ -744,7 +747,7 @@ export default function TransactionsPage() {
                                                 </td>
                                                 <td className="px-5 py-3.5">
                                                     <p className="text-sm font-medium text-gray-800 truncate max-w-[140px]">{tx.user?.name || "—"}</p>
-                                                    <p className="text-xs text-gray-400 truncate max-w-[140px]">{tx.user?.email || tx.user?.mobile || ""}</p>
+                                                    <p className="text-xs text-gray-400 truncate max-w-[140px]">{isCA ? "REDACTED" : (tx.user?.email || tx.user?.mobile || "")}</p>
                                                 </td>
                                                 <td className="px-5 py-3.5">
                                                     <p className="text-sm text-gray-600 truncate max-w-[130px]">{tx.campaign?.title || "—"}</p>
@@ -863,7 +866,7 @@ export default function TransactionsPage() {
 
             {/* Detail Modal */}
             {selected && (
-                <TransactionDetailModal tx={selected} onClose={() => setSelected(null)} />
+                <TransactionDetailModal tx={selected} onClose={() => setSelected(null)} isCA={isCA} />
             )}
         </div>
     );
