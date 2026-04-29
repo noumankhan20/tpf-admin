@@ -11,6 +11,7 @@ import {
     TrendingDown,
     Info,
     X,
+    Share2,
     Trash2,
     Loader2,
     Edit2,
