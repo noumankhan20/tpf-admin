@@ -202,14 +202,7 @@ export const MODULES = [
   // ═══════════════════════════════════════
   // TPF MANAGEMENT
   // ═══════════════════════════════════════
-  {
-    id: "TPF Management",
-    name: "TPF Management",
-    icon: Users,
-    route: "/tpf-management",
-    category: "tpf-management",
-    desc: "Manage TPF data and operations",
-  },
+
   {
     id: "Donor",
     name: "Donor",
