@@ -210,7 +210,7 @@ export const CampaignRequestDetail = React.memo(({
 
                 {/* Footer Actions */}
                 {request.status === 'pending' || request.status === 'clarification' ? (
-                    <div className="no-print border-t border-gray-200 p-6 bg-white absolute bottom-0 w-full z-20 shadow-[0_-4px_10px_rgba(0,0,0,0.03)]">
+                    <div className="no-print border-t border-gray-200 p-6 bg-white absolute bottom-0 w-full z-20 shadow-[0_-4px_10px_rgba(0,0,0,0.03)] fab-avoid">
                         <div className="flex justify-start gap-3">
                             <button
                                 onClick={() => onOpenStatusUpdate('clarification')}

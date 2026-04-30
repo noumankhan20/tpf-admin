@@ -29,9 +29,9 @@ export default function QuickChatPopup() {
     const [activeChats, setActiveChats] = useState([]); // Array of { id, admin, isGlobal }
     const [searchQuery, setSearchQuery] = useState('');
     const [activeTab, setActiveTab] = useState('admins'); // 'admins' or 'superadmins'
-    const [position, setPosition] = useState({ x: 0, y: 0 });
     const [isTopHalf, setIsTopHalf] = useState(false);
     const [isLoaded, setIsLoaded] = useState(false);
+    const [isElevated, setIsElevated] = useState(false);
 
     const adminInfo = useSelector((state) => state.adminAuth.adminInfo);
     const pathname = usePathname();
@@ -60,37 +60,41 @@ export default function QuickChatPopup() {
         }
     }, [socket, currentUserId, refetchMessages]);
 
-    // Load saved position
+    // Intersection Observer to detect "Bottom UI" (Pagination/Footers)
     useEffect(() => {
-        const savedPos = localStorage.getItem('chat_button_position');
-        if (savedPos) {
-            try {
-                const parsed = JSON.parse(savedPos);
-                setPosition(parsed);
-                // Simple heuristic to check if it was in top half
-                if (parsed.y < -300) { // If dragged up significantly
-                    setIsTopHalf(true);
-                }
-            } catch (e) {
-                console.error("Failed to load chat position", e);
+        const observer = new IntersectionObserver(
+            (entries) => {
+                const isAnyIntersecting = entries.some(entry => entry.isIntersecting);
+                setIsElevated(isAnyIntersecting);
+            },
+            {
+                // Trigger when the target is in the bottom 20% of the screen
+                rootMargin: '0px 0px -10% 0px',
+                threshold: 0
             }
-        }
+        );
+
+        // Function to find and observe avoid-elements
+        const observeElements = () => {
+            const avoidElements = document.querySelectorAll('.fab-avoid');
+            avoidElements.forEach(el => observer.observe(el));
+        };
+
+        // Initial check
+        observeElements();
+
+        // Re-check on route changes (since Next.js navigates client-side)
+        const timeout = setTimeout(observeElements, 1000); 
+
+        return () => {
+            observer.disconnect();
+            clearTimeout(timeout);
+        };
+    }, [pathname]);
+
+    useEffect(() => {
         setIsLoaded(true);
     }, []);
-
-    const handleDragEnd = (event, info) => {
-        const newPos = { x: position.x + info.offset.x, y: position.y + info.offset.y };
-        setPosition(newPos);
-        localStorage.setItem('chat_button_position', JSON.stringify(newPos));
-
-        // Detect if the button is now in the top half of the viewport
-        const buttonElement = event.target.getBoundingClientRect();
-        if (buttonElement.top < window.innerHeight / 2) {
-            setIsTopHalf(true);
-        } else {
-            setIsTopHalf(false);
-        }
-    };
 
     // Unread counts logic
     const unreadCounts = messages.reduce((acc, m) => {
@@ -110,7 +114,9 @@ export default function QuickChatPopup() {
 
     const totalUnreadCount = Object.values(unreadCounts).reduce((a, b) => a + b, 0) + globalUnreadCount;
 
-    const togglePopup = () => setIsOpen(!isOpen);
+    const togglePopup = () => {
+        setIsOpen(!isOpen);
+    };
 
     const openChat = (admin, isGlobal = false) => {
         const chatId = isGlobal ? 'global' : admin._id;
@@ -145,15 +151,14 @@ export default function QuickChatPopup() {
     if (pathname === '/admin/communication' || !isLoaded) return null;
 
     return (
-        <div className="fixed bottom-8 right-8 z-[100] pointer-events-none" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
-            {/* 1. MAIN MESSAGING LIST & BUTTON (DRAGGABLE) */}
+        <div 
+            className={`fixed right-8 z-[100] transition-all duration-500 ease-in-out pointer-events-none ${isElevated ? 'bottom-28' : 'bottom-8'}`} 
+            style={{ fontFamily: 'Inter, system-ui, sans-serif' }}
+        >
+            {/* 1. MAIN MESSAGING LIST & BUTTON (DYNAMIC) */}
             <motion.div
-                drag
-                dragMomentum={false}
-                onDragEnd={handleDragEnd}
-                animate={{ x: position.x, y: position.y }}
-                transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                className={`flex ${isTopHalf ? 'flex-col-reverse' : 'flex-col'} items-end gap-4 pointer-events-auto`}
+                layout
+                className="flex flex-col items-end gap-4 pointer-events-auto"
             >
                 <AnimatePresence>
                     {isOpen && (
@@ -281,7 +286,7 @@ export default function QuickChatPopup() {
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     onClick={togglePopup}
-                    className={`w-14 h-14 rounded-2xl flex items-center justify-center text-white shadow-2xl transition-all duration-300 relative cursor-grab active:cursor-grabbing ${isOpen ? 'bg-gray-800' : 'bg-emerald-600'}`}
+                    className={`w-14 h-14 rounded-2xl flex items-center justify-center text-white shadow-2xl transition-all duration-300 relative ${isOpen ? 'bg-gray-800' : 'bg-emerald-600'}`}
                 >
                     {isOpen ? <X size={24} /> : (
                         <div className="relative pointer-events-none">

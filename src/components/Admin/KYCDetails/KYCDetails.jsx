@@ -300,7 +300,7 @@ export default function KYCVerificationPage() {
 
                             {/* Pagination */}
                             {totalPages > 1 && (
-                                <div className="border-t border-gray-200 p-3 bg-gray-50 flex justify-center gap-2">
+                                <div className="border-t border-gray-200 p-3 bg-gray-50 flex justify-center gap-2 fab-avoid">
                                     <PageBtn onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))} disabled={currentPage === 1} icon={<ChevronLeft size={16} />} />
                                     <span className="text-sm font-medium flex items-center px-2">Page {currentPage} of {totalPages}</span>
                                     <PageBtn onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))} disabled={currentPage === totalPages} icon={<ChevronRight size={16} />} />
@@ -375,7 +375,7 @@ export default function KYCVerificationPage() {
 
                                     {/* Actions */}
                                     {selectedUser.kycDetails?.status === 'pending' && (
-                                        <div className="border-t border-gray-200 p-6 bg-white absolute bottom-0 w-full z-20">
+                                        <div className="border-t border-gray-200 p-6 bg-white absolute bottom-0 w-full z-20 fab-avoid">
                                             {isRejecting ? (
                                                 <div className="bg-red-50 border border-red-200 p-4 rounded-lg animate-in fade-in slide-in-from-bottom-2">
                                                     <h4 className="font-semibold text-red-700 mb-2">Reject Application</h4>

@@ -323,7 +323,7 @@ export function CareersDashboard() {
 
                     {/* Table Footer */}
                     {filteredJobs.length > 0 && (
-                        <div className="px-6 py-3 border-t border-gray-50 text-xs text-gray-400">
+                        <div className="px-6 py-3 border-t border-gray-50 text-xs text-gray-400 fab-avoid">
                             Showing {filteredJobs.length} of {jobs.length} job postings
                         </div>
                     )}

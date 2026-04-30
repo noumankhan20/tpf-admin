@@ -939,7 +939,7 @@ export default function OfflineDonationPage() {
                   />
 
                   {/* Pagination */}
-                  <div className="flex items-center justify-between mt-6">
+                  <div className="flex items-center justify-between mt-6 fab-avoid">
                     <div className="text-sm text-gray-600">
                       Page {pagination.currentPage} of {pagination.totalPages}
                     </div>

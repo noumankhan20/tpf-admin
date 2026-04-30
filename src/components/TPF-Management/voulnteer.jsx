@@ -617,7 +617,7 @@ export default function VolunteerModule() {
 
                     {/* Pagination */}
                     {totalPages > 1 && (
-                        <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex items-center justify-between">
+                        <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex items-center justify-between fab-avoid">
                             <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">
                                 Page {currentPage} of {totalPages}
                             </p>

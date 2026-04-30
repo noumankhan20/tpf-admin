@@ -815,7 +815,7 @@ const AdminManagement = () => {
                                         )}
                                     </div>
 
-                                    <div className="sticky bottom-0 bg-white p-6 pt-4 border-t border-gray-200">
+                                    <div className="sticky bottom-0 bg-white p-6 pt-4 border-t border-gray-200 fab-avoid">
                                         <div className="flex gap-3">
                                             <button
                                                 type="button"
@@ -838,7 +838,7 @@ const AdminManagement = () => {
                         )}
 
                         {/* Pagination */}
-                        <div className="p-4 sm:p-6 bg-gray-50 border-t border-gray-200">
+                        <div className="p-4 sm:p-6 bg-gray-50 border-t border-gray-200 fab-avoid">
                             <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
                                 <div className="text-sm text-gray-600 text-center sm:text-left">
                                     Showing <span className="font-semibold text-gray-900">{filteredData.length}</span> of <span className="font-semibold text-gray-900">{adminData.length}</span> admins

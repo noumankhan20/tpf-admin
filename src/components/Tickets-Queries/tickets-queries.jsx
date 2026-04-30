@@ -405,7 +405,7 @@ const AdminPanel = () => {
 
             {/* Pagination */}
             {filteredTickets.length > 0 && (
-              <div className="px-6 py-4 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="px-6 py-4 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4 fab-avoid">
                 <p className="text-sm text-slate-600">
                   Showing <span className="font-medium text-slate-900">{((currentPage - 1) * itemsPerPage) + 1}</span> to <span className="font-medium text-slate-900">{Math.min(currentPage * itemsPerPage, filteredTickets.length)}</span> of <span className="font-medium text-slate-900">{filteredTickets.length}</span> results
                 </p>

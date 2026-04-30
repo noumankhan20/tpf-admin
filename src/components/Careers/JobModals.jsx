@@ -218,7 +218,7 @@ export function JobFormModal({ job, onClose, onSave }) {
                 </div>
 
                 {/* Footer */}
-                <div className="sticky bottom-0 bg-white border-t border-gray-100 px-6 py-4 flex items-center justify-between gap-3">
+                <div className="sticky bottom-0 bg-white border-t border-gray-100 px-6 py-4 flex items-center justify-between gap-3 fab-avoid">
                     <p className="text-xs text-gray-400">
                         <span className="text-red-400">*</span> Required fields
                     </p>

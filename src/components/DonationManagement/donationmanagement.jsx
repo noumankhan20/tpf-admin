@@ -62,7 +62,7 @@ const Pagination = ({ currentPage, totalPages, onPageChange }) => {
     };
 
     return (
-        <div className="flex items-center justify-between border-t border-gray-200 bg-white px-3 py-3 sm:px-6">
+        <div className="flex items-center justify-between border-t border-gray-200 bg-white px-3 py-3 sm:px-6 fab-avoid">
             <div className="flex flex-1 justify-between sm:hidden">
                 <button
                     onClick={() => onPageChange(currentPage - 1)}

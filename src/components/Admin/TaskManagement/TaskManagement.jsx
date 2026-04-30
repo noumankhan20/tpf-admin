@@ -499,7 +499,7 @@ function TasksTab({ tasksData, isLoading, currentPage, setCurrentPage, getModule
 
             {/* Pagination */}
             {pagination.totalPages > 1 && (
-                <div className="border-t border-gray-200 p-4 flex items-center justify-between bg-gray-50">
+                <div className="border-t border-gray-200 p-4 flex items-center justify-between bg-gray-50 fab-avoid">
                     <div className="text-sm text-gray-600">
                         Showing {((currentPage - 1) * pagination.limit) + 1} to {Math.min(currentPage * pagination.limit, pagination.total)} of {pagination.total} tasks
                     </div>
@@ -591,7 +591,7 @@ function CampaignsTab({ campaignsData, isLoading, currentPage, setCurrentPage, s
 
             {/* Pagination */}
             {pagination.totalPages > 1 && (
-                <div className="mt-6 flex items-center justify-center gap-2">
+                <div className="mt-6 flex items-center justify-center gap-2 fab-avoid">
                     <button
                         onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                         disabled={currentPage === 1}

@@ -874,7 +874,7 @@ export default function EmployeeManagement() {
                 </div>
 
                 {totalPages > 1 && (
-                    <div className="flex items-center justify-between mt-8 pt-6 border-t border-slate-200">
+                    <div className="flex items-center justify-between mt-8 pt-6 border-t border-slate-200 fab-avoid">
                         <button
                             onClick={() => handlePageChange(currentPage - 1)}
                             disabled={currentPage === 1}

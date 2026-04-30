@@ -318,7 +318,7 @@ export const RequestDetail = React.memo(({
 
                 {/* Footer / Action Bar */}
                 {selectedForm.status === 'pending' && (
-                    <div className="border-t border-gray-200 p-6 bg-white absolute bottom-0 w-full backdrop-blur-md z-20">
+                    <div className="border-t border-gray-200 p-6 bg-white absolute bottom-0 w-full backdrop-blur-md z-20 fab-avoid">
                         <div className="flex justify-end gap-4">
                             <button
                                 onClick={() => onOpenGroundReport('clarification')}

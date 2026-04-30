@@ -454,7 +454,7 @@ const Pagination = ({ current, total, onChange }) => {
         else if (pages[pages.length - 1] !== "...") pages.push("...");
     }
     return (
-        <div className="flex items-center justify-between px-4 py-3 border-t border-gray-100 bg-white">
+        <div className="flex items-center justify-between px-4 py-3 border-t border-gray-100 bg-white fab-avoid">
             <p className="text-xs text-gray-400">Page {current} of {total}</p>
             <div className="flex items-center gap-1">
                 <button disabled={current === 1} onClick={() => onChange(current - 1)}

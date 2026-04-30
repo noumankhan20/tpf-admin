@@ -235,7 +235,7 @@ export default function BlogList({
 
           {/* Pagination - Compact */}
           {data?.pagination && data.pagination.pages > 1 && (
-            <div className="flex items-center justify-between bg-white rounded-xl border border-slate-200/60 p-3 shadow-sm">
+            <div className="flex items-center justify-between bg-white rounded-xl border border-slate-200/60 p-3 shadow-sm fab-avoid">
               <p className="text-xs text-slate-600 hidden md:block">
                 <span className="font-semibold text-slate-900">
                   {(data.pagination.page - 1) * data.pagination.limit + 1}

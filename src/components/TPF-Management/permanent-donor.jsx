@@ -548,7 +548,7 @@ export default function PermanentDonorModule() {
 
               {/* Pagination */}
               {totalPages > 1 && (
-                <div className="flex flex-col sm:flex-row items-center justify-between mt-6 pt-6 border-t border-slate-200 gap-4">
+                <div className="flex flex-col sm:flex-row items-center justify-between mt-6 pt-6 border-t border-slate-200 gap-4 fab-avoid">
                   <p className="text-sm text-slate-600 text-center sm:text-left">
                     Showing <span className="font-semibold text-slate-900">{((currentPage - 1) * itemsPerPage) + 1}</span> to{' '}
                     <span className="font-semibold text-slate-900">{Math.min(currentPage * itemsPerPage, filteredDonors.length)}</span> of{' '}

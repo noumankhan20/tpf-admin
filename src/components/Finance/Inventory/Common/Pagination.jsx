@@ -35,7 +35,7 @@ export default function Pagination({ currentPage, totalPages, onPageChange }) {
     };
 
     return (
-        <div className="flex items-center justify-center space-x-2 py-8">
+        <div className="flex items-center justify-center space-x-2 py-8 fab-avoid">
             <button
                 disabled={currentPage === 1}
                 onClick={() => onPageChange(1)}

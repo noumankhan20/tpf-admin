@@ -429,7 +429,7 @@ export default function DonorModule() {
 
           {/* Pagination */}
           {totalPages > 1 && (
-            <div className="flex items-center justify-between mt-5 pt-4 border-t border-gray-100">
+            <div className="flex items-center justify-between mt-5 pt-4 border-t border-gray-100 fab-avoid">
               <p className="text-sm text-gray-400">
                 Page <span className="font-medium text-gray-600">{currentPage}</span> of{" "}
                 <span className="font-medium text-gray-600">{totalPages}</span>

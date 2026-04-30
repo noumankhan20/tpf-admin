@@ -532,7 +532,7 @@ export default function Documentation() {
 
         {/* Enhanced Pagination */}
         {agreements.length > 0 && (
-          <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+          <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 bg-white rounded-xl p-4 shadow-sm border border-gray-100 fab-avoid">
             <div className="text-sm text-gray-600 font-medium">
               Showing{" "}
               <span className="text-emerald-600 font-bold">
