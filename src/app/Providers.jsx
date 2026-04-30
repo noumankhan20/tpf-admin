@@ -14,6 +14,8 @@ import { adminApiSlice } from "@/utils/slices/adminApiSlice";
 
 import { SocketProvider } from "@/utils/context/SocketContext";
 import QuickChatPopup from "@/components/Admin/Communication/QuickChatPopup";
+import { toast } from "react-toastify";
+import { MODULES } from "@/components/config/modules";
 
 function AdminBootstrap({ children }) {
   const dispatch = useDispatch();
@@ -61,6 +63,35 @@ function AdminBootstrap({ children }) {
 
     validate();
   }, [dispatch, pathname]);
+
+  // ⛔ Authorization Check: Prevent manual URL access to unauthorized modules
+  useEffect(() => {
+    // Only run when ready and admin is logged in (SuperAdmin has full access)
+    if (!ready || !admin || admin.isSuperAdmin) return;
+
+    // Public routes and selection portal are always allowed
+    if (PUBLIC_ROUTES.includes(pathname) || pathname === "/select-portal") return;
+
+    // Check if the current path belongs to a restricted module
+    const matchingModule = MODULES.find(m => 
+      pathname === m.route || pathname.startsWith(m.route + "/")
+    );
+
+    if (matchingModule) {
+      // Define access logic (mirroring selectportal.jsx)
+      let hasAccess = false;
+      if (admin.role === "CA") {
+        hasAccess = ["Transaction Ledger", "Downloads", "Document Management"].includes(matchingModule.id);
+      } else {
+        hasAccess = admin.modules?.includes(matchingModule.id);
+      }
+
+      if (!hasAccess) {
+        toast.error("You don't have permission to access this module");
+        router.replace("/select-portal");
+      }
+    }
+  }, [admin, pathname, ready, router]);
 
   if (!ready) {
     return (
