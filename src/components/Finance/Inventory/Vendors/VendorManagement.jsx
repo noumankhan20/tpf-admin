@@ -447,7 +447,7 @@ export default function VendorManagement() {
                                                 {vendor.status === 'ACTIVE' ? <Ban size={16} /> : <CheckCircle size={16} />}
                                             </button>
                                             <button
-                                             <button 
+                                             
                                                 onClick={() => handleDelete(vendor)} 
                                                 disabled={isDeleting || isRequestingDelete}
                                                 className="p-2 text-rose-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
