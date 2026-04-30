@@ -26,6 +26,7 @@ import {
     useGetInventoryStockQuery,
     useDistributeStockMutation
 } from '../../../../utils/slices/InventoryAndAsset/stockApiSlice';
+import { useCreateDeleteRequestMutation } from '../../../../utils/slices/deleteApiSlice';
 import { useUpdateItemMutation, useDeleteItemMutation } from '../../../../utils/slices/InventoryAndAsset/itemApiSlice';
 import { useGetInventoryDashboardStatsQuery } from '../../../../utils/slices/InventoryAndAsset/dashboardApiSlice';
 import Pagination from '../Common/Pagination';
@@ -40,6 +41,9 @@ export default function InventoryStock() {
     const [selectedItem, setSelectedItem] = useState(null);
     const [editingItem, setEditingItem] = useState(null);
     const [currentPage, setCurrentPage] = useState(1);
+    
+    const adminInfo = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('adminInfo') || '{}') : {};
+    const isSuperAdmin = adminInfo.role === 'SuperAdmin' || adminInfo.isSuperAdmin === true;
 
     // Confirmation Modals State
     const [confirmModal, setConfirmModal] = useState({
@@ -65,6 +69,7 @@ export default function InventoryStock() {
     const [distributeStock, { isLoading: isDistributing }] = useDistributeStockMutation();
     const [updateItem, { isLoading: isUpdating }] = useUpdateItemMutation();
     const [deleteItem, { isLoading: isDeleting }] = useDeleteItemMutation();
+    const [createDeleteRequest, { isLoading: isRequestingDelete }] = useCreateDeleteRequestMutation();
 
     const stock = stockResponse?.data || [];
     const meta = stockResponse?.meta || { totalPages: 1 };
@@ -155,20 +160,32 @@ export default function InventoryStock() {
         return true;
     });
 
-    const handleStockDelete = (id) => {
+    const handleStockDelete = (item) => {
         setConfirmModal({
             isOpen: true,
             type: 'danger',
-            title: 'Deactivate Inventory Item',
-            message: 'Are you sure you want to deactivate this inventory item?',
-            confirmText: 'Deactivate',
+            title: isSuperAdmin ? 'Delete Item Permanently' : 'Request Deletion',
+            message: isSuperAdmin 
+                ? 'Are you sure you want to permanently delete this inventory item? This action cannot be undone.' 
+                : 'This will send a request to the Super Admin to permanently remove this inventory item.',
+            confirmText: isSuperAdmin ? 'Delete Permanently' : 'Send Request',
             onConfirm: async () => {
                 try {
-                    await deleteItem(id).unwrap();
-                    toast.success('Item deactivated successfully');
+                    if (isSuperAdmin) {
+                        await deleteItem(item._id).unwrap();
+                        toast.success('Item deleted permanently');
+                    } else {
+                        await createDeleteRequest({
+                            entityId: item._id,
+                            entityModel: 'Item',
+                            module: 'Inventory / Stock',
+                            entityName: item.name
+                        }).unwrap();
+                        toast.success('Deletion request sent to Super Admin');
+                    }
                 } catch (err) {
                     console.error('Failed to delete item:', err);
-                    toast.error(err?.data?.message || 'Failed to deactivate item');
+                    toast.error(err?.data?.message || 'Failed to delete item');
                 }
             }
         });
@@ -350,13 +367,13 @@ export default function InventoryStock() {
                                                 >
                                                     <Edit2 size={18} />
                                                 </button>
-                                                <button
-                                                    onClick={() => handleStockDelete(item._id)}
-                                                    disabled={isDeleting}
-                                                    className="p-2 text-gray-300 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
-                                                    title="Deactivate Item"
+                                                 <button
+                                                    onClick={() => handleStockDelete(item)}
+                                                    disabled={isDeleting || isRequestingDelete}
+                                                    className="p-2 text-rose-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
+                                                    title={isSuperAdmin ? "Delete Permanently" : "Request Deletion"}
                                                 >
-                                                    <Trash2 size={18} />
+                                                    {isDeleting || isRequestingDelete ? <Loader2 className="animate-spin" size={18} /> : <Trash2 size={18} />}
                                                 </button>
                                             </div>
                                         </div>

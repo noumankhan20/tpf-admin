@@ -20,6 +20,7 @@ import {
     ChevronDown
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useSelector } from 'react-redux';
 import Pagination from '../Common/Pagination';
 import { toast } from 'react-toastify';
 import ConfirmModal from '@/components/Common/ConfirmModal';
@@ -29,6 +30,7 @@ import {
     useUpdateVendorMutation,
     useDeleteVendorMutation,
 } from '../../../../utils/slices/InventoryAndAsset/vendorApiSlice';
+import { useCreateDeleteRequestMutation } from '../../../../utils/slices/deleteApiSlice';
 import { useGetInventoryDashboardStatsQuery } from '../../../../utils/slices/InventoryAndAsset/dashboardApiSlice';
 import { useGetStatesQuery, useLazyGetCitiesQuery } from '../../../../utils/slices/locationApiSlice';
 import { INDIAN_LOCATIONS, STATES as FALLBACK_STATES } from '../../../../utils/locations';
@@ -43,6 +45,8 @@ export default function VendorManagement() {
     const [currentPage, setCurrentPage] = useState(1);
     const [stateFilter, setStateFilter] = useState('');
     const [cityFilter, setCityFilter] = useState('');
+    const { adminInfo } = useSelector((state) => state.adminAuth);
+    const isSuperAdmin = adminInfo?.isSuperAdmin || adminInfo?.role === 'SuperAdmin';
 
     // Confirmation Modals State
     const [confirmModal, setConfirmModal] = useState({
@@ -70,6 +74,7 @@ export default function VendorManagement() {
     const [createVendor, { isLoading: isCreating }] = useCreateVendorMutation();
     const [updateVendor, { isLoading: isUpdating }] = useUpdateVendorMutation();
     const [deleteVendor, { isLoading: isDeleting }] = useDeleteVendorMutation();
+    const [createDeleteRequest, { isLoading: isRequestingDelete }] = useCreateDeleteRequestMutation();
 
     // Location API
     const { data: apiStates, isLoading: isLoadingStates } = useGetStatesQuery();
@@ -170,24 +175,36 @@ export default function VendorManagement() {
                 vendorId: vendor._id,
                 data: { status: newStatus }
             }).unwrap();
-            toast.success(`Vendor ${newStatus.toLowerCase()} successfully`);
+            toast.success(`Vendor ${newStatus === 'ACTIVE' ? 'enabled' : 'disabled'} successfully`);
         } catch (err) {
             console.error('Failed to update vendor status:', err);
             toast.error(err?.data?.message || 'Failed to update vendor status');
         }
     };
 
-    const handleDelete = (vendorId) => {
+    const handleDelete = (vendor) => {
         setConfirmModal({
             isOpen: true,
             type: 'danger',
-            title: 'Deactivate Vendor',
-            message: 'Are you sure you want to deactivate this vendor?',
-            confirmText: 'Deactivate',
+            title: isSuperAdmin ? 'Delete Vendor Permanently' : 'Request Deletion',
+            message: isSuperAdmin 
+                ? 'Are you sure you want to permanently delete this vendor? This action cannot be undone.' 
+                : 'This will send a request to the Super Admin to permanently remove this vendor.',
+            confirmText: isSuperAdmin ? 'Delete Permanently' : 'Send Request',
             onConfirm: async () => {
                 try {
-                    await deleteVendor(vendorId).unwrap();
-                    toast.success('Vendor deactivated successfully');
+                    if (isSuperAdmin) {
+                        await deleteVendor(vendor._id).unwrap();
+                        toast.success('Vendor deleted permanently');
+                    } else {
+                        await createDeleteRequest({
+                            entityId: vendor._id,
+                            entityModel: 'Vendor',
+                            module: 'Inventory / Vendors',
+                            entityName: vendor.fullName
+                        }).unwrap();
+                        toast.success('Deletion request sent to Super Admin');
+                    }
                 } catch (err) {
                     console.error('Failed to delete vendor:', err);
                     toast.error(err?.data?.message || 'Failed to delete vendor');
@@ -425,17 +442,18 @@ export default function VendorManagement() {
                                             <button
                                                 onClick={() => toggleStatus(vendor)}
                                                 className={`p-2 rounded-lg transition-colors ${vendor.status === 'ACTIVE' ? 'hover:bg-rose-50 text-rose-600' : 'hover:bg-emerald-50 text-emerald-600'}`}
-                                                title={vendor.status === 'ACTIVE' ? 'Deactivate' : 'Activate'}
+                                                title={vendor.status === 'ACTIVE' ? 'Disable Vendor' : 'Enable Vendor'}
                                             >
                                                 {vendor.status === 'ACTIVE' ? <Ban size={16} /> : <CheckCircle size={16} />}
                                             </button>
                                             <button
-                                                onClick={() => handleDelete(vendor._id)}
-                                                disabled={isDeleting}
-                                                className="p-2 hover:bg-rose-50 text-gray-300 hover:text-rose-600 transition-colors"
-                                                title="Delete permanently"
+                                             <button 
+                                                onClick={() => handleDelete(vendor)} 
+                                                disabled={isDeleting || isRequestingDelete}
+                                                className="p-2 text-rose-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
+                                                title={isSuperAdmin ? "Delete Permanently" : "Request Deletion"}
                                             >
-                                                <Trash2 size={16} />
+                                                {isDeleting || isRequestingDelete ? <Loader2 className="animate-spin" size={16} /> : <Trash2 size={16} />}
                                             </button>
                                         </div>
                                     </div>

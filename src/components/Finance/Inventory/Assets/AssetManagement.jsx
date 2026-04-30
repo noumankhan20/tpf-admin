@@ -38,6 +38,7 @@ import {
     useUpdateAssetMutation,
     useDeleteAssetMutation
 } from '../../../../utils/slices/InventoryAndAsset/assetApiSlice';
+import { useCreateDeleteRequestMutation } from '../../../../utils/slices/deleteApiSlice';
 import { useGetInventoryDashboardStatsQuery } from '../../../../utils/slices/InventoryAndAsset/dashboardApiSlice';
 import Pagination from '../Common/Pagination';
 import { useGetAdminListQuery } from '../../../../utils/slices/adminApiSlice';
@@ -59,6 +60,9 @@ export default function AssetManagement() {
     const [incomeHistoryPage, setIncomeHistoryPage] = useState(1);
     const [activeTab, setActiveTab] = useState('overview');
     const incomeHistoryPerPage = 8;
+    
+    const adminInfo = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('adminInfo') || '{}') : {};
+    const isSuperAdmin = adminInfo.role === 'SuperAdmin' || adminInfo.isSuperAdmin === true;
 
     // Confirmation Modals State
     const [confirmModal, setConfirmModal] = useState({
@@ -85,6 +89,7 @@ export default function AssetManagement() {
     const [updateIncome, { isLoading: isUpdating }] = useUpdateAssetIncomeMutation();
     const [updateAsset, { isLoading: isUpdatingAsset }] = useUpdateAssetMutation();
     const [deleteAsset, { isLoading: isDeleting }] = useDeleteAssetMutation();
+    const [createDeleteRequest, { isLoading: isRequestingDelete }] = useCreateDeleteRequestMutation();
 
     const assets = assetsResponse?.data || [];
     const meta = assetsResponse?.meta || { totalPages: 1 };
@@ -201,20 +206,32 @@ export default function AssetManagement() {
         });
     };
 
-    const handleAssetDelete = (id) => {
+    const handleAssetDelete = (asset) => {
         setConfirmModal({
             isOpen: true,
             type: 'danger',
-            title: 'Deactivate Asset',
-            message: 'Are you sure you want to deactivate this asset?',
-            confirmText: 'Deactivate',
+            title: isSuperAdmin ? 'Delete Asset Permanently' : 'Request Deletion',
+            message: isSuperAdmin 
+                ? 'Are you sure you want to permanently delete this asset? This action cannot be undone.' 
+                : 'This will send a request to the Super Admin to permanently remove this asset.',
+            confirmText: isSuperAdmin ? 'Delete Permanently' : 'Send Request',
             onConfirm: async () => {
                 try {
-                    await deleteAsset(id).unwrap();
-                    toast.success('Asset deactivated successfully');
+                    if (isSuperAdmin) {
+                        await deleteAsset(asset._id).unwrap();
+                        toast.success('Asset deleted permanently');
+                    } else {
+                        await createDeleteRequest({
+                            entityId: asset._id,
+                            entityModel: 'Item', // Assets are stored in Item model
+                            module: 'Inventory / Assets',
+                            entityName: asset.name
+                        }).unwrap();
+                        toast.success('Deletion request sent to Super Admin');
+                    }
                 } catch (err) {
                     console.error('Failed to delete asset:', err);
-                    toast.error(err?.data?.message || 'Failed to deactivate asset');
+                    toast.error(err?.data?.message || 'Failed to delete asset');
                 }
             }
         });
@@ -461,12 +478,12 @@ export default function AssetManagement() {
                                                 <IndianRupee size={18} />
                                             </button>
                                             <button
-                                                onClick={() => handleAssetDelete(asset._id)}
-                                                disabled={isDeleting}
-                                                className="p-2 hover:bg-rose-50 rounded-lg text-gray-300 hover:text-rose-600 transition-colors"
-                                                title="Deactivate Asset"
+                                                onClick={() => handleAssetDelete(asset)}
+                                                disabled={isDeleting || isRequestingDelete}
+                                                className="p-2 hover:bg-rose-50 rounded-lg text-rose-400 hover:text-rose-600 transition-colors"
+                                                title={isSuperAdmin ? "Delete Permanently" : "Request Deletion"}
                                             >
-                                                <Trash2 size={18} />
+                                                {isDeleting || isRequestingDelete ? <Loader2 className="animate-spin" size={18} /> : <Trash2 size={18} />}
                                             </button>
                                         </div>
                                     </div>

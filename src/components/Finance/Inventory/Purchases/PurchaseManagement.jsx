@@ -31,6 +31,7 @@ import {
     useUpdatePurchaseMutation,
     useDeletePurchaseMutation 
 } from '../../../../utils/slices/InventoryAndAsset/purchaseApiSlice';
+import { useCreateDeleteRequestMutation } from '../../../../utils/slices/deleteApiSlice';
 import { useGetVendorsQuery } from '../../../../utils/slices/InventoryAndAsset/vendorApiSlice';
 import { useGetItemsQuery } from '../../../../utils/slices/InventoryAndAsset/itemApiSlice';
 import { useGetInventoryDashboardStatsQuery } from '../../../../utils/slices/InventoryAndAsset/dashboardApiSlice';
@@ -48,6 +49,9 @@ export default function PurchaseManagement() {
     const [vendorFilter, setVendorFilter] = useState('ALL');
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
+    
+    const adminInfo = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('adminInfo') || '{}') : {};
+    const isSuperAdmin = adminInfo.role === 'SuperAdmin' || adminInfo.isSuperAdmin === true;
 
     // Confirmation Modals State
     const [confirmModal, setConfirmModal] = useState({
@@ -78,7 +82,8 @@ export default function PurchaseManagement() {
 
     const [createPurchase, { isLoading: isCreating }] = useCreatePurchaseMutation();
     const [updatePurchase, { isLoading: isUpdating }] = useUpdatePurchaseMutation();
-    const [deletePurchase] = useDeletePurchaseMutation();
+    const [deletePurchase, { isLoading: isDeleting }] = useDeletePurchaseMutation();
+    const [createDeleteRequest, { isLoading: isRequestingDelete }] = useCreateDeleteRequestMutation();
 
     const purchases = purchasesResponse?.data || [];
     const meta = purchasesResponse?.meta || { totalPages: 1 };
@@ -226,17 +231,29 @@ export default function PurchaseManagement() {
         }
     };
 
-    const handleDelete = (id) => {
+    const handleDelete = (po) => {
         setConfirmModal({
             isOpen: true,
             type: 'danger',
-            title: 'Delete Purchase Record',
-            message: 'Are you sure you want to delete this purchase record? Stock will be reverted.',
-            confirmText: 'Delete',
+            title: isSuperAdmin ? 'Delete Purchase Permanently' : 'Request Deletion',
+            message: isSuperAdmin 
+                ? 'Are you sure you want to permanently delete this purchase record? This action cannot be undone and stock will be reverted.' 
+                : 'This will send a request to the Super Admin to permanently remove this purchase record.',
+            confirmText: isSuperAdmin ? 'Delete Permanently' : 'Send Request',
             onConfirm: async () => {
                 try {
-                    await deletePurchase(id).unwrap();
-                    toast.success('Purchase record deleted successfully');
+                    if (isSuperAdmin) {
+                        await deletePurchase(po._id).unwrap();
+                        toast.success('Purchase record deleted permanently');
+                    } else {
+                        await createDeleteRequest({
+                            entityId: po._id,
+                            entityModel: 'Purchase',
+                            module: 'Inventory / Purchases',
+                            entityName: `PO from ${po.vendorId?.fullName || 'Vendor'} (#${po._id.slice(-4)})`
+                        }).unwrap();
+                        toast.success('Deletion request sent to Super Admin');
+                    }
                 } catch (err) {
                     console.error('Failed to delete purchase:', err);
                     toast.error(err?.data?.message || 'Failed to delete purchase');
@@ -421,7 +438,14 @@ export default function PurchaseManagement() {
                                         <div className="col-span-2 flex items-center justify-end gap-1">
                                             <button onClick={() => setViewPurchase(po)} className="p-2 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all"><Eye size={18} /></button>
                                             <button onClick={() => handleEdit(po)} className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"><Edit2 size={18} /></button>
-                                            <button onClick={() => handleDelete(po._id)} className="p-2 text-gray-300 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all"><Trash2 size={18} /></button>
+                                                                                         <button 
+                                                onClick={() => handleDelete(po)} 
+                                                disabled={isDeleting || isRequestingDelete}
+                                                className="p-2 text-rose-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
+                                                title={isSuperAdmin ? "Delete Permanently" : "Request Deletion"}
+                                            >
+                                                {isDeleting || isRequestingDelete ? <Loader2 className="animate-spin" size={18} /> : <Trash2 size={18} />}
+                                            </button>
                                         </div>
                                     </div>
                                 ))

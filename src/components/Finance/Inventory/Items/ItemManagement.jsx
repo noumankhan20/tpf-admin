@@ -20,6 +20,7 @@ import {
     ChevronRight
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useSelector } from 'react-redux';
 import { toast } from 'react-toastify';
 import ConfirmModal from '@/components/Common/ConfirmModal';
 import Pagination from '../Common/Pagination';
@@ -29,6 +30,7 @@ import {
     useUpdateItemMutation,
     useDeleteItemMutation,
 } from '../../../../utils/slices/InventoryAndAsset/itemApiSlice';
+import { useCreateDeleteRequestMutation } from '../../../../utils/slices/deleteApiSlice';
 import { useGetVendorsQuery } from '../../../../utils/slices/InventoryAndAsset/vendorApiSlice';
 import { useGetInventoryDashboardStatsQuery } from '../../../../utils/slices/InventoryAndAsset/dashboardApiSlice';
 
@@ -41,6 +43,8 @@ export default function ItemManagement() {
     const [filterType, setFilterType] = useState('all');
     const [currentPage, setCurrentPage] = useState(1);
     const [vendorFilter, setVendorFilter] = useState('all');
+    const { adminInfo } = useSelector((state) => state.adminAuth);
+    const isSuperAdmin = adminInfo?.isSuperAdmin || adminInfo?.role === 'SuperAdmin';
 
     // Confirmation Modals State
     const [confirmModal, setConfirmModal] = useState({
@@ -69,6 +73,7 @@ export default function ItemManagement() {
     const [createItem, { isLoading: isCreating }] = useCreateItemMutation();
     const [updateItem, { isLoading: isUpdating }] = useUpdateItemMutation();
     const [deleteItem, { isLoading: isDeleting }] = useDeleteItemMutation();
+    const [createDeleteRequest, { isLoading: isRequestingDelete }] = useCreateDeleteRequestMutation();
 
     const [formData, setFormData] = useState({
         name: '',
@@ -184,17 +189,29 @@ export default function ItemManagement() {
         setShowAddModal(true);
     };
 
-    const handleDelete = (itemId) => {
+    const handleDelete = (item) => {
         setConfirmModal({
             isOpen: true,
             type: 'danger',
-            title: 'Deactivate Item',
-            message: 'Are you sure you want to deactivate this item?',
-            confirmText: 'Deactivate',
+            title: isSuperAdmin ? 'Delete Item Permanently' : 'Request Deletion',
+            message: isSuperAdmin 
+                ? 'Are you sure you want to permanently delete this item? This action cannot be undone.' 
+                : 'This will send a request to the Super Admin to permanently remove this item from the master list.',
+            confirmText: isSuperAdmin ? 'Delete Permanently' : 'Send Request',
             onConfirm: async () => {
                 try {
-                    await deleteItem(itemId).unwrap();
-                    toast.success('Item deactivated successfully');
+                    if (isSuperAdmin) {
+                        await deleteItem(item._id).unwrap();
+                        toast.success('Item deleted permanently');
+                    } else {
+                        await createDeleteRequest({
+                            entityId: item._id,
+                            entityModel: 'Item',
+                            module: 'Inventory / Item Master',
+                            entityName: item.name
+                        }).unwrap();
+                        toast.success('Deletion request sent to Super Admin');
+                    }
                 } catch (err) {
                     console.error('Failed to delete item:', err);
                     toast.error(err?.data?.message || 'Failed to delete item');
@@ -423,12 +440,13 @@ export default function ItemManagement() {
                                             >
                                                 <Edit2 size={16} />
                                             </button>
-                                            <button
-                                                onClick={() => handleDelete(item._id)}
-                                                className="p-2 hover:bg-rose-50 text-gray-300 hover:text-rose-600 transition-colors"
-                                                title="Deactivate"
+                                             <button 
+                                                onClick={() => handleDelete(item)} 
+                                                disabled={isDeleting || isRequestingDelete}
+                                                className="p-2 text-rose-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
+                                                title={isSuperAdmin ? "Delete Permanently" : "Request Deletion"}
                                             >
-                                                <Trash2 size={16} />
+                                                {isDeleting || isRequestingDelete ? <Loader2 className="animate-spin" size={16} /> : <Trash2 size={16} />}
                                             </button>
                                         </div>
                                     </div>

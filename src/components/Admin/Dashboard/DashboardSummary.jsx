@@ -29,7 +29,7 @@ const MetricCard = ({ metric, index }) => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3, delay: index * 0.05 }}
             onClick={() => router.push(metric.route)}
-            className="group relative bg-white rounded-2xl p-6 shadow-sm hover:shadow-2xl transition-all duration-300 cursor-pointer border border-gray-100 overflow-hidden"
+            className="group relative bg-white rounded-2xl p-4 sm:p-6 xl:p-4 2xl:p-6 shadow-sm hover:shadow-2xl transition-all duration-300 cursor-pointer border border-gray-100 overflow-hidden"
         >
             <div className={`absolute inset-0 bg-gradient-to-br ${metric.gradient} opacity-0 group-hover:opacity-5 transition-opacity duration-500`} />
             <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${metric.gradient}`} />
@@ -45,7 +45,7 @@ const MetricCard = ({ metric, index }) => {
                     </div>
                 </div>
                 <div>
-                    <h3 className="text-3xl font-black text-gray-900 mb-2 tracking-tight">
+                    <h3 className="text-xl sm:text-2xl lg:text-3xl xl:text-xl 2xl:text-3xl font-black text-gray-900 mb-2 tracking-tight break-words">
                         {metric.value}
                     </h3>
                     <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">
@@ -76,7 +76,7 @@ const SummaryMetrics = () => {
     if (isLoading) return <div className="text-center py-10">Loading Metrics...</div>;
 
     return (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-5 mb-10">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-10">
             {summaryItems.map((metric, index) => (
                 <MetricCard key={metric.id} metric={metric} index={index} />
             ))}
