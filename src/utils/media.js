@@ -1,5 +1,5 @@
 export const getMediaUrl = (path) => {
-    if (!path || typeof path !== 'string') return "";
+    if (!path || typeof path !== 'string') return null;
     if (path.startsWith("http")) return path;
 
     const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:7000";

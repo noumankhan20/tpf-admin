@@ -147,7 +147,7 @@ export const MODULES = [
     name: "Career & Job Opportunities",
     icon: Briefcase,
     route: "/career-opportunities",
-    category: "resource",
+    category: "hr",
     desc: "Manage career and job opportunities",
   },
 
