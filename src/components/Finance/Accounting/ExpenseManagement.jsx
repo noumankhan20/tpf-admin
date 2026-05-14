@@ -21,9 +21,11 @@ import {
     CheckCircle2,
     Clock,
     Filter,
-    ChevronDown,
-    Banknote,
-    CreditCard
+    CreditCard,
+    ShoppingCart,
+    Trash2,
+    MapPin,
+    Briefcase
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-toastify';
@@ -42,6 +44,15 @@ import {
     useGetVolunteersQuery,
     useGetApprovedVouchersQuery,
 } from '@/utils/slices/vouchersApiSlice';
+import { 
+    useCreatePurchaseMutation 
+} from '@/utils/slices/InventoryAndAsset/purchaseApiSlice';
+import { 
+    useCreateVendorMutation 
+} from '@/utils/slices/InventoryAndAsset/vendorApiSlice';
+import { useGetItemsQuery } from '@/utils/slices/InventoryAndAsset/itemApiSlice';
+import { useGetStatesQuery, useLazyGetCitiesQuery } from '@/utils/slices/locationApiSlice';
+import { INDIAN_LOCATIONS, STATES as FALLBACK_STATES } from '@/utils/locations';
 
 export default function ExpenseManagement() {
     const router = useRouter();
@@ -101,6 +112,39 @@ export default function ExpenseManagement() {
     const { data: vouchersResponse } = useGetApprovedVouchersQuery(formData.volunteerId, {
         skip: !formData.volunteerId
     });
+
+    // Sub-modal states
+    const [showAddPurchaseModal, setShowAddPurchaseModal] = useState(false);
+    const [showAddVendorModal, setShowAddVendorModal] = useState(false);
+
+    // Purchase Form State (for sub-modal)
+    const [purchaseFormData, setPurchaseFormData] = useState({
+        vendorId: '',
+        purchaseDate: new Date().toISOString().split('T')[0],
+        paymentStatus: 'PENDING',
+        proofFile: null,
+        lineItems: []
+    });
+
+    // Vendor Form State (for sub-modal)
+    const [vendorFormData, setVendorFormData] = useState({
+        fullName: '',
+        contactNumber: '',
+        vendorGST: '',
+        state: '',
+        city: '',
+        fullAddress: '',
+        status: 'ACTIVE'
+    });
+
+    // Mutations and data for sub-modals
+    const [createPurchase, { isLoading: isCreatingPurchase }] = useCreatePurchaseMutation();
+    const [createVendor, { isLoading: isCreatingVendor }] = useCreateVendorMutation();
+    const { data: itemsResponse } = useGetItemsQuery({ status: 'ACTIVE' });
+    const items = itemsResponse?.data || [];
+    const { data: apiStates, isLoading: isLoadingStates } = useGetStatesQuery();
+    const [triggerGetCities, { data: apiCities, isLoading: isLoadingCities }] = useLazyGetCitiesQuery();
+    const states = apiStates || FALLBACK_STATES;
 
     const volunteers = volunteersResponse?.data || [];
     const approvedVouchers = vouchersResponse?.data || [];
@@ -241,6 +285,98 @@ export default function ExpenseManagement() {
             transactionDate: new Date().toISOString().split('T')[0],
             transactionTime: ''
         });
+    };
+
+    // Sub-modal handlers
+    const addLineItem = () => {
+        setPurchaseFormData(prev => ({
+            ...prev,
+            lineItems: [...prev.lineItems, { itemId: '', qty: '', price: '', unit: '' }]
+        }));
+    };
+
+    const removeLineItem = (index) => {
+        setPurchaseFormData(prev => ({
+            ...prev,
+            lineItems: prev.lineItems.filter((_, i) => i !== index)
+        }));
+    };
+
+    const updateLineItem = (index, field, value) => {
+        setPurchaseFormData(prev => {
+            const updatedLines = [...prev.lineItems];
+            if (field === 'itemId') {
+                const selectedItem = items.find(item => item._id === value);
+                updatedLines[index] = {
+                    ...updatedLines[index],
+                    itemId: value,
+                    unit: selectedItem?.unit || ''
+                };
+            } else {
+                updatedLines[index] = { ...updatedLines[index], [field]: value };
+            }
+            return { ...prev, lineItems: updatedLines };
+        });
+    };
+
+    const handleCreatePurchaseSubmit = async (e) => {
+        e.preventDefault();
+        if (purchaseFormData.lineItems.length === 0) {
+            toast.warning("Please add at least one item.");
+            return;
+        }
+
+        const formDataToSend = new FormData();
+        formDataToSend.append('vendorId', purchaseFormData.vendorId);
+        formDataToSend.append('purchaseDate', purchaseFormData.purchaseDate);
+        formDataToSend.append('paymentStatus', purchaseFormData.paymentStatus);
+
+        const itemsPayload = purchaseFormData.lineItems.map(item => ({
+            itemId: item.itemId,
+            quantity: Number(item.qty),
+            price: Number(item.price)
+        }));
+        formDataToSend.append('items', JSON.stringify(itemsPayload));
+
+        if (purchaseFormData.proofFile) {
+            formDataToSend.append('proof', purchaseFormData.proofFile);
+        }
+
+        try {
+            const result = await createPurchase(formDataToSend).unwrap();
+            toast.success('Purchase recorded successfully');
+            setShowAddPurchaseModal(false);
+            // Automatically select the new purchase in the main form
+            setFormData(prev => ({ ...prev, purchaseId: result.data._id }));
+        } catch (err) {
+            console.error('Failed to save purchase:', err);
+            toast.error(err?.data?.message || 'Failed to save purchase');
+        }
+    };
+
+    const handleCreateVendorSubmit = async (e) => {
+        e.preventDefault();
+        try {
+            if (!/^[0-9]{10}$/.test(vendorFormData.contactNumber)) {
+                toast.warning('Contact number must be a valid 10-digit number');
+                return;
+            }
+
+            // Validate GST if provided
+            if (vendorFormData.vendorGST && !/^[0-9A-Z]{15}$/.test(vendorFormData.vendorGST)) {
+                toast.warning('Invalid GST number format (must be 15 alphanumeric characters)');
+                return;
+            }
+
+            const result = await createVendor(vendorFormData).unwrap();
+            toast.success('Vendor created successfully');
+            setShowAddVendorModal(false);
+            // Automatically select the new vendor in the main form
+            setFormData(prev => ({ ...prev, vendorId: result.data._id }));
+        } catch (err) {
+            console.error('Failed to save vendor:', err);
+            toast.error(err?.data?.message || 'Failed to save vendor');
+        }
     };
 
     const clearFilters = () => {
@@ -678,7 +814,26 @@ export default function ExpenseManagement() {
 
                                     {formData.expenseType === 'PURCHASE' && (
                                         <div>
-                                            <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">Link Purchase *</label>
+                                            <div className="flex items-center justify-between mb-2">
+                                                <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Link Purchase *</label>
+                                                <button 
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setPurchaseFormData({
+                                                            vendorId: '',
+                                                            purchaseDate: new Date().toISOString().split('T')[0],
+                                                            paymentStatus: 'PENDING',
+                                                            proofFile: null,
+                                                            lineItems: []
+                                                        });
+                                                        setShowAddPurchaseModal(true);
+                                                    }}
+                                                    className="text-[10px] font-black text-emerald-600 hover:text-emerald-700 uppercase tracking-widest bg-emerald-50 px-2 py-1 rounded-lg transition-colors flex items-center gap-1"
+                                                >
+                                                    <Plus size={10} />
+                                                    Add New Purchase
+                                                </button>
+                                            </div>
                                             <div className="relative">
                                                 <Package className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                                                 <select
@@ -817,7 +972,28 @@ export default function ExpenseManagement() {
                                     {/* Optional Vendor */}
                                     {(formData.expenseType === 'OPERATIONAL' || formData.expenseType === 'OTHER') && (
                                         <div>
-                                            <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">Vendor (Optional)</label>
+                                            <div className="flex items-center justify-between mb-2">
+                                                <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Vendor (Optional)</label>
+                                                <button 
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setVendorFormData({
+                                                            fullName: '',
+                                                            contactNumber: '',
+                                                            vendorGST: '',
+                                                            state: '',
+                                                            city: '',
+                                                            fullAddress: '',
+                                                            status: 'ACTIVE'
+                                                        });
+                                                        setShowAddVendorModal(true);
+                                                    }}
+                                                    className="text-[10px] font-black text-emerald-600 hover:text-emerald-700 uppercase tracking-widest bg-emerald-50 px-2 py-1 rounded-lg transition-colors flex items-center gap-1"
+                                                >
+                                                    <Plus size={10} />
+                                                    Add New Vendor
+                                                </button>
+                                            </div>
                                             <div className="relative">
                                                 <Building2 className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                                                 <select
@@ -880,6 +1056,153 @@ export default function ExpenseManagement() {
                                     </button>
                                 </div>
                             </form>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+            {/* Sub-Modal: Add New Purchase */}
+            <AnimatePresence>
+                {showAddPurchaseModal && (
+                    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowAddPurchaseModal(false)} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+                        <motion.div initial={{ scale: 0.95, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.95, opacity: 0, y: 20 }} className="bg-white rounded-3xl w-full max-w-2xl shadow-2xl relative overflow-hidden flex flex-col max-h-[90vh]">
+                            <div className="px-8 py-6 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+                                <div>
+                                    <h2 className="text-xl font-bold text-gray-900">New Purchase Entry</h2>
+                                    <p className="text-sm text-gray-500">Record procurement for this expense</p>
+                                </div>
+                                <button onClick={() => setShowAddPurchaseModal(false)} className="p-2 hover:bg-gray-200 rounded-full transition-colors"><X size={20} className="text-gray-400" /></button>
+                            </div>
+
+                            <form onSubmit={handleCreatePurchaseSubmit} className="flex flex-col flex-1 overflow-hidden">
+                                <div className="p-8 space-y-6 overflow-y-auto flex-1">
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                        <div>
+                                            <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">Vendor *</label>
+                                            <select required value={purchaseFormData.vendorId} onChange={(e) => setPurchaseFormData(p => ({ ...p, vendorId: e.target.value }))} className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:border-emerald-500 outline-none appearance-none font-medium">
+                                                <option value="">Select Vendor</option>
+                                                {vendors.map(v => <option key={v._id} value={v._id}>{v.fullName}</option>)}
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">Date *</label>
+                                            <input type="date" required value={purchaseFormData.purchaseDate} onChange={(e) => setPurchaseFormData(p => ({ ...p, purchaseDate: e.target.value }))} className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:border-emerald-500 outline-none font-medium" />
+                                        </div>
+                                        <div>
+                                            <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">Status *</label>
+                                            <select required value={purchaseFormData.paymentStatus} onChange={(e) => setPurchaseFormData(p => ({ ...p, paymentStatus: e.target.value }))} className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:border-emerald-500 outline-none appearance-none font-medium">
+                                                <option value="PENDING">Pending</option>
+                                                <option value="PAID">Paid</option>
+                                                <option value="PARTIALLY_PAID">Partial</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <div className="flex items-center justify-between mb-3 border-b pb-2 border-gray-100">
+                                            <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Line Items</label>
+                                            <button type="button" onClick={addLineItem} className="text-xs font-bold text-emerald-600 hover:underline flex items-center gap-1"><Plus size={14} /> Add Item</button>
+                                        </div>
+                                        <div className="space-y-3">
+                                            {purchaseFormData.lineItems.map((line, idx) => (
+                                                <div key={idx} className="flex gap-3 items-start">
+                                                    <div className="flex-1">
+                                                        <select required value={line.itemId} onChange={(e) => updateLineItem(idx, 'itemId', e.target.value)} className="w-full px-4 py-2 bg-white border border-gray-200 rounded-xl focus:border-emerald-500 outline-none text-sm font-medium">
+                                                            <option value="">Choose item...</option>
+                                                            {items.map(item => <option key={item._id} value={item._id}>{item.name} ({item.itemType})</option>)}
+                                                        </select>
+                                                    </div>
+                                                    <div className="w-24">
+                                                        <input type="number" min="1" required value={line.qty} onChange={(e) => updateLineItem(idx, 'qty', e.target.value)} placeholder="Qty" className="w-full px-4 py-2 bg-white border border-gray-200 rounded-xl focus:border-emerald-500 outline-none text-sm text-center font-bold" />
+                                                    </div>
+                                                    <div className="w-32">
+                                                        <input type="number" min="0" required value={line.price} onChange={(e) => updateLineItem(idx, 'price', e.target.value)} placeholder="Price" className="w-full px-4 py-2 bg-white border border-gray-200 rounded-xl focus:border-emerald-500 outline-none text-sm font-bold" />
+                                                    </div>
+                                                    <button type="button" onClick={() => removeLineItem(idx)} className="p-2 text-rose-500 hover:bg-rose-50 rounded-lg transition-colors"><Trash2 size={16} /></button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-emerald-50/50 p-4 rounded-xl border border-emerald-100 border-dashed">
+                                        <label className="text-xs font-bold text-emerald-600 uppercase tracking-widest mb-2 block">Invoice / Bill Copy</label>
+                                        <input type="file" accept="image/*,.pdf" onChange={(e) => setPurchaseFormData(p => ({ ...p, proofFile: e.target.files[0] }))} className="block w-full text-xs text-gray-500 file:mr-4 file:py-1 file:px-4 file:rounded-full file:border-0 file:bg-emerald-100 file:text-emerald-700 font-bold" />
+                                    </div>
+                                </div>
+
+                                <div className="p-6 border-t border-gray-100 bg-gray-50/50">
+                                    <div className="flex justify-between items-center mb-4">
+                                        <span className="text-sm font-bold text-gray-400 uppercase">Estimated Total</span>
+                                        <span className="text-2xl font-black text-gray-900">₹{purchaseFormData.lineItems.reduce((sum, item) => sum + (Number(item.qty) * Number(item.price)), 0).toLocaleString()}</span>
+                                    </div>
+                                    <button type="submit" disabled={isCreatingPurchase} className="w-full py-4 bg-gray-900 text-white rounded-2xl font-black uppercase tracking-widest hover:bg-black transition-all shadow-xl flex items-center justify-center gap-2">
+                                        {isCreatingPurchase ? <Loader2 className="animate-spin" size={20} /> : 'Save Purchase Entry'}
+                                    </button>
+                                </div>
+                            </form>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+            {/* Sub-Modal: Add New Vendor */}
+            <AnimatePresence>
+                {showAddVendorModal && (
+                    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowAddVendorModal(false)} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+                        <motion.div initial={{ scale: 0.9, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.9, opacity: 0, y: 20 }} className="bg-white rounded-3xl w-full max-w-lg shadow-2xl relative overflow-hidden">
+                            <div className="px-8 py-6 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+                                <div>
+                                    <h2 className="text-xl font-bold text-gray-900">Add New Vendor</h2>
+                                    <p className="text-sm text-gray-500">Supplier information for procurement</p>
+                                </div>
+                                <button onClick={() => setShowAddVendorModal(false)} className="p-2 hover:bg-gray-200 rounded-full transition-colors"><X size={20} className="text-gray-400" /></button>
+                            </div>
+
+                            <div className="p-8 space-y-5">
+                                <div>
+                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">Vendor Name *</label>
+                                    <input required value={vendorFormData.fullName} onChange={(e) => setVendorFormData(prev => ({ ...prev, fullName: e.target.value }))} type="text" placeholder="e.g. MedPlus Essentials" className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all" />
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">Contact Number *</label>
+                                        <input required value={vendorFormData.contactNumber} onChange={(e) => setVendorFormData(prev => ({ ...prev, contactNumber: e.target.value }))} type="tel" placeholder="10-digit number" maxLength={10} className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all" />
+                                    </div>
+                                    <div>
+                                        <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">GST Number</label>
+                                        <input value={vendorFormData.vendorGST} onChange={(e) => setVendorFormData(prev => ({ ...prev, vendorGST: e.target.value.toUpperCase() }))} type="text" placeholder="15-char GSTIN" maxLength={15} className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all uppercase" />
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">State *</label>
+                                        <select required value={vendorFormData.state} onChange={(e) => { const newState = e.target.value; setVendorFormData(prev => ({ ...prev, state: newState, city: '' })); if (newState) triggerGetCities(newState); }} className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all appearance-none">
+                                            <option value="">Select State</option>
+                                            {states.map(state => <option key={state} value={state}>{state}</option>)}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">City *</label>
+                                        <select required disabled={!vendorFormData.state || isLoadingCities} value={vendorFormData.city} onChange={(e) => setVendorFormData(prev => ({ ...prev, city: e.target.value }))} className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all appearance-none disabled:opacity-50">
+                                            <option value="">{isLoadingCities ? 'Loading cities...' : 'Select City'}</option>
+                                            {apiCities ? apiCities.map(city => <option key={city} value={city}>{city}</option>) : vendorFormData.state && INDIAN_LOCATIONS[vendorFormData.state] && INDIAN_LOCATIONS[vendorFormData.state].map(city => <option key={city} value={city}>{city}</option>)}
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">Full Address *</label>
+                                    <textarea required value={vendorFormData.fullAddress} onChange={(e) => setVendorFormData(prev => ({ ...prev, fullAddress: e.target.value }))} rows={3} placeholder="Enter complete office address..." className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all resize-none" />
+                                </div>
+
+                                <button onClick={handleCreateVendorSubmit} disabled={isCreatingVendor} className="w-full py-4 bg-gray-900 text-white rounded-2xl font-bold hover:bg-black transition-all shadow-lg active:scale-[0.98] mt-4 flex items-center justify-center gap-2">
+                                    {isCreatingVendor ? <Loader2 className="animate-spin" size={18} /> : 'Save Vendor'}
+                                </button>
+                            </div>
                         </motion.div>
                     </div>
                 )}
