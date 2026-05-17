@@ -24,6 +24,7 @@ import {
     Filter,
     CreditCard,
     ShoppingCart,
+    Banknote,
     Trash2,
     MapPin,
     Briefcase
