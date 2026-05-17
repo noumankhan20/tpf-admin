@@ -20,6 +20,8 @@ import {
     AlertCircle,
     CheckCircle2,
     ChevronDown,
+    ChevronLeft,
+    ChevronRight,
     Clock,
     Filter,
     CreditCard,
@@ -55,6 +57,127 @@ import {
 import { useGetItemsQuery } from '@/utils/slices/InventoryAndAsset/itemApiSlice';
 import { useGetStatesQuery, useLazyGetCitiesQuery } from '@/utils/slices/locationApiSlice';
 import { INDIAN_LOCATIONS, STATES as FALLBACK_STATES } from '@/utils/locations';
+
+const getExpenseIconInfo = (type) => {
+    switch (type) {
+        case 'PURCHASE':
+            return {
+                icon: <ShoppingCart size={20} className="text-amber-600" />,
+                bg: 'bg-amber-50 text-amber-600'
+            };
+        case 'OPERATIONAL':
+            return {
+                icon: <Briefcase size={20} className="text-blue-600" />,
+                bg: 'bg-blue-50 text-blue-600'
+            };
+        case 'BENEFICIARY':
+            return {
+                icon: <Users size={20} className="text-rose-600" />,
+                bg: 'bg-rose-50 text-rose-600'
+            };
+        case 'SALARY':
+            return {
+                icon: <User size={20} className="text-emerald-600" />,
+                bg: 'bg-emerald-50 text-emerald-600'
+            };
+        case 'REIMBURSEMENT':
+            return {
+                icon: <Banknote size={20} className="text-purple-600" />,
+                bg: 'bg-purple-50 text-purple-600'
+            };
+        case 'DOCUMENTATION_SERVICE_PAYMENT':
+            return {
+                icon: <FileText size={20} className="text-cyan-600" />,
+                bg: 'bg-cyan-50 text-cyan-600'
+            };
+        default:
+            return {
+                icon: <TrendingDown size={20} className="text-gray-600" />,
+                bg: 'bg-gray-50 text-gray-600'
+            };
+    }
+};
+
+const formatExpenseDescription = (description) => {
+    if (!description) return null;
+    
+    const hasEmailsOrDomains = description.includes('@') || description.includes('www.') || /\.[a-z]{2,4}\b/i.test(description);
+    
+    if (!hasEmailsOrDomains) {
+        return <h3 className="text-base font-bold text-gray-900 leading-snug">{description}</h3>;
+    }
+    
+    const words = description.split(/\s+/);
+    const elements = [];
+    let normalTextBuffer = [];
+    
+    const flushNormalText = () => {
+        if (normalTextBuffer.length > 0) {
+            elements.push(
+                <span key={`text-${elements.length}`} className="text-sm font-bold text-gray-800 leading-relaxed mr-1.5 align-middle">
+                    {normalTextBuffer.join(' ')}
+                </span>
+            );
+            normalTextBuffer = [];
+        }
+    };
+    
+    words.forEach((word, index) => {
+        const cleanWord = word.trim();
+        if (!cleanWord) return;
+        
+        if (cleanWord.endsWith(':')) {
+            flushNormalText();
+            elements.push(
+                <div key={`label-${index}`} className="w-full mt-3 first:mt-0 mb-1.5">
+                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest bg-gray-50 border border-gray-200/50 px-2.5 py-1 rounded-lg inline-block">
+                        {cleanWord.slice(0, -1)}
+                    </span>
+                </div>
+            );
+            return;
+        }
+        
+        if (cleanWord.includes('@')) {
+            flushNormalText();
+            elements.push(
+                <span 
+                    key={`email-${index}`} 
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50/50 hover:bg-blue-50 text-blue-600 border border-blue-100/70 rounded-xl text-xs font-semibold my-1 mr-2 transition-colors cursor-default align-middle"
+                >
+                    <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+                    {cleanWord}
+                </span>
+            );
+            return;
+        }
+        
+        const isDomain = (cleanWord.includes('.') && !cleanWord.includes('@')) || cleanWord.startsWith('www.');
+        if (isDomain) {
+            flushNormalText();
+            elements.push(
+                <span 
+                    key={`domain-${index}`} 
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50/50 hover:bg-emerald-50 text-emerald-600 border border-emerald-100/70 rounded-xl text-xs font-semibold my-1 mr-2 transition-colors cursor-default align-middle"
+                >
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                    {cleanWord}
+                </span>
+            );
+            return;
+        }
+        
+        normalTextBuffer.push(cleanWord);
+    });
+    
+    flushNormalText();
+    
+    return (
+        <div className="flex flex-wrap items-center mt-1">
+            {elements}
+        </div>
+    );
+};
 
 export default function ExpenseManagement() {
     const router = useRouter();
@@ -157,6 +280,352 @@ export default function ExpenseManagement() {
     const purchases = purchasesResponse?.data || [];
     const vendors = vendorsResponse?.data || [];
     const agreements = agreementsResponse?.data || [];
+
+    // Custom Searchable Campaign Dropdown State & Logic
+    const [campaignDropdownOpen, setCampaignDropdownOpen] = useState(false);
+    const [campaignSearch, setCampaignSearch] = useState('');
+    const [campaignPage, setCampaignPage] = useState(1);
+    const campaignRef = React.useRef(null);
+
+    // Handle outside clicks for Campaign Dropdown
+    useEffect(() => {
+        function handleClickOutside(event) {
+            if (campaignRef.current && !campaignRef.current.contains(event.target)) {
+                setCampaignDropdownOpen(false);
+            }
+        }
+        if (campaignDropdownOpen) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [campaignDropdownOpen]);
+
+    // Filter campaigns based on search query
+    const filteredCampaigns = React.useMemo(() => {
+        if (!campaigns) return [];
+        // Sort campaigns by default (latest first by updatedAt or createdAt)
+        const sorted = [...campaigns].sort((a, b) => {
+            const dateA = new Date(a.updatedAt || a.createdAt || 0);
+            const dateB = new Date(b.updatedAt || b.createdAt || 0);
+            return dateB - dateA;
+        });
+
+        if (!campaignSearch) return sorted;
+        const searchLower = campaignSearch.toLowerCase();
+        return sorted.filter(c => c.title?.toLowerCase().includes(searchLower));
+    }, [campaigns, campaignSearch]);
+
+    // Paginate matching campaigns (20 per page)
+    const ITEMS_PER_PAGE = 20;
+    const totalCampaignPages = Math.ceil(filteredCampaigns.length / ITEMS_PER_PAGE) || 1;
+    
+    // Adjust current page if search reduces the matches below page range
+    useEffect(() => {
+        if (campaignPage > totalCampaignPages) {
+            setCampaignPage(totalCampaignPages);
+        }
+    }, [filteredCampaigns.length, totalCampaignPages, campaignPage]);
+
+    const paginatedCampaigns = React.useMemo(() => {
+        const startIndex = (campaignPage - 1) * ITEMS_PER_PAGE;
+        return filteredCampaigns.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+    }, [filteredCampaigns, campaignPage]);
+
+    // Find currently selected campaign details
+    const selectedCampaignDetails = campaigns.find(c => c._id === formData.campaignId);
+
+    // Custom Searchable Purchase Dropdown State & Logic
+    const [purchaseDropdownOpen, setPurchaseDropdownOpen] = useState(false);
+    const [purchaseSearch, setPurchaseSearch] = useState('');
+    const [purchasePage, setPurchasePage] = useState(1);
+    const purchaseRef = React.useRef(null);
+
+    // Handle outside clicks for Purchase Dropdown
+    useEffect(() => {
+        function handleClickOutside(event) {
+            if (purchaseRef.current && !purchaseRef.current.contains(event.target)) {
+                setPurchaseDropdownOpen(false);
+            }
+        }
+        if (purchaseDropdownOpen) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [purchaseDropdownOpen]);
+
+    // Filter purchases based on search query
+    const filteredPurchases = React.useMemo(() => {
+        if (!purchases) return [];
+        // Sort purchases by default (latest first by purchaseDate or createdAt)
+        const sorted = [...purchases].sort((a, b) => {
+            const dateA = new Date(a.purchaseDate || a.createdAt || 0);
+            const dateB = new Date(b.purchaseDate || b.createdAt || 0);
+            return dateB - dateA;
+        });
+
+        if (!purchaseSearch) return sorted;
+        const searchLower = purchaseSearch.toLowerCase();
+        return sorted.filter(p => {
+            const vendorName = p.vendorId?.fullName?.toLowerCase() || '';
+            const amount = p.totalAmount?.toString() || '';
+            return vendorName.includes(searchLower) || amount.includes(searchLower);
+        });
+    }, [purchases, purchaseSearch]);
+
+    // Paginate matching purchases (20 per page)
+    const ITEMS_PER_PAGE_PURCHASE = 20;
+    const totalPurchasePages = Math.ceil(filteredPurchases.length / ITEMS_PER_PAGE_PURCHASE) || 1;
+    
+    // Adjust current page if search reduces the matches below page range
+    useEffect(() => {
+        if (purchasePage > totalPurchasePages) {
+            setPurchasePage(totalPurchasePages);
+        }
+    }, [filteredPurchases.length, totalPurchasePages, purchasePage]);
+
+    const paginatedPurchases = React.useMemo(() => {
+        const startIndex = (purchasePage - 1) * ITEMS_PER_PAGE_PURCHASE;
+        return filteredPurchases.slice(startIndex, startIndex + ITEMS_PER_PAGE_PURCHASE);
+    }, [filteredPurchases, purchasePage]);
+
+    // Find currently selected purchase details
+    const selectedPurchaseDetails = purchases.find(p => p._id === formData.purchaseId);
+
+    // Custom Searchable Volunteer Dropdown State & Logic
+    const [volunteerDropdownOpen, setVolunteerDropdownOpen] = useState(false);
+    const [volunteerSearch, setVolunteerSearch] = useState('');
+    const [volunteerPage, setVolunteerPage] = useState(1);
+    const volunteerRef = React.useRef(null);
+
+    // Handle outside clicks for Volunteer Dropdown
+    useEffect(() => {
+        function handleClickOutside(event) {
+            if (volunteerRef.current && !volunteerRef.current.contains(event.target)) {
+                setVolunteerDropdownOpen(false);
+            }
+        }
+        if (volunteerDropdownOpen) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [volunteerDropdownOpen]);
+
+    // Filter volunteers based on search query
+    const filteredVolunteers = React.useMemo(() => {
+        if (!volunteers) return [];
+        // Sort volunteers by default (alphabetical by fullName)
+        const sorted = [...volunteers].sort((a, b) => {
+            const nameA = a.fullName || '';
+            const nameB = b.fullName || '';
+            return nameA.localeCompare(nameB);
+        });
+
+        if (!volunteerSearch) return sorted;
+        const searchLower = volunteerSearch.toLowerCase();
+        return sorted.filter(v => {
+            const name = v.fullName?.toLowerCase() || '';
+            const email = v.email?.toLowerCase() || '';
+            return name.includes(searchLower) || email.includes(searchLower);
+        });
+    }, [volunteers, volunteerSearch]);
+
+    // Paginate matching volunteers (20 per page)
+    const ITEMS_PER_PAGE_VOLUNTEER = 20;
+    const totalVolunteerPages = Math.ceil(filteredVolunteers.length / ITEMS_PER_PAGE_VOLUNTEER) || 1;
+    
+    // Adjust current page if search reduces the matches below page range
+    useEffect(() => {
+        if (volunteerPage > totalVolunteerPages) {
+            setVolunteerPage(totalVolunteerPages);
+        }
+    }, [filteredVolunteers.length, totalVolunteerPages, volunteerPage]);
+
+    const paginatedVolunteers = React.useMemo(() => {
+        const startIndex = (volunteerPage - 1) * ITEMS_PER_PAGE_VOLUNTEER;
+        return filteredVolunteers.slice(startIndex, startIndex + ITEMS_PER_PAGE_VOLUNTEER);
+    }, [filteredVolunteers, volunteerPage]);
+
+    // Find currently selected volunteer details
+    const selectedVolunteerDetails = volunteers.find(v => v._id === formData.volunteerId);
+
+    // Custom Searchable Vendor Dropdown State & Logic
+    const [vendorDropdownOpen, setVendorDropdownOpen] = useState(false);
+    const [vendorSearch, setVendorSearch] = useState('');
+    const [vendorPage, setVendorPage] = useState(1);
+    const vendorRef = React.useRef(null);
+
+    // Handle outside clicks for Vendor Dropdown
+    useEffect(() => {
+        function handleClickOutside(event) {
+            if (vendorRef.current && !vendorRef.current.contains(event.target)) {
+                setVendorDropdownOpen(false);
+            }
+        }
+        if (vendorDropdownOpen) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [vendorDropdownOpen]);
+
+    // Filter vendors based on search query
+    const filteredVendors = React.useMemo(() => {
+        if (!vendors) return [];
+        // Sort vendors alphabetically by fullName
+        const sorted = [...vendors].sort((a, b) => {
+            const nameA = a.fullName || '';
+            const nameB = b.fullName || '';
+            return nameA.localeCompare(nameB);
+        });
+
+        if (!vendorSearch) return sorted;
+        const searchLower = vendorSearch.toLowerCase();
+        return sorted.filter(v => v.fullName?.toLowerCase().includes(searchLower) || v.contactNumber?.includes(searchLower));
+    }, [vendors, vendorSearch]);
+
+    // Paginate matching vendors (20 per page)
+    const ITEMS_PER_PAGE_VENDOR = 20;
+    const totalVendorPages = Math.ceil(filteredVendors.length / ITEMS_PER_PAGE_VENDOR) || 1;
+    
+    // Adjust current page if search reduces the matches below page range
+    useEffect(() => {
+        if (vendorPage > totalVendorPages) {
+            setVendorPage(totalVendorPages);
+        }
+    }, [filteredVendors.length, totalVendorPages, vendorPage]);
+
+    const paginatedVendors = React.useMemo(() => {
+        const startIndex = (vendorPage - 1) * ITEMS_PER_PAGE_VENDOR;
+        return filteredVendors.slice(startIndex, startIndex + ITEMS_PER_PAGE_VENDOR);
+    }, [filteredVendors, vendorPage]);
+
+    // Find currently selected vendor details
+    const selectedVendorDetails = vendors.find(v => v._id === formData.vendorId);
+
+    // Custom Searchable Agreement Dropdown State & Logic
+    const [agreementDropdownOpen, setAgreementDropdownOpen] = useState(false);
+    const [agreementSearch, setAgreementSearch] = useState('');
+    const [agreementPage, setAgreementPage] = useState(1);
+    const agreementRef = React.useRef(null);
+
+    // Handle outside clicks for Agreement Dropdown
+    useEffect(() => {
+        function handleClickOutside(event) {
+            if (agreementRef.current && !agreementRef.current.contains(event.target)) {
+                setAgreementDropdownOpen(false);
+            }
+        }
+        if (agreementDropdownOpen) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [agreementDropdownOpen]);
+
+    // Filter agreements based on search query
+    const filteredAgreements = React.useMemo(() => {
+        if (!agreements) return [];
+        // Sort agreements alphabetically by title
+        const sorted = [...agreements].sort((a, b) => {
+            const titleA = a.title || '';
+            const titleB = b.title || '';
+            return titleA.localeCompare(titleB);
+        });
+
+        if (!agreementSearch) return sorted;
+        const searchLower = agreementSearch.toLowerCase();
+        return sorted.filter(a => {
+            const title = a.title?.toLowerCase() || '';
+            const partyName = a.parties?.[0]?.name?.toLowerCase() || '';
+            return title.includes(searchLower) || partyName.includes(searchLower);
+        });
+    }, [agreements, agreementSearch]);
+
+    // Paginate matching agreements (20 per page)
+    const ITEMS_PER_PAGE_AGREEMENT = 20;
+    const totalAgreementPages = Math.ceil(filteredAgreements.length / ITEMS_PER_PAGE_AGREEMENT) || 1;
+    
+    // Adjust current page if search reduces the matches below page range
+    useEffect(() => {
+        if (agreementPage > totalAgreementPages) {
+            setAgreementPage(totalAgreementPages);
+        }
+    }, [filteredAgreements.length, totalAgreementPages, agreementPage]);
+
+    const paginatedAgreements = React.useMemo(() => {
+        const startIndex = (agreementPage - 1) * ITEMS_PER_PAGE_AGREEMENT;
+        return filteredAgreements.slice(startIndex, startIndex + ITEMS_PER_PAGE_AGREEMENT);
+    }, [filteredAgreements, agreementPage]);
+
+    // Find currently selected agreement details
+    const selectedAgreementDetails = agreements.find(a => a._id === formData.agreementId);
+
+    // Custom Searchable Admin/Employee Dropdown State & Logic
+    const [adminDropdownOpen, setAdminDropdownOpen] = useState(false);
+    const [adminSearch, setAdminSearch] = useState('');
+    const [adminPage, setAdminPage] = useState(1);
+    const adminRef = React.useRef(null);
+
+    // Handle outside clicks for Admin Dropdown
+    useEffect(() => {
+        function handleClickOutside(event) {
+            if (adminRef.current && !adminRef.current.contains(event.target)) {
+                setAdminDropdownOpen(false);
+            }
+        }
+        if (adminDropdownOpen) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [adminDropdownOpen]);
+
+    // Filter admins based on search query
+    const filteredAdmins = React.useMemo(() => {
+        if (!admins) return [];
+        // Sort admins alphabetically by fullName
+        const sorted = [...admins].sort((a, b) => {
+            const nameA = a.fullName || '';
+            const nameB = b.fullName || '';
+            return nameA.localeCompare(nameB);
+        });
+
+        if (!adminSearch) return sorted;
+        const searchLower = adminSearch.toLowerCase();
+        return sorted.filter(a => {
+            const name = a.fullName?.toLowerCase() || '';
+            const email = a.email?.toLowerCase() || '';
+            return name.includes(searchLower) || email.includes(searchLower);
+        });
+    }, [admins, adminSearch]);
+
+    // Paginate matching admins (20 per page)
+    const ITEMS_PER_PAGE_ADMIN = 20;
+    const totalAdminPages = Math.ceil(filteredAdmins.length / ITEMS_PER_PAGE_ADMIN) || 1;
+    
+    // Adjust current page if search reduces the matches below page range
+    useEffect(() => {
+        if (adminPage > totalAdminPages) {
+            setAdminPage(totalAdminPages);
+        }
+    }, [filteredAdmins.length, totalAdminPages, adminPage]);
+
+    const paginatedAdmins = React.useMemo(() => {
+        const startIndex = (adminPage - 1) * ITEMS_PER_PAGE_ADMIN;
+        return filteredAdmins.slice(startIndex, startIndex + ITEMS_PER_PAGE_ADMIN);
+    }, [filteredAdmins, adminPage]);
+
+    // Find currently selected admin details
+    const selectedAdminDetails = admins.find(a => a._id === formData.adminId);
 
     // Extract unique values for dynamic filters
     const availablePaymentMethods = [...new Set(expenses.map(e => e.paymentMethod).filter(Boolean))].sort();
@@ -568,18 +1037,18 @@ export default function ExpenseManagement() {
                                             className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow"
                                         >
                                             <div className="flex flex-col md:flex-row justify-between md:items-center mb-4">
-                                                <div className="flex items-center gap-4 mb-4 md:mb-0">
-                                                    <div className={`w-12 h-12 rounded-xl bg-gray-50 text-emerald-600 flex items-center justify-center`}>
-                                                        <TrendingDown size={20} />
+                                                <div className="flex items-start gap-4 mb-4 md:mb-0">
+                                                    <div className={`w-12 h-12 rounded-xl shrink-0 flex items-center justify-center ${getExpenseIconInfo(expense.expenseType).bg}`}>
+                                                        {getExpenseIconInfo(expense.expenseType).icon}
                                                     </div>
-                                                    <div>
+                                                    <div className="flex-1">
                                                         <div className="flex items-center gap-2 mb-1">
-                                                            <h3 className="text-lg font-bold text-gray-900">{expense.description}</h3>
-                                                            <span className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest bg-emerald-50 text-emerald-700`}>
+                                                            <span className={`px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-widest bg-gray-100 text-gray-700 border border-gray-200/40`}>
                                                                 {expense.expenseType}
                                                             </span>
                                                         </div>
-                                                        <div className="flex flex-wrap gap-3 text-xs font-medium text-gray-500">
+                                                        {formatExpenseDescription(expense.description)}
+                                                        <div className="flex flex-wrap gap-3 text-xs font-medium text-gray-500 mt-2">
                                                             <span className="flex items-center gap-1">
                                                                 <Calendar size={12} />
                                                                 {new Date(expense.date || expense.transactionDate).toLocaleDateString()}
@@ -771,19 +1240,140 @@ export default function ExpenseManagement() {
                                     {formData.expenseType === 'SALARY' && (
                                         <div>
                                             <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">Select Employee *</label>
-                                            <div className="relative">
-                                                <User className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                                                <select
+                                            <div ref={adminRef} className="relative">
+                                                {/* Hidden input for HTML5 form validation */}
+                                                <input
+                                                    type="text"
                                                     required
                                                     value={formData.adminId}
-                                                    onChange={(e) => setFormData(p => ({ ...p, adminId: e.target.value }))}
-                                                    className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all appearance-none"
+                                                    onChange={() => {}}
+                                                    className="absolute w-0 h-0 opacity-0 pointer-events-none"
+                                                />
+
+                                                <div 
+                                                    onClick={() => setAdminDropdownOpen(prev => !prev)}
+                                                    className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus-within:ring-2 focus-within:ring-emerald-500/20 focus-within:border-emerald-500 outline-none transition-all flex items-center justify-between cursor-pointer select-none relative"
                                                 >
-                                                    <option value="">Choose Admin</option>
-                                                    {admins.map(admin => (
-                                                        <option key={admin._id} value={admin._id}>{admin.fullName} ({admin.email})</option>
-                                                    ))}
-                                                </select>
+                                                    <User className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                                                    <span className={`text-sm ${selectedAdminDetails ? 'text-gray-900 font-medium' : 'text-gray-400 font-medium'}`}>
+                                                        {selectedAdminDetails 
+                                                            ? `${selectedAdminDetails.fullName} (${selectedAdminDetails.email})` 
+                                                            : 'Choose Admin'}
+                                                    </span>
+                                                    <ChevronDown className={`text-gray-400 transition-transform duration-200 ${adminDropdownOpen ? 'rotate-180' : ''}`} size={18} />
+                                                </div>
+
+                                                {/* Dropdown panel */}
+                                                <AnimatePresence>
+                                                    {adminDropdownOpen && (
+                                                        <motion.div
+                                                            initial={{ opacity: 0, y: -10 }}
+                                                            animate={{ opacity: 1, y: 0 }}
+                                                            exit={{ opacity: 0, y: -10 }}
+                                                            transition={{ duration: 0.15 }}
+                                                            className="absolute left-0 right-0 mt-2 bg-white border border-gray-200 rounded-2xl shadow-xl z-[60] p-4 flex flex-col space-y-3"
+                                                        >
+                                                            {/* Search field */}
+                                                            <div className="relative">
+                                                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
+                                                                <input
+                                                                    type="text"
+                                                                    placeholder="Search by name or email..."
+                                                                    value={adminSearch}
+                                                                    onChange={(e) => {
+                                                                        setAdminSearch(e.target.value);
+                                                                        setAdminPage(1); // Reset to page 1 on search
+                                                                    }}
+                                                                    onClick={(e) => e.stopPropagation()} // Stop closing dropdown on click
+                                                                    className="w-full pl-9 pr-8 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:border-emerald-500 outline-none text-xs font-semibold"
+                                                                />
+                                                                {adminSearch && (
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            setAdminSearch('');
+                                                                            setAdminPage(1);
+                                                                        }}
+                                                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                                                                    >
+                                                                        <X size={14} />
+                                                                    </button>
+                                                                )}
+                                                            </div>
+
+                                                            {/* Paginated Options List */}
+                                                            <div className="max-h-56 overflow-y-auto space-y-1 pr-1 custom-scrollbar">
+                                                                <div 
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        setFormData(p => ({ ...p, adminId: '' }));
+                                                                        setAdminDropdownOpen(false);
+                                                                    }}
+                                                                    className={`w-full text-left px-3 py-2.5 rounded-lg text-xs transition-all cursor-pointer font-medium ${!formData.adminId ? 'bg-emerald-50/70 text-emerald-700 font-semibold border-l-2 border-emerald-600' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-800'}`}
+                                                                >
+                                                                    Choose Admin (None)
+                                                                </div>
+
+                                                                {paginatedAdmins.length === 0 ? (
+                                                                    <div className="text-center py-4 text-xs text-gray-400 font-medium">
+                                                                        No admins match your search.
+                                                                    </div>
+                                                                ) : (
+                                                                    paginatedAdmins.map(admin => {
+                                                                        const isSelected = formData.adminId === admin._id;
+                                                                        return (
+                                                                            <div
+                                                                                key={admin._id}
+                                                                                onClick={(e) => {
+                                                                                    e.stopPropagation();
+                                                                                    setFormData(p => ({ ...p, adminId: admin._id }));
+                                                                                    setAdminDropdownOpen(false);
+                                                                                }}
+                                                                                className={`w-full text-left px-3 py-2.5 rounded-lg text-xs transition-all cursor-pointer font-medium ${isSelected ? 'bg-emerald-50/70 text-emerald-700 font-semibold border-l-2 border-emerald-600' : 'text-gray-600 hover:bg-emerald-50 hover:text-emerald-700'}`}
+                                                                            >
+                                                                                {admin.fullName} ({admin.email})
+                                                                            </div>
+                                                                        );
+                                                                    })
+                                                                )}
+                                                            </div>
+
+                                                            {/* Pagination controls */}
+                                                            {totalAdminPages > 1 && (
+                                                                <div className="flex items-center justify-between border-t pt-3 border-gray-100 text-[10px] font-black text-gray-400 uppercase tracking-widest select-none">
+                                                                    <button
+                                                                        type="button"
+                                                                        disabled={adminPage === 1}
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            setAdminPage(p => Math.max(1, p - 1));
+                                                                        }}
+                                                                        className="px-2 py-1.5 rounded-lg bg-gray-50 hover:bg-gray-100 disabled:opacity-40 disabled:hover:bg-gray-50 transition-all flex items-center gap-0.5 text-gray-600 border border-gray-100 cursor-pointer"
+                                                                    >
+                                                                        <ChevronLeft size={12} />
+                                                                        Prev
+                                                                    </button>
+                                                                    <span>
+                                                                        Page {adminPage} of {totalAdminPages}
+                                                                    </span>
+                                                                    <button
+                                                                        type="button"
+                                                                        disabled={adminPage === totalAdminPages}
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            setAdminPage(p => Math.min(totalAdminPages, p + 1));
+                                                                        }}
+                                                                        className="px-2 py-1.5 rounded-lg bg-gray-50 hover:bg-gray-100 disabled:opacity-40 disabled:hover:bg-gray-50 transition-all flex items-center gap-0.5 text-gray-600 border border-gray-100 cursor-pointer"
+                                                                    >
+                                                                        Next
+                                                                        <ChevronRight size={12} />
+                                                                    </button>
+                                                                </div>
+                                                            )}
+                                                        </motion.div>
+                                                    )}
+                                                </AnimatePresence>
                                             </div>
                                         </div>
                                     )}
@@ -793,24 +1383,142 @@ export default function ExpenseManagement() {
                                         (formData.expenseType === 'SALARY' && formData.adminId) ||
                                         (formData.expenseType === 'REIMBURSEMENT' && (formData.adminId || formData.volunteerId))
                                     ) && (
-                                            <div>
+                                            <div ref={campaignRef} className="relative">
                                                 <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">
                                                     Select Campaign {formData.expenseType !== 'BENEFICIARY' && '(Optional)'}
                                                 </label>
-                                                <div className="relative">
+                                                
+                                                {/* Hidden input for HTML5 form validation */}
+                                                <input
+                                                    type="text"
+                                                    required={formData.expenseType === 'BENEFICIARY'}
+                                                    value={formData.campaignId}
+                                                    onChange={() => {}}
+                                                    className="absolute w-0 h-0 opacity-0 pointer-events-none"
+                                                />
+
+                                                <div 
+                                                    onClick={() => setCampaignDropdownOpen(prev => !prev)}
+                                                    className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus-within:ring-2 focus-within:ring-emerald-500/20 focus-within:border-emerald-500 outline-none transition-all flex items-center justify-between cursor-pointer select-none relative"
+                                                >
                                                     <Users className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                                                    <select
-                                                        required={formData.expenseType === 'BENEFICIARY'}
-                                                        value={formData.campaignId}
-                                                        onChange={(e) => setFormData(p => ({ ...p, campaignId: e.target.value }))}
-                                                        className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all appearance-none"
-                                                    >
-                                                        <option value="">Choose Campaign</option>
-                                                        {campaigns.map(campaign => (
-                                                            <option key={campaign._id} value={campaign._id}>{campaign.title}</option>
-                                                        ))}
-                                                    </select>
+                                                    <span className={`text-sm ${selectedCampaignDetails ? 'text-gray-900 font-medium' : 'text-gray-400 font-medium'}`}>
+                                                        {selectedCampaignDetails ? selectedCampaignDetails.title : 'Choose Campaign'}
+                                                    </span>
+                                                    <ChevronDown className={`text-gray-400 transition-transform duration-200 ${campaignDropdownOpen ? 'rotate-180' : ''}`} size={18} />
                                                 </div>
+
+                                                {/* Dropdown panel */}
+                                                <AnimatePresence>
+                                                    {campaignDropdownOpen && (
+                                                        <motion.div
+                                                            initial={{ opacity: 0, y: -10 }}
+                                                            animate={{ opacity: 1, y: 0 }}
+                                                            exit={{ opacity: 0, y: -10 }}
+                                                            transition={{ duration: 0.15 }}
+                                                            className="absolute left-0 right-0 mt-2 bg-white border border-gray-200 rounded-2xl shadow-xl z-[60] p-4 flex flex-col space-y-3"
+                                                        >
+                                                            {/* Search field */}
+                                                            <div className="relative">
+                                                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
+                                                                <input
+                                                                    type="text"
+                                                                    placeholder="Search campaigns..."
+                                                                    value={campaignSearch}
+                                                                    onChange={(e) => {
+                                                                        setCampaignSearch(e.target.value);
+                                                                        setCampaignPage(1); // Reset to page 1 on search
+                                                                    }}
+                                                                    onClick={(e) => e.stopPropagation()} // Stop closing dropdown on click
+                                                                    className="w-full pl-9 pr-8 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:border-emerald-500 outline-none text-xs font-semibold"
+                                                                />
+                                                                {campaignSearch && (
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            setCampaignSearch('');
+                                                                            setCampaignPage(1);
+                                                                        }}
+                                                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                                                                    >
+                                                                        <X size={14} />
+                                                                    </button>
+                                                                )}
+                                                            </div>
+
+                                                            {/* Paginated Options List */}
+                                                            <div className="max-h-56 overflow-y-auto space-y-1 pr-1 custom-scrollbar">
+                                                                <div 
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        setFormData(p => ({ ...p, campaignId: '' }));
+                                                                        setCampaignDropdownOpen(false);
+                                                                    }}
+                                                                    className={`w-full text-left px-3 py-2.5 rounded-lg text-xs transition-all cursor-pointer font-medium ${!formData.campaignId ? 'bg-emerald-50/70 text-emerald-700 font-semibold border-l-2 border-emerald-600' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-800'}`}
+                                                                >
+                                                                    Choose Campaign (None)
+                                                                </div>
+
+                                                                {paginatedCampaigns.length === 0 ? (
+                                                                    <div className="text-center py-4 text-xs text-gray-400 font-medium">
+                                                                        No campaigns match your search.
+                                                                    </div>
+                                                                ) : (
+                                                                    paginatedCampaigns.map(campaign => {
+                                                                        const isSelected = formData.campaignId === campaign._id;
+                                                                        return (
+                                                                            <div
+                                                                                key={campaign._id}
+                                                                                onClick={(e) => {
+                                                                                    e.stopPropagation();
+                                                                                    setFormData(p => ({ ...p, campaignId: campaign._id }));
+                                                                                    setCampaignDropdownOpen(false);
+                                                                                }}
+                                                                                className={`w-full text-left px-3 py-2.5 rounded-lg text-xs transition-all cursor-pointer font-medium ${isSelected ? 'bg-emerald-50/70 text-emerald-700 font-semibold border-l-2 border-emerald-600' : 'text-gray-600 hover:bg-emerald-50 hover:text-emerald-700'}`}
+                                                                            >
+                                                                                {campaign.title}
+                                                                            </div>
+                                                                        );
+                                                                    })
+                                                                )}
+                                                            </div>
+
+                                                            {/* Pagination controls */}
+                                                            {totalCampaignPages > 1 && (
+                                                                <div className="flex items-center justify-between border-t pt-3 border-gray-100 text-[10px] font-black text-gray-400 uppercase tracking-widest select-none">
+                                                                    <button
+                                                                        type="button"
+                                                                        disabled={campaignPage === 1}
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            setCampaignPage(p => Math.max(1, p - 1));
+                                                                        }}
+                                                                        className="px-2 py-1.5 rounded-lg bg-gray-50 hover:bg-gray-100 disabled:opacity-40 disabled:hover:bg-gray-50 transition-all flex items-center gap-0.5 text-gray-600 border border-gray-100 cursor-pointer"
+                                                                    >
+                                                                        <ChevronLeft size={12} />
+                                                                        Prev
+                                                                    </button>
+                                                                    <span>
+                                                                        Page {campaignPage} of {totalCampaignPages}
+                                                                    </span>
+                                                                    <button
+                                                                        type="button"
+                                                                        disabled={campaignPage === totalCampaignPages}
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            setCampaignPage(p => Math.min(totalCampaignPages, p + 1));
+                                                                        }}
+                                                                        className="px-2 py-1.5 rounded-lg bg-gray-50 hover:bg-gray-100 disabled:opacity-40 disabled:hover:bg-gray-50 transition-all flex items-center gap-0.5 text-gray-600 border border-gray-100 cursor-pointer"
+                                                                    >
+                                                                        Next
+                                                                        <ChevronRight size={12} />
+                                                                    </button>
+                                                                </div>
+                                                            )}
+                                                        </motion.div>
+                                                    )}
+                                                </AnimatePresence>
                                             </div>
                                         )}
 
@@ -836,21 +1544,140 @@ export default function ExpenseManagement() {
                                                     Add New Purchase
                                                 </button>
                                             </div>
-                                            <div className="relative">
-                                                <Package className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                                                <select
+                                            <div ref={purchaseRef} className="relative">
+                                                {/* Hidden input for HTML5 form validation */}
+                                                <input
+                                                    type="text"
                                                     required
                                                     value={formData.purchaseId}
-                                                    onChange={(e) => setFormData(p => ({ ...p, purchaseId: e.target.value }))}
-                                                    className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all appearance-none"
+                                                    onChange={() => {}}
+                                                    className="absolute w-0 h-0 opacity-0 pointer-events-none"
+                                                />
+
+                                                <div 
+                                                    onClick={() => setPurchaseDropdownOpen(prev => !prev)}
+                                                    className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus-within:ring-2 focus-within:ring-emerald-500/20 focus-within:border-emerald-500 outline-none transition-all flex items-center justify-between cursor-pointer select-none relative"
                                                 >
-                                                    <option value="">Choose Purchase</option>
-                                                    {purchases.map(purchase => (
-                                                        <option key={purchase._id} value={purchase._id}>
-                                                            {purchase.vendorId?.fullName} - ₹{purchase.totalAmount}
-                                                        </option>
-                                                    ))}
-                                                </select>
+                                                    <Package className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                                                    <span className={`text-sm ${selectedPurchaseDetails ? 'text-gray-900 font-medium' : 'text-gray-400 font-medium'}`}>
+                                                        {selectedPurchaseDetails 
+                                                            ? `${selectedPurchaseDetails.vendorId?.fullName || 'Unknown Vendor'} - ₹${selectedPurchaseDetails.totalAmount}` 
+                                                            : 'Choose Purchase'}
+                                                    </span>
+                                                    <ChevronDown className={`text-gray-400 transition-transform duration-200 ${purchaseDropdownOpen ? 'rotate-180' : ''}`} size={18} />
+                                                </div>
+
+                                                {/* Dropdown panel */}
+                                                <AnimatePresence>
+                                                    {purchaseDropdownOpen && (
+                                                        <motion.div
+                                                            initial={{ opacity: 0, y: -10 }}
+                                                            animate={{ opacity: 1, y: 0 }}
+                                                            exit={{ opacity: 0, y: -10 }}
+                                                            transition={{ duration: 0.15 }}
+                                                            className="absolute left-0 right-0 mt-2 bg-white border border-gray-200 rounded-2xl shadow-xl z-[60] p-4 flex flex-col space-y-3"
+                                                        >
+                                                            {/* Search field */}
+                                                            <div className="relative">
+                                                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
+                                                                <input
+                                                                    type="text"
+                                                                    placeholder="Search by vendor name or amount..."
+                                                                    value={purchaseSearch}
+                                                                    onChange={(e) => {
+                                                                        setPurchaseSearch(e.target.value);
+                                                                        setPurchasePage(1); // Reset to page 1 on search
+                                                                    }}
+                                                                    onClick={(e) => e.stopPropagation()} // Stop closing dropdown on click
+                                                                    className="w-full pl-9 pr-8 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:border-emerald-500 outline-none text-xs font-semibold"
+                                                                />
+                                                                {purchaseSearch && (
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            setPurchaseSearch('');
+                                                                            setPurchasePage(1);
+                                                                        }}
+                                                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                                                                    >
+                                                                        <X size={14} />
+                                                                    </button>
+                                                                )}
+                                                            </div>
+
+                                                            {/* Paginated Options List */}
+                                                            <div className="max-h-56 overflow-y-auto space-y-1 pr-1 custom-scrollbar">
+                                                                <div 
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        setFormData(p => ({ ...p, purchaseId: '' }));
+                                                                        setPurchaseDropdownOpen(false);
+                                                                    }}
+                                                                    className={`w-full text-left px-3 py-2.5 rounded-lg text-xs transition-all cursor-pointer font-medium ${!formData.purchaseId ? 'bg-emerald-50/70 text-emerald-700 font-semibold border-l-2 border-emerald-600' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-800'}`}
+                                                                >
+                                                                    Choose Purchase (None)
+                                                                </div>
+
+                                                                {paginatedPurchases.length === 0 ? (
+                                                                    <div className="text-center py-4 text-xs text-gray-400 font-medium">
+                                                                        No purchases match your search.
+                                                                    </div>
+                                                                ) : (
+                                                                    paginatedPurchases.map(purchase => {
+                                                                        const isSelected = formData.purchaseId === purchase._id;
+                                                                        return (
+                                                                            <div
+                                                                                key={purchase._id}
+                                                                                onClick={(e) => {
+                                                                                    e.stopPropagation();
+                                                                                    setFormData(p => ({ ...p, purchaseId: purchase._id }));
+                                                                                    setPurchaseDropdownOpen(false);
+                                                                                }}
+                                                                                className={`w-full text-left px-3 py-2.5 rounded-lg text-xs transition-all cursor-pointer font-medium ${isSelected ? 'bg-emerald-50/70 text-emerald-700 font-semibold border-l-2 border-emerald-600' : 'text-gray-600 hover:bg-emerald-50 hover:text-emerald-700'}`}
+                                                                            >
+                                                                                {purchase.vendorId?.fullName || 'Unknown Vendor'} - ₹{purchase.totalAmount}
+                                                                            </div>
+                                                                        );
+                                                                    })
+                                                                )}
+                                                            </div>
+
+                                                            {/* Pagination controls */}
+                                                            {totalPurchasePages > 1 && (
+                                                                <div className="flex items-center justify-between border-t pt-3 border-gray-100 text-[10px] font-black text-gray-400 uppercase tracking-widest select-none">
+                                                                    <button
+                                                                        type="button"
+                                                                        disabled={purchasePage === 1}
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            setPurchasePage(p => Math.max(1, p - 1));
+                                                                        }}
+                                                                        className="px-2 py-1.5 rounded-lg bg-gray-50 hover:bg-gray-100 disabled:opacity-40 disabled:hover:bg-gray-50 transition-all flex items-center gap-0.5 text-gray-600 border border-gray-100 cursor-pointer"
+                                                                    >
+                                                                        <ChevronLeft size={12} />
+                                                                        Prev
+                                                                    </button>
+                                                                    <span>
+                                                                        Page {purchasePage} of {totalPurchasePages}
+                                                                    </span>
+                                                                    <button
+                                                                        type="button"
+                                                                        disabled={purchasePage === totalPurchasePages}
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            setPurchasePage(p => Math.min(totalPurchasePages, p + 1));
+                                                                        }}
+                                                                        className="px-2 py-1.5 rounded-lg bg-gray-50 hover:bg-gray-100 disabled:opacity-40 disabled:hover:bg-gray-50 transition-all flex items-center gap-0.5 text-gray-600 border border-gray-100 cursor-pointer"
+                                                                    >
+                                                                        Next
+                                                                        <ChevronRight size={12} />
+                                                                    </button>
+                                                                </div>
+                                                            )}
+                                                        </motion.div>
+                                                    )}
+                                                </AnimatePresence>
                                             </div>
                                         </div>
                                     )}
@@ -858,21 +1685,140 @@ export default function ExpenseManagement() {
                                     {formData.expenseType === 'DOCUMENTATION_SERVICE' && (
                                         <div>
                                             <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">Select Documentation Agreement *</label>
-                                            <div className="relative">
-                                                <FileText className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                                                <select
+                                            <div ref={agreementRef} className="relative">
+                                                {/* Hidden input for HTML5 form validation */}
+                                                <input
+                                                    type="text"
                                                     required
                                                     value={formData.agreementId}
-                                                    onChange={(e) => setFormData(p => ({ ...p, agreementId: e.target.value }))}
-                                                    className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all appearance-none"
+                                                    onChange={() => {}}
+                                                    className="absolute w-0 h-0 opacity-0 pointer-events-none"
+                                                />
+
+                                                <div 
+                                                    onClick={() => setAgreementDropdownOpen(prev => !prev)}
+                                                    className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus-within:ring-2 focus-within:ring-emerald-500/20 focus-within:border-emerald-500 outline-none transition-all flex items-center justify-between cursor-pointer select-none relative"
                                                 >
-                                                    <option value="">Choose Agreement</option>
-                                                    {agreements.map(agreement => (
-                                                        <option key={agreement._id} value={agreement._id}>
-                                                            {agreement.title} - {agreement.parties?.[0]?.name}
-                                                        </option>
-                                                    ))}
-                                                </select>
+                                                    <FileText className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                                                    <span className={`text-sm ${selectedAgreementDetails ? 'text-gray-900 font-medium' : 'text-gray-400 font-medium'}`}>
+                                                        {selectedAgreementDetails 
+                                                            ? `${selectedAgreementDetails.title} - ${selectedAgreementDetails.parties?.[0]?.name || 'Unknown'}` 
+                                                            : 'Choose Agreement'}
+                                                    </span>
+                                                    <ChevronDown className={`text-gray-400 transition-transform duration-200 ${agreementDropdownOpen ? 'rotate-180' : ''}`} size={18} />
+                                                </div>
+
+                                                {/* Dropdown panel */}
+                                                <AnimatePresence>
+                                                    {agreementDropdownOpen && (
+                                                        <motion.div
+                                                            initial={{ opacity: 0, y: -10 }}
+                                                            animate={{ opacity: 1, y: 0 }}
+                                                            exit={{ opacity: 0, y: -10 }}
+                                                            transition={{ duration: 0.15 }}
+                                                            className="absolute left-0 right-0 mt-2 bg-white border border-gray-200 rounded-2xl shadow-xl z-[60] p-4 flex flex-col space-y-3"
+                                                        >
+                                                            {/* Search field */}
+                                                            <div className="relative">
+                                                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
+                                                                <input
+                                                                    type="text"
+                                                                    placeholder="Search by title or party name..."
+                                                                    value={agreementSearch}
+                                                                    onChange={(e) => {
+                                                                        setAgreementSearch(e.target.value);
+                                                                        setAgreementPage(1); // Reset to page 1 on search
+                                                                    }}
+                                                                    onClick={(e) => e.stopPropagation()} // Stop closing dropdown on click
+                                                                    className="w-full pl-9 pr-8 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:border-emerald-500 outline-none text-xs font-semibold"
+                                                                />
+                                                                {agreementSearch && (
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            setAgreementSearch('');
+                                                                            setAgreementPage(1);
+                                                                        }}
+                                                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                                                                    >
+                                                                        <X size={14} />
+                                                                    </button>
+                                                                )}
+                                                            </div>
+
+                                                            {/* Paginated Options List */}
+                                                            <div className="max-h-56 overflow-y-auto space-y-1 pr-1 custom-scrollbar">
+                                                                <div 
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        setFormData(p => ({ ...p, agreementId: '' }));
+                                                                        setAgreementDropdownOpen(false);
+                                                                    }}
+                                                                    className={`w-full text-left px-3 py-2.5 rounded-lg text-xs transition-all cursor-pointer font-medium ${!formData.agreementId ? 'bg-emerald-50/70 text-emerald-700 font-semibold border-l-2 border-emerald-600' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-800'}`}
+                                                                >
+                                                                    Choose Agreement (None)
+                                                                </div>
+
+                                                                {paginatedAgreements.length === 0 ? (
+                                                                    <div className="text-center py-4 text-xs text-gray-400 font-medium">
+                                                                        No agreements match your search.
+                                                                    </div>
+                                                                ) : (
+                                                                    paginatedAgreements.map(agreement => {
+                                                                        const isSelected = formData.agreementId === agreement._id;
+                                                                        return (
+                                                                            <div
+                                                                                key={agreement._id}
+                                                                                onClick={(e) => {
+                                                                                    e.stopPropagation();
+                                                                                    setFormData(p => ({ ...p, agreementId: agreement._id }));
+                                                                                    setAgreementDropdownOpen(false);
+                                                                                }}
+                                                                                className={`w-full text-left px-3 py-2.5 rounded-lg text-xs transition-all cursor-pointer font-medium ${isSelected ? 'bg-emerald-50/70 text-emerald-700 font-semibold border-l-2 border-emerald-600' : 'text-gray-600 hover:bg-emerald-50 hover:text-emerald-700'}`}
+                                                                            >
+                                                                                {agreement.title} - {agreement.parties?.[0]?.name || 'Unknown'}
+                                                                            </div>
+                                                                        );
+                                                                    })
+                                                                )}
+                                                            </div>
+
+                                                            {/* Pagination controls */}
+                                                            {totalAgreementPages > 1 && (
+                                                                <div className="flex items-center justify-between border-t pt-3 border-gray-100 text-[10px] font-black text-gray-400 uppercase tracking-widest select-none">
+                                                                    <button
+                                                                        type="button"
+                                                                        disabled={agreementPage === 1}
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            setAgreementPage(p => Math.max(1, p - 1));
+                                                                        }}
+                                                                        className="px-2 py-1.5 rounded-lg bg-gray-50 hover:bg-gray-100 disabled:opacity-40 disabled:hover:bg-gray-50 transition-all flex items-center gap-0.5 text-gray-600 border border-gray-100 cursor-pointer"
+                                                                    >
+                                                                        <ChevronLeft size={12} />
+                                                                        Prev
+                                                                    </button>
+                                                                    <span>
+                                                                        Page {agreementPage} of {totalAgreementPages}
+                                                                    </span>
+                                                                    <button
+                                                                        type="button"
+                                                                        disabled={agreementPage === totalAgreementPages}
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            setAgreementPage(p => Math.min(totalAgreementPages, p + 1));
+                                                                        }}
+                                                                        className="px-2 py-1.5 rounded-lg bg-gray-50 hover:bg-gray-100 disabled:opacity-40 disabled:hover:bg-gray-50 transition-all flex items-center gap-0.5 text-gray-600 border border-gray-100 cursor-pointer"
+                                                                    >
+                                                                        Next
+                                                                        <ChevronRight size={12} />
+                                                                    </button>
+                                                                </div>
+                                                            )}
+                                                        </motion.div>
+                                                    )}
+                                                </AnimatePresence>
                                             </div>
                                         </div>
                                     )}
@@ -895,42 +1841,280 @@ export default function ExpenseManagement() {
                                             {formData.reimbursementType === 'ADMIN' ? (
                                                 <div>
                                                     <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">Select Employee *</label>
-                                                    <div className="relative">
-                                                        <User className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                                                        <select
+                                                    <div ref={adminRef} className="relative">
+                                                        {/* Hidden input for HTML5 form validation */}
+                                                        <input
+                                                            type="text"
                                                             required
                                                             value={formData.adminId}
-                                                            onChange={(e) => setFormData(p => ({ ...p, adminId: e.target.value }))}
-                                                            className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all appearance-none"
+                                                            onChange={() => {}}
+                                                            className="absolute w-0 h-0 opacity-0 pointer-events-none"
+                                                        />
+
+                                                        <div 
+                                                            onClick={() => setAdminDropdownOpen(prev => !prev)}
+                                                            className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus-within:ring-2 focus-within:ring-emerald-500/20 focus-within:border-emerald-500 outline-none transition-all flex items-center justify-between cursor-pointer select-none relative"
                                                         >
-                                                            <option value="">Choose Admin</option>
-                                                            {admins.map(admin => (
-                                                                <option key={admin._id} value={admin._id}>{admin.fullName}</option>
-                                                            ))}
-                                                        </select>
+                                                            <User className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                                                            <span className={`text-sm ${selectedAdminDetails ? 'text-gray-900 font-medium' : 'text-gray-400 font-medium'}`}>
+                                                                {selectedAdminDetails 
+                                                                    ? `${selectedAdminDetails.fullName} (${selectedAdminDetails.email})` 
+                                                                    : 'Choose Admin'}
+                                                            </span>
+                                                            <ChevronDown className={`text-gray-400 transition-transform duration-200 ${adminDropdownOpen ? 'rotate-180' : ''}`} size={18} />
+                                                        </div>
+
+                                                        {/* Dropdown panel */}
+                                                        <AnimatePresence>
+                                                            {adminDropdownOpen && (
+                                                                <motion.div
+                                                                    initial={{ opacity: 0, y: -10 }}
+                                                                    animate={{ opacity: 1, y: 0 }}
+                                                                    exit={{ opacity: 0, y: -10 }}
+                                                                    transition={{ duration: 0.15 }}
+                                                                    className="absolute left-0 right-0 mt-2 bg-white border border-gray-200 rounded-2xl shadow-xl z-[60] p-4 flex flex-col space-y-3"
+                                                                >
+                                                                    {/* Search field */}
+                                                                    <div className="relative">
+                                                                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
+                                                                        <input
+                                                                            type="text"
+                                                                            placeholder="Search by name or email..."
+                                                                            value={adminSearch}
+                                                                            onChange={(e) => {
+                                                                                setAdminSearch(e.target.value);
+                                                                                setAdminPage(1); // Reset to page 1 on search
+                                                                            }}
+                                                                            onClick={(e) => e.stopPropagation()} // Stop closing dropdown on click
+                                                                            className="w-full pl-9 pr-8 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:border-emerald-500 outline-none text-xs font-semibold"
+                                                                        />
+                                                                        {adminSearch && (
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={(e) => {
+                                                                                    e.stopPropagation();
+                                                                                    setAdminSearch('');
+                                                                                    setAdminPage(1);
+                                                                                }}
+                                                                                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                                                                            >
+                                                                                <X size={14} />
+                                                                            </button>
+                                                                        )}
+                                                                    </div>
+
+                                                                    {/* Paginated Options List */}
+                                                                    <div className="max-h-56 overflow-y-auto space-y-1 pr-1 custom-scrollbar">
+                                                                        <div 
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation();
+                                                                                setFormData(p => ({ ...p, adminId: '' }));
+                                                                                setAdminDropdownOpen(false);
+                                                                            }}
+                                                                            className={`w-full text-left px-3 py-2.5 rounded-lg text-xs transition-all cursor-pointer font-medium ${!formData.adminId ? 'bg-emerald-50/70 text-emerald-700 font-semibold border-l-2 border-emerald-600' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-800'}`}
+                                                                        >
+                                                                            Choose Admin (None)
+                                                                        </div>
+
+                                                                        {paginatedAdmins.length === 0 ? (
+                                                                            <div className="text-center py-4 text-xs text-gray-400 font-medium">
+                                                                                No admins match your search.
+                                                                            </div>
+                                                                        ) : (
+                                                                            paginatedAdmins.map(admin => {
+                                                                                const isSelected = formData.adminId === admin._id;
+                                                                                return (
+                                                                                    <div
+                                                                                        key={admin._id}
+                                                                                        onClick={(e) => {
+                                                                                            e.stopPropagation();
+                                                                                            setFormData(p => ({ ...p, adminId: admin._id }));
+                                                                                            setAdminDropdownOpen(false);
+                                                                                        }}
+                                                                                        className={`w-full text-left px-3 py-2.5 rounded-lg text-xs transition-all cursor-pointer font-medium ${isSelected ? 'bg-emerald-50/70 text-emerald-700 font-semibold border-l-2 border-emerald-600' : 'text-gray-600 hover:bg-emerald-50 hover:text-emerald-700'}`}
+                                                                                    >
+                                                                                        {admin.fullName} ({admin.email})
+                                                                                    </div>
+                                                                                );
+                                                                            })
+                                                                        )}
+                                                                    </div>
+
+                                                                    {/* Pagination controls */}
+                                                                    {totalAdminPages > 1 && (
+                                                                        <div className="flex items-center justify-between border-t pt-3 border-gray-100 text-[10px] font-black text-gray-400 uppercase tracking-widest select-none">
+                                                                            <button
+                                                                                type="button"
+                                                                                disabled={adminPage === 1}
+                                                                                onClick={(e) => {
+                                                                                    e.stopPropagation();
+                                                                                    setAdminPage(p => Math.max(1, p - 1));
+                                                                                }}
+                                                                                className="px-2 py-1.5 rounded-lg bg-gray-50 hover:bg-gray-100 disabled:opacity-40 disabled:hover:bg-gray-50 transition-all flex items-center gap-0.5 text-gray-600 border border-gray-100 cursor-pointer"
+                                                                            >
+                                                                                <ChevronLeft size={12} />
+                                                                                Prev
+                                                                            </button>
+                                                                            <span>
+                                                                                Page {adminPage} of {totalAdminPages}
+                                                                            </span>
+                                                                            <button
+                                                                                type="button"
+                                                                                disabled={adminPage === totalAdminPages}
+                                                                                onClick={(e) => {
+                                                                                    e.stopPropagation();
+                                                                                    setAdminPage(p => Math.min(totalAdminPages, p + 1));
+                                                                                }}
+                                                                                className="px-2 py-1.5 rounded-lg bg-gray-50 hover:bg-gray-100 disabled:opacity-40 disabled:hover:bg-gray-50 transition-all flex items-center gap-0.5 text-gray-600 border border-gray-100 cursor-pointer"
+                                                                            >
+                                                                                Next
+                                                                                <ChevronRight size={12} />
+                                                                            </button>
+                                                                        </div>
+                                                                    )}
+                                                                </motion.div>
+                                                            )}
+                                                        </AnimatePresence>
                                                     </div>
                                                 </div>
                                             ) : (
                                                 <div className="space-y-4">
-                                                    <div>
+                                                    <div ref={volunteerRef} className="relative">
                                                         <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">Select a Volunteer *</label>
-                                                        <div className="relative">
+                                                        
+                                                        {/* Hidden input for HTML5 form validation */}
+                                                        <input
+                                                            type="text"
+                                                            required
+                                                            value={formData.volunteerId}
+                                                            onChange={() => {}}
+                                                            className="absolute w-0 h-0 opacity-0 pointer-events-none"
+                                                        />
+
+                                                        <div 
+                                                            onClick={() => setVolunteerDropdownOpen(prev => !prev)}
+                                                            className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus-within:ring-2 focus-within:ring-emerald-500/20 focus-within:border-emerald-500 outline-none transition-all flex items-center justify-between cursor-pointer select-none relative"
+                                                        >
                                                             <Users className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                                                            <select
-                                                                required
-                                                                value={formData.volunteerId}
-                                                                onChange={(e) => {
-                                                                    const vId = e.target.value;
-                                                                    setFormData(p => ({ ...p, volunteerId: vId, voucherId: '', amount: '', description: '' }));
-                                                                }}
-                                                                className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all appearance-none"
-                                                            >
-                                                                <option value="">Choose Volunteer</option>
-                                                                {volunteers.map(v => (
-                                                                    <option key={v._id} value={v._id}>{v.fullName} ({v.email})</option>
-                                                                ))}
-                                                            </select>
+                                                            <span className={`text-sm ${selectedVolunteerDetails ? 'text-gray-900 font-medium' : 'text-gray-400 font-medium'}`}>
+                                                                {selectedVolunteerDetails 
+                                                                    ? `${selectedVolunteerDetails.fullName} (${selectedVolunteerDetails.email})` 
+                                                                    : 'Choose Volunteer'}
+                                                            </span>
+                                                            <ChevronDown className={`text-gray-400 transition-transform duration-200 ${volunteerDropdownOpen ? 'rotate-180' : ''}`} size={18} />
                                                         </div>
+
+                                                        {/* Dropdown panel */}
+                                                        <AnimatePresence>
+                                                            {volunteerDropdownOpen && (
+                                                                <motion.div
+                                                                    initial={{ opacity: 0, y: -10 }}
+                                                                    animate={{ opacity: 1, y: 0 }}
+                                                                    exit={{ opacity: 0, y: -10 }}
+                                                                    transition={{ duration: 0.15 }}
+                                                                    className="absolute left-0 right-0 mt-2 bg-white border border-gray-200 rounded-2xl shadow-xl z-[60] p-4 flex flex-col space-y-3"
+                                                                >
+                                                                    {/* Search field */}
+                                                                    <div className="relative">
+                                                                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
+                                                                        <input
+                                                                            type="text"
+                                                                            placeholder="Search by volunteer name or email..."
+                                                                            value={volunteerSearch}
+                                                                            onChange={(e) => {
+                                                                                setVolunteerSearch(e.target.value);
+                                                                                setVolunteerPage(1); // Reset to page 1 on search
+                                                                            }}
+                                                                            onClick={(e) => e.stopPropagation()} // Stop closing dropdown on click
+                                                                            className="w-full pl-9 pr-8 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:border-emerald-500 outline-none text-xs font-semibold"
+                                                                        />
+                                                                        {volunteerSearch && (
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={(e) => {
+                                                                                    e.stopPropagation();
+                                                                                    setVolunteerSearch('');
+                                                                                    setVolunteerPage(1);
+                                                                                }}
+                                                                                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                                                                            >
+                                                                                <X size={14} />
+                                                                            </button>
+                                                                        )}
+                                                                    </div>
+
+                                                                    {/* Paginated Options List */}
+                                                                    <div className="max-h-56 overflow-y-auto space-y-1 pr-1 custom-scrollbar">
+                                                                        <div 
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation();
+                                                                                setFormData(p => ({ ...p, volunteerId: '', voucherId: '', amount: '', description: '' }));
+                                                                                setVolunteerDropdownOpen(false);
+                                                                            }}
+                                                                            className={`w-full text-left px-3 py-2.5 rounded-lg text-xs transition-all cursor-pointer font-medium ${!formData.volunteerId ? 'bg-emerald-50/70 text-emerald-700 font-semibold border-l-2 border-emerald-600' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-800'}`}
+                                                                        >
+                                                                            Choose Volunteer (None)
+                                                                        </div>
+
+                                                                        {paginatedVolunteers.length === 0 ? (
+                                                                            <div className="text-center py-4 text-xs text-gray-400 font-medium">
+                                                                                No volunteers match your search.
+                                                                            </div>
+                                                                        ) : (
+                                                                            paginatedVolunteers.map(volunteer => {
+                                                                                const isSelected = formData.volunteerId === volunteer._id;
+                                                                                return (
+                                                                                    <div
+                                                                                        key={volunteer._id}
+                                                                                        onClick={(e) => {
+                                                                                            e.stopPropagation();
+                                                                                            setFormData(p => ({ ...p, volunteerId: volunteer._id, voucherId: '', amount: '', description: '' }));
+                                                                                            setVolunteerDropdownOpen(false);
+                                                                                        }}
+                                                                                        className={`w-full text-left px-3 py-2.5 rounded-lg text-xs transition-all cursor-pointer font-medium ${isSelected ? 'bg-emerald-50/70 text-emerald-700 font-semibold border-l-2 border-emerald-600' : 'text-gray-600 hover:bg-emerald-50 hover:text-emerald-700'}`}
+                                                                                    >
+                                                                                        {volunteer.fullName} ({volunteer.email})
+                                                                                    </div>
+                                                                                );
+                                                                            })
+                                                                        )}
+                                                                    </div>
+
+                                                                    {/* Pagination controls */}
+                                                                    {totalVolunteerPages > 1 && (
+                                                                        <div className="flex items-center justify-between border-t pt-3 border-gray-100 text-[10px] font-black text-gray-400 uppercase tracking-widest select-none">
+                                                                            <button
+                                                                                type="button"
+                                                                                disabled={volunteerPage === 1}
+                                                                                onClick={(e) => {
+                                                                                    e.stopPropagation();
+                                                                                    setVolunteerPage(p => Math.max(1, p - 1));
+                                                                                }}
+                                                                                className="px-2 py-1.5 rounded-lg bg-gray-50 hover:bg-gray-100 disabled:opacity-40 disabled:hover:bg-gray-50 transition-all flex items-center gap-0.5 text-gray-600 border border-gray-100 cursor-pointer"
+                                                                            >
+                                                                                <ChevronLeft size={12} />
+                                                                                Prev
+                                                                            </button>
+                                                                            <span>
+                                                                                Page {volunteerPage} of {totalVolunteerPages}
+                                                                            </span>
+                                                                            <button
+                                                                                type="button"
+                                                                                disabled={volunteerPage === totalVolunteerPages}
+                                                                                onClick={(e) => {
+                                                                                    e.stopPropagation();
+                                                                                    setVolunteerPage(p => Math.min(totalVolunteerPages, p + 1));
+                                                                                }}
+                                                                                className="px-2 py-1.5 rounded-lg bg-gray-50 hover:bg-gray-100 disabled:opacity-40 disabled:hover:bg-gray-50 transition-all flex items-center gap-0.5 text-gray-600 border border-gray-100 cursor-pointer"
+                                                                            >
+                                                                                Next
+                                                                                <ChevronRight size={12} />
+                                                                            </button>
+                                                                        </div>
+                                                                    )}
+                                                                </motion.div>
+                                                            )}
+                                                        </AnimatePresence>
                                                     </div>
 
                                                     {formData.volunteerId && (
@@ -996,18 +2180,139 @@ export default function ExpenseManagement() {
                                                     Add New Vendor
                                                 </button>
                                             </div>
-                                            <div className="relative">
-                                                <Building2 className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                                                <select
+                                            <div ref={vendorRef} className="relative">
+                                                {/* Hidden input for HTML5 form validation */}
+                                                <input
+                                                    type="text"
                                                     value={formData.vendorId}
-                                                    onChange={(e) => setFormData(p => ({ ...p, vendorId: e.target.value }))}
-                                                    className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all appearance-none"
+                                                    onChange={() => {}}
+                                                    className="absolute w-0 h-0 opacity-0 pointer-events-none"
+                                                />
+
+                                                <div 
+                                                    onClick={() => setVendorDropdownOpen(prev => !prev)}
+                                                    className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus-within:ring-2 focus-within:ring-emerald-500/20 focus-within:border-emerald-500 outline-none transition-all flex items-center justify-between cursor-pointer select-none relative"
                                                 >
-                                                    <option value="">Choose Vendor</option>
-                                                    {vendors.map(vendor => (
-                                                        <option key={vendor._id} value={vendor._id}>{vendor.fullName}</option>
-                                                    ))}
-                                                </select>
+                                                    <Building2 className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                                                    <span className={`text-sm ${selectedVendorDetails ? 'text-gray-900 font-medium' : 'text-gray-400 font-medium'}`}>
+                                                        {selectedVendorDetails 
+                                                            ? selectedVendorDetails.fullName 
+                                                            : 'Choose Vendor'}
+                                                    </span>
+                                                    <ChevronDown className={`text-gray-400 transition-transform duration-200 ${vendorDropdownOpen ? 'rotate-180' : ''}`} size={18} />
+                                                </div>
+
+                                                {/* Dropdown panel */}
+                                                <AnimatePresence>
+                                                    {vendorDropdownOpen && (
+                                                        <motion.div
+                                                            initial={{ opacity: 0, y: -10 }}
+                                                            animate={{ opacity: 1, y: 0 }}
+                                                            exit={{ opacity: 0, y: -10 }}
+                                                            transition={{ duration: 0.15 }}
+                                                            className="absolute left-0 right-0 mt-2 bg-white border border-gray-200 rounded-2xl shadow-xl z-[60] p-4 flex flex-col space-y-3"
+                                                        >
+                                                            {/* Search field */}
+                                                            <div className="relative">
+                                                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
+                                                                <input
+                                                                    type="text"
+                                                                    placeholder="Search by vendor name or contact number..."
+                                                                    value={vendorSearch}
+                                                                    onChange={(e) => {
+                                                                        setVendorSearch(e.target.value);
+                                                                        setVendorPage(1); // Reset to page 1 on search
+                                                                    }}
+                                                                    onClick={(e) => e.stopPropagation()} // Stop closing dropdown on click
+                                                                    className="w-full pl-9 pr-8 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:border-emerald-500 outline-none text-xs font-semibold"
+                                                                />
+                                                                {vendorSearch && (
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            setVendorSearch('');
+                                                                            setVendorPage(1);
+                                                                        }}
+                                                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                                                                    >
+                                                                        <X size={14} />
+                                                                    </button>
+                                                                )}
+                                                            </div>
+
+                                                            {/* Paginated Options List */}
+                                                            <div className="max-h-56 overflow-y-auto space-y-1 pr-1 custom-scrollbar">
+                                                                <div 
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        setFormData(p => ({ ...p, vendorId: '' }));
+                                                                        setVendorDropdownOpen(false);
+                                                                    }}
+                                                                    className={`w-full text-left px-3 py-2.5 rounded-lg text-xs transition-all cursor-pointer font-medium ${!formData.vendorId ? 'bg-emerald-50/70 text-emerald-700 font-semibold border-l-2 border-emerald-600' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-800'}`}
+                                                                >
+                                                                    Choose Vendor (None)
+                                                                </div>
+
+                                                                {paginatedVendors.length === 0 ? (
+                                                                    <div className="text-center py-4 text-xs text-gray-400 font-medium">
+                                                                        No vendors match your search.
+                                                                    </div>
+                                                                ) : (
+                                                                    paginatedVendors.map(vendor => {
+                                                                        const isSelected = formData.vendorId === vendor._id;
+                                                                        return (
+                                                                            <div
+                                                                                key={vendor._id}
+                                                                                onClick={(e) => {
+                                                                                    e.stopPropagation();
+                                                                                    setFormData(p => ({ ...p, vendorId: vendor._id }));
+                                                                                    setVendorDropdownOpen(false);
+                                                                                }}
+                                                                                className={`w-full text-left px-3 py-2.5 rounded-lg text-xs transition-all cursor-pointer font-medium ${isSelected ? 'bg-emerald-50/70 text-emerald-700 font-semibold border-l-2 border-emerald-600' : 'text-gray-600 hover:bg-emerald-50 hover:text-emerald-700'}`}
+                                                                            >
+                                                                                {vendor.fullName}
+                                                                            </div>
+                                                                        );
+                                                                    })
+                                                                )}
+                                                            </div>
+
+                                                            {/* Pagination controls */}
+                                                            {totalVendorPages > 1 && (
+                                                                <div className="flex items-center justify-between border-t pt-3 border-gray-100 text-[10px] font-black text-gray-400 uppercase tracking-widest select-none">
+                                                                    <button
+                                                                        type="button"
+                                                                        disabled={vendorPage === 1}
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            setVendorPage(p => Math.max(1, p - 1));
+                                                                        }}
+                                                                        className="px-2 py-1.5 rounded-lg bg-gray-50 hover:bg-gray-100 disabled:opacity-40 disabled:hover:bg-gray-50 transition-all flex items-center gap-0.5 text-gray-600 border border-gray-100 cursor-pointer"
+                                                                    >
+                                                                        <ChevronLeft size={12} />
+                                                                        Prev
+                                                                    </button>
+                                                                    <span>
+                                                                        Page {vendorPage} of {totalVendorPages}
+                                                                    </span>
+                                                                    <button
+                                                                        type="button"
+                                                                        disabled={vendorPage === totalVendorPages}
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            setVendorPage(p => Math.min(totalVendorPages, p + 1));
+                                                                        }}
+                                                                        className="px-2 py-1.5 rounded-lg bg-gray-50 hover:bg-gray-100 disabled:opacity-40 disabled:hover:bg-gray-50 transition-all flex items-center gap-0.5 text-gray-600 border border-gray-100 cursor-pointer"
+                                                                    >
+                                                                        Next
+                                                                        <ChevronRight size={12} />
+                                                                    </button>
+                                                                </div>
+                                                            )}
+                                                        </motion.div>
+                                                    )}
+                                                </AnimatePresence>
                                             </div>
                                         </div>
                                     )}
