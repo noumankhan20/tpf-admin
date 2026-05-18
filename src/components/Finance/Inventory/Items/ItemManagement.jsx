@@ -223,7 +223,7 @@ export default function ItemManagement() {
     // Get items and pagination data
     const items = itemsResponse?.data || [];
     const meta = itemsResponse?.meta || { total: 0, page: 1, totalPages: 1 };
-    const vendors = vendorsData?.data || [];
+    const vendors = (vendorsData?.data || []).filter(v => v.vendorType !== 'INDIVIDUAL');
 
     // Get unit display name
     const getUnitDisplay = (unit) => {

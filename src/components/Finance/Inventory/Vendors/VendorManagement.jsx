@@ -35,6 +35,27 @@ import { useGetInventoryDashboardStatsQuery } from '../../../../utils/slices/Inv
 import { useGetStatesQuery, useLazyGetCitiesQuery } from '../../../../utils/slices/locationApiSlice';
 import { INDIAN_LOCATIONS, STATES as FALLBACK_STATES } from '../../../../utils/locations';
 
+const determineIdType = (val) => {
+    if (!val) return 'GST';
+    const clean = val.trim().toUpperCase();
+    if (clean.startsWith('GST:')) return 'GST';
+    if (clean.startsWith('PAN:')) return 'PAN';
+    if (clean.startsWith('AADHAAR:')) return 'AADHAAR';
+    if (clean.startsWith('OTHERS:')) return 'OTHERS';
+    
+    // Fallback detection based on length/format
+    if (/^[0-9A-Z]{15}$/.test(clean)) return 'GST';
+    if (/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(clean)) return 'PAN';
+    if (/^[0-9]{12}$/.test(clean)) return 'AADHAAR';
+    
+    return 'OTHERS';
+};
+
+const getCleanIdValue = (val) => {
+    if (!val) return '';
+    return val.replace(/^(GST|PAN|AADHAAR|OTHERS)\s*:\s*/i, '').trim();
+};
+
 export default function VendorManagement() {
     const router = useRouter();
     const [isMounted, setIsMounted] = useState(false);
@@ -83,6 +104,7 @@ export default function VendorManagement() {
     const states = apiStates || FALLBACK_STATES;
 
     // Form State - Aligned with backend model
+    const [idType, setIdType] = useState('GST');
     const [formData, setFormData] = useState({
         fullName: '',
         contactNumber: '',
@@ -90,7 +112,8 @@ export default function VendorManagement() {
         state: '',
         city: '',
         fullAddress: '',
-        status: 'ACTIVE'
+        status: 'ACTIVE',
+        vendorType: 'NORMAL'
     });
 
     useEffect(() => {
@@ -116,23 +139,40 @@ export default function VendorManagement() {
                 return;
             }
 
-            // Validate GST if provided
-            if (formData.vendorGST && !/^[0-9A-Z]{15}$/.test(formData.vendorGST)) {
-                toast.warning('Invalid GST number format (must be 15 alphanumeric characters)');
+            // Validate Identification Type & Format
+            const idVal = formData.vendorGST.trim().toUpperCase();
+            if (!idVal) {
+                toast.warning('Identification document value is required');
+                return;
+            }
+            if (idType === 'GST' && !/^[0-9A-Z]{15}$/.test(idVal)) {
+                toast.warning('GST number must be exactly 15 alphanumeric characters');
+                return;
+            }
+            if (idType === 'PAN' && !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(idVal)) {
+                toast.warning('PAN Card number must be exactly 10 alphanumeric characters (5 letters, 4 digits, 1 letter)');
+                return;
+            }
+            if (idType === 'AADHAAR' && !/^[0-9]{12}$/.test(idVal)) {
+                toast.warning('Aadhaar Card number must be exactly 12 digits');
                 return;
             }
 
-            console.log('Submitting Vendor Data:', formData);
+            const submissionData = {
+                ...formData,
+                vendorGST: `${idType}: ${idVal}`
+            };
+
+            console.log('Submitting Vendor Data:', submissionData);
             if (editingVendor) {
                 await updateVendor({
                     vendorId: editingVendor._id,
-                    data: formData
+                    data: submissionData
                 }).unwrap();
             } else {
-                await createVendor(formData).unwrap();
+                await createVendor(submissionData).unwrap();
             }
 
-            // Reset form and close modal
             setFormData({
                 fullName: '',
                 contactNumber: '',
@@ -140,8 +180,10 @@ export default function VendorManagement() {
                 state: '',
                 city: '',
                 fullAddress: '',
-                status: 'ACTIVE'
+                status: 'ACTIVE',
+                vendorType: 'NORMAL'
             });
+            setIdType('GST');
             setEditingVendor(null);
             setShowAddModal(false);
             toast.success(editingVendor ? 'Vendor updated successfully' : 'Vendor created successfully');
@@ -152,16 +194,20 @@ export default function VendorManagement() {
     };
 
     const handleEdit = (vendor) => {
+        const idVal = vendor.vendorGST || '';
+        const detectedType = determineIdType(idVal);
         setEditingVendor(vendor);
         setFormData({
             fullName: vendor.fullName,
             contactNumber: vendor.contactNumber.toString(),
-            vendorGST: vendor.vendorGST || '',
+            vendorGST: getCleanIdValue(idVal),
             state: vendor.state || '',
             city: vendor.city || '',
             fullAddress: vendor.fullAddress,
-            status: vendor.status
+            status: vendor.status,
+            vendorType: vendor.vendorType || 'NORMAL'
         });
+        setIdType(detectedType);
         if (vendor.state) {
             triggerGetCities(vendor.state);
         }
@@ -406,9 +452,25 @@ export default function VendorManagement() {
                                                 <Briefcase size={20} />
                                             </div>
                                             <div className="overflow-hidden">
-                                                <p className="font-bold text-gray-900 truncate">{vendor.fullName}</p>
-                                                <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">
-                                                    {vendor.vendorGST || 'No GST Record'}
+                                                <div className="flex items-center gap-2">
+                                                    <p className="font-bold text-gray-900 truncate">{vendor.fullName}</p>
+                                                    <span className={`px-1.5 py-0.5 rounded text-[8px] font-black tracking-widest border leading-none shrink-0 uppercase ${
+                                                        vendor.vendorType === 'INDIVIDUAL' ? 'bg-indigo-50 text-indigo-700 border-indigo-200' :
+                                                        'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                                    }`}>
+                                                        {vendor.vendorType === 'INDIVIDUAL' ? 'INDIVIDUAL' : 'NORMAL'}
+                                                    </span>
+                                                </div>
+                                                <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest flex items-center gap-1.5 mt-0.5">
+                                                    <span className={`px-1.5 py-0.5 rounded text-[9px] font-black tracking-wide border leading-none shrink-0 ${
+                                                        determineIdType(vendor.vendorGST) === 'GST' ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                                                        determineIdType(vendor.vendorGST) === 'PAN' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                                                        determineIdType(vendor.vendorGST) === 'AADHAAR' ? 'bg-purple-50 text-purple-700 border-purple-200' :
+                                                        'bg-gray-50 text-gray-700 border-gray-200'
+                                                    }`}>
+                                                        {determineIdType(vendor.vendorGST)}
+                                                    </span>
+                                                    <span className="truncate">{getCleanIdValue(vendor.vendorGST) || '—'}</span>
                                                 </p>
                                             </div>
                                         </div>
@@ -496,9 +558,9 @@ export default function VendorManagement() {
                             initial={{ scale: 0.9, opacity: 0, y: 20 }}
                             animate={{ scale: 1, opacity: 1, y: 0 }}
                             exit={{ scale: 0.9, opacity: 0, y: 20 }}
-                            className="bg-white rounded-3xl w-full max-w-lg shadow-2xl relative overflow-hidden z-10"
+                            className="bg-white rounded-3xl w-full max-w-lg shadow-2xl relative overflow-hidden z-10 max-h-[90vh] flex flex-col"
                         >
-                            <div className="px-8 py-6 border-b border-gray-100 flex items-center justify-between">
+                            <div className="px-8 py-6 border-b border-gray-100 flex items-center justify-between shrink-0">
                                 <div>
                                     <h2 className="text-xl font-bold text-gray-900">
                                         {editingVendor ? 'Edit Vendor' : 'Add New Vendor'}
@@ -507,26 +569,42 @@ export default function VendorManagement() {
                                 </div>
                                 <button
                                     onClick={() => setShowAddModal(false)}
-                                    className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                                    className="p-2 hover:bg-gray-200 rounded-full transition-colors"
                                 >
                                     <X size={20} className="text-gray-400" />
                                 </button>
                             </div>
 
-                            <div className="p-8 space-y-5">
-                                <div>
-                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">
-                                        Vendor Name *
-                                    </label>
-                                    <input
-                                        required
-                                        name="fullName"
-                                        value={formData.fullName}
-                                        onChange={handleInputChange}
-                                        type="text"
-                                        placeholder="e.g. MedPlus Essentials"
-                                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all"
-                                    />
+                            <div className="p-8 space-y-5 overflow-y-auto flex-1">
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">
+                                            Vendor Name *
+                                        </label>
+                                        <input
+                                            required
+                                            name="fullName"
+                                            value={formData.fullName}
+                                            onChange={handleInputChange}
+                                            type="text"
+                                            placeholder="e.g. MedPlus Essentials"
+                                            className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">
+                                            Vendor Type *
+                                        </label>
+                                        <select
+                                            name="vendorType"
+                                            value={formData.vendorType}
+                                            onChange={handleInputChange}
+                                            className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all"
+                                        >
+                                            <option value="NORMAL">Normal Vendor</option>
+                                            <option value="INDIVIDUAL">Individual Vendor</option>
+                                        </select>
+                                    </div>
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-4">
@@ -548,18 +626,54 @@ export default function VendorManagement() {
                                     </div>
                                     <div>
                                         <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">
-                                            GST Number / Vendor ID
+                                            ID Document Type *
                                         </label>
-                                        <input
-                                            name="vendorGST"
-                                            value={formData.vendorGST}
-                                            onChange={handleInputChange}
-                                            type="text"
-                                            placeholder="15-char GSTIN"
-                                            maxLength={15}
-                                            className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all uppercase"
-                                        />
+                                        <select
+                                            value={idType}
+                                            onChange={(e) => {
+                                                setIdType(e.target.value);
+                                                setFormData(prev => ({ ...prev, vendorGST: '' }));
+                                            }}
+                                            className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all"
+                                        >
+                                            <option value="GST">GST</option>
+                                            <option value="PAN">PAN Card</option>
+                                            <option value="AADHAAR">Aadhaar Card</option>
+                                            <option value="OTHERS">Others</option>
+                                        </select>
                                     </div>
+                                </div>
+
+                                <div>
+                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">
+                                        {idType === 'OTHERS' ? 'ID' : idType} Number *
+                                    </label>
+                                    <input
+                                        required
+                                        name="vendorGST"
+                                        value={formData.vendorGST}
+                                        onChange={(e) => {
+                                            let val = e.target.value;
+                                            if (idType === 'AADHAAR') {
+                                                val = val.replace(/\D/g, ''); // Digits only
+                                            }
+                                            setFormData(prev => ({ ...prev, vendorGST: val }));
+                                        }}
+                                        type="text"
+                                        placeholder={
+                                            idType === 'GST' ? "15-char GSTIN" :
+                                            idType === 'PAN' ? "10-char PAN (ABCDE1234F)" :
+                                            idType === 'AADHAAR' ? "12-digit Aadhaar" :
+                                            "Enter Document ID"
+                                        }
+                                        maxLength={
+                                            idType === 'GST' ? 15 :
+                                            idType === 'PAN' ? 10 :
+                                            idType === 'AADHAAR' ? 12 :
+                                            30
+                                        }
+                                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all uppercase"
+                                    />
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-4">

@@ -179,6 +179,19 @@ const formatExpenseDescription = (description) => {
     );
 };
 
+const getMethodIcon = (method) => {
+    switch (method) {
+        case 'CASH':
+            return <Banknote size={12} className="text-amber-600" />;
+        case 'BANK_TRANSFER':
+            return <Building2 size={12} className="text-blue-600" />;
+        case 'UPI':
+            return <CreditCard size={12} className="text-purple-600" />;
+        default:
+            return <CreditCard size={12} className="text-gray-600" />;
+    }
+};
+
 export default function ExpenseManagement() {
     const router = useRouter();
     const [isMounted, setIsMounted] = useState(false);
@@ -252,6 +265,7 @@ export default function ExpenseManagement() {
     });
 
     // Vendor Form State (for sub-modal)
+    const [vendorIdType, setVendorIdType] = useState('GST');
     const [vendorFormData, setVendorFormData] = useState({
         fullName: '',
         contactNumber: '',
@@ -259,7 +273,8 @@ export default function ExpenseManagement() {
         state: '',
         city: '',
         fullAddress: '',
-        status: 'ACTIVE'
+        status: 'ACTIVE',
+        vendorType: 'NORMAL'
     });
 
     // Mutations and data for sub-modals
@@ -833,15 +848,44 @@ export default function ExpenseManagement() {
                 return;
             }
 
-            // Validate GST if provided
-            if (vendorFormData.vendorGST && !/^[0-9A-Z]{15}$/.test(vendorFormData.vendorGST)) {
-                toast.warning('Invalid GST number format (must be 15 alphanumeric characters)');
+            // Validate Identification Type & Format
+            const idVal = vendorFormData.vendorGST.trim().toUpperCase();
+            if (!idVal) {
+                toast.warning('Identification document value is required');
+                return;
+            }
+            if (vendorIdType === 'GST' && !/^[0-9A-Z]{15}$/.test(idVal)) {
+                toast.warning('GST number must be exactly 15 alphanumeric characters');
+                return;
+            }
+            if (vendorIdType === 'PAN' && !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(idVal)) {
+                toast.warning('PAN Card number must be exactly 10 alphanumeric characters (5 letters, 4 digits, 1 letter)');
+                return;
+            }
+            if (vendorIdType === 'AADHAAR' && !/^[0-9]{12}$/.test(idVal)) {
+                toast.warning('Aadhaar Card number must be exactly 12 digits');
                 return;
             }
 
-            const result = await createVendor(vendorFormData).unwrap();
+            const submissionData = {
+                ...vendorFormData,
+                vendorGST: `${vendorIdType}: ${idVal}`
+            };
+
+            const result = await createVendor(submissionData).unwrap();
             toast.success('Vendor created successfully');
             setShowAddVendorModal(false);
+            setVendorFormData({
+                fullName: '',
+                contactNumber: '',
+                vendorGST: '',
+                state: '',
+                city: '',
+                fullAddress: '',
+                status: 'ACTIVE',
+                vendorType: 'NORMAL'
+            });
+            setVendorIdType('GST');
             // Automatically select the new vendor in the main form
             setFormData(prev => ({ ...prev, vendorId: result.data._id }));
         } catch (err) {
@@ -1026,80 +1070,187 @@ export default function ExpenseManagement() {
                                     <p className="text-gray-500">Try adjusting your filters to find what you're looking for.</p>
                                 </div>
                             ) : (
-                                filteredExpenses.map((expense) => {
-                                    const typeColor = getExpenseTypeColor(expense.expenseType);
- 
-                                    return (
-                                        <motion.div
-                                            key={expense._id}
-                                            initial={{ opacity: 0, y: 10 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow"
-                                        >
-                                            <div className="flex flex-col md:flex-row justify-between md:items-center mb-4">
-                                                <div className="flex items-start gap-4 mb-4 md:mb-0">
-                                                    <div className={`w-12 h-12 rounded-xl shrink-0 flex items-center justify-center ${getExpenseIconInfo(expense.expenseType).bg}`}>
-                                                        {getExpenseIconInfo(expense.expenseType).icon}
+                                <>
+                                    {/* Desktop View Table */}
+                                    <div className="hidden lg:block bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
+                                        <div className="overflow-x-auto">
+                                            <table className="min-w-full">
+                                                <thead>
+                                                    <tr className="bg-gray-50 border-b border-gray-200">
+                                                        {["Type", "Date & Time", "Recipient", "Campaign", "Description", "Method", "Amount", "Status"].map((h) => (
+                                                            <th key={h} className="px-5 py-3.5 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">
+                                                                {h}
+                                                            </th>
+                                                        ))}
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-gray-100">
+                                                    {filteredExpenses.map((expense) => {
+                                                        // Recipient mapping
+                                                        let recipientName = "—";
+                                                        let recipientSub = "";
+                                                        
+                                                        if (expense.adminId) {
+                                                            recipientName = expense.adminId.fullName;
+                                                            recipientSub = "Admin / Employee";
+                                                        } else if (expense.volunteerId) {
+                                                            recipientName = expense.volunteerId.fullName;
+                                                            recipientSub = "Volunteer";
+                                                        } else if (expense.vendorId) {
+                                                            recipientName = expense.vendorId.fullName;
+                                                            recipientSub = "Vendor";
+                                                        } else if (expense.agreementId) {
+                                                            recipientName = expense.agreementId.agreementTitle;
+                                                            recipientSub = "Agreement";
+                                                        }
+                                                        
+                                                        return (
+                                                            <tr key={expense._id} className="hover:bg-gray-50/50 transition-colors group">
+                                                                <td className="px-5 py-4">
+                                                                    <div className="flex flex-col gap-1 items-start">
+                                                                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-rose-500 text-white shadow-sm shadow-rose-500/10">
+                                                                            <ArrowLeft size={10} /> DR
+                                                                        </span>
+                                                                        <span className="text-[9px] font-black uppercase tracking-widest text-gray-400 bg-gray-50 border border-gray-200 px-1.5 py-0.5 rounded-md mt-1">
+                                                                            {expense.expenseType}
+                                                                        </span>
+                                                                    </div>
+                                                                </td>
+                                                                <td className="px-5 py-4 whitespace-nowrap">
+                                                                    <p className="text-sm font-bold text-gray-800">
+                                                                        {new Date(expense.date || expense.transactionDate).toLocaleDateString("en-IN", {
+                                                                            day: "2-digit", month: "short", year: "numeric"
+                                                                        })}
+                                                                    </p>
+                                                                    <p className="text-xs text-gray-400">
+                                                                        {new Date(expense.date || expense.transactionDate).toLocaleTimeString("en-IN", {
+                                                                            hour: "2-digit", minute: "2-digit", hour12: true
+                                                                        })}
+                                                                    </p>
+                                                                </td>
+                                                                <td className="px-5 py-4">
+                                                                    <p className="text-sm font-bold text-gray-900 truncate max-w-[150px]">{recipientName}</p>
+                                                                    {recipientSub && (
+                                                                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mt-0.5">{recipientSub}</p>
+                                                                    )}
+                                                                </td>
+                                                                <td className="px-5 py-4">
+                                                                    <p className="text-sm font-bold text-gray-600 truncate max-w-[140px]">
+                                                                        {expense.campaignId?.title || "—"}
+                                                                    </p>
+                                                                </td>
+                                                                <td className="px-5 py-4">
+                                                                    <div className="max-w-[280px]">
+                                                                        {formatExpenseDescription(expense.description)}
+                                                                        {expense.notes && (
+                                                                            <p className="text-[10px] text-gray-400 italic mt-1 truncate" title={expense.notes}>
+                                                                                "{expense.notes}"
+                                                                            </p>
+                                                                        )}
+                                                                    </div>
+                                                                </td>
+                                                                <td className="px-5 py-4 whitespace-nowrap">
+                                                                    <div className="flex items-center gap-1.5 text-xs font-bold text-gray-500">
+                                                                        {getMethodIcon(expense.paymentMethod)}
+                                                                        {expense.paymentMethod}
+                                                                    </div>
+                                                                    {expense.transactionId && (
+                                                                        <p className="text-[9px] font-black text-gray-400 tracking-tighter uppercase mt-0.5">TXN: {expense.transactionId}</p>
+                                                                    )}
+                                                                </td>
+                                                                <td className="px-5 py-4 whitespace-nowrap">
+                                                                    <p className="text-[15px] font-black text-rose-600">
+                                                                        -₹{expense.amount.toLocaleString("en-IN")}
+                                                                    </p>
+                                                                </td>
+                                                                <td className="px-5 py-4">
+                                                                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-emerald-50 text-emerald-700 border border-emerald-100">
+                                                                        <span className="w-1 h-1 rounded-full bg-emerald-500" />
+                                                                        Paid
+                                                                    </span>
+                                                                </td>
+                                                            </tr>
+                                                        );
+                                                    })}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                    
+                                    {/* Mobile View Cards */}
+                                    <div className="lg:hidden space-y-3">
+                                        {filteredExpenses.map((expense) => {
+                                            let recipientName = "—";
+                                            let recipientSub = "";
+                                            
+                                            if (expense.adminId) {
+                                                recipientName = expense.adminId.fullName;
+                                                recipientSub = "Admin";
+                                            } else if (expense.volunteerId) {
+                                                recipientName = expense.volunteerId.fullName;
+                                                recipientSub = "Volunteer";
+                                            } else if (expense.vendorId) {
+                                                recipientName = expense.vendorId.fullName;
+                                                recipientSub = "Vendor";
+                                            } else if (expense.agreementId) {
+                                                recipientName = expense.agreementId.agreementTitle;
+                                                recipientSub = "Agreement";
+                                            }
+                                            
+                                            return (
+                                                <div key={expense._id} className="bg-white rounded-2xl border border-gray-200 p-4 shadow-sm">
+                                                    <div className="flex justify-between items-start mb-3">
+                                                        <div className="flex flex-col gap-1">
+                                                            <div className="flex items-center gap-1.5">
+                                                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest bg-rose-500 text-white">
+                                                                    DR
+                                                                </span>
+                                                                <span className="text-[9px] font-black uppercase tracking-widest text-gray-400 bg-gray-50 border border-gray-200 px-1.5 py-0.5 rounded-md">
+                                                                    {expense.expenseType}
+                                                                </span>
+                                                            </div>
+                                                            <p className="text-xs text-gray-400">
+                                                                {new Date(expense.date || expense.transactionDate).toLocaleDateString("en-IN", {
+                                                                    day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit"
+                                                                })}
+                                                            </p>
+                                                        </div>
+                                                        <p className="text-base font-black text-rose-600">
+                                                            -₹{expense.amount.toLocaleString("en-IN")}
+                                                        </p>
                                                     </div>
-                                                    <div className="flex-1">
-                                                        <div className="flex items-center gap-2 mb-1">
-                                                            <span className={`px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-widest bg-gray-100 text-gray-700 border border-gray-200/40`}>
-                                                                {expense.expenseType}
+                                                    
+                                                    <div className="space-y-2 border-t border-gray-50 pt-3">
+                                                        <div className="flex justify-between">
+                                                            <span className="text-gray-400 text-xs font-bold uppercase tracking-wider">Recipient</span>
+                                                            <span className="text-gray-700 font-bold text-xs truncate max-w-[180px]">{recipientName} {recipientSub && <span className="text-[10px] text-gray-400">({recipientSub})</span>}</span>
+                                                        </div>
+                                                        {expense.campaignId && (
+                                                            <div className="flex justify-between">
+                                                                <span className="text-gray-400 text-xs font-bold uppercase tracking-wider">Campaign</span>
+                                                                <span className="text-gray-700 font-bold text-xs truncate max-w-[180px]">{expense.campaignId.title}</span>
+                                                            </div>
+                                                        )}
+                                                        <div className="flex justify-between items-center">
+                                                            <span className="text-gray-400 text-xs font-bold uppercase tracking-wider">Method</span>
+                                                            <span className="flex items-center gap-1 text-gray-700 text-xs font-bold">
+                                                                {getMethodIcon(expense.paymentMethod)} {expense.paymentMethod}
                                                             </span>
                                                         </div>
-                                                        {formatExpenseDescription(expense.description)}
-                                                        <div className="flex flex-wrap gap-3 text-xs font-medium text-gray-500 mt-2">
-                                                            <span className="flex items-center gap-1">
-                                                                <Calendar size={12} />
-                                                                {new Date(expense.date || expense.transactionDate).toLocaleDateString()}
-                                                            </span>
-                                                            {expense.adminId && (
-                                                                <span className="flex items-center gap-1 text-blue-600">
-                                                                    <User size={12} />
-                                                                    {expense.adminId.fullName}
-                                                                </span>
+                                                        <div className="border-t border-gray-50 pt-2.5 mt-2">
+                                                            {formatExpenseDescription(expense.description)}
+                                                            {expense.notes && (
+                                                                <p className="text-[11px] text-gray-400 italic mt-1 bg-gray-50 p-2 rounded-lg border border-gray-100">
+                                                                    "{expense.notes}"
+                                                                </p>
                                                             )}
-                                                            {expense.campaignId && (
-                                                                <span className="flex items-center gap-1 text-green-600">
-                                                                    <Users size={12} />
-                                                                    {expense.campaignId.title}
-                                                                </span>
-                                                            )}
-                                                            {expense.vendorId && (
-                                                                <span className="flex items-center gap-1 text-purple-600">
-                                                                    <Building2 size={12} />
-                                                                    {expense.vendorId.fullName}
-                                                                </span>
-                                                            )}
-                                                            {expense.agreementId && (
-                                                                <span className="flex items-center gap-1 text-amber-600">
-                                                                    <FileText size={12} />
-                                                                    {expense.agreementId.agreementTitle}
-                                                                </span>
-                                                            )}
-                                                            <span className="flex items-center gap-1 text-gray-400">
-                                                                <Banknote size={12} />
-                                                                {expense.paymentMethod}
-                                                            </span>
                                                         </div>
                                                     </div>
                                                 </div>
-                                                <div className="text-right">
-                                                    <p className="text-2xl font-bold text-gray-900">₹{expense.amount.toLocaleString()}</p>
-                                                    {expense.transactionId && (
-                                                        <p className="text-xs text-gray-400 mt-1 uppercase tracking-tighter">TXN: {expense.transactionId}</p>
-                                                    )}
-                                                </div>
-                                            </div>
-                                            {expense.notes && (
-                                                <div className="bg-gray-50 rounded-xl p-4 mt-4 border border-gray-100/50">
-                                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Notes</p>
-                                                    <p className="text-sm text-gray-600 italic">"{expense.notes}"</p>
-                                                </div>
-                                            )}
-                                        </motion.div>
-                                    );
-                                })
+                                            );
+                                        })}
+                                    </div>
+                                </>
                             )}
                         </AnimatePresence>
                     </div>
@@ -2458,8 +2609,8 @@ export default function ExpenseManagement() {
                 {showAddVendorModal && (
                     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
                         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowAddVendorModal(false)} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
-                        <motion.div initial={{ scale: 0.9, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.9, opacity: 0, y: 20 }} className="bg-white rounded-3xl w-full max-w-lg shadow-2xl relative overflow-hidden">
-                            <div className="px-8 py-6 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+                        <motion.div initial={{ scale: 0.9, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.9, opacity: 0, y: 20 }} className="bg-white rounded-3xl w-full max-w-lg shadow-2xl relative overflow-hidden max-h-[90vh] flex flex-col">
+                            <div className="px-8 py-6 border-b border-gray-100 flex items-center justify-between bg-gray-50/50 shrink-0">
                                 <div>
                                     <h2 className="text-xl font-bold text-gray-900">Add New Vendor</h2>
                                     <p className="text-sm text-gray-500">Supplier information for procurement</p>
@@ -2467,10 +2618,23 @@ export default function ExpenseManagement() {
                                 <button onClick={() => setShowAddVendorModal(false)} className="p-2 hover:bg-gray-200 rounded-full transition-colors"><X size={20} className="text-gray-400" /></button>
                             </div>
 
-                            <div className="p-8 space-y-5">
-                                <div>
-                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">Vendor Name *</label>
-                                    <input required value={vendorFormData.fullName} onChange={(e) => setVendorFormData(prev => ({ ...prev, fullName: e.target.value }))} type="text" placeholder="e.g. MedPlus Essentials" className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all" />
+                            <div className="p-8 space-y-5 overflow-y-auto flex-1">
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">Vendor Name *</label>
+                                        <input required value={vendorFormData.fullName} onChange={(e) => setVendorFormData(prev => ({ ...prev, fullName: e.target.value }))} type="text" placeholder="e.g. MedPlus Essentials" className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all" />
+                                    </div>
+                                    <div>
+                                        <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">Vendor Type *</label>
+                                        <select
+                                            value={vendorFormData.vendorType}
+                                            onChange={(e) => setVendorFormData(prev => ({ ...prev, vendorType: e.target.value }))}
+                                            className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all"
+                                        >
+                                            <option value="NORMAL">Normal Vendor</option>
+                                            <option value="INDIVIDUAL">Individual Vendor</option>
+                                        </select>
+                                    </div>
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-4">
@@ -2479,9 +2643,52 @@ export default function ExpenseManagement() {
                                         <input required value={vendorFormData.contactNumber} onChange={(e) => setVendorFormData(prev => ({ ...prev, contactNumber: e.target.value }))} type="tel" placeholder="10-digit number" maxLength={10} className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all" />
                                     </div>
                                     <div>
-                                        <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">GST Number</label>
-                                        <input value={vendorFormData.vendorGST} onChange={(e) => setVendorFormData(prev => ({ ...prev, vendorGST: e.target.value.toUpperCase() }))} type="text" placeholder="15-char GSTIN" maxLength={15} className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all uppercase" />
+                                        <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">ID Document Type *</label>
+                                        <select
+                                            value={vendorIdType}
+                                            onChange={(e) => {
+                                                setVendorIdType(e.target.value);
+                                                setVendorFormData(prev => ({ ...prev, vendorGST: '' }));
+                                            }}
+                                            className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all"
+                                        >
+                                            <option value="GST">GST</option>
+                                            <option value="PAN">PAN Card</option>
+                                            <option value="AADHAAR">Aadhaar Card</option>
+                                            <option value="OTHERS">Others</option>
+                                        </select>
                                     </div>
+                                </div>
+
+                                <div>
+                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">
+                                        {vendorIdType === 'OTHERS' ? 'ID' : vendorIdType} Number *
+                                    </label>
+                                    <input
+                                        required
+                                        value={vendorFormData.vendorGST}
+                                        onChange={(e) => {
+                                            let val = e.target.value;
+                                            if (vendorIdType === 'AADHAAR') {
+                                                val = val.replace(/\D/g, ''); // Digits only
+                                            }
+                                            setVendorFormData(prev => ({ ...prev, vendorGST: val }));
+                                        }}
+                                        type="text"
+                                        placeholder={
+                                            vendorIdType === 'GST' ? "15-char GSTIN" :
+                                            vendorIdType === 'PAN' ? "10-char PAN (ABCDE1234F)" :
+                                            vendorIdType === 'AADHAAR' ? "12-digit Aadhaar" :
+                                            "Enter Document ID"
+                                        }
+                                        maxLength={
+                                            vendorIdType === 'GST' ? 15 :
+                                            vendorIdType === 'PAN' ? 10 :
+                                            vendorIdType === 'AADHAAR' ? 12 :
+                                            30
+                                        }
+                                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all uppercase"
+                                    />
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-4">

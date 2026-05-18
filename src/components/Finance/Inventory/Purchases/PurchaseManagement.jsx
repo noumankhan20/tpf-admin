@@ -19,7 +19,10 @@ import {
     AlertCircle,
     Eye,
     Edit2,
-    ChevronDown
+    ChevronDown,
+    ChevronLeft,
+    ChevronRight,
+    Building2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-toastify';
@@ -96,8 +99,63 @@ export default function PurchaseManagement() {
         purchaseDate: new Date().toISOString().split('T')[0],
         paymentStatus: 'PENDING',
         proofFile: null,
-        lineItems: []
+        lineItems: [{ itemId: '', itemName: '', qty: '', price: '', unit: '' }]
     });
+
+    const selectedVendor = vendors.find(v => v._id === formData.vendorId);
+    const isIndividualVendor = selectedVendor?.vendorType === 'INDIVIDUAL';
+
+    // Custom Searchable Vendor Dropdown State & Logic
+    const [vendorDropdownOpen, setVendorDropdownOpen] = useState(false);
+    const [vendorSearch, setVendorSearch] = useState('');
+    const [vendorPage, setVendorPage] = useState(1);
+    const vendorRef = React.useRef(null);
+
+    // Handle outside clicks for Vendor Dropdown
+    useEffect(() => {
+        function handleClickOutside(event) {
+            if (vendorRef.current && !vendorRef.current.contains(event.target)) {
+                setVendorDropdownOpen(false);
+            }
+        }
+        if (vendorDropdownOpen) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [vendorDropdownOpen]);
+
+    // Filter vendors based on search query
+    const filteredVendors = React.useMemo(() => {
+        if (!vendors) return [];
+        // Sort vendors alphabetically by fullName
+        const sorted = [...vendors].sort((a, b) => {
+            const nameA = a.fullName || '';
+            const nameB = b.fullName || '';
+            return nameA.localeCompare(nameB);
+        });
+
+        if (!vendorSearch) return sorted;
+        const searchLower = vendorSearch.toLowerCase();
+        return sorted.filter(v => v.fullName?.toLowerCase().includes(searchLower) || String(v.contactNumber || '').includes(searchLower));
+    }, [vendors, vendorSearch]);
+
+    // Paginate matching vendors (20 per page)
+    const ITEMS_PER_PAGE_VENDOR = 20;
+    const totalVendorPages = Math.ceil(filteredVendors.length / ITEMS_PER_PAGE_VENDOR) || 1;
+    
+    // Adjust current page if search reduces the matches below page range
+    useEffect(() => {
+        if (vendorPage > totalVendorPages) {
+            setVendorPage(totalVendorPages);
+        }
+    }, [filteredVendors.length, totalVendorPages, vendorPage]);
+
+    const paginatedVendors = React.useMemo(() => {
+        const startIndex = (vendorPage - 1) * ITEMS_PER_PAGE_VENDOR;
+        return filteredVendors.slice(startIndex, startIndex + ITEMS_PER_PAGE_VENDOR);
+    }, [filteredVendors, vendorPage]);
 
     useEffect(() => {
         setIsMounted(true);
@@ -114,9 +172,12 @@ export default function PurchaseManagement() {
             purchaseDate: new Date().toISOString().split('T')[0],
             paymentStatus: 'PENDING',
             proofFile: null,
-            lineItems: []
+            lineItems: [{ itemId: '', itemName: '', qty: '', price: '', unit: '' }]
         });
         setEditingPurchase(null);
+        setVendorSearch('');
+        setVendorPage(1);
+        setVendorDropdownOpen(false);
     };
 
     const handleEdit = (po) => {
@@ -127,7 +188,8 @@ export default function PurchaseManagement() {
             paymentStatus: po.paymentStatus,
             proofFile: null,
             lineItems: po.items.map(item => ({
-                itemId: item.itemId?._id || item.itemId,
+                itemId: item.itemId?._id || item.itemId || '',
+                itemName: item.itemName || '',
                 qty: item.quantity,
                 price: item.unitPrice,
                 unit: item.itemId?.unit || ''
@@ -143,7 +205,7 @@ export default function PurchaseManagement() {
     const addLineItem = () => {
         setFormData(prev => ({
             ...prev,
-            lineItems: [...prev.lineItems, { itemId: '', qty: '', price: '', unit: '' }]
+            lineItems: [...prev.lineItems, { itemId: '', itemName: '', qty: '', price: '', unit: '' }]
         }));
     };
 
@@ -180,9 +242,16 @@ export default function PurchaseManagement() {
         }
 
         // Validation
+        const selectedVendor = vendors.find(v => v._id === formData.vendorId);
+        const isIndividualVendor = selectedVendor?.vendorType === 'INDIVIDUAL';
+
         for (const item of formData.lineItems) {
-            if (!item.itemId) {
+            if (!isIndividualVendor && !item.itemId) {
                 toast.warning("Please select an item for all line items.");
+                return;
+            }
+            if (isIndividualVendor && !item.itemName?.trim()) {
+                toast.warning("Please enter a description for all line items.");
                 return;
             }
             if (!item.qty || Number(item.qty) <= 0) {
@@ -200,11 +269,21 @@ export default function PurchaseManagement() {
         formDataToSend.append('purchaseDate', formData.purchaseDate);
         formDataToSend.append('paymentStatus', formData.paymentStatus);
 
-        const itemsPayload = formData.lineItems.map(item => ({
-            itemId: item.itemId,
-            quantity: Number(item.qty),
-            price: Number(item.price)
-        }));
+        const itemsPayload = formData.lineItems.map(item => {
+            if (isIndividualVendor) {
+                return {
+                    itemName: item.itemName,
+                    quantity: Number(item.qty),
+                    price: Number(item.price)
+                };
+            } else {
+                return {
+                    itemId: item.itemId,
+                    quantity: Number(item.qty),
+                    price: Number(item.price)
+                };
+            }
+        });
         formDataToSend.append('items', JSON.stringify(itemsPayload));
 
         if (formData.proofFile) {
@@ -476,10 +555,141 @@ export default function PurchaseManagement() {
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                         <div>
                                             <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">Vendor</label>
-                                            <select required value={formData.vendorId} onChange={handleVendorChange} className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:border-emerald-500 outline-none appearance-none font-medium">
-                                                <option value="">Select Vendor</option>
-                                                {vendors.map(v => <option key={v._id} value={v._id}>{v.fullName}</option>)}
-                                            </select>
+                                            <div ref={vendorRef} className="relative z-20">
+                                                {/* Hidden input for HTML5 form validation */}
+                                                <input
+                                                    type="text"
+                                                    required
+                                                    value={formData.vendorId}
+                                                    onChange={() => {}}
+                                                    className="absolute w-0 h-0 opacity-0 pointer-events-none"
+                                                />
+
+                                                <div 
+                                                    onClick={() => setVendorDropdownOpen(prev => !prev)}
+                                                    className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus-within:ring-2 focus-within:ring-emerald-500/20 focus-within:border-emerald-500 outline-none transition-all flex items-center justify-between cursor-pointer select-none relative"
+                                                >
+                                                    <Building2 className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                                                    <span className={`text-sm ${selectedVendor ? 'text-gray-900 font-medium' : 'text-gray-400 font-medium'}`}>
+                                                        {selectedVendor 
+                                                            ? selectedVendor.fullName 
+                                                            : 'Choose Vendor'}
+                                                    </span>
+                                                    <ChevronDown className={`text-gray-400 transition-transform duration-200 ${vendorDropdownOpen ? 'rotate-180' : ''}`} size={18} />
+                                                </div>
+
+                                                {/* Dropdown panel */}
+                                                <AnimatePresence>
+                                                    {vendorDropdownOpen && (
+                                                        <motion.div
+                                                            initial={{ opacity: 0, y: -10 }}
+                                                            animate={{ opacity: 1, y: 0 }}
+                                                            exit={{ opacity: 0, y: -10 }}
+                                                            transition={{ duration: 0.15 }}
+                                                            className="absolute left-0 right-0 mt-2 bg-white border border-gray-200 rounded-2xl shadow-xl z-[60] p-4 flex flex-col space-y-3"
+                                                        >
+                                                            {/* Search field */}
+                                                            <div className="relative">
+                                                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
+                                                                <input
+                                                                    type="text"
+                                                                    placeholder="Search vendor..."
+                                                                    value={vendorSearch}
+                                                                    onChange={(e) => {
+                                                                        setVendorSearch(e.target.value);
+                                                                        setVendorPage(1);
+                                                                    }}
+                                                                    onClick={(e) => e.stopPropagation()}
+                                                                    className="w-full pl-9 pr-8 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:border-emerald-500 outline-none text-xs font-semibold"
+                                                                />
+                                                                {vendorSearch && (
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            setVendorSearch('');
+                                                                            setVendorPage(1);
+                                                                        }}
+                                                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                                                                    >
+                                                                        <X size={14} />
+                                                                    </button>
+                                                                )}
+                                                            </div>
+
+                                                            {/* Paginated Options List */}
+                                                            <div className="max-h-56 overflow-y-auto space-y-1 pr-1 custom-scrollbar">
+                                                                <div 
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        setFormData(p => ({ ...p, vendorId: '' }));
+                                                                        setVendorDropdownOpen(false);
+                                                                    }}
+                                                                    className={`w-full text-left px-3 py-2.5 rounded-lg text-xs transition-all cursor-pointer font-medium ${!formData.vendorId ? 'bg-emerald-50/70 text-emerald-700 font-semibold border-l-2 border-emerald-600' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-800'}`}
+                                                                >
+                                                                    Choose Vendor (None)
+                                                                </div>
+
+                                                                {paginatedVendors.length === 0 ? (
+                                                                    <div className="text-center py-4 text-xs text-gray-400 font-medium">
+                                                                        No vendors match your search.
+                                                                    </div>
+                                                                ) : (
+                                                                    paginatedVendors.map(vendor => {
+                                                                        const isSelected = formData.vendorId === vendor._id;
+                                                                        return (
+                                                                            <div
+                                                                                key={vendor._id}
+                                                                                onClick={(e) => {
+                                                                                    e.stopPropagation();
+                                                                                    setFormData(p => ({ ...p, vendorId: vendor._id }));
+                                                                                    setVendorDropdownOpen(false);
+                                                                                }}
+                                                                                className={`w-full text-left px-3 py-2.5 rounded-lg text-xs transition-all cursor-pointer font-medium ${isSelected ? 'bg-emerald-50/70 text-emerald-700 font-semibold border-l-2 border-emerald-600' : 'text-gray-600 hover:bg-emerald-50 hover:text-emerald-700'}`}
+                                                                            >
+                                                                                {vendor.fullName}
+                                                                            </div>
+                                                                        );
+                                                                    })
+                                                                )}
+                                                            </div>
+
+                                                            {/* Pagination controls */}
+                                                            {totalVendorPages > 1 && (
+                                                                <div className="flex items-center justify-between border-t pt-3 border-gray-100 text-[10px] font-black text-gray-400 uppercase tracking-widest select-none">
+                                                                    <button
+                                                                        type="button"
+                                                                        disabled={vendorPage === 1}
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            setVendorPage(p => Math.max(1, p - 1));
+                                                                        }}
+                                                                        className="px-2 py-1.5 rounded-lg bg-gray-50 hover:bg-gray-100 disabled:opacity-40 disabled:hover:bg-gray-50 transition-all flex items-center gap-0.5 text-gray-600 border border-gray-100 cursor-pointer"
+                                                                    >
+                                                                        <ChevronLeft size={12} />
+                                                                        Prev
+                                                                    </button>
+                                                                    <span>
+                                                                        Page {vendorPage} of {totalVendorPages}
+                                                                    </span>
+                                                                    <button
+                                                                        type="button"
+                                                                        disabled={vendorPage === totalVendorPages}
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            setVendorPage(p => Math.min(totalVendorPages, p + 1));
+                                                                        }}
+                                                                        className="px-2 py-1.5 rounded-lg bg-gray-50 hover:bg-gray-100 disabled:opacity-40 disabled:hover:bg-gray-50 transition-all flex items-center gap-0.5 text-gray-600 border border-gray-100 cursor-pointer"
+                                                                    >
+                                                                        Next
+                                                                        <ChevronRight size={12} />
+                                                                    </button>
+                                                                </div>
+                                                            )}
+                                                        </motion.div>
+                                                    )}
+                                                </AnimatePresence>
+                                            </div>
                                         </div>
                                         <div>
                                             <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">Date</label>
@@ -497,17 +707,34 @@ export default function PurchaseManagement() {
 
                                     <div>
                                         <div className="flex items-center justify-between mb-3 border-b pb-2 border-gray-100">
-                                            <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Line Items</label>
-                                            <button type="button" onClick={addLineItem} className="text-xs font-bold text-emerald-600 hover:underline flex items-center gap-1"><Plus size={14} /> Add Item</button>
+                                            <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">
+                                                {isIndividualVendor ? 'Charge / Service Details' : 'Line Items'}
+                                            </label>
+                                            {!isIndividualVendor && (
+                                                <button type="button" onClick={addLineItem} className="text-xs font-bold text-emerald-600 hover:underline flex items-center gap-1">
+                                                    <Plus size={14} /> Add Item
+                                                </button>
+                                            )}
                                         </div>
                                         <div className="space-y-3">
                                             {formData.lineItems.map((line, idx) => (
                                                 <div key={idx} className="flex gap-3 items-start animate-in fade-in slide-in-from-top-2">
                                                     <div className="flex-1">
-                                                        <select required value={line.itemId} onChange={(e) => updateLineItem(idx, 'itemId', e.target.value)} className="w-full px-4 py-2 bg-white border border-gray-200 rounded-xl focus:border-emerald-500 outline-none text-sm font-medium">
-                                                            <option value="">Choose item...</option>
-                                                            {items.map(item => <option key={item._id} value={item._id}>{item.name} ({item.itemType})</option>)}
-                                                        </select>
+                                                        {isIndividualVendor ? (
+                                                            <input 
+                                                                type="text" 
+                                                                required 
+                                                                value={line.itemName || ''} 
+                                                                onChange={(e) => updateLineItem(idx, 'itemName', e.target.value)} 
+                                                                placeholder="Charge description (e.g. Consulting, Service)" 
+                                                                className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:border-emerald-500 outline-none text-sm font-medium" 
+                                                            />
+                                                        ) : (
+                                                            <select required value={line.itemId} onChange={(e) => updateLineItem(idx, 'itemId', e.target.value)} className="w-full px-4 py-2 bg-white border border-gray-200 rounded-xl focus:border-emerald-500 outline-none text-sm font-medium">
+                                                                <option value="">Choose item...</option>
+                                                                {items.map(item => <option key={item._id} value={item._id}>{item.name} ({item.itemType})</option>)}
+                                                            </select>
+                                                        )}
                                                     </div>
                                                     <div className="w-24">
                                                         <input type="number" min="1" required value={line.qty} onChange={(e) => updateLineItem(idx, 'qty', e.target.value)} placeholder="Qty" className="w-full px-4 py-2 bg-white border border-gray-200 rounded-xl focus:border-emerald-500 outline-none text-sm text-center font-bold" />
@@ -515,7 +742,11 @@ export default function PurchaseManagement() {
                                                     <div className="w-32">
                                                         <input type="number" min="0" required value={line.price} onChange={(e) => updateLineItem(idx, 'price', e.target.value)} placeholder="Price" className="w-full px-4 py-2 bg-white border border-gray-200 rounded-xl focus:border-emerald-500 outline-none text-sm font-bold" />
                                                     </div>
-                                                    <button type="button" onClick={() => removeLineItem(idx)} className="p-2 text-rose-500 hover:bg-rose-50 rounded-lg transition-colors"><Trash2 size={16} /></button>
+                                                    {!isIndividualVendor && (
+                                                        <button type="button" onClick={() => removeLineItem(idx)} className="p-2 text-rose-500 hover:bg-rose-50 rounded-lg transition-colors">
+                                                            <Trash2 size={16} />
+                                                        </button>
+                                                    )}
                                                 </div>
                                             ))}
                                         </div>
@@ -566,8 +797,8 @@ export default function PurchaseManagement() {
                                 {viewPurchase.items.map((item, idx) => (
                                     <div key={idx} className="flex justify-between items-center bg-gray-50 p-3 rounded-xl">
                                         <div>
-                                            <p className="text-sm font-bold text-gray-900">{item.itemId?.name}</p>
-                                            <p className="text-[10px] text-gray-400 uppercase font-medium">{item.quantity} {item.itemId?.unit} × ₹{item.unitPrice}</p>
+                                            <p className="text-sm font-bold text-gray-900">{item.itemId?.name || item.itemName || "Individual Vendor Charge"}</p>
+                                            <p className="text-[10px] text-gray-400 uppercase font-medium">{item.quantity} {item.itemId?.unit || 'qty'} × ₹{item.unitPrice}</p>
                                         </div>
                                         <p className="font-bold text-gray-900">₹{item.totalPrice.toLocaleString()}</p>
                                     </div>
