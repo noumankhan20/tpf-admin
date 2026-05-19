@@ -300,6 +300,52 @@ const filterDataByPeriod = (data, dateKey, period, customRange = null) => {
     });
 };
 
+const getPeriodDateRange = (period, customRange = null) => {
+    if (!period || period === 'all') return { startDate: null, endDate: null };
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth();
+
+    let startDate, endDate;
+
+    switch (period) {
+        case 'custom':
+            if (!customRange?.start || !customRange?.end) return { startDate: null, endDate: null };
+            startDate = new Date(customRange.start);
+            endDate = new Date(customRange.end);
+            endDate.setHours(23, 59, 59, 999);
+            break;
+        case 'this_month':
+            startDate = new Date(currentYear, currentMonth, 1);
+            endDate = new Date(currentYear, currentMonth + 1, 0, 23, 59, 59, 999);
+            break;
+        case 'last_month':
+            startDate = new Date(currentYear, currentMonth - 1, 1);
+            endDate = new Date(currentYear, currentMonth, 0, 23, 59, 59, 999);
+            break;
+        case 'this_fy': {
+            const fyStartYear = currentMonth >= 3 ? currentYear : currentYear - 1;
+            startDate = new Date(fyStartYear, 3, 1);
+            endDate = new Date(fyStartYear + 1, 2, 31, 23, 59, 59, 999);
+            break;
+        }
+        case 'last_fy': {
+            const fyStartYear = (currentMonth >= 3 ? currentYear : currentYear - 1) - 1;
+            startDate = new Date(fyStartYear, 3, 1);
+            endDate = new Date(fyStartYear + 1, 2, 31, 23, 59, 59, 999);
+            break;
+        }
+        default:
+            if (period.startsWith('month_')) {
+                const monthIndex = parseInt(period.split('_')[1]);
+                startDate = new Date(currentYear, monthIndex, 1);
+                endDate = new Date(currentYear, monthIndex + 1, 0, 23, 59, 59, 999);
+            }
+            break;
+    }
+    return { startDate, endDate };
+};
+
 const getValue = (obj, path, fallback) => {
     if (!obj) return fallback;
     const keys = path.split('.');
@@ -334,6 +380,12 @@ export default function DownloadsMain() {
 
     const [financialFilters, setFinancialFilters] = useState({
         typeId: 'all_transactions',
+        period: 'all',
+        startDate: '',
+        endDate: ''
+    });
+
+    const [form10BDFilters, setForm10BDFilters] = useState({
         period: 'all',
         startDate: '',
         endDate: ''
@@ -414,13 +466,17 @@ export default function DownloadsMain() {
             const params = {
                 limit: 5000 // Ensure we get all records for downloads
             };
-            if (filters?.period === 'custom') {
-                params.startDate = filters.startDate;
-                params.endDate = filters.endDate;
-            } else if (filters?.period && filters.period !== 'all') {
-                // Approximate standard periods for backend if needed, 
-                // but filterDataByPeriod handles it on frontend anyway.
-                // For Form 10BD, backend aggregation by date is better.
+            if (resource.id === 'form_10bd') {
+                if (filters?.period && filters.period !== 'all') {
+                    const { startDate, endDate } = getPeriodDateRange(filters.period, { start: filters.startDate, end: filters.endDate });
+                    if (startDate) params.startDate = startDate.toISOString();
+                    if (endDate) params.endDate = endDate.toISOString();
+                }
+            } else {
+                if (filters?.period === 'custom') {
+                    params.startDate = filters.startDate;
+                    params.endDate = filters.endDate;
+                }
             }
 
             const { data } = await axios.get(`${API_URL}${resource.endpoint}`, {
@@ -473,7 +529,7 @@ export default function DownloadsMain() {
             }
 
             // Apply filters if provided
-            if (customFilters && customFilters.period && customFilters.period !== 'all') {
+            if (resource.id !== 'form_10bd' && customFilters && customFilters.period && customFilters.period !== 'all') {
                 data = filterDataByPeriod(
                     data,
                     resource.dateKey || 'createdAt',
@@ -850,30 +906,106 @@ export default function DownloadsMain() {
                 <section>
                     <div className="bg-white border border-gray-100 rounded-[2.5rem] p-1 shadow-2xl shadow-emerald-900/5 overflow-hidden">
                         <div className="bg-gradient-to-br from-emerald-50 via-white to-white rounded-[2.25rem] p-8 md:p-12 relative">
-                            <div className="flex flex-col md:flex-row items-center justify-between gap-8">
-                                <div className="flex items-center gap-6">
-                                    <div className="w-16 h-16 rounded-2xl bg-emerald-600 flex items-center justify-center shadow-2xl shadow-emerald-200">
-                                        <DownloadCloud className="w-8 h-8 text-white" />
-                                    </div>
-                                    <div>
-                                        <h2 className="text-2xl font-bold text-gray-900">Form 10BD</h2>
-                                        <p className="text-gray-500 font-medium mt-1">
-                                            Statutory report for donors with verified PAN (Aggregated by user).
-                                        </p>
+                            {/* Decorative Background Elements */}
+                            <div className="absolute top-0 right-0 w-1/3 h-full overflow-hidden pointer-events-none">
+                                <div className="absolute -top-24 -right-24 w-96 h-96 bg-emerald-400/10 rounded-full blur-3xl"></div>
+                                <div className="absolute top-1/2 -right-12 w-64 h-64 bg-teal-400/10 rounded-full blur-3xl"></div>
+                            </div>
+
+                            <div className="relative z-10">
+                                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8 mb-6">
+                                    <div className="max-w-2xl">
+                                        <div className="flex items-center gap-6">
+                                            <div className="w-16 h-16 rounded-2xl bg-emerald-600 flex items-center justify-center shadow-2xl shadow-emerald-200">
+                                                <DownloadCloud className="w-8 h-8 text-white" />
+                                            </div>
+                                            <div>
+                                                <h2 className="text-2xl font-bold text-gray-900">Form 10BD</h2>
+                                                <p className="text-gray-500 font-medium mt-1">
+                                                    Statutory report for donors with verified PAN (Aggregated by user).
+                                                </p>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
-                                <button
-                                    onClick={() => handleDownload(form10BDResource, 'excel', financialFilters)}
-                                    disabled={loading.id !== null}
-                                    className="px-10 py-5 bg-gray-900 text-white rounded-2xl font-bold hover:bg-black hover:shadow-2xl hover:shadow-gray-200 active:scale-95 transition-all disabled:opacity-50 flex items-center gap-3"
-                                >
-                                    {loading.id === 'form_10bd' ? (
-                                        <Loader2 className="w-5 h-5 animate-spin" />
-                                    ) : (
-                                        <FileSpreadsheet className="w-5 h-5 text-emerald-400" />
-                                    )}
-                                    Download Excel
-                                </button>
+
+                                {/* Filters Grid */}
+                                <div className="bg-white/50 backdrop-blur-sm border-2 border-white rounded-[2rem] p-8 mt-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                                        {/* Period Selection */}
+                                        <div className="space-y-3">
+                                            <label className="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2 px-1">
+                                                <Calendar className="w-4 h-4 text-emerald-500" />
+                                                Time Interval
+                                            </label>
+                                            <div className="relative group">
+                                                <select
+                                                    value={form10BDFilters.period}
+                                                    onChange={(e) => setForm10BDFilters({ ...form10BDFilters, period: e.target.value })}
+                                                    className="w-full pl-5 pr-12 py-4 bg-white border-2 border-gray-100 rounded-2xl font-bold text-gray-700 appearance-none focus:outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 transition-all cursor-pointer shadow-sm hover:shadow-md"
+                                                >
+                                                    <optgroup label="Standard Periods" className="font-bold">
+                                                        {PERIODS.map(p => (
+                                                            <option key={p.value} value={p.value}>{p.label}</option>
+                                                        ))}
+                                                    </optgroup>
+                                                    <optgroup label="Specific Month (This Year)" className="font-bold">
+                                                        {MONTHS.map((m, i) => (
+                                                            <option key={i} value={`month_${i}`}>{m}</option>
+                                                        ))}
+                                                    </optgroup>
+                                                </select>
+                                                <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none group-hover:text-emerald-500 transition-colors" />
+                                            </div>
+                                        </div>
+
+                                        {/* Dynamic Custom Range Inputs */}
+                                        {form10BDFilters.period === 'custom' && (
+                                            <>
+                                                <div className="space-y-3 animate-in fade-in slide-in-from-left-4 duration-300">
+                                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2 px-1">
+                                                        <Calendar className="w-4 h-4 text-emerald-500" />
+                                                        Start Date
+                                                    </label>
+                                                    <input
+                                                        type="date"
+                                                        value={form10BDFilters.startDate}
+                                                        onChange={(e) => setForm10BDFilters({ ...form10BDFilters, startDate: e.target.value })}
+                                                        className="w-full px-5 py-4 bg-white border-2 border-gray-100 rounded-2xl font-bold text-gray-700 focus:outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 transition-all shadow-sm"
+                                                    />
+                                                </div>
+                                                <div className="space-y-3 animate-in fade-in slide-in-from-left-4 duration-300">
+                                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2 px-1">
+                                                        <Calendar className="w-4 h-4 text-emerald-500" />
+                                                        End Date
+                                                    </label>
+                                                    <input
+                                                        type="date"
+                                                        value={form10BDFilters.endDate}
+                                                        onChange={(e) => setForm10BDFilters({ ...form10BDFilters, endDate: e.target.value })}
+                                                        className="w-full px-5 py-4 bg-white border-2 border-gray-100 rounded-2xl font-bold text-gray-700 focus:outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 transition-all shadow-sm"
+                                                    />
+                                                </div>
+                                            </>
+                                        )}
+
+                                        {/* Action Buttons */}
+                                        <div className={`flex items-end gap-3 ${form10BDFilters.period === 'custom' ? 'lg:col-span-1' : 'md:col-span-1 lg:col-span-3'}`}>
+                                            <button
+                                                onClick={() => handleDownload(form10BDResource, 'excel', form10BDFilters)}
+                                                disabled={loading.id !== null}
+                                                className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-gray-900 text-white rounded-2xl font-bold hover:bg-black hover:shadow-2xl hover:shadow-gray-200 active:scale-95 transition-all disabled:opacity-50"
+                                            >
+                                                {loading.id === 'form_10bd' ? (
+                                                    <Loader2 className="w-5 h-5 animate-spin" />
+                                                ) : (
+                                                    <FileSpreadsheet className="w-5 h-5 text-emerald-400" />
+                                                )}
+                                                <span>Download Excel</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
