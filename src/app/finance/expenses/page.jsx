@@ -1,4 +1,4 @@
-import ExpenseManagement from '@/components/Finance/Accounting/ExpenseManagement';
+import ExpenseManagement from '@/components/Finance/ExpenseManagement/index';
 
 export const metadata = {
     title: 'Expense Management | TPF Admin',

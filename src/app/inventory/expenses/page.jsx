@@ -1,5 +1,5 @@
 import React from 'react'
-import ExpenseManagement from '@/components/Finance/Inventory/Expenses/ExpenseManagement'
+import ExpenseManagement from '@/components/Finance/ExpenseManagement/index'
 
 export const metadata = {
     title: 'Expense Management - TPF Admin',

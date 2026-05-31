@@ -25,10 +25,10 @@ export const expenseApiSlice = apiSlice.injectEndpoints({
             invalidatesTags: ['Expenses'],
         }),
         updateExpense: builder.mutation({
-            query: ({ id, data }) => ({
-                url: `/inventory/expenses/${id}`,
+            query: ({ expenseId, data }) => ({
+                url: `/inventory/expenses/${expenseId}`,   // <-- expenseId must be defined
                 method: 'PATCH',
-                body: data,
+                body: data,                                // FormData — RTK handles multipart
             }),
             invalidatesTags: ['Expenses'],
         }),
