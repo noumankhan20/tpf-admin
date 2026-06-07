@@ -222,6 +222,7 @@ export const RequestDetail = React.memo(({
                                                     href={getMediaUrl(img)}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
+                                                    onClick={(e) => { e.preventDefault(); window.open(getMediaUrl(img), '_blank'); }}
                                                     className="relative aspect-square rounded-lg overflow-hidden border border-gray-200 hover:border-emerald-500 transition-all shadow-sm group"
                                                 >
                                                     <img
@@ -272,6 +273,7 @@ export const RequestDetail = React.memo(({
                                                     href={getMediaUrl(img)}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
+                                                    onClick={(e) => { e.preventDefault(); window.open(getMediaUrl(img), '_blank'); }}
                                                     className="relative aspect-square rounded-lg overflow-hidden border border-gray-200 hover:border-emerald-500 transition-all shadow-sm group"
                                                 >
                                                     <img
@@ -412,20 +414,25 @@ function Field({ label, value, icon, isLink, copyable }) {
 function DocLink({ label, url }) {
     if (!url) return null;
     const fullUrl = getMediaUrl(url);
+    
+    const handleClick = (e) => {
+        e.preventDefault();
+        // Open in new tab with explicit window.open to bypass download
+        window.open(fullUrl, '_blank', 'noopener,noreferrer');
+    };
+    
     return (
-        <a
-            href={fullUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-3 p-4 bg-white border border-gray-200 hover:border-blue-500 rounded-lg transition-all group shadow-sm"
+        <button
+            onClick={handleClick}
+            className="w-full flex items-center gap-3 p-4 bg-white border border-gray-200 hover:border-blue-500 rounded-lg transition-all group shadow-sm text-left"
         >
-            <div className="w-10 h-10 bg-gray-50 rounded-lg flex items-center justify-center group-hover:bg-blue-50 transition-colors">
+            <div className="w-10 h-10 bg-gray-50 rounded-lg flex items-center justify-center group-hover:bg-blue-50 transition-colors flex-shrink-0">
                 <FileText className="text-blue-600 w-5 h-5" />
             </div>
             <div className="overflow-hidden">
                 <p className="text-sm font-medium text-gray-800 group-hover:text-blue-600 transition-colors truncate">{label}</p>
                 <p className="text-xs text-gray-500 truncate no-print">Click to view document</p>
             </div>
-        </a>
+        </button>
     );
 }
