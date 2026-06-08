@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { Save, XCircle, Home, Menu, Upload, Edit2, ArrowLeft, Trash2, Plus, Search, Eye, EyeOff, Users, ArrowRight, Sparkles, Image as ImageIcon, CheckCircle } from "lucide-react";
+import { Save, XCircle, Home, Menu, Upload, Edit2, ArrowLeft, Trash2, Plus, Search, Eye, EyeOff, Users, ArrowRight, Sparkles, Image as ImageIcon, CheckCircle, Bold } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { getMediaUrl } from "@/utils/media";
 import NotificationBell from '../Common/NotificationBell';
@@ -13,6 +13,17 @@ import {
 } from "@/utils/slices/cms/impactApi";
 import { toast } from "react-toastify";
 import ConfirmModal from "../Common/ConfirmModal";
+
+// Helper function to render bold formatting
+const renderFormattedText = (text) => {
+    if (!text) return "";
+    const escaped = text
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+    const bolded = escaped.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
+    return <span dangerouslySetInnerHTML={{ __html: bolded }} />;
+};
 
 // Live Preview Component
 const StoryCardPreview = ({ story, darkMode = false }) => {
@@ -34,7 +45,7 @@ const StoryCardPreview = ({ story, darkMode = false }) => {
                             ? story.image
                             : getMediaUrl(story.image)
                     }
-                    alt={story.title}
+                    alt={story.title || ""}
                     className="h-full w-full object-cover transition-all duration-700 group-hover:scale-110"
                 />
 
@@ -53,11 +64,11 @@ const StoryCardPreview = ({ story, darkMode = false }) => {
 
             <div className="p-5">
                 <h3 className={`font-bold text-xl mb-2 line-clamp-2 group-hover:text-emerald-600 transition-colors duration-300 leading-tight ${darkMode ? 'text-white' : 'text-zinc-900'}`}>
-                    {story.title || "Story Title"}
+                    {story.title ? renderFormattedText(story.title) : "Story Title"}
                 </h3>
 
                 <p className={`text-sm mb-4 line-clamp-2 leading-relaxed ${darkMode ? 'text-zinc-400' : 'text-zinc-600'}`}>
-                    {story.excerpt || story.description || "Story description goes here..."}
+                    {story.excerpt || story.description ? renderFormattedText(story.excerpt || story.description) : "Story description goes here..."}
                 </p>
 
                 <div className={`pt-3 border-t ${darkMode ? 'border-zinc-700' : 'border-emerald-100'}`}>
@@ -94,6 +105,14 @@ export default function StoryCardsCMS() {
     const [isDeleting, setIsDeleting] = useState(false);
     const [deleteId, setDeleteId] = useState(null);
     const router = useRouter();
+
+    // Cropper State Variables
+    const [showCropper, setShowCropper] = useState(false);
+    const [imageToCrop, setImageToCrop] = useState(null);
+    const [zoom, setZoom] = useState(1);
+    const [pan, setPan] = useState({ x: 0, y: 0 });
+    const [isDragging, setIsDragging] = useState(false);
+    const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
 
     const API_BASE = (process.env.NEXT_PUBLIC_BACKEND_API || 'http://localhost:7000/api');
 
@@ -166,14 +185,106 @@ export default function StoryCardsCMS() {
 
         const reader = new FileReader();
         reader.onloadend = () => {
-            setCardForm(prev => ({
-                ...prev,
-                imageFile: file,
-                imagePreview: reader.result,
-                image: reader.result,
-            }));
+            setImageToCrop(reader.result);
+            setZoom(1.0);
+            setPan({ x: 0, y: 0 });
+            setShowCropper(true);
         };
         reader.readAsDataURL(file);
+    };
+
+    const startDragging = (e) => {
+        setIsDragging(true);
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        setDragStart({ x: clientX - pan.x, y: clientY - pan.y });
+    };
+
+    const whileDragging = (e) => {
+        if (!isDragging) return;
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        setPan({
+            x: clientX - dragStart.x,
+            y: clientY - dragStart.y
+        });
+    };
+
+    const stopDragging = () => {
+        setIsDragging(false);
+    };
+
+    const handleApplyCrop = () => {
+        const image = new Image();
+        image.src = imageToCrop;
+        image.onload = () => {
+            const canvas = document.createElement("canvas");
+            canvas.width = 600;
+            canvas.height = 400;
+            const ctx = canvas.getContext("2d");
+            if (!ctx) return;
+
+            const container = document.getElementById("crop-container");
+            const cropBox = document.getElementById("crop-box");
+            if (!container || !cropBox) return;
+
+            const cropRect = cropBox.getBoundingClientRect();
+            const domToCanvasScale = 600 / cropRect.width;
+
+            const imgEl = document.getElementById("crop-image");
+            if (!imgEl) return;
+            const imgRect = imgEl.getBoundingClientRect();
+
+            const dx = (imgRect.left - cropRect.left) * domToCanvasScale;
+            const dy = (imgRect.top - cropRect.top) * domToCanvasScale;
+            const dWidth = imgRect.width * domToCanvasScale;
+            const dHeight = imgRect.height * domToCanvasScale;
+
+            ctx.fillStyle = "#ffffff";
+            ctx.fillRect(0, 0, 600, 400);
+            ctx.drawImage(image, dx, dy, dWidth, dHeight);
+
+            canvas.toBlob((blob) => {
+                if (blob) {
+                    const file = new File([blob], "cropped_image.jpg", { type: "image/jpeg" });
+                    const previewUrl = URL.createObjectURL(blob);
+                    
+                    setCardForm(prev => ({
+                        ...prev,
+                        imageFile: file,
+                        imagePreview: previewUrl,
+                        image: previewUrl,
+                    }));
+                    setShowCropper(false);
+                    toast.success("Image cropped successfully!");
+                }
+            }, "image/jpeg", 0.95);
+        };
+    };
+
+    const handleBoldClick = (fieldName, stateKey) => {
+        const textarea = document.getElementById(fieldName);
+        if (!textarea) return;
+
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const text = textarea.value;
+
+        const selectedText = text.substring(start, end);
+        const replacement = `**${selectedText}**`;
+
+        const newValue = text.substring(0, start) + replacement + text.substring(end);
+
+        setCardForm(prev => ({
+            ...prev,
+            [stateKey]: newValue
+        }));
+
+        // Reset cursor position after state updates
+        setTimeout(() => {
+            textarea.focus();
+            textarea.setSelectionRange(start + 2, start + 2 + selectedText.length);
+        }, 0);
     };
 
     const handleAddCard = () => {
@@ -576,12 +687,24 @@ export default function StoryCardsCMS() {
 
                                         {/* Title */}
                                         <div className="mb-6">
-                                            <label className="block text-sm font-bold text-emerald-900 mb-2">
-                                                Story Title *
-                                                <span className="text-xs font-normal text-emerald-500 ml-2">({cardForm.title.length}/100)</span>
-                                            </label>
+                                            <div className="flex justify-between items-center mb-2">
+                                                <label className="block text-sm font-bold text-emerald-900">
+                                                    Story Title *
+                                                    <span className="text-xs font-normal text-emerald-500 ml-2">({cardForm.title.length}/100)</span>
+                                                </label>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleBoldClick("story-title-input", "title")}
+                                                    className="inline-flex items-center gap-1 py-1 px-2.5 text-xs font-bold rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 transition-all cursor-pointer shadow-sm"
+                                                    title="Wrap selection in bold"
+                                                >
+                                                    <Bold size={12} />
+                                                    Bold
+                                                </button>
+                                            </div>
                                             <input
                                                 type="text"
+                                                id="story-title-input"
                                                 className="w-full px-4 py-3.5 bg-emerald-50/50 border-2 border-emerald-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-emerald-900 placeholder-emerald-400 transition-all"
                                                 placeholder="Enter story title..."
                                                 value={cardForm.title}
@@ -592,12 +715,24 @@ export default function StoryCardsCMS() {
 
                                         {/* Description */}
                                         <div className="mb-6">
-                                            <label className="block text-sm font-bold text-emerald-900 mb-2">
-                                                Story Description *
-                                                <span className="text-xs font-normal text-emerald-500 ml-2">({cardForm.excerpt.length}/300)</span>
-                                            </label>
+                                            <div className="flex justify-between items-center mb-2">
+                                                <label className="block text-sm font-bold text-emerald-900">
+                                                    Story Description *
+                                                    <span className="text-xs font-normal text-emerald-500 ml-2">({cardForm.excerpt.length}/300)</span>
+                                                </label>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleBoldClick("story-excerpt-input", "excerpt")}
+                                                    className="inline-flex items-center gap-1 py-1 px-2.5 text-xs font-bold rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 transition-all cursor-pointer shadow-sm"
+                                                    title="Wrap selection in bold"
+                                                >
+                                                    <Bold size={12} />
+                                                    Bold
+                                                </button>
+                                            </div>
                                             <textarea
                                                 rows={5}
+                                                id="story-excerpt-input"
                                                 className="w-full px-4 py-3.5 bg-emerald-50/50 border-2 border-emerald-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-emerald-900 placeholder-emerald-400 resize-none transition-all"
                                                 placeholder="Enter story description..."
                                                 value={cardForm.excerpt}
@@ -606,17 +741,29 @@ export default function StoryCardsCMS() {
                                             />
                                             <p className="text-xs text-emerald-500 mt-2 flex items-center gap-1">
                                                 <CheckCircle size={12} />
-                                                Displayed as 2 lines on cards
+                                                Displayed as 2 lines on cards. Use **text** for bolding.
                                             </p>
                                         </div>
 
                                         {/* Full Story */}
                                         <div className="mb-6">
-                                            <label className="block text-sm font-bold text-emerald-900 mb-2">
-                                                Full Story Content *
-                                            </label>
+                                            <div className="flex justify-between items-center mb-2">
+                                                <label className="block text-sm font-bold text-emerald-900">
+                                                    Full Story Content *
+                                                </label>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleBoldClick("story-story-input", "story")}
+                                                    className="inline-flex items-center gap-1 py-1 px-2.5 text-xs font-bold rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 transition-all cursor-pointer shadow-sm"
+                                                    title="Wrap selection in bold"
+                                                >
+                                                    <Bold size={12} />
+                                                    Bold
+                                                </button>
+                                            </div>
                                             <textarea
                                                 rows={5}
+                                                id="story-story-input"
                                                 className="w-full px-4 py-3.5 bg-emerald-50/50 border-2 border-emerald-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-emerald-900 placeholder-emerald-400 resize-none transition-all"
                                                 placeholder="Enter the complete story..."
                                                 value={cardForm.story}
@@ -709,6 +856,103 @@ export default function StoryCardsCMS() {
                     </div>
                 </main>
             </div>
+
+            {/* Image Cropper Modal */}
+            {showCropper && (
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
+                    <div className="bg-white rounded-3xl border border-emerald-100 shadow-2xl max-w-lg w-full overflow-hidden flex flex-col">
+                        {/* Header */}
+                        <div className="p-5 border-b border-emerald-100 flex justify-between items-center bg-emerald-50/50">
+                            <h3 className="text-lg font-bold text-emerald-900 flex items-center gap-2">
+                                <Sparkles className="w-5 h-5 text-emerald-600" />
+                                Crop & Fit Story Image
+                            </h3>
+                            <button
+                                onClick={() => setShowCropper(false)}
+                                className="p-1 rounded-full text-emerald-500 hover:bg-emerald-100 transition-colors"
+                            >
+                                <XCircle size={24} />
+                            </button>
+                        </div>
+
+                        {/* Crop Area */}
+                        <div className="p-6 flex flex-col items-center">
+                            <p className="text-xs text-emerald-700 mb-4 text-center font-medium">
+                                Drag the image to position, and use the slider to zoom
+                            </p>
+
+                            {/* Crop Container */}
+                            <div
+                                id="crop-container"
+                                onMouseDown={startDragging}
+                                onMouseMove={whileDragging}
+                                onMouseUp={stopDragging}
+                                onMouseLeave={stopDragging}
+                                onTouchStart={startDragging}
+                                onTouchMove={whileDragging}
+                                onTouchEnd={stopDragging}
+                                className="relative w-full aspect-[1.5] bg-zinc-950 rounded-2xl overflow-hidden cursor-move select-none border border-emerald-100"
+                            >
+                                {/* Drag Image */}
+                                <img
+                                    id="crop-image"
+                                    src={imageToCrop}
+                                    alt="To Crop"
+                                    draggable={false}
+                                    className="absolute pointer-events-none select-none max-w-none max-h-none"
+                                    style={{
+                                        top: "50%",
+                                        left: "50%",
+                                        transform: `translate(-50%, -50%) translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+                                        width: "100%",
+                                        height: "auto",
+                                        transformOrigin: "center center",
+                                    }}
+                                />
+
+                                {/* Transparent Overlay via Box Shadow Trick */}
+                                <div
+                                    id="crop-box"
+                                    className="w-[80%] aspect-[1.5] border-2 border-dashed border-emerald-400 absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 shadow-[0_0_0_9999px_rgba(0,0,0,0.6)] pointer-events-none rounded-sm"
+                                ></div>
+                            </div>
+
+                            {/* Zoom Slider */}
+                            <div className="w-full mt-6 space-y-2">
+                                <div className="flex justify-between text-xs font-semibold text-emerald-800">
+                                    <span>Zoom Level</span>
+                                    <span>{Math.round(zoom * 100)}%</span>
+                                </div>
+                                <input
+                                    type="range"
+                                    min="1.0"
+                                    max="3.0"
+                                    step="0.01"
+                                    value={zoom}
+                                    onChange={(e) => setZoom(parseFloat(e.target.value))}
+                                    className="w-full h-2 bg-emerald-100 rounded-lg appearance-none cursor-pointer accent-emerald-600 focus:outline-none"
+                                />
+                            </div>
+                        </div>
+
+                        {/* Actions */}
+                        <div className="p-5 border-t border-emerald-100 flex justify-end gap-3 bg-emerald-50/30">
+                            <button
+                                onClick={() => setShowCropper(false)}
+                                className="px-5 py-2.5 bg-white border border-emerald-200 text-emerald-700 rounded-xl font-bold hover:bg-emerald-50 transition-all cursor-pointer text-sm"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleApplyCrop}
+                                className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold shadow-md hover:shadow-lg transition-all cursor-pointer text-sm"
+                            >
+                                Apply Crop
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
