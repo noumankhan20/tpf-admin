@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import SearchableDropdown from './SearchableDropdown';
-import { EXPENSE_TYPES, PAYMENT_METHODS } from '../utils/expenseHelpers';
+import { EXPENSE_TYPES, PAYMENT_METHODS, AMOUNT_TYPES } from '../utils/expenseHelpers';
 import { usePaginatedDropdown } from '../hooks/useExpenseForm';
 
 export default function AddExpenseModal({
@@ -17,18 +17,18 @@ export default function AddExpenseModal({
     admins, campaigns, purchases, vendors, agreements, volunteers, approvedVouchers,
     onOpenAddPurchase, onOpenAddVendor,
 }) {
-    const adminDD     = usePaginatedDropdown(admins,     (a, q) => a.fullName?.toLowerCase().includes(q) || a.email?.toLowerCase().includes(q),       (a, b) => (a.fullName || '').localeCompare(b.fullName || ''));
-    const campaignDD  = usePaginatedDropdown(campaigns,  (c, q) => c.title?.toLowerCase().includes(q),                                                  (a, b) => new Date(b.updatedAt || b.createdAt || 0) - new Date(a.updatedAt || a.createdAt || 0));
-    const purchaseDD  = usePaginatedDropdown(purchases,  (p, q) => (p.vendorId?.fullName?.toLowerCase() || '').includes(q) || p.totalAmount?.toString().includes(q), (a, b) => new Date(b.purchaseDate || b.createdAt || 0) - new Date(a.purchaseDate || a.createdAt || 0));
-    const volunteerDD = usePaginatedDropdown(volunteers, (v, q) => v.fullName?.toLowerCase().includes(q) || v.email?.toLowerCase().includes(q),         (a, b) => (a.fullName || '').localeCompare(b.fullName || ''));
-    const vendorDD    = usePaginatedDropdown(vendors,    (v, q) => v.fullName?.toLowerCase().includes(q) || v.contactNumber?.includes(q),               (a, b) => (a.fullName || '').localeCompare(b.fullName || ''));
+    const adminDD = usePaginatedDropdown(admins, (a, q) => a.fullName?.toLowerCase().includes(q) || a.email?.toLowerCase().includes(q), (a, b) => (a.fullName || '').localeCompare(b.fullName || ''));
+    const campaignDD = usePaginatedDropdown(campaigns, (c, q) => c.title?.toLowerCase().includes(q), (a, b) => new Date(b.updatedAt || b.createdAt || 0) - new Date(a.updatedAt || a.createdAt || 0));
+    const purchaseDD = usePaginatedDropdown(purchases, (p, q) => (p.vendorId?.fullName?.toLowerCase() || '').includes(q) || p.totalAmount?.toString().includes(q), (a, b) => new Date(b.purchaseDate || b.createdAt || 0) - new Date(a.purchaseDate || a.createdAt || 0));
+    const volunteerDD = usePaginatedDropdown(volunteers, (v, q) => v.fullName?.toLowerCase().includes(q) || v.email?.toLowerCase().includes(q), (a, b) => (a.fullName || '').localeCompare(b.fullName || ''));
+    const vendorDD = usePaginatedDropdown(vendors, (v, q) => v.fullName?.toLowerCase().includes(q) || v.contactNumber?.includes(q), (a, b) => (a.fullName || '').localeCompare(b.fullName || ''));
     const agreementDD = usePaginatedDropdown(agreements, (a, q) => a.title?.toLowerCase().includes(q) || a.parties?.[0]?.name?.toLowerCase().includes(q), (a, b) => (a.title || '').localeCompare(b.title || ''));
 
-    const selectedAdmin     = admins.find((a) => a._id === formData.adminId);
-    const selectedCampaign  = campaigns.find((c) => c._id === formData.campaignId);
-    const selectedPurchase  = purchases.find((p) => p._id === formData.purchaseId);
+    const selectedAdmin = admins.find((a) => a._id === formData.adminId);
+    const selectedCampaign = campaigns.find((c) => c._id === formData.campaignId);
+    const selectedPurchase = purchases.find((p) => p._id === formData.purchaseId);
     const selectedVolunteer = volunteers.find((v) => v._id === formData.volunteerId);
-    const selectedVendor    = vendors.find((v) => v._id === formData.vendorId);
+    const selectedVendor = vendors.find((v) => v._id === formData.vendorId);
     const selectedAgreement = agreements.find((a) => a._id === formData.agreementId);
 
     const showCampaign =
@@ -69,6 +69,23 @@ export default function AddExpenseModal({
                                     <select required value={formData.expenseType} onChange={(e) => setField('expenseType', e.target.value)} className={selectCls}>
                                         {EXPENSE_TYPES.filter((t) => t.value !== 'ALL').map((t) => (
                                             <option key={t.value} value={t.value}>{t.label}</option>
+                                        ))}
+                                    </select>
+                                </Field>
+
+                                {/* Amount Type */}
+                                <Field label="Amount Type">
+                                    <select
+                                        value={formData.amountType || ''}
+                                        onChange={(e) => setField('amountType', e.target.value)}
+                                        className={selectCls}
+                                    >
+                                        <option value="">Select Amount Type</option>
+
+                                        {AMOUNT_TYPES.map((type) => (
+                                            <option key={type.value} value={type.value}>
+                                                {type.label}
+                                            </option>
                                         ))}
                                     </select>
                                 </Field>
@@ -299,11 +316,11 @@ export default function AddExpenseModal({
 
 // ─── Shared helpers ────────────────────────────────────────────────────────────
 const inputCls =
-'w-full px-3 py-2.5 bg-white border-1 border-gray-400 rounded-lg text-sm font-medium text-gray-900 placeholder-gray-500 focus:outline-none focus:border-gray-700 transition-colors';
+    'w-full px-3 py-2.5 bg-white border-1 border-gray-400 rounded-lg text-sm font-medium text-gray-900 placeholder-gray-500 focus:outline-none focus:border-gray-700 transition-colors';
 const selectCls = `${inputCls} appearance-none`;
 const primaryBtn = 'inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-gray-900 hover:bg-black text-white text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed';
-const cancelBtn  = 'px-4 py-2.5 rounded-lg border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors';
-const addNewBtn  = 'inline-flex items-center gap-1 text-xs font-medium text-gray-600 hover:text-gray-900 bg-gray-100 hover:bg-gray-200 px-2.5 py-1 rounded-md transition-colors';
+const cancelBtn = 'px-4 py-2.5 rounded-lg border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors';
+const addNewBtn = 'inline-flex items-center gap-1 text-xs font-medium text-gray-600 hover:text-gray-900 bg-gray-100 hover:bg-gray-200 px-2.5 py-1 rounded-md transition-colors';
 
 function Field({ label, children }) {
     return (

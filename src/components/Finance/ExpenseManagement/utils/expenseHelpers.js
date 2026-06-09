@@ -40,6 +40,7 @@ export const ITEMS_PER_PAGE = 20;
 export const DEFAULT_FORM_DATA = {
     expenseType: 'SALARY',
     amount: '',
+    amountType:'',
     description: '',
     adminId: '',
     campaignId: '',
@@ -200,3 +201,11 @@ export const resolveRecipient = (expense) => {
     if (expense.agreementId)                      return { name: expense.agreementId.agreementTitle,                         sub: 'Agreement' };
     return { name: '—', sub: '' };
 };
+
+export const AMOUNT_TYPES = [
+    { value: 'ZAKAAT', label: 'Zakaat' },
+    { value: 'SADAQAH', label: 'Sadaqah' },
+    { value: 'LILLAH', label: 'Lillah' },
+    { value: 'IMDAD', label: 'Imdad' },
+    { value: 'RIBA', label: 'Riba' },
+];

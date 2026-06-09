@@ -8,22 +8,22 @@ import { getMethodIcon, resolveRecipient } from '../utils/expenseHelpers';
 const PER_PAGE_OPTIONS = [10, 25, 50, 100];
 
 const TYPE_STYLE = {
-    SALARY:                { label: 'Salary',        bg: '#EFF6FF', color: '#1D4ED8' },
-    PURCHASE:              { label: 'Purchase',       bg: '#FEF3C7', color: '#92400E' },
-    BENEFICIARY:           { label: 'Beneficiary',    bg: '#FEE2E2', color: '#991B1B' },
-    OPERATIONAL:           { label: 'Operational',    bg: '#ECFDF5', color: '#065F46' },
-    REIMBURSEMENT:         { label: 'Reimburse',      bg: '#F5F3FF', color: '#5B21B6' },
-    DOCUMENTATION_SERVICE: { label: 'Doc Service',    bg: '#E0F2FE', color: '#075985' },
-    OTHER:                 { label: 'Other',           bg: '#F3F4F6', color: '#374151' },
+    SALARY: { label: 'Salary', bg: '#EFF6FF', color: '#1D4ED8' },
+    PURCHASE: { label: 'Purchase', bg: '#FEF3C7', color: '#92400E' },
+    BENEFICIARY: { label: 'Beneficiary', bg: '#FEE2E2', color: '#991B1B' },
+    OPERATIONAL: { label: 'Operational', bg: '#ECFDF5', color: '#065F46' },
+    REIMBURSEMENT: { label: 'Reimburse', bg: '#F5F3FF', color: '#5B21B6' },
+    DOCUMENTATION_SERVICE: { label: 'Doc Service', bg: '#E0F2FE', color: '#075985' },
+    OTHER: { label: 'Other', bg: '#F3F4F6', color: '#374151' },
 };
 
 const METHOD_LABEL = {
-    CASH:          'Cash',
+    CASH: 'Cash',
     BANK_TRANSFER: 'Bank Transfer',
-    UPI:           'UPI',
-    CHEQUE:        'Cheque',
-    CARD:          'Card',
-    OTHER:         'Other',
+    UPI: 'UPI',
+    CHEQUE: 'Cheque',
+    CARD: 'Card',
+    OTHER: 'Other',
 };
 
 // ─── Date formatter ────────────────────────────────────────────────────────────
@@ -48,11 +48,11 @@ function EmptyState() {
 // ─── Pagination ────────────────────────────────────────────────────────────────
 function Pagination({ page, totalPages, total, perPage, setPerPage, goPage }) {
     const start = total === 0 ? 0 : (page - 1) * perPage + 1;
-    const end   = Math.min(page * perPage, total);
+    const end = Math.min(page * perPage, total);
 
     const pageNums = useMemo(() => {
         if (totalPages <= 7) return Array.from({ length: totalPages }, (_, i) => i + 1);
-        if (page <= 4)       return [1, 2, 3, 4, 5, '…', totalPages];
+        if (page <= 4) return [1, 2, 3, 4, 5, '…', totalPages];
         if (page >= totalPages - 3) return [1, '…', totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages];
         return [1, '…', page - 1, page, page + 1, '…', totalPages];
     }, [page, totalPages]);
@@ -81,10 +81,10 @@ function Pagination({ page, totalPages, total, perPage, setPerPage, goPage }) {
 
             {/* Right — page buttons */}
             <div className="flex items-center gap-1">
-                <PageBtn onClick={() => goPage(1)}            disabled={page === 1}          aria="First page">
+                <PageBtn onClick={() => goPage(1)} disabled={page === 1} aria="First page">
                     <ChevronsLeft size={13} />
                 </PageBtn>
-                <PageBtn onClick={() => goPage(page - 1)}    disabled={page === 1}          aria="Previous page">
+                <PageBtn onClick={() => goPage(page - 1)} disabled={page === 1} aria="Previous page">
                     <ChevronLeft size={13} />
                 </PageBtn>
 
@@ -95,21 +95,20 @@ function Pagination({ page, totalPages, total, perPage, setPerPage, goPage }) {
                         <button
                             key={p}
                             onClick={() => goPage(p)}
-                            className={`w-8 h-8 rounded-lg text-xs font-semibold transition-all ${
-                                p === page
-                                    ? 'bg-gray-900 text-white shadow-sm'
-                                    : 'text-gray-500 hover:bg-gray-100 hover:text-gray-800'
-                            }`}
+                            className={`w-8 h-8 rounded-lg text-xs font-semibold transition-all ${p === page
+                                ? 'bg-gray-900 text-white shadow-sm'
+                                : 'text-gray-500 hover:bg-gray-100 hover:text-gray-800'
+                                }`}
                         >
                             {p}
                         </button>
                     )
                 )}
 
-                <PageBtn onClick={() => goPage(page + 1)}    disabled={page === totalPages} aria="Next page">
+                <PageBtn onClick={() => goPage(page + 1)} disabled={page === totalPages} aria="Next page">
                     <ChevronRight size={13} />
                 </PageBtn>
-                <PageBtn onClick={() => goPage(totalPages)}  disabled={page === totalPages} aria="Last page">
+                <PageBtn onClick={() => goPage(totalPages)} disabled={page === totalPages} aria="Last page">
                     <ChevronsRight size={13} />
                 </PageBtn>
             </div>
@@ -133,7 +132,7 @@ function PageBtn({ children, onClick, disabled, aria }) {
 // ─── Desktop Table Row ─────────────────────────────────────────────────────────
 function ExpenseTableRow({ expense, onEdit }) {
     const { name: recipientName, sub: recipientSub } = resolveRecipient(expense);
-    const dateRaw  = expense.date || expense.transactionDate;
+    const dateRaw = expense.date || expense.transactionDate;
     const typeInfo = TYPE_STYLE[expense.expenseType] || TYPE_STYLE.OTHER;
 
     return (
@@ -211,6 +210,12 @@ function ExpenseTableRow({ expense, onEdit }) {
                 <p className="text-sm font-bold text-rose-600 tabular-nums">
                     −₹{expense.amount.toLocaleString('en-IN')}
                 </p>
+
+                {expense.amountType && (
+                    <p className="text-[10px] text-gray-400 mt-0.5 uppercase tracking-wide">
+                        {expense.amountType}
+                    </p>
+                )}
             </td>
 
             {/* Status */}
@@ -225,7 +230,7 @@ function ExpenseTableRow({ expense, onEdit }) {
             <td className="px-3 py-3.5">
                 <button
                     onClick={() => onEdit?.(expense)}
-                    className="p-1.5 text-gray-300 hover:text-amber-500 hover:bg-amber-50 rounded-lg transition-all opacity-0 group-hover:opacity-100"
+                    className="p-1.5 text-gray-400 hover:text-amber-500 hover:bg-amber-50 rounded-lg transition-all"
                     title="Edit expense"
                 >
                     <Edit3 size={14} />
@@ -237,7 +242,7 @@ function ExpenseTableRow({ expense, onEdit }) {
 
 // ─── Desktop Table (with pagination) ──────────────────────────────────────────
 export function ExpenseTable({ expenses, onEdit }) {
-    const [page,    setPage]    = useState(1);
+    const [page, setPage] = useState(1);
     const [perPage, setPerPage] = useState(25);
 
     // Reset to page 1 when expenses list changes (filter applied upstream)
@@ -248,7 +253,7 @@ export function ExpenseTable({ expenses, onEdit }) {
     }
 
     const totalPages = Math.max(1, Math.ceil(expenses.length / perPage));
-    const slice      = useMemo(() => {
+    const slice = useMemo(() => {
         const s = (page - 1) * perPage;
         return expenses.slice(s, s + perPage);
     }, [expenses, page, perPage]);
@@ -256,15 +261,15 @@ export function ExpenseTable({ expenses, onEdit }) {
     const goPage = (p) => setPage(Math.max(1, Math.min(totalPages, p)));
 
     const HEADERS = [
-        { label: 'Date',        cls: 'w-[110px]' },
-        { label: 'Type',        cls: 'w-[90px]'  },
-        { label: 'Recipient',   cls: 'w-[140px]' },
-        { label: 'Campaign',    cls: 'w-[120px]' },
-        { label: 'Description', cls: ''          },
-        { label: 'Method',      cls: 'w-[130px]' },
-        { label: 'Amount',      cls: 'w-[100px] text-right' },
-        { label: 'Status',      cls: 'w-[72px]'  },
-        { label: '',            cls: 'w-[40px]'  },
+        { label: 'Date', cls: 'w-[110px]' },
+        { label: 'Type', cls: 'w-[90px]' },
+        { label: 'Recipient', cls: 'w-[140px]' },
+        { label: 'Campaign', cls: 'w-[120px]' },
+        { label: 'Description', cls: '' },
+        { label: 'Method', cls: 'w-[130px]' },
+        { label: 'Amount', cls: 'w-[100px] text-right' },
+        { label: 'Status', cls: 'w-[72px]' },
+        { label: '', cls: 'w-[40px]' },
     ];
 
     // Summary totals for visible page
@@ -275,8 +280,8 @@ export function ExpenseTable({ expenses, onEdit }) {
             {/* Summary bar */}
             <div className="flex items-center gap-6 px-5 py-3 border-b border-gray-100 bg-gray-50/60">
                 <Chip label="Total records" value={expenses.length.toLocaleString('en-IN')} />
-                <Chip label="Total debit"   value={`−₹${expenses.reduce((s,e) => s+e.amount, 0).toLocaleString('en-IN')}`} red />
-                <Chip label="This page"     value={`−₹${pageTotal.toLocaleString('en-IN')}`} />
+                <Chip label="Total debit" value={`−₹${expenses.reduce((s, e) => s + e.amount, 0).toLocaleString('en-IN')}`} red />
+                <Chip label="This page" value={`−₹${pageTotal.toLocaleString('en-IN')}`} />
             </div>
 
             {/* Table */}
@@ -324,7 +329,7 @@ export function ExpenseTable({ expenses, onEdit }) {
 // ─── Mobile Card ───────────────────────────────────────────────────────────────
 function ExpenseMobileCard({ expense, onEdit }) {
     const { name: recipientName, sub: recipientSub } = resolveRecipient(expense);
-    const dateRaw  = expense.date || expense.transactionDate;
+    const dateRaw = expense.date || expense.transactionDate;
     const typeInfo = TYPE_STYLE[expense.expenseType] || TYPE_STYLE.OTHER;
 
     return (
@@ -405,7 +410,7 @@ function MobileRow({ label, children }) {
 
 // ─── Mobile List (with pagination) ────────────────────────────────────────────
 export function ExpenseMobileList({ expenses, onEdit }) {
-    const [page,    setPage]    = useState(1);
+    const [page, setPage] = useState(1);
     const [perPage, setPerPage] = useState(25);
 
     const prevLenRef = React.useRef(expenses.length);
@@ -415,7 +420,7 @@ export function ExpenseMobileList({ expenses, onEdit }) {
     }
 
     const totalPages = Math.max(1, Math.ceil(expenses.length / perPage));
-    const slice      = useMemo(() => {
+    const slice = useMemo(() => {
         const s = (page - 1) * perPage;
         return expenses.slice(s, s + perPage);
     }, [expenses, page, perPage]);

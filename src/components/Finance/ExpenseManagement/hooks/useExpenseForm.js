@@ -90,28 +90,29 @@ export function useExpenseForm({ vendors, items, purchases, onSuccess }) {
     const openEditExpense = (expense) => {
         setEditingExpense(expense);
         setFormData({
-            expenseType:       expense.expenseType       || 'SALARY',
-            amount:            expense.amount?.toString() || '',
-            description:       expense.description       || '',
-            adminId:           expense.adminId?._id      || expense.adminId || '',
-            campaignId:        expense.campaignId?._id   || expense.campaignId || '',
-            purchaseId:        expense.purchaseId?._id   || expense.purchaseId || '',
-            vendorId:          expense.vendorId?._id     || expense.vendorId || '',
-            agreementId:       expense.agreementId?._id  || expense.agreementId || '',
-            paymentMethod:     expense.paymentMethod     || 'CASH',
-            transactionId:     expense.transactionId     || '',
-            notes:             expense.notes             || '',
+            expenseType: expense.expenseType || 'SALARY',
+            amount: expense.amount?.toString() || '',
+            amountType: expense.amountType || '',
+            description: expense.description || '',
+            adminId: expense.adminId?._id || expense.adminId || '',
+            campaignId: expense.campaignId?._id || expense.campaignId || '',
+            purchaseId: expense.purchaseId?._id || expense.purchaseId || '',
+            vendorId: expense.vendorId?._id || expense.vendorId || '',
+            agreementId: expense.agreementId?._id || expense.agreementId || '',
+            paymentMethod: expense.paymentMethod || 'CASH',
+            transactionId: expense.transactionId || '',
+            notes: expense.notes || '',
             reimbursementType: expense.reimbursementTo?.adminId ? 'ADMIN' : 'VOLUNTEER',
-            volunteerName:     expense.reimbursementTo?.volunteerDetails?.name || '',
-            volunteerPhone:    expense.reimbursementTo?.volunteerDetails?.phone || '',
+            volunteerName: expense.reimbursementTo?.volunteerDetails?.name || '',
+            volunteerPhone: expense.reimbursementTo?.volunteerDetails?.phone || '',
             volunteerLocation: expense.reimbursementTo?.volunteerDetails?.location || '',
-            volunteerId:       expense.volunteerId?._id   || expense.volunteerId || '',
-            voucherId:         expense.voucherId?._id     || expense.voucherId || '',
-            proofFile:         null,
-            transactionDate:   expense.date
+            volunteerId: expense.volunteerId?._id || expense.volunteerId || '',
+            voucherId: expense.voucherId?._id || expense.voucherId || '',
+            proofFile: null,
+            transactionDate: expense.date
                 ? new Date(expense.date).toISOString().split('T')[0]
                 : expense.transactionDate || new Date().toISOString().split('T')[0],
-            transactionTime:   expense.transactionTime   || '',
+            transactionTime: expense.transactionTime || '',
         });
     };
 
@@ -148,11 +149,14 @@ export function useExpenseForm({ vendors, items, purchases, onSuccess }) {
             fd.append('paymentMethod', formData.paymentMethod);
             fd.append('transactionDate', formData.transactionDate);
 
-            if (formData.transactionId)   fd.append('transactionId', formData.transactionId);
-            if (formData.notes)           fd.append('notes', formData.notes);
+            if (formData.amountType) {
+                fd.append('amountType', formData.amountType);
+            }
+            if (formData.transactionId) fd.append('transactionId', formData.transactionId);
+            if (formData.notes) fd.append('notes', formData.notes);
             if (formData.transactionTime) fd.append('transactionTime', formData.transactionTime);
-            if (formData.campaignId)      fd.append('campaignId', formData.campaignId);
-            if (formData.vendorId)        fd.append('vendorId', formData.vendorId);
+            if (formData.campaignId) fd.append('campaignId', formData.campaignId);
+            if (formData.vendorId) fd.append('vendorId', formData.vendorId);
 
             if (formData.expenseType === 'SALARY' && formData.adminId)
                 fd.append('adminId', formData.adminId);
@@ -318,9 +322,9 @@ export function useExpenseForm({ vendors, items, purchases, onSuccess }) {
 
             const idVal = vendorFormData.vendorGST.trim().toUpperCase();
             if (!idVal) { toast.warning('Identification document value is required'); return; }
-            if (vendorIdType === 'GST'     && !/^[0-9A-Z]{15}$/.test(idVal))              { toast.warning('GST number must be exactly 15 alphanumeric characters'); return; }
-            if (vendorIdType === 'PAN'     && !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(idVal)) { toast.warning('PAN must be 10 chars (ABCDE1234F)'); return; }
-            if (vendorIdType === 'AADHAAR' && !/^[0-9]{12}$/.test(idVal))                 { toast.warning('Aadhaar must be exactly 12 digits'); return; }
+            if (vendorIdType === 'GST' && !/^[0-9A-Z]{15}$/.test(idVal)) { toast.warning('GST number must be exactly 15 alphanumeric characters'); return; }
+            if (vendorIdType === 'PAN' && !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(idVal)) { toast.warning('PAN must be 10 chars (ABCDE1234F)'); return; }
+            if (vendorIdType === 'AADHAAR' && !/^[0-9]{12}$/.test(idVal)) { toast.warning('Aadhaar must be exactly 12 digits'); return; }
 
             const result = await createVendor({
                 ...vendorFormData,

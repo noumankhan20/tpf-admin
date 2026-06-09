@@ -4,12 +4,13 @@ import React from 'react';
 import {
     Search, Filter, Banknote, Calendar, IndianRupee, ChevronDown, X,
 } from 'lucide-react';
-import { EXPENSE_TYPES } from '../utils/expenseHelpers';
+import { EXPENSE_TYPES, AMOUNT_TYPES } from '../utils/expenseHelpers';
 
 export default function ExpenseFilters({
     searchQuery, setSearchQuery,
     selectedExpenseType, setSelectedExpenseType,
     paymentMethodFilter, setPaymentMethodFilter,
+    selectedAmountType, setSelectedAmountType,
     startDate, setStartDate,
     endDate, setEndDate,
     minAmount, setMinAmount,
@@ -46,6 +47,32 @@ export default function ExpenseFilters({
                         ))}
                     </select>
                     <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
+                </div>
+
+                {/* Amount Type */}
+                <div className="relative">
+                    <Filter
+                        className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+                        size={18}
+                    />
+                    <select
+                        value={selectedAmountType}
+                        onChange={(e) => setSelectedAmountType(e.target.value)}
+                        className="w-full pl-10 pr-10 py-2.5 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-sm font-bold appearance-none cursor-pointer"
+                    >
+                        <option value="ALL">All Amount Types</option>
+
+                        {AMOUNT_TYPES.map((t) => (
+                            <option key={t.value} value={t.value}>
+                                {t.label}
+                            </option>
+                        ))}
+                    </select>
+
+                    <ChevronDown
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+                        size={16}
+                    />
                 </div>
 
                 {/* Payment Method */}

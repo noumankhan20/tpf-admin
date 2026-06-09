@@ -6,31 +6,31 @@ import { ArrowLeft, TrendingDown, Plus, Loader2 } from 'lucide-react';
 import { AnimatePresence } from 'framer-motion';
 
 // ── API hooks ────────────────────────────────────────────────────────────────
-import { useGetExpensesQuery }      from '@/utils/slices/InventoryAndAsset/expenseApiSlice';
-import { useGetAdminListQuery }     from '@/utils/slices/adminApiSlice';
-import { useGetCampaignListQuery }  from '@/utils/slices/campaignSlice';
-import { useGetPurchasesQuery }     from '@/utils/slices/InventoryAndAsset/purchaseApiSlice';
-import { useGetVendorsQuery }       from '@/utils/slices/InventoryAndAsset/vendorApiSlice';
-import { useGetAgreementsQuery }    from '@/utils/slices/documentationApiSlice';
+import { useGetExpensesQuery } from '@/utils/slices/InventoryAndAsset/expenseApiSlice';
+import { useGetAdminListQuery } from '@/utils/slices/adminApiSlice';
+import { useGetCampaignListQuery } from '@/utils/slices/campaignSlice';
+import { useGetPurchasesQuery } from '@/utils/slices/InventoryAndAsset/purchaseApiSlice';
+import { useGetVendorsQuery } from '@/utils/slices/InventoryAndAsset/vendorApiSlice';
+import { useGetAgreementsQuery } from '@/utils/slices/documentationApiSlice';
 import {
     useGetVolunteersQuery,
     useGetApprovedVouchersQuery,
 } from '@/utils/slices/vouchersApiSlice';
-import { useGetItemsQuery }         from '@/utils/slices/InventoryAndAsset/itemApiSlice';
+import { useGetItemsQuery } from '@/utils/slices/InventoryAndAsset/itemApiSlice';
 import { useGetStatesQuery, useLazyGetCitiesQuery } from '@/utils/slices/locationApiSlice';
 import { STATES as FALLBACK_STATES } from '@/utils/locations';
 
 // ── Sub-components ───────────────────────────────────────────────────────────
-import ExpenseFilters                         from './components/ExpenseFilters';
-import { ExpenseTable, ExpenseMobileList }    from './components/ExpenseList';
-import AddExpenseModal                        from './components/AddExpenseModal';
-import EditExpenseModal                       from './components/EditExpenseModal';
-import AddPurchaseModal                       from './components/AddPurchaseModal';
-import AddVendorModal                         from './components/AddVendorModal';
+import ExpenseFilters from './components/ExpenseFilters';
+import { ExpenseTable, ExpenseMobileList } from './components/ExpenseList';
+import AddExpenseModal from './components/AddExpenseModal';
+import EditExpenseModal from './components/EditExpenseModal';
+import AddPurchaseModal from './components/AddPurchaseModal';
+import AddVendorModal from './components/AddVendorModal';
 
 // ── Custom hook ───────────────────────────────────────────────────────────────
-import { useExpenseForm }       from './hooks/useExpenseForm';
-import { DEFAULT_PURCHASE_FORM, DEFAULT_VENDOR_FORM } from './utils/expenseHelpers';
+import { useExpenseForm } from './hooks/useExpenseForm';
+import { DEFAULT_PURCHASE_FORM, DEFAULT_VENDOR_FORM, AMOUNT_TYPES } from './utils/expenseHelpers';
 
 export default function ExpenseManagement() {
     const router = useRouter();
@@ -39,43 +39,45 @@ export default function ExpenseManagement() {
     const [showEditModal, setShowEditModal] = useState(false);
 
     // ── Filter state ─────────────────────────────────────────────────────────
-    const [searchQuery,         setSearchQuery]         = useState('');
+    const [searchQuery, setSearchQuery] = useState('');
     const [selectedExpenseType, setSelectedExpenseType] = useState('ALL');
-    const [startDate,           setStartDate]           = useState('');
-    const [endDate,             setEndDate]             = useState('');
+    const [startDate, setStartDate] = useState('');
+    const [endDate, setEndDate] = useState('');
     const [paymentMethodFilter, setPaymentMethodFilter] = useState('ALL');
-    const [minAmount,           setMinAmount]           = useState('');
-    const [maxAmount,           setMaxAmount]           = useState('');
+    const [minAmount, setMinAmount] = useState('');
+    const [maxAmount, setMaxAmount] = useState('');
+    const [selectedAmountType, setSelectedAmountType] = useState('ALL');
 
     // ── Remote data ──────────────────────────────────────────────────────────
-    const { data: expensesRes,  isLoading } = useGetExpensesQuery({
-        type:          selectedExpenseType !== 'ALL' ? selectedExpenseType : undefined,
-        search:        searchQuery                   || undefined,
-        startDate:     startDate                     || undefined,
-        endDate:       endDate                       || undefined,
+    const { data: expensesRes, isLoading } = useGetExpensesQuery({
+        type: selectedExpenseType !== 'ALL' ? selectedExpenseType : undefined,
+        amountType: selectedAmountType !== 'ALL' ? selectedAmountType : undefined,
+        search: searchQuery || undefined,
+        startDate: startDate || undefined,
+        endDate: endDate || undefined,
         paymentMethod: paymentMethodFilter !== 'ALL' ? paymentMethodFilter : undefined,
-        minAmount:     minAmount                     || undefined,
-        maxAmount:     maxAmount                     || undefined,
+        minAmount: minAmount || undefined,
+        maxAmount: maxAmount || undefined,
     });
-    const { data: adminsRes }     = useGetAdminListQuery();
-    const { data: campaignsRes }  = useGetCampaignListQuery();
-    const { data: purchasesRes }  = useGetPurchasesQuery();
-    const { data: vendorsRes }    = useGetVendorsQuery();
+    const { data: adminsRes } = useGetAdminListQuery();
+    const { data: campaignsRes } = useGetCampaignListQuery();
+    const { data: purchasesRes } = useGetPurchasesQuery();
+    const { data: vendorsRes } = useGetVendorsQuery();
     const { data: agreementsRes } = useGetAgreementsQuery();
-    const { data: itemsRes }      = useGetItemsQuery({ status: 'ACTIVE' });
-    const { data: apiStates }     = useGetStatesQuery();
+    const { data: itemsRes } = useGetItemsQuery({ status: 'ACTIVE' });
+    const { data: apiStates } = useGetStatesQuery();
     const [triggerGetCities, { data: apiCities, isLoading: isLoadingCities }] = useLazyGetCitiesQuery();
 
     // ── Normalised lists ──────────────────────────────────────────────────────
-    const expenses   = expensesRes?.data  || [];
-    const admins     = adminsRes?.data    || [];
-    const campaigns  = campaignsRes?.data || [];
-    const purchases  = purchasesRes?.data || [];
-    const vendors    = vendorsRes?.data   || [];
+    const expenses = expensesRes?.data || [];
+    const admins = adminsRes?.data || [];
+    const campaigns = campaignsRes?.data || [];
+    const purchases = purchasesRes?.data || [];
+    const vendors = vendorsRes?.data || [];
     const agreements = agreementsRes?.data || [];
-    const items      = itemsRes?.data     || [];
+    const items = itemsRes?.data || [];
     const volunteers = (useGetVolunteersQuery().data)?.data || [];
-    const states     = apiStates || FALLBACK_STATES;
+    const states = apiStates || FALLBACK_STATES;
 
     // ── Form hook ─────────────────────────────────────────────────────────────
     const {
@@ -92,7 +94,7 @@ export default function ExpenseManagement() {
         addLineItem, removeLineItem, updateLineItem,
     } = useExpenseForm({
         vendors: vendorsRes?.data || [],
-        items:   itemsRes?.data   || [],
+        items: itemsRes?.data || [],
         purchases: purchasesRes?.data || [],
         onSuccess: () => {
             setShowAddModal(false);
@@ -121,19 +123,24 @@ export default function ExpenseManagement() {
                 expense.transactionId?.toLowerCase().includes(q) ||
                 expense.amount?.toString().includes(q);
 
-            const matchesType    = selectedExpenseType === 'ALL' || expense.expenseType === selectedExpenseType;
+            const matchesAmountType =
+                selectedAmountType === 'ALL' ||
+                expense.amountType === selectedAmountType;
+
+            const matchesType = selectedExpenseType === 'ALL' || expense.expenseType === selectedExpenseType;
             const matchesPayment = paymentMethodFilter === 'ALL' || expense.paymentMethod === paymentMethodFilter;
 
             const expDate = new Date(expense.date).setHours(0, 0, 0, 0);
-            const start   = startDate ? new Date(startDate).setHours(0, 0, 0, 0) : null;
-            const end     = endDate   ? new Date(endDate).setHours(23, 59, 59, 999) : null;
+            const start = startDate ? new Date(startDate).setHours(0, 0, 0, 0) : null;
+            const end = endDate ? new Date(endDate).setHours(23, 59, 59, 999) : null;
 
             return (
                 matchesSearch &&
                 matchesType &&
+                matchesAmountType &&
                 matchesPayment &&
                 (!start || expDate >= start) &&
-                (!end   || expDate <= end) &&
+                (!end || expDate <= end) &&
                 (!minAmount || expense.amount >= parseFloat(minAmount)) &&
                 (!maxAmount || expense.amount <= parseFloat(maxAmount))
             );
@@ -149,6 +156,7 @@ export default function ExpenseManagement() {
         setSearchQuery('');
         setSelectedExpenseType('ALL');
         setStartDate('');
+        setSelectedAmountType('ALL');
         setEndDate('');
         setPaymentMethodFilter('ALL');
         setMinAmount('');
@@ -190,13 +198,15 @@ export default function ExpenseManagement() {
             {/* ── Main ───────────────────────────────────────────────────────── */}
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 <ExpenseFilters
-                    searchQuery={searchQuery}               setSearchQuery={setSearchQuery}
+                    selectedAmountType={selectedAmountType}
+                    setSelectedAmountType={setSelectedAmountType}
+                    searchQuery={searchQuery} setSearchQuery={setSearchQuery}
                     selectedExpenseType={selectedExpenseType} setSelectedExpenseType={setSelectedExpenseType}
                     paymentMethodFilter={paymentMethodFilter} setPaymentMethodFilter={setPaymentMethodFilter}
-                    startDate={startDate}                   setStartDate={setStartDate}
-                    endDate={endDate}                       setEndDate={setEndDate}
-                    minAmount={minAmount}                   setMinAmount={setMinAmount}
-                    maxAmount={maxAmount}                   setMaxAmount={setMaxAmount}
+                    startDate={startDate} setStartDate={setStartDate}
+                    endDate={endDate} setEndDate={setEndDate}
+                    minAmount={minAmount} setMinAmount={setMinAmount}
+                    maxAmount={maxAmount} setMaxAmount={setMaxAmount}
                     availablePaymentMethods={availablePaymentMethods}
                     onClear={clearFilters}
                 />
@@ -216,7 +226,7 @@ export default function ExpenseManagement() {
                                 </p>
                             </div>
                             {/* Pass onEdit to both table variants */}
-                            <ExpenseTable      expenses={filteredExpenses} onEdit={handleOpenEdit} />
+                            <ExpenseTable expenses={filteredExpenses} onEdit={handleOpenEdit} />
                             <ExpenseMobileList expenses={filteredExpenses} onEdit={handleOpenEdit} />
                         </div>
                     </AnimatePresence>

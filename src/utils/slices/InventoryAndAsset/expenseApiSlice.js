@@ -3,11 +3,14 @@ import { apiSlice } from './../apiSlice';
 export const expenseApiSlice = apiSlice.injectEndpoints({
     endpoints: (builder) => ({
         getExpenses: builder.query({
-            query: ({ type = 'ALL', search = '', startDate = '', endDate = '' } = {}) => {
+            query: ({ type = 'ALL',amountType= 'ALL', search = '', startDate = '', endDate = '',  } = {}) => {
                 const params = new URLSearchParams();
                 if (type && type !== 'ALL') params.append('expenseType', type);
                 if (search) params.append('search', search);
                 if (startDate) params.append('startDate', startDate);
+                if (amountType && amountType !== 'ALL') {
+                    params.append('amountType', amountType);
+                }
                 if (endDate) params.append('endDate', endDate);
                 return {
                     url: `/inventory/expenses?${params.toString()}`,
