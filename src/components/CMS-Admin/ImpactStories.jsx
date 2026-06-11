@@ -312,6 +312,7 @@ export default function StoryCardsCMS() {
             imagePreview: getMediaUrl(card.image),
         });
         setViewMode("edit-card");
+        
     };
 
     const handleSaveCard = async () => {
