@@ -78,6 +78,64 @@ export function useExpenseForm({ vendors, items, purchases, onSuccess }) {
     const [createPurchase, { isLoading: isCreatingPurchase }] = useCreatePurchaseMutation();
     const [createVendor, { isLoading: isCreatingVendor }] = useCreateVendorMutation();
 
+    const [hasDraft, setHasDraft] = useState(false);
+    const [draftSavedStatus, setDraftSavedStatus] = useState('');
+
+    useEffect(() => {
+        const saved = localStorage.getItem('draft_admin_expense');
+        if (saved) {
+            setHasDraft(true);
+        }
+    }, []);
+
+    // Debounced auto-save
+    useEffect(() => {
+        if (editingExpense) return;
+
+        const hasData = Object.entries(formData).some(([key, val]) => {
+            if (key === 'expenseType' && val === 'SALARY') return false;
+            if (key === 'paymentMethod' && val === 'CASH') return false;
+            if (key === 'reimbursementType' && val === 'ADMIN') return false;
+            if (key === 'transactionDate') {
+                const today = new Date().toISOString().split('T')[0];
+                return val !== today;
+            }
+            if (key === 'proofFile') return false;
+            return val !== '' && val !== null && val !== undefined;
+        });
+
+        if (!hasData) return;
+
+        setDraftSavedStatus('Saving...');
+        const delayDebounce = setTimeout(() => {
+            const cleanData = { ...formData };
+            delete cleanData.proofFile;
+            localStorage.setItem('draft_admin_expense', JSON.stringify(cleanData));
+            setDraftSavedStatus('Draft Saved');
+            setHasDraft(true);
+            setTimeout(() => setDraftSavedStatus(''), 2000);
+        }, 2000);
+
+        return () => clearTimeout(delayDebounce);
+    }, [formData, editingExpense]);
+
+    const restoreDraft = () => {
+        const saved = localStorage.getItem('draft_admin_expense');
+        if (saved) {
+            try {
+                setFormData(JSON.parse(saved));
+                setHasDraft(false);
+            } catch (e) {
+                console.error(e);
+            }
+        }
+    };
+
+    const discardDraft = () => {
+        localStorage.removeItem('draft_admin_expense');
+        setHasDraft(false);
+    };
+
     // ── form field helpers ──────────────────────────────────────────────────────
     const setField = (key, value) => setFormData((p) => ({ ...p, [key]: value }));
 
@@ -193,6 +251,8 @@ export function useExpenseForm({ vendors, items, purchases, onSuccess }) {
                 toast.success('Expense updated successfully');
             } else {
                 await createExpense(fd).unwrap();
+                localStorage.removeItem('draft_admin_expense');
+                setHasDraft(false);
                 toast.success('Expense recorded successfully');
             }
 
@@ -366,5 +426,8 @@ export function useExpenseForm({ vendors, items, purchases, onSuccess }) {
 
         // Line-item helpers
         addLineItem, removeLineItem, updateLineItem,
+
+        // Draft state
+        hasDraft, restoreDraft, discardDraft, draftSavedStatus,
     };
 }
