@@ -16,6 +16,9 @@ import {
   Hash,
   Smile,
   Zap,
+  Bold,
+  Italic,
+  Underline,
 } from 'lucide-react';
 import { getMediaUrl } from '@/utils/media';
 import MediaSelectorModal from './MediaSelectorModal';
@@ -78,6 +81,30 @@ export default function CampaignForm({
 }) {
   const [showMediaModal, setShowMediaModal] = useState(false);
   const [activeTab, setActiveTab] = useState('basic');
+
+  const textareaRef = useRef(null);
+
+  const insertFormatting = (tagOpen, tagClose) => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const text = textarea.value;
+
+    const selectedText = text.substring(start, end);
+    const replacement = tagOpen + selectedText + tagClose;
+
+    const newValue = text.substring(0, start) + replacement + text.substring(end);
+
+    setFormData((prev) => ({ ...prev, about: newValue }));
+
+    // Refocus and restore selection/cursor
+    setTimeout(() => {
+      textarea.focus();
+      textarea.setSelectionRange(start + tagOpen.length, start + tagOpen.length + selectedText.length);
+    }, 0);
+  };
 
   // ── Dirty-state tracking ──────────────────────────────────────────────────
   // Capture the initial formData snapshot when the form first mounts (or when
@@ -639,7 +666,34 @@ export default function CampaignForm({
                   <label className="block text-xs font-bold text-gray-500 uppercase mb-2">
                     Story/Description
                   </label>
+                  <div className="flex gap-1.5 mb-2 p-1 bg-gray-50 border border-gray-200 rounded-lg max-w-max">
+                    <button
+                      type="button"
+                      onClick={() => insertFormatting('<b>', '</b>')}
+                      className="p-1 hover:bg-gray-200 rounded text-gray-700 transition-colors"
+                      title="Bold"
+                    >
+                      <Bold size={16} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => insertFormatting('<i>', '</i>')}
+                      className="p-1 hover:bg-gray-200 rounded text-gray-700 transition-colors"
+                      title="Italic"
+                    >
+                      <Italic size={16} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => insertFormatting('<u>', '</u>')}
+                      className="p-1 hover:bg-gray-200 rounded text-gray-700 transition-colors"
+                      title="Underline"
+                    >
+                      <Underline size={16} />
+                    </button>
+                  </div>
                   <textarea
+                    ref={textareaRef}
                     rows={4}
                     value={formData.about}
                     onChange={(e) => setFormData({ ...formData, about: e.target.value })}

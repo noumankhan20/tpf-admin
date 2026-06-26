@@ -65,7 +65,14 @@ export const RequestDetail = React.memo(({
                         </div>
                         <div className="text-right">
                             <p className="text-sm text-gray-600 uppercase tracking-widest mb-5 font-semibold">Current Status</p>
-                            <Badge status={selectedForm.status} size="large" />
+                            <div className="flex flex-col items-end gap-2">
+                                <Badge status={selectedForm.status} size="large" />
+                                {selectedForm.isSpecialCase && (
+                                    <span className="px-4 py-1.5 rounded-full text-sm font-bold border uppercase bg-purple-100 text-purple-700 border-purple-200">
+                                        Special Case
+                                    </span>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -322,6 +329,13 @@ export const RequestDetail = React.memo(({
                 {selectedForm.status === 'pending' && (
                     <div className="border-t border-gray-200 p-6 bg-white absolute bottom-0 w-full backdrop-blur-md z-20 fab-avoid">
                         <div className="flex justify-end gap-4">
+                            <button
+                                onClick={() => onOpenGroundReport('special-case')}
+                                className="flex items-center gap-2 px-4 py-3 bg-purple-50 text-purple-600 hover:bg-purple-600 hover:text-white rounded-xl border border-purple-200 transition-all font-semibold"
+                            >
+                                <CheckCircle size={18} />
+                                Special Case
+                            </button>
                             <button
                                 onClick={() => onOpenGroundReport('clarification')}
                                 className="flex items-center gap-2 px-6 py-3 bg-amber-200 text-amber-600 hover:bg-amber-600 hover:text-white rounded-xl border border-red-200 transition-all font-semibold"

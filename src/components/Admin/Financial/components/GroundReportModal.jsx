@@ -12,11 +12,15 @@ export const GroundReportModal = React.memo(({
     onImageChange,
     onRemoveImage,
     onSubmit,
-    isUpdating
+    isUpdating,
+    targetAmount,
+    setTargetAmount
 }) => {
     const placeholderText =
         status === 'clarification'
             ? "Clearly mention what additional information or documents are required from the applicant."
+            : status === 'special-case'
+            ? "Explain the basis of marking this as a special case (e.g. medical emergency needing immediate transfer)."
             : "Explain the basis of your decision (e.g., 'I visited their home, reviewed physical documents, case is genuine...')";
 
 
@@ -35,8 +39,17 @@ export const GroundReportModal = React.memo(({
             bg: 'bg-amber-500',
             icon: <XCircle size={24} />,
             title: 'Clarification'
+        },
+        'special-case': {
+            bg: 'bg-purple-600',
+            icon: <CheckCircle size={24} />,
+            title: 'Special Case'
         }
-    }[status];
+    }[status] || {
+        bg: 'bg-gray-600',
+        icon: null,
+        title: 'Action'
+    };
 
     return (
         <AnimatePresence>
@@ -71,6 +84,8 @@ export const GroundReportModal = React.memo(({
                                 <label className="block text-sm font-bold text-gray-700 uppercase tracking-wider mb-2">
                                     {status === 'clarification'
                                         ? 'Clarification Message'
+                                        : status === 'special-case'
+                                        ? 'Special Case Reason/Note'
                                         : 'Ground Verification Reason'}
                                     <span className="text-red-500">*</span>
                                 </label>
@@ -83,7 +98,23 @@ export const GroundReportModal = React.memo(({
                                     rows="5"
                                 />
                             </div>
-                            {status !== 'clarification' && (
+
+                            {status === 'special-case' && (
+                                <div className="mb-6">
+                                    <label className="block text-sm font-bold text-gray-700 uppercase tracking-wider mb-2">
+                                        Target Amount (INR) <span className="text-red-500">*</span>
+                                    </label>
+                                    <input
+                                        type="number"
+                                        value={targetAmount || ''}
+                                        onChange={(e) => setTargetAmount(e.target.value)}
+                                        placeholder="Enter target amount manually (e.g. 50000)"
+                                        className="w-full bg-gray-50 border border-gray-300 rounded-xl p-4 text-gray-800 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                    />
+                                </div>
+                            )}
+
+                            {status !== 'clarification' && status !== 'special-case' && (
                                 <div className="mb-2">
                                     <label className="block text-sm font-bold text-gray-700 uppercase tracking-wider mb-2">
                                         Upload Verification Photos
@@ -132,14 +163,16 @@ export const GroundReportModal = React.memo(({
                                     ? 'bg-emerald-600 hover:bg-emerald-700'
                                     : status === 'clarification'
                                         ? 'bg-amber-500 hover:bg-amber-600'
-                                        : 'bg-red-600 hover:bg-red-700'}`}
+                                        : status === 'special-case'
+                                            ? 'bg-purple-600 hover:bg-purple-700'
+                                            : 'bg-red-600 hover:bg-red-700'}`}
 
                             >
                                 {isUpdating ? (
                                     <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                                 ) : (
                                     <>
-                                        Submit Ground Report
+                                        {status === 'special-case' ? 'Mark Special Case' : 'Submit Ground Report'}
                                     </>
                                 )}
                             </button>

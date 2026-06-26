@@ -171,9 +171,16 @@ function ExpenseTableRow({ expense, onEdit }) {
 
             {/* Campaign */}
             <td className="px-4 py-3.5 max-w-[120px]">
-                <p className="text-xs text-gray-500 truncate" title={expense.campaignId?.title}>
-                    {expense.campaignId?.title || <span className="text-gray-300">—</span>}
-                </p>
+                <div className="flex flex-col gap-1 items-start min-w-0">
+                    <p className="text-xs text-gray-500 truncate w-full" title={expense.campaignId?.title}>
+                        {expense.campaignId?.title || <span className="text-gray-300">—</span>}
+                    </p>
+                    {expense.campaignId?.isSpecialCase && (
+                        <span className="px-1.5 py-0.5 rounded text-[8px] font-bold bg-purple-50 text-purple-700 border border-purple-200 uppercase tracking-wide">
+                            Special Case
+                        </span>
+                    )}
+                </div>
             </td>
 
             {/* Description */}
@@ -371,7 +378,16 @@ function ExpenseMobileCard({ expense, onEdit }) {
                     {recipientSub && <span className="text-[10px] text-gray-400 ml-1">({recipientSub})</span>}
                 </MobileRow>
                 {expense.campaignId?.title && (
-                    <MobileRow label="Campaign">{expense.campaignId.title}</MobileRow>
+                    <MobileRow label="Campaign">
+                        <div className="flex flex-col items-end gap-1">
+                            <span>{expense.campaignId.title}</span>
+                            {expense.campaignId.isSpecialCase && (
+                                <span className="px-1 py-0.5 rounded text-[8px] font-bold bg-purple-50 text-purple-700 border border-purple-200 uppercase tracking-wide">
+                                    Special Case
+                                </span>
+                            )}
+                        </div>
+                    </MobileRow>
                 )}
                 <MobileRow label="Method">
                     <span className="flex items-center gap-1">

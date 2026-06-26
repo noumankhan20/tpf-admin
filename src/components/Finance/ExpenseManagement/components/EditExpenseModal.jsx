@@ -17,7 +17,7 @@ export default function EditExpenseModal({
     admins, campaigns, purchases, vendors, agreements, volunteers, approvedVouchers,
 }) {
     const adminDD     = usePaginatedDropdown(admins,     (a, q) => a.fullName?.toLowerCase().includes(q) || a.email?.toLowerCase().includes(q),       (a, b) => (a.fullName || '').localeCompare(b.fullName || ''));
-    const campaignDD  = usePaginatedDropdown(campaigns,  (c, q) => c.title?.toLowerCase().includes(q),                                                  (a, b) => new Date(b.updatedAt || b.createdAt || 0) - new Date(a.updatedAt || a.createdAt || 0));
+    const campaignDD  = usePaginatedDropdown(campaigns,  (c, q) => c.title?.toLowerCase().includes(q) || c.beneficiaryName?.toLowerCase().includes(q), (a, b) => new Date(b.updatedAt || b.createdAt || 0) - new Date(a.updatedAt || a.createdAt || 0));
     const purchaseDD  = usePaginatedDropdown(purchases,  (p, q) => (p.vendorId?.fullName?.toLowerCase() || '').includes(q) || p.totalAmount?.toString().includes(q), (a, b) => new Date(b.purchaseDate || b.createdAt || 0) - new Date(a.purchaseDate || a.createdAt || 0));
     const volunteerDD = usePaginatedDropdown(volunteers, (v, q) => v.fullName?.toLowerCase().includes(q) || v.email?.toLowerCase().includes(q),         (a, b) => (a.fullName || '').localeCompare(b.fullName || ''));
     const vendorDD    = usePaginatedDropdown(vendors,    (v, q) => v.fullName?.toLowerCase().includes(q) || v.contactNumber?.includes(q),               (a, b) => (a.fullName || '').localeCompare(b.fullName || ''));
@@ -129,9 +129,9 @@ export default function EditExpenseModal({
                                 {showCampaign && (
                                     <Field label={`Campaign${formData.expenseType !== 'BENEFICIARY' ? ' (Optional)' : ' *'}`}>
                                         <DD dd={campaignDD} icon={<Users size={15} />} placeholder="Choose Campaign"
-                                            selectedLabel={selectedCampaign?.title || null}
+                                            selectedLabel={selectedCampaign ? (selectedCampaign.isSpecialCase ? `[Special Case] ${selectedCampaign.title}` : selectedCampaign.title) : null}
                                             required={formData.expenseType === 'BENEFICIARY'} hiddenValue={formData.campaignId}
-                                            items={campaignDD.paginated.map((c) => ({ id: c._id, label: c.title }))}
+                                            items={campaignDD.paginated.map((c) => ({ id: c._id, label: c.isSpecialCase ? `[Special Case] ${c.title}` : c.title }))}
                                             selectedId={formData.campaignId}
                                             onSelect={(id) => { setField('campaignId', id); campaignDD.setOpen(false); }}
                                             emptyMessage="No campaigns found."

@@ -240,6 +240,7 @@ export default function CampaignAdminDashboard() {
       page: currentPage,
       limit,
       search: debouncedSearch,
+      isSpecialCase: 'all',
     };
 
     Object.entries(appliedFilters).forEach(([k, v]) => {
@@ -285,7 +286,8 @@ export default function CampaignAdminDashboard() {
 
   const getProgressPercentage = (raised, goal) => {
     if (!goal || goal === 0) return 0;
-    return (raised / goal) * 100;
+    const pct = (raised / goal) * 100;
+    return pct < 0 ? 0 : pct;
   };
 
   const getStatusColor = (status) => {

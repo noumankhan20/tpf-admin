@@ -6,7 +6,7 @@ import NotificationBell from '../../Common/NotificationBell';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft } from 'lucide-react';
 import { toast } from 'react-toastify';
-import { useGetAllFormsQuery, useUpdateFormStatusMutation } from '@/utils/slices/financialAidApiSlice';
+import { useGetAllFormsQuery, useUpdateFormStatusMutation, useMarkAsSpecialCaseMutation } from '@/utils/slices/financialAidApiSlice';
 
 // Components
 import { StatCards } from './components/StatCards';
@@ -28,6 +28,7 @@ export default function FinancialAidVerifyPage() {
    const [groundReportReason, setGroundReportReason] = useState('');
    const [imagePreviews, setImagePreviews] = useState([]);
    const [groundImages, setGroundImages] = useState([]); // File objects
+   const [specialCaseTargetAmount, setSpecialCaseTargetAmount] = useState('');
 
 
    // Filtering & Sorting State
@@ -48,6 +49,7 @@ export default function FinancialAidVerifyPage() {
    });
 
    const [updateFormStatus, { isLoading: isUpdating }] = useUpdateFormStatusMutation();
+   const [markAsSpecialCase, { isLoading: isMarkingSpecial }] = useMarkAsSpecialCaseMutation();
 
    // Debounce Search
    useEffect(() => {
@@ -151,6 +153,7 @@ export default function FinancialAidVerifyPage() {
       setGroundReportReason('');
       setGroundImages([]);
       setImagePreviews([]);
+      setSpecialCaseTargetAmount('');
       setIsGroundReportModalOpen(true);
    };
 
@@ -176,17 +179,34 @@ export default function FinancialAidVerifyPage() {
 
       if (!selectedForm) return;
 
-      const formData = new FormData();
-      formData.append('status', groundReportStatus);
-      formData.append('groundReportReason', groundReportReason);
-
-      if (groundReportStatus !== 'clarification') {
-         groundImages.forEach(image => {
-            formData.append('groundReportImages', image);
-         });
-      }
-
       try {
+         if (groundReportStatus === 'special-case') {
+            const amt = Number(specialCaseTargetAmount);
+            if (!specialCaseTargetAmount || isNaN(amt) || amt <= 0) {
+               toast.warning("Please enter a valid target amount greater than zero.");
+               return;
+            }
+            await markAsSpecialCase({
+               id: selectedForm._id,
+               specialCaseNote: groundReportReason,
+               targetAmount: amt
+            }).unwrap();
+            setIsGroundReportModalOpen(false);
+            toast.success("Application marked as Special Case successfully!");
+            setSelectedForm(null);
+            return;
+         }
+
+         const formData = new FormData();
+         formData.append('status', groundReportStatus);
+         formData.append('groundReportReason', groundReportReason);
+
+         if (groundReportStatus !== 'clarification') {
+            groundImages.forEach(image => {
+               formData.append('groundReportImages', image);
+            });
+         }
+
          await updateFormStatus({ id: selectedForm._id, formData }).unwrap();
 
          setIsGroundReportModalOpen(false);
@@ -286,7 +306,9 @@ export default function FinancialAidVerifyPage() {
             onImageChange={handleImageChange}
             onRemoveImage={removeImage}
             onSubmit={handleSubmitGroundReport}
-            isUpdating={isUpdating}
+            isUpdating={isUpdating || isMarkingSpecial}
+            targetAmount={specialCaseTargetAmount}
+            setTargetAmount={setSpecialCaseTargetAmount}
          />
       </div>
    );

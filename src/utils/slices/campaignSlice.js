@@ -18,7 +18,7 @@ export const campaignApiSlice = apiSlice.injectEndpoints({
           'isActive', 'campaignStatus', 'category',
           'isUrgent', 'zakatVerified', 'taxBenefits',
           'deadline', 'minAmount', 'maxAmount',
-          'minRaised', 'maxRaised', 'source'
+          'minRaised', 'maxRaised', 'source', 'isSpecialCase'
         ];
 
         filterKeys.forEach((key) => {

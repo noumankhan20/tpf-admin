@@ -37,10 +37,19 @@ export const financialAidApiSlice = apiSlice.injectEndpoints({
       }),
       invalidatesTags: ["FinancialAidForms"],
     }),
+    markAsSpecialCase: builder.mutation({
+      query: ({ id, specialCaseNote, targetAmount }) => ({
+        url: `/financial-aid/${id}/special-case`,
+        method: "PATCH",
+        body: { specialCaseNote, targetAmount },
+      }),
+      invalidatesTags: ["FinancialAidForms"],
+    }),
   }),
 });
 export const {
   useGetAllFormsQuery,
   useGetFormByIdQuery,
   useUpdateFormStatusMutation,
+  useMarkAsSpecialCaseMutation,
 } = financialAidApiSlice;

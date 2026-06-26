@@ -68,7 +68,14 @@ export const RequestsList = React.memo(({
                                     </span>
                                 )}
                             </div>
-                            <Badge status={form.status} />
+                            <div className="flex gap-1.5 items-center">
+                                {form.isSpecialCase && (
+                                    <span className="px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-purple-100 text-purple-700 border border-purple-200 uppercase">
+                                        Special
+                                    </span>
+                                )}
+                                <Badge status={form.status} />
+                            </div>
                         </div>
                         <div className="flex items-center gap-2 text-xs text-gray-600 mb-1">
                             <Mail size={12} /> {form.email}
