@@ -41,7 +41,7 @@ const StoryCardPreview = ({ story, darkMode = false }) => {
             <div className="relative overflow-hidden h-48">
                 <img
                     src={
-                        story.image?.startsWith("data:")
+                        (story.image?.startsWith("data:") || story.image?.startsWith("blob:"))
                             ? story.image
                             : getMediaUrl(story.image)
                     }
@@ -113,6 +113,7 @@ export default function StoryCardsCMS() {
     const [pan, setPan] = useState({ x: 0, y: 0 });
     const [isDragging, setIsDragging] = useState(false);
     const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+    const [originalImageSrc, setOriginalImageSrc] = useState(null);
 
     const API_BASE = (process.env.NEXT_PUBLIC_BACKEND_API || 'http://localhost:7000/api');
 
@@ -137,6 +138,7 @@ export default function StoryCardsCMS() {
         const campaignId = e.target.value;
         const campaign = readyCampaigns.find(c => c._id === campaignId);
         setSelectedCampaign(campaign);
+        setOriginalImageSrc(null);
 
         if (campaign) {
             setCardForm(prev => ({
@@ -185,12 +187,28 @@ export default function StoryCardsCMS() {
 
         const reader = new FileReader();
         reader.onloadend = () => {
-            setImageToCrop(reader.result);
-            setZoom(1.0);
-            setPan({ x: 0, y: 0 });
-            setShowCropper(true);
+            setOriginalImageSrc(reader.result);
+            setCardForm(prev => ({
+                ...prev,
+                imageFile: file,
+                imagePreview: reader.result,
+                image: reader.result,
+            }));
+            toast.success("Image uploaded! You can crop it using the 'Crop Image' option.");
         };
         reader.readAsDataURL(file);
+    };
+
+    const triggerCropper = (e) => {
+        if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        if (!originalImageSrc) return;
+        setImageToCrop(originalImageSrc);
+        setZoom(1.0);
+        setPan({ x: 0, y: 0 });
+        setShowCropper(true);
     };
 
     const startDragging = (e) => {
@@ -288,6 +306,7 @@ export default function StoryCardsCMS() {
     };
 
     const handleAddCard = () => {
+        setOriginalImageSrc(null);
         setCardForm({
             title: "",
             excerpt: "",
@@ -302,6 +321,7 @@ export default function StoryCardsCMS() {
 
     const handleEditCard = (card) => {
         setSelectedCard(card);
+        setOriginalImageSrc(null);
         setCardForm({
             title: card.title,
             excerpt: card.description,
@@ -340,6 +360,9 @@ export default function StoryCardsCMS() {
             if (viewMode === "edit-card" && selectedCard) {
                 res = await updateImpactStory({ id: selectedCard._id, formData }).unwrap();
                 toast.success("Story updated successfully!");
+                setViewMode("overview");
+                setSelectedCard(null);
+                setOriginalImageSrc(null);
             } else {
                 res = await createImpactStory(formData).unwrap();
 
@@ -362,6 +385,7 @@ export default function StoryCardsCMS() {
                 setViewMode("overview");
                 setSelectedCard(null);
                 setSelectedCampaign(null);
+                setOriginalImageSrc(null);
             }
         } catch (err) {
             console.error("Error saving story:", err);
@@ -518,7 +542,7 @@ export default function StoryCardsCMS() {
                                             <div className={`rounded-2xl p-6 ${previewDarkMode ? 'bg-zinc-900' : 'bg-white shadow-inner'}`}>
                                                 <div className="flex gap-6 overflow-x-auto pb-4 scrollbar-thin scrollbar-thumb-emerald-300 scrollbar-track-emerald-50">
                                                     {storyCards.map(card => (
-                                                        <div key={card._id} className="w-[320px] flex-shrink-0">
+                                                        <div key={card._id} className="w-[300px] flex-shrink-0">
                                                             <StoryCardPreview story={card} darkMode={previewDarkMode} />
                                                         </div>
                                                     ))}
@@ -661,29 +685,44 @@ export default function StoryCardsCMS() {
                                                 Recommended: 600x400px (landscape), JPG/PNG, max 10MB
                                             </p>
 
-                                            <label className="border-3 border-dashed border-emerald-300 rounded-2xl p-8 block text-center cursor-pointer hover:border-emerald-500 hover:bg-emerald-50/50 transition-all duration-300 group">
-                                                <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
-                                                {cardForm.imagePreview ? (
-                                                    <div className="space-y-3">
-                                                        <img
-                                                            src={cardForm.imagePreview}
-                                                            alt="Preview"
-                                                            className="w-full h-56 object-cover rounded-xl shadow-lg"
-                                                        />
-                                                        <p className="text-sm text-emerald-600 font-semibold group-hover:text-emerald-700">Click to change image</p>
-                                                    </div>
-                                                ) : (
-                                                    <div className="space-y-4">
-                                                        <div className="inline-flex p-4 bg-emerald-100 rounded-full group-hover:bg-emerald-200 transition-colors">
-                                                            <Upload size={32} className="text-emerald-600" />
+                                            <div className="space-y-4">
+                                                <label className="border-3 border-dashed border-emerald-300 rounded-2xl p-8 block text-center cursor-pointer hover:border-emerald-500 hover:bg-emerald-50/50 transition-all duration-300 group">
+                                                    <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
+                                                    {cardForm.imagePreview ? (
+                                                        <div className="space-y-3">
+                                                            <img
+                                                                src={cardForm.imagePreview}
+                                                                alt="Preview"
+                                                                className="w-full h-56 object-cover rounded-xl shadow-lg"
+                                                            />
+                                                            <p className="text-sm text-emerald-600 font-semibold group-hover:text-emerald-700">Click to change image</p>
                                                         </div>
-                                                        <div>
-                                                            <p className="text-base font-semibold text-emerald-900 mb-1">Click to upload image</p>
-                                                            <p className="text-sm text-emerald-600">JPG, PNG up to 10MB</p>
+                                                    ) : (
+                                                        <div className="space-y-4">
+                                                            <div className="inline-flex p-4 bg-emerald-100 rounded-full group-hover:bg-emerald-200 transition-colors">
+                                                                <Upload size={32} className="text-emerald-600" />
+                                                            </div>
+                                                            <div>
+                                                                <p className="text-base font-semibold text-emerald-900 mb-1">Click to upload image</p>
+                                                                <p className="text-sm text-emerald-600">JPG, PNG up to 10MB</p>
+                                                            </div>
                                                         </div>
+                                                    )}
+                                                </label>
+
+                                                {cardForm.imagePreview && originalImageSrc && (
+                                                    <div className="flex justify-center">
+                                                        <button
+                                                            type="button"
+                                                            onClick={triggerCropper}
+                                                            className="px-5 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-xl font-bold transition-all cursor-pointer text-sm flex items-center gap-2 shadow-sm"
+                                                        >
+                                                            <Sparkles size={16} />
+                                                            Crop & Fit Image
+                                                        </button>
                                                     </div>
                                                 )}
-                                            </label>
+                                            </div>
                                         </div>
 
                                         {/* Title */}
@@ -846,8 +885,10 @@ export default function StoryCardsCMS() {
                                                 <Eye className="w-5 h-5 text-emerald-600" />
                                                 Live Preview
                                             </h3>
-                                            <div className="bg-gradient-to-br from-emerald-50 to-white p-6 rounded-xl border-2 border-emerald-200">
-                                                <StoryCardPreview story={cardForm} />
+                                            <div className="bg-gradient-to-br from-emerald-50 to-white p-6 rounded-xl border-2 border-emerald-200 flex justify-center">
+                                                <div className="w-[300px] flex-shrink-0">
+                                                    <StoryCardPreview story={cardForm} />
+                                                </div>
                                             </div>
                                         </div>
                                     </div>

@@ -92,6 +92,7 @@ export default function ExpenseManagement() {
         handleCreatePurchaseSubmit, isCreatingPurchase,
         handleCreateVendorSubmit, isCreatingVendor,
         addLineItem, removeLineItem, updateLineItem,
+        hasDraft, restoreDraft, discardDraft, draftSavedStatus,
     } = useExpenseForm({
         vendors: vendorsRes?.data || [],
         items: itemsRes?.data || [],
@@ -259,6 +260,10 @@ export default function ExpenseManagement() {
                     setVendorModalSource('expense');
                     setShowAddVendorModal(true);
                 }}
+                hasDraft={hasDraft}
+                restoreDraft={restoreDraft}
+                discardDraft={discardDraft}
+                draftSavedStatus={draftSavedStatus}
             />
 
             {/* ── Edit Expense Modal ──────────────────────────────────────────── */}

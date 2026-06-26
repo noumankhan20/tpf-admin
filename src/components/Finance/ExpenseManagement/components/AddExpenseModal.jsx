@@ -16,6 +16,7 @@ export default function AddExpenseModal({
     handleSubmit, isCreating,
     admins, campaigns, purchases, vendors, agreements, volunteers, approvedVouchers,
     onOpenAddPurchase, onOpenAddVendor,
+    hasDraft, restoreDraft, discardDraft, draftSavedStatus,
 }) {
     const adminDD = usePaginatedDropdown(admins, (a, q) => a.fullName?.toLowerCase().includes(q) || a.email?.toLowerCase().includes(q), (a, b) => (a.fullName || '').localeCompare(b.fullName || ''));
     const campaignDD = usePaginatedDropdown(campaigns, (c, q) => c.title?.toLowerCase().includes(q) || c.beneficiaryName?.toLowerCase().includes(q), (a, b) => new Date(b.updatedAt || b.createdAt || 0) - new Date(a.updatedAt || a.createdAt || 0));
@@ -53,7 +54,14 @@ export default function AddExpenseModal({
                         {/* Header */}
                         <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100 shrink-0">
                             <div>
-                                <h2 className="text-base font-semibold text-gray-900">Record Expense</h2>
+                                <h2 className="text-base font-semibold text-gray-900 flex items-center gap-2">
+                                    Record Expense
+                                    {draftSavedStatus && (
+                                        <span className="text-[10px] font-semibold px-2 py-0.5 bg-gray-100 text-gray-500 rounded-full animate-pulse">
+                                            {draftSavedStatus}
+                                        </span>
+                                    )}
+                                </h2>
                                 <p className="text-xs text-gray-400 mt-0.5">Track organizational expenses</p>
                             </div>
                             <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors text-gray-400 hover:text-gray-600">
@@ -63,6 +71,30 @@ export default function AddExpenseModal({
 
                         <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
                             <div className="p-6 space-y-4 overflow-y-auto flex-1">
+                                {hasDraft && (
+                                    <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 flex items-center justify-between gap-4 mb-4">
+                                        <div className="flex-1">
+                                            <p className="text-sm font-semibold text-emerald-950">Unsaved draft found</p>
+                                            <p className="text-xs text-emerald-700/90 mt-0.5">Would you like to restore your previous session?</p>
+                                        </div>
+                                        <div className="flex items-center gap-2 shrink-0">
+                                            <button
+                                                type="button"
+                                                onClick={discardDraft}
+                                                className="px-3 py-1.5 rounded-lg border border-emerald-200 text-xs font-semibold text-emerald-700 hover:bg-emerald-100/50 transition-colors"
+                                            >
+                                                Discard
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={restoreDraft}
+                                                className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-xs font-semibold text-white transition-colors shadow-sm"
+                                            >
+                                                Restore
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
 
                                 {/* Expense Type */}
                                 <Field label="Expense Type *">
