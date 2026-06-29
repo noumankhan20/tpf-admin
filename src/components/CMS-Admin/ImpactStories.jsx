@@ -13,16 +13,14 @@ import {
 } from "@/utils/slices/cms/impactApi";
 import { toast } from "react-toastify";
 import ConfirmModal from "../Common/ConfirmModal";
+import RichTextEditor from "../Common/RichTextEditor";
 
 // Helper function to render bold formatting
 const renderFormattedText = (text) => {
     if (!text) return "";
-    const escaped = text
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;");
-    const bolded = escaped.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
-    return <span dangerouslySetInnerHTML={{ __html: bolded }} />;
+    let html = text;
+    html = html.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
+    return <span dangerouslySetInnerHTML={{ __html: html }} />;
 };
 
 // Live Preview Component
@@ -758,30 +756,17 @@ export default function StoryCardsCMS() {
                                             <div className="flex justify-between items-center mb-2">
                                                 <label className="block text-sm font-bold text-emerald-900">
                                                     Story Description *
-                                                    <span className="text-xs font-normal text-emerald-500 ml-2">({cardForm.excerpt.length}/300)</span>
+                                                    <span className="text-xs font-normal text-emerald-500 ml-2">({(cardForm.excerpt || "").length}/300)</span>
                                                 </label>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => handleBoldClick("story-excerpt-input", "excerpt")}
-                                                    className="inline-flex items-center gap-1 py-1 px-2.5 text-xs font-bold rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 transition-all cursor-pointer shadow-sm"
-                                                    title="Wrap selection in bold"
-                                                >
-                                                    <Bold size={12} />
-                                                    Bold
-                                                </button>
                                             </div>
-                                            <textarea
-                                                rows={5}
-                                                id="story-excerpt-input"
-                                                className="w-full px-4 py-3.5 bg-emerald-50/50 border-2 border-emerald-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-emerald-900 placeholder-emerald-400 resize-none transition-all"
-                                                placeholder="Enter story description..."
+                                            <RichTextEditor
                                                 value={cardForm.excerpt}
-                                                onChange={e => setCardForm(prev => ({ ...prev, excerpt: e.target.value }))}
-                                                maxLength={300}
+                                                onChange={value => setCardForm(prev => ({ ...prev, excerpt: value }))}
+                                                placeholder="Enter story description..."
                                             />
                                             <p className="text-xs text-emerald-500 mt-2 flex items-center gap-1">
                                                 <CheckCircle size={12} />
-                                                Displayed as 2 lines on cards. Use **text** for bolding.
+                                                Displayed as 2 lines on cards.
                                             </p>
                                         </div>
 
@@ -791,23 +776,11 @@ export default function StoryCardsCMS() {
                                                 <label className="block text-sm font-bold text-emerald-900">
                                                     Full Story Content *
                                                 </label>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => handleBoldClick("story-story-input", "story")}
-                                                    className="inline-flex items-center gap-1 py-1 px-2.5 text-xs font-bold rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 transition-all cursor-pointer shadow-sm"
-                                                    title="Wrap selection in bold"
-                                                >
-                                                    <Bold size={12} />
-                                                    Bold
-                                                </button>
                                             </div>
-                                            <textarea
-                                                rows={5}
-                                                id="story-story-input"
-                                                className="w-full px-4 py-3.5 bg-emerald-50/50 border-2 border-emerald-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-emerald-900 placeholder-emerald-400 resize-none transition-all"
-                                                placeholder="Enter the complete story..."
+                                            <RichTextEditor
                                                 value={cardForm.story}
-                                                onChange={e => setCardForm(prev => ({ ...prev, story: e.target.value }))}
+                                                onChange={value => setCardForm(prev => ({ ...prev, story: value }))}
+                                                placeholder="Enter the complete story..."
                                             />
                                         </div>
 

@@ -23,6 +23,7 @@ import {
 import { getMediaUrl } from '@/utils/media';
 import MediaSelectorModal from './MediaSelectorModal';
 import CampaignPreview from './CampaignPreview';
+import RichTextEditor from '../../Common/RichTextEditor';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
@@ -666,38 +667,10 @@ export default function CampaignForm({
                   <label className="block text-xs font-bold text-gray-500 uppercase mb-2">
                     Story/Description
                   </label>
-                  <div className="flex gap-1.5 mb-2 p-1 bg-gray-50 border border-gray-200 rounded-lg max-w-max">
-                    <button
-                      type="button"
-                      onClick={() => insertFormatting('<b>', '</b>')}
-                      className="p-1 hover:bg-gray-200 rounded text-gray-700 transition-colors"
-                      title="Bold"
-                    >
-                      <Bold size={16} />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => insertFormatting('<i>', '</i>')}
-                      className="p-1 hover:bg-gray-200 rounded text-gray-700 transition-colors"
-                      title="Italic"
-                    >
-                      <Italic size={16} />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => insertFormatting('<u>', '</u>')}
-                      className="p-1 hover:bg-gray-200 rounded text-gray-700 transition-colors"
-                      title="Underline"
-                    >
-                      <Underline size={16} />
-                    </button>
-                  </div>
-                  <textarea
-                    ref={textareaRef}
-                    rows={4}
+                  <RichTextEditor
                     value={formData.about}
-                    onChange={(e) => setFormData({ ...formData, about: e.target.value })}
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-emerald-500 outline-none resize-none"
+                    onChange={(value) => setFormData((prev) => ({ ...prev, about: value }))}
+                    placeholder="Enter the campaign story/description..."
                   />
                 </div>
 
