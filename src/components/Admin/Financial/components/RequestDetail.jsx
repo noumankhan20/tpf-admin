@@ -142,7 +142,7 @@ export const RequestDetail = React.memo(({
                                 <div className="flex gap-3 pt-3 border-t border-emerald-100 no-print">
                                     {selectedForm.campaignId.slug && (
                                         <a 
-                                            href={`/campaign/${selectedForm.campaignId.slug}`} 
+                                            href={`https://tpfaid.org/campaign/${selectedForm.campaignId.slug}`} 
                                             target="_blank" 
                                             rel="noopener noreferrer" 
                                             className="px-4 py-2 bg-white text-emerald-700 hover:bg-emerald-50 rounded-lg border border-emerald-200 transition text-sm font-semibold inline-block"
