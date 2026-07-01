@@ -45,6 +45,14 @@ export const financialAidApiSlice = apiSlice.injectEndpoints({
       }),
       invalidatesTags: ["FinancialAidForms"],
     }),
+    linkCampaign: builder.mutation({
+      query: ({ id, campaignId }) => ({
+        url: `/admin/verify/form/${id}/link-campaign`,
+        method: "PUT",
+        body: { campaignId },
+      }),
+      invalidatesTags: ["FinancialAidForms"],
+    }),
   }),
 });
 export const {
@@ -52,4 +60,5 @@ export const {
   useGetFormByIdQuery,
   useUpdateFormStatusMutation,
   useMarkAsSpecialCaseMutation,
+  useLinkCampaignMutation,
 } = financialAidApiSlice;

@@ -5,8 +5,10 @@ import {
     LucideMessageSquareWarning
 } from 'lucide-react';
 import { Badge } from './Badge';
+import { toast } from 'react-toastify';
 
-import { useGetFormByIdQuery } from '@/utils/slices/financialAidApiSlice';
+import { useGetFormByIdQuery, useLinkCampaignMutation } from '@/utils/slices/financialAidApiSlice';
+import { useGetCampaignListQuery } from '@/utils/slices/campaignSlice';
 import { getMediaUrl } from '@/utils/media';
 import { formatFieldValue } from '@/utils/formatters';
 
@@ -20,6 +22,34 @@ export const RequestDetail = React.memo(({
     });
 
     const selectedForm = fullFormData?.data || summaryForm;
+
+    const { data: campaignList } = useGetCampaignListQuery();
+    const [linkCampaign, { isLoading: isLinking }] = useLinkCampaignMutation();
+    const [selectedCampaignId, setSelectedCampaignId] = React.useState('');
+
+    React.useEffect(() => {
+        setSelectedCampaignId('');
+    }, [summaryForm?._id]);
+
+    const handleLinkCampaign = async () => {
+        if (!selectedCampaignId) return;
+        try {
+            await linkCampaign({ id: selectedForm._id, campaignId: selectedCampaignId }).unwrap();
+            toast.success("Campaign linked successfully!");
+        } catch (err) {
+            toast.error(err?.data?.message || "Failed to link campaign");
+        }
+    };
+
+    const handleUnlinkCampaign = async () => {
+        if (!window.confirm("Are you sure you want to unlink this campaign?")) return;
+        try {
+            await linkCampaign({ id: selectedForm._id, campaignId: null }).unwrap();
+            toast.success("Campaign unlinked successfully!");
+        } catch (err) {
+            toast.error(err?.data?.message || "Failed to unlink campaign");
+        }
+    };
 
     if (!summaryForm) {
         return (
@@ -79,6 +109,93 @@ export const RequestDetail = React.memo(({
 
                 {/* SCROLLABLE FORM DATA */}
                 <div className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar pb-32 print:overflow-visible print:h-auto print:pb-0">
+
+                    {/* SECTION: Campaign Linking */}
+                    {selectedForm.campaignId && typeof selectedForm.campaignId === 'object' ? (
+                        <DetailSection title="Linked Campaign Details" icon={<Building className="text-emerald-600" />}>
+                            <div className="bg-emerald-50/50 border border-emerald-200 rounded-xl p-5 space-y-4">
+                                <div className="flex justify-between items-start">
+                                    <div>
+                                        <h4 className="font-bold text-gray-800 text-lg">
+                                            {selectedForm.campaignId.title}
+                                        </h4>
+                                        <p className="text-xs text-gray-500">ID: {selectedForm.campaignId._id}</p>
+                                    </div>
+                                    <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide ${
+                                        selectedForm.campaignId.campaignStatus === 'ACTIVE' 
+                                            ? 'bg-emerald-100 text-emerald-800' 
+                                            : 'bg-amber-100 text-amber-800'
+                                    }`}>
+                                        {selectedForm.campaignId.campaignStatus}
+                                    </span>
+                                </div>
+                                <div className="grid grid-cols-2 gap-4 pt-2 border-t border-emerald-100">
+                                    <div>
+                                        <p className="text-xs text-gray-600 uppercase tracking-wider font-bold">Raised Amount</p>
+                                        <p className="text-emerald-700 font-bold text-lg">₹{selectedForm.campaignId.raisedAmount || 0}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-xs text-gray-600 uppercase tracking-wider font-bold">Target Amount</p>
+                                        <p className="text-gray-800 font-bold text-lg">₹{selectedForm.campaignId.targetAmount || 0}</p>
+                                    </div>
+                                </div>
+                                <div className="flex gap-3 pt-3 border-t border-emerald-100 no-print">
+                                    {selectedForm.campaignId.slug && (
+                                        <a 
+                                            href={`/campaign/${selectedForm.campaignId.slug}`} 
+                                            target="_blank" 
+                                            rel="noopener noreferrer" 
+                                            className="px-4 py-2 bg-white text-emerald-700 hover:bg-emerald-50 rounded-lg border border-emerald-200 transition text-sm font-semibold inline-block"
+                                        >
+                                            View Campaign
+                                        </a>
+                                    )}
+                                    <button 
+                                        onClick={handleUnlinkCampaign}
+                                        disabled={isLinking}
+                                        className="px-4 py-2 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg transition text-sm font-semibold"
+                                    >
+                                        Unlink Campaign
+                                    </button>
+                                </div>
+                            </div>
+                        </DetailSection>
+                    ) : (
+                        !selectedForm.isSpecialCase && (
+                            <DetailSection title="Link to Existing Campaign" icon={<Building className="text-blue-600" />}>
+                                <div className="space-y-4">
+                                    <p className="text-sm text-gray-600">
+                                        This beneficiary form is not currently linked to any campaign. You can search and link it to an existing campaign that has already been created.
+                                    </p>
+                                    <div className="flex flex-col sm:flex-row gap-3">
+                                        <div className="relative flex-1">
+                                            <select 
+                                                value={selectedCampaignId}
+                                                onChange={(e) => setSelectedCampaignId(e.target.value)}
+                                                className="w-full bg-gray-50 border border-gray-300 rounded-xl p-3 text-gray-800 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+                                            >
+                                                <option value="">-- Select Campaign --</option>
+                                                {campaignList?.data
+                                                    ?.filter(camp => !camp.isSpecialCase)
+                                                    ?.map(camp => (
+                                                        <option key={camp._id} value={camp._id}>
+                                                            {camp.title} ({camp.beneficiaryName || 'No Beneficiary'})
+                                                        </option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                        <button 
+                                            onClick={handleLinkCampaign}
+                                            disabled={!selectedCampaignId || isLinking}
+                                            className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold transition disabled:opacity-50"
+                                        >
+                                            {isLinking ? 'Linking...' : 'Link Campaign'}
+                                        </button>
+                                    </div>
+                                </div>
+                            </DetailSection>
+                        )
+                    )}
 
                     {/* SECTION GROUP 1: Basic Info & Address */}
                     <div className="grid grid-cols-1 gap-6 avoid-break print-grid">
