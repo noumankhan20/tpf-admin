@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { TrendingDown, Edit3, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
+import { TrendingDown, Edit3, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, FileText } from 'lucide-react';
 import { getMethodIcon, resolveRecipient } from '../utils/expenseHelpers';
+import { getMediaUrl } from '@/utils/media';
 
 // ─── Constants ─────────────────────────────────────────────────────────────────
 const PER_PAGE_OPTIONS = [10, 25, 50, 100];
@@ -233,15 +234,29 @@ function ExpenseTableRow({ expense, onEdit }) {
                 </span>
             </td>
 
-            {/* Edit */}
+            {/* Actions */}
             <td className="px-3 py-3.5">
-                <button
-                    onClick={() => onEdit?.(expense)}
-                    className="p-1.5 text-gray-400 hover:text-amber-500 hover:bg-amber-50 rounded-lg transition-all"
-                    title="Edit expense"
-                >
-                    <Edit3 size={14} />
-                </button>
+                <div className="flex items-center gap-1">
+                    {expense.proofDocument?.fileUrl && (
+                        <button
+                            onClick={() => {
+                                const url = getMediaUrl(expense.proofDocument.fileUrl);
+                                window.open(`https://docs.google.com/viewer?url=${encodeURIComponent(url)}`, '_blank');
+                            }}
+                            className="p-1.5 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all"
+                            title="View Proof"
+                        >
+                            <FileText size={14} />
+                        </button>
+                    )}
+                    <button
+                        onClick={() => onEdit?.(expense)}
+                        className="p-1.5 text-gray-400 hover:text-amber-500 hover:bg-amber-50 rounded-lg transition-all"
+                        title="Edit expense"
+                    >
+                        <Edit3 size={14} />
+                    </button>
+                </div>
             </td>
         </tr>
     );
@@ -276,7 +291,7 @@ export function ExpenseTable({ expenses, onEdit }) {
         { label: 'Method', cls: 'w-[130px]' },
         { label: 'Amount', cls: 'w-[100px] text-right' },
         { label: 'Status', cls: 'w-[72px]' },
-        { label: '', cls: 'w-[40px]' },
+        { label: '', cls: 'w-[72px]' },
     ];
 
     // Summary totals for visible page
@@ -356,10 +371,22 @@ function ExpenseMobileCard({ expense, onEdit }) {
                         <span className="text-xs text-gray-300">{expense.transactionTime}</span>
                     )}
                 </div>
-                <div className="flex items-center gap-2">
-                    <p className="text-sm font-bold text-rose-600 tabular-nums whitespace-nowrap">
+                <div className="flex items-center gap-1.5">
+                    <p className="text-sm font-bold text-rose-600 tabular-nums whitespace-nowrap mr-1">
                         −₹{expense.amount.toLocaleString('en-IN')}
                     </p>
+                    {expense.proofDocument?.fileUrl && (
+                        <button
+                            onClick={() => {
+                                const url = getMediaUrl(expense.proofDocument.fileUrl);
+                                window.open(`https://docs.google.com/viewer?url=${encodeURIComponent(url)}`, '_blank');
+                            }}
+                            className="p-1.5 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all"
+                            title="View Proof"
+                        >
+                            <FileText size={13} />
+                        </button>
+                    )}
                     {onEdit && (
                         <button
                             onClick={() => onEdit(expense)}
