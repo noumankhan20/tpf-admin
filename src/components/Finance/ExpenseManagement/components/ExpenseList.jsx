@@ -239,10 +239,7 @@ function ExpenseTableRow({ expense, onEdit }) {
                 <div className="flex items-center gap-1">
                     {expense.proofDocument?.fileUrl && (
                         <button
-                            onClick={() => {
-                                const url = getMediaUrl(expense.proofDocument.fileUrl);
-                                window.open(`https://docs.google.com/viewer?url=${encodeURIComponent(url)}`, '_blank');
-                            }}
+                            onClick={() => window.open(getMediaUrl(expense.proofDocument.fileUrl), '_blank')}
                             className="p-1.5 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all"
                             title="View Proof"
                         >
@@ -377,10 +374,7 @@ function ExpenseMobileCard({ expense, onEdit }) {
                     </p>
                     {expense.proofDocument?.fileUrl && (
                         <button
-                            onClick={() => {
-                                const url = getMediaUrl(expense.proofDocument.fileUrl);
-                                window.open(`https://docs.google.com/viewer?url=${encodeURIComponent(url)}`, '_blank');
-                            }}
+                            onClick={() => window.open(getMediaUrl(expense.proofDocument.fileUrl), '_blank')}
                             className="p-1.5 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all"
                             title="View Proof"
                         >
