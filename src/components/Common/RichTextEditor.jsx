@@ -30,7 +30,15 @@ export default function RichTextEditor({ value, onChange, placeholder, className
     // Strip everything else except <b>, <i>, and <u>
     clean = clean.replace(/<(?!b\b|i\b|u\b|\/b\b|\/i\b|\/u\b)[^>]+>/gi, "");
 
-    return clean;
+    // Automatic sentence spacing: punctuation followed by space/newlines gets converted to exactly \n\n (one line space).
+    // Avoid formatting if preceded by common abbreviations or single uppercase letters (initials).
+    const sentenceEndRegex = /(?<!\b(?:Mr|Mrs|Ms|Dr|Prof|Sr|Jr|Co|Corp|Inc|Ltd|vs|e\.g|i\.e))(?<!\b[A-Z])([.?!])((?:<\/b>|<\/i>|<\/u>)*)\s+(?=(?:<b>|<i>|<u>)*[A-Za-z0-9])/gi;
+    clean = clean.replace(sentenceEndRegex, "$1$2\n\n");
+
+    // Collapse consecutive newlines (3 or more) to exactly \n\n
+    clean = clean.replace(/\n\s*\n\s*\n+/g, "\n\n");
+
+    return clean.trim();
   };
 
   useEffect(() => {
