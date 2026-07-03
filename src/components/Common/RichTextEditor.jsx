@@ -6,13 +6,18 @@ export default function RichTextEditor({ value, onChange, placeholder, className
   // Convert database string (replaces newlines with <br> for rich text area)
   const toHTML = (text) => {
     if (!text) return "";
-    return text.replace(/\n/g, "<br>");
+    // Normalize newlines to strip out Windows-style \r carriage returns
+    const normalized = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+    return normalized.replace(/\n/g, "<br>");
   };
 
   // Convert HTML back to clean string with only <b>, <i>, <u> tags and \n newlines
   const toBackendFormat = (html) => {
     if (!html) return "";
     let clean = html;
+
+    // Normalize carriage returns and spacing
+    clean = clean.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
 
     // Normalize formatting tags
     clean = clean.replace(/<strong>/g, "<b>").replace(/<\/strong>/g, "</b>");
@@ -30,13 +35,16 @@ export default function RichTextEditor({ value, onChange, placeholder, className
     // Strip everything else except <b>, <i>, and <u>
     clean = clean.replace(/<(?!b\b|i\b|u\b|\/b\b|\/i\b|\/u\b)[^>]+>/gi, "");
 
+    // Collapse any pre-existing multiple newlines (two or more) to exactly \n\n
+    clean = clean.replace(/\n\s*\n+/g, "\n\n");
+
     // Automatic sentence spacing: punctuation followed by space/newlines gets converted to exactly \n\n (one line space).
     // Avoid formatting if preceded by common abbreviations or single uppercase letters (initials).
     const sentenceEndRegex = /(?<!\b(?:Mr|Mrs|Ms|Dr|Prof|Sr|Jr|Co|Corp|Inc|Ltd|vs|e\.g|i\.e))(?<!\b[A-Z])([.?!])((?:<\/b>|<\/i>|<\/u>)*)\s+(?=(?:<b>|<i>|<u>)*[A-Za-z0-9])/gi;
     clean = clean.replace(sentenceEndRegex, "$1$2\n\n");
 
-    // Collapse consecutive newlines (3 or more) to exactly \n\n
-    clean = clean.replace(/\n\s*\n\s*\n+/g, "\n\n");
+    // Collapse consecutive newlines (two or more) again to exactly \n\n in case sentenceEndRegex added extra
+    clean = clean.replace(/\n\s*\n+/g, "\n\n");
 
     return clean.trim();
   };
