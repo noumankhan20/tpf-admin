@@ -19,6 +19,7 @@ import ConfirmModal from "@/components/Common/ConfirmModal";
 import FundraisingHeader from "./FundraisingHeader";
 import CampaignList from "./CampaignList";
 import CampaignForm from "./CampaignForm";
+import ReferralLinkGeneratorModal from "./ReferralLinkGeneratorModal";
 
 export default function FundraisingCMS() {
   const router = useRouter();
@@ -29,6 +30,8 @@ export default function FundraisingCMS() {
   const [selectedCampaign, setSelectedCampaign] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteId, setDeleteId] = useState(null);
+  const [linkGenOpen, setLinkGenOpen] = useState(false);
+  const [linkGenCampaign, setLinkGenCampaign] = useState(null);
 
   const API_BASE = process.env.NEXT_PUBLIC_BACKEND_API || 'http://localhost:7000/api';
 
@@ -555,7 +558,10 @@ export default function FundraisingCMS() {
               onMarkInactive={handleInactive}
               onMarkComplete={handleComplete}
               onMarkActive={handleActive}
-
+              onGenerateLink={(card) => {
+                setLinkGenCampaign(card);
+                setLinkGenOpen(true);
+              }}
             />
           </>
         ) : (
@@ -574,6 +580,16 @@ export default function FundraisingCMS() {
             isSaving={isSaving}
           />
         )}
+
+        <ReferralLinkGeneratorModal
+          isOpen={linkGenOpen}
+          onClose={() => {
+            setLinkGenOpen(false);
+            setLinkGenCampaign(null);
+          }}
+          campaignSlug={linkGenCampaign?.campaignId?.slug || linkGenCampaign?.slug}
+          campaignTitle={linkGenCampaign?.title}
+        />
       </div>
     </div>
   );

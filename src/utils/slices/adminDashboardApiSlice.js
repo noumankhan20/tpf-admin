@@ -39,6 +39,13 @@ export const adminDashboardApiSlice = apiSlice.injectEndpoints({
             }),
             keepUnusedDataFor: 300,
         }),
+        getCampaignReferrals: builder.query({
+            query: () => ({
+                url: `/admin/dashboard/campaign-referrals`,
+                method: "GET",
+            }),
+            keepUnusedDataFor: 60,
+        }),
     }),
 });
 
@@ -46,5 +53,6 @@ export const {
     useGetCalendarEventsQuery,
     useGetSummaryMetricsQuery,
     useGetDonationAnalyticsQuery,
-    useGetActivityHeatmapQuery
+    useGetActivityHeatmapQuery,
+    useGetCampaignReferralsQuery,
 } = adminDashboardApiSlice;

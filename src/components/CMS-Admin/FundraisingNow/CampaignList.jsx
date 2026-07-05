@@ -1,5 +1,5 @@
 import React from 'react';
-import { Edit2, Trash2, Calendar, AlertCircle, CheckCircle2, PauseCircle, CheckCircle, Clock, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Edit2, Trash2, Calendar, AlertCircle, CheckCircle2, PauseCircle, CheckCircle, Clock, ChevronLeft, ChevronRight, Link as LinkIcon } from 'lucide-react';
 import { getMediaUrl } from '@/utils/media';
 
 export default function CampaignList({
@@ -11,7 +11,8 @@ export default function CampaignList({
   onPageChange,     // (newPage) => void
   onMarkComplete,
   onMarkInactive,
-  onMarkActive
+  onMarkActive,
+  onGenerateLink
 }) {
   if (campaigns.length === 0) {
     return (
@@ -154,17 +155,25 @@ export default function CampaignList({
                 <div className="flex gap-2">
                   <button
                     onClick={() => onEdit(card)}
-                    className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-emerald-50 text-emerald-700 rounded-lg hover:bg-emerald-100 transition-all font-medium"
+                    className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-emerald-50 text-emerald-700 rounded-lg hover:bg-emerald-100 transition-all font-medium text-sm"
                   >
-                    <Edit2 size={16} />
+                    <Edit2 size={14} />
                     <span>Edit</span>
                   </button>
 
                   <button
-                    onClick={() => onDelete(card._id)}
-                    className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-red-50 text-red-700 rounded-lg hover:bg-red-100 transition-all font-medium"
+                    onClick={() => onGenerateLink?.(card)}
+                    className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-all font-medium text-sm"
                   >
-                    <Trash2 size={16} />
+                    <LinkIcon size={14} />
+                    <span>Link Gen</span>
+                  </button>
+
+                  <button
+                    onClick={() => onDelete(card._id)}
+                    className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-red-50 text-red-700 rounded-lg hover:bg-red-100 transition-all font-medium text-sm"
+                  >
+                    <Trash2 size={14} />
                     <span>Delete</span>
                   </button>
                 </div>
