@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { AlertCircle, CheckCircle, FileText, MessageSquare, Users, TrendingUp, Clock, Shield, Receipt, Search, Filter, Eye, Trash2, Download, ChevronRight, ChevronDown, MoreVertical, Loader2, ArrowLeft, X, Menu, Edit, ExternalLink, User, SlidersHorizontal, ChevronLeft } from 'lucide-react';
 import { useFetchCampaignsQuery, useFetchCampaignByIdQuery } from '@/utils/slices/campaignSlice';
 import { useRouter } from 'next/navigation';
+import CampaignAnalyticsDashboard from './CampaignAnalyticsDashboard';
 
 // ─────────────────────────────────────────────────────────
 // FILTER DRAWER
@@ -350,6 +351,13 @@ export default function CampaignAdminDashboard() {
   const totalNetRaised = apiResponse?.netRaised || 0;
   const totalExpenses = apiResponse?.totalExpenses || 0;
 
+  const tpfExpensesCampaign = campaigns.find(c => 
+    c._id === '69bc2a365a3e070a84454f49' ||
+    c.title?.toLowerCase().includes('tpf expenses') || 
+    c.beneficiaryName?.toLowerCase().includes('tpf expenses')
+  );
+  const tpfExpensesRaised = tpfExpensesCampaign ? (tpfExpensesCampaign.raisedAmount || 0) : 0;
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50 flex items-center justify-center p-4">
@@ -391,296 +399,37 @@ export default function CampaignAdminDashboard() {
 
   if (view === 'detail') {
     if (isCampaignLoading) {
-      return <div className="p-8">Loading campaign details...</div>;
+      return (
+        <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+          <div className="text-center">
+            <Loader2 className="w-10 h-10 text-emerald-600 animate-spin mx-auto mb-4" />
+            <p className="text-sm font-semibold text-slate-600">Loading campaign analytics...</p>
+          </div>
+        </div>
+      );
     }
 
     if (isCampaignError || !campaignDetailResponse?.campaign) {
-      return <div className="p-8">Failed to load campaign details</div>;
+      return (
+        <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+          <div className="text-center max-w-sm">
+            <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+            <h3 className="text-lg font-bold text-slate-900 mb-2">Error Loading Dashboard</h3>
+            <p className="text-xs text-slate-500 mb-6">We could not fetch the details for this campaign.</p>
+            <button onClick={() => { setView('list'); setSelectedCampaignId(null); }} className="px-5 py-2.5 bg-slate-900 text-white rounded-xl text-xs font-semibold hover:bg-slate-950 transition-all">
+              Go Back
+            </button>
+          </div>
+        </div>
+      );
     }
 
-    const campaign = campaignDetailResponse.campaign;
-    const progressPercentage = getProgressPercentage(campaign.netRaisedAmount || 0, campaign.targetAmount || 0);
-
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
-        <div className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-10">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
-            <button
-              onClick={() => { setView('list'); setSelectedCampaignId(null); }}
-              className="flex items-center cursor-pointer gap-2 text-sm font-medium text-gray-600 hover:text-emerald-600 mb-4 transition-colors group"
-            >
-              <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-              Back to Campaigns
-            </button>
-
-            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-              <div className="flex-1 min-w-0">
-                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2 break-words">
-                  {campaign.title || campaign.beneficiaryName || 'Untitled Campaign'}
-                </h1>
-                {campaign.organization && (
-                  <p className="text-sm text-gray-500 flex items-center gap-1.5">
-                    <Users className="w-4 h-4" />
-                    {campaign.organization}
-                  </p>
-                )}
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border ${getStatusColor(campaign.campaignStatus)}`}>
-                  {campaign.campaignStatus?.replace(/_/g, ' ')}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2 space-y-6">
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 sm:p-8 hover:shadow-md transition-shadow">
-                <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-                  <TrendingUp className="w-5 h-5 text-emerald-600" />
-                  Fundraising Progress
-                </h2>
-                <div className="space-y-5">
-                  <div className="flex items-baseline justify-between flex-wrap gap-4">
-                    <div>
-                      <p className="text-3xl sm:text-4xl font-bold text-emerald-600">
-                        ₹{(campaign.netRaisedAmount || 0).toLocaleString('en-IN')}
-                      </p>
-                      <p className="text-sm text-gray-500 mt-2">raised of ₹{(campaign.targetAmount || 0).toLocaleString('en-IN')} goal</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-3xl sm:text-4xl font-bold text-gray-900">{progressPercentage.toFixed(0)}%</p>
-                      <p className="text-sm text-gray-500 mt-2">funded</p>
-                    </div>
-                  </div>
-                  <div className="relative w-full h-4 bg-gray-100 rounded-full overflow-hidden shadow-inner">
-                    <div
-                      className="absolute top-0 left-0 h-full bg-gradient-to-r from-emerald-500 via-emerald-600 to-emerald-500 transition-all duration-700 rounded-full shadow-sm"
-                      style={{ width: `${Math.min(progressPercentage, 100)}%` }}
-                    />
-                  </div>
-                  <div className="flex items-center justify-between pt-2 flex-wrap gap-3">
-                    <div className="flex items-center gap-2">
-                      <Users className="w-5 h-5 text-gray-400" />
-                      <span className="text-sm font-medium text-gray-700">
-                        {campaign.totalDonors === 0 ? 'No donors yet' : `${campaign.totalDonors} ${campaign.totalDonors === 1 ? 'donor' : 'donors'}`}
-                      </span>
-                    </div>
-                    {campaign.totalTips > 0 && (
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-gray-400">•</span>
-                        <span className="text-sm font-semibold text-red-600">
-                          Tip from this Campaign ₹{campaign.totalTips.toLocaleString('en-IN')}
-                        </span>
-                      </div>
-                    )}
-                    {campaign.deadline && (
-                      <div className="flex items-center gap-2">
-                        <Clock className="w-5 h-5 text-gray-400" />
-                        <span className="text-sm font-medium text-gray-700">Ends {formatDate(campaign.deadline)}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {campaign.about && (
-                <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 sm:p-8 hover:shadow-md transition-shadow">
-                  <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-4">About This Campaign</h2>
-                  <p className="text-sm sm:text-base text-gray-700 leading-relaxed whitespace-pre-line">{campaign.about}</p>
-                </div>
-              )}
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="bg-gradient-to-br from-white to-gray-50 rounded-2xl shadow-sm border border-gray-200 p-5 sm:p-6 hover:shadow-md transition-all">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-xs sm:text-sm font-medium text-gray-500 mb-1">Tax Benefits</p>
-                      <p className="text-base sm:text-lg font-bold text-gray-900">{campaign.taxBenefits ? '80G Available' : 'Not Available'}</p>
-                    </div>
-                    <div className={`p-3 rounded-xl ${campaign.taxBenefits ? 'bg-emerald-100' : 'bg-gray-100'}`}>
-                      <Receipt className={`w-5 h-5 ${campaign.taxBenefits ? 'text-emerald-600' : 'text-gray-400'}`} />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-gradient-to-br from-white to-gray-50 rounded-2xl shadow-sm border border-gray-200 p-5 sm:p-6 hover:shadow-md transition-all">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-xs sm:text-sm font-medium text-gray-500 mb-1">Zakat Verified</p>
-                      <p className="text-base sm:text-lg font-bold text-gray-900">{campaign.zakatVerified ? 'Verified' : 'Not Verified'}</p>
-                    </div>
-                    <div className={`p-3 rounded-xl ${campaign.zakatVerified ? 'bg-emerald-100' : 'bg-gray-100'}`}>
-                      <Shield className={`w-5 h-5 ${campaign.zakatVerified ? 'text-emerald-600' : 'text-gray-400'}`} />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-gradient-to-br from-white to-gray-50 rounded-2xl shadow-sm border border-gray-200 p-5 sm:p-6 hover:shadow-md transition-all sm:col-span-2">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-xs sm:text-sm font-medium text-gray-500 mb-1">Last Updated</p>
-                      <p className="text-sm sm:text-base font-bold text-gray-900">{formatDate(campaign.updatedAt)}</p>
-                    </div>
-                    <div className="p-3 rounded-xl bg-gray-100">
-                      <Clock className="w-5 h-5 text-gray-400" />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 sm:p-8 hover:shadow-md transition-shadow">
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-lg sm:text-xl font-bold text-gray-900">Impact Goals</h2>
-                  <TrendingUp className="w-5 h-5 text-emerald-600" />
-                </div>
-                {!campaign.impactGoals || campaign.impactGoals.length === 0 ? (
-                  <div className="text-center py-12">
-                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gray-100 mb-4">
-                      <TrendingUp className="w-8 h-8 text-gray-400" />
-                    </div>
-                    <p className="text-sm text-gray-500 font-medium">No impact goals defined yet</p>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {campaign.impactGoals.map((goal, index) => (
-                      <div key={index} className="flex gap-3 p-4 bg-gradient-to-r from-emerald-50 to-transparent rounded-xl border border-emerald-100 hover:border-emerald-200 transition-colors">
-                        <div className="flex-shrink-0 w-6 h-6 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center text-xs font-bold">{index + 1}</div>
-                        <p className="text-sm text-gray-900 flex-1">{goal}</p>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 sm:p-8 hover:shadow-md transition-shadow">
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-lg sm:text-xl font-bold text-gray-900">Donor Messages ({campaign.donorMessages?.length || 0})</h2>
-                  <MessageSquare className="w-5 h-5 text-gray-400" />
-                </div>
-                {!campaign.donorMessages || campaign.donorMessages.length === 0 ? (
-                  <div className="text-center py-12">
-                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gray-100 mb-4">
-                      <MessageSquare className="w-8 h-8 text-gray-400" />
-                    </div>
-                    <p className="text-sm text-gray-500 font-medium">No messages from donors yet</p>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {campaign.donorMessages.map((msg, index) => (
-                      <div key={index} className="p-4 bg-gray-50 rounded-xl border border-gray-100 hover:border-gray-200 transition-colors">
-                        <div className="flex items-center gap-2 mb-1">
-                          <User className="w-4 h-4 text-gray-400" />
-                          <span className="text-xs font-semibold text-gray-600">{msg.userName || 'Anonymous'}</span>
-                        </div>
-                        <p className="text-sm text-gray-900">{msg.message}</p>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="space-y-6">
-              {campaign.category && (
-                <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5 sm:p-6 hover:shadow-md transition-shadow">
-                  <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Category</h3>
-                  <p className="text-base font-bold text-gray-900">{campaign.category}</p>
-                </div>
-              )}
-
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5 sm:p-6 hover:shadow-md transition-shadow">
-                <h3 className="text-sm font-bold text-gray-900 mb-4 flex items-center justify-between">
-                  <span>Documents</span>
-                  <span className="text-xs font-semibold px-2.5 py-1 bg-gray-100 text-gray-600 rounded-full">{campaign.documents?.length || 0}</span>
-                </h3>
-                {!campaign.documents || campaign.documents.length === 0 ? (
-                  <div className="text-center py-8">
-                    <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-gray-100 mb-3">
-                      <FileText className="w-6 h-6 text-gray-400" />
-                    </div>
-                    <p className="text-xs text-gray-500 font-medium">No documents uploaded</p>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    {campaign.documents.map((doc, index) => (
-                      <div key={index} className="group p-3 bg-gray-50 hover:bg-gray-100 rounded-xl flex items-center justify-between gap-3 transition-colors border border-transparent hover:border-gray-200">
-                        <div className="flex items-center gap-3 min-w-0 flex-1">
-                          <div className="flex-shrink-0 w-8 h-8 bg-white rounded-lg flex items-center justify-center shadow-sm">
-                            <FileText className="w-4 h-4 text-emerald-600" />
-                          </div>
-                          <span className="text-sm text-gray-900 truncate font-medium">{doc.name || doc}</span>
-                        </div>
-                        <a href={doc.fileUrl} target="_blank" rel="noopener noreferrer" download>
-                          <Download className="w-4 h-4 text-gray-400 group-hover:text-emerald-600 flex-shrink-0 cursor-pointer transition-colors" />
-                        </a>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {campaign.donationSummary && campaign.donationSummary.length > 0 && (
-                <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5 sm:p-6 hover:shadow-md transition-shadow">
-                  <h3 className="text-sm font-bold text-gray-900 mb-4 flex items-center justify-between">
-                    <span>Donation Breakdown</span>
-                    <span className="text-xs font-semibold px-2.5 py-1 bg-emerald-50 text-emerald-700 rounded-full">{campaign.donationSummary.length} types</span>
-                  </h3>
-                  <div className="space-y-3">
-                    {campaign.donationSummary.map((item, index) => (
-                      <div key={index} className="flex items-center justify-between p-4 rounded-xl border border-gray-100 bg-gradient-to-r from-gray-50 to-white hover:border-emerald-200 transition-all">
-                        <div>
-                          <p className="text-xs uppercase tracking-wide text-gray-500 font-semibold">{item.donationType}</p>
-                          <p className="text-sm text-gray-600 mt-1">{item.count} donation{item.count > 1 ? 's' : ''}</p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-lg font-bold text-gray-900">₹{item.totalAmount.toLocaleString('en-IN')}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5 sm:p-6 hover:shadow-md transition-shadow">
-                <h3 className="text-sm font-bold text-gray-900 mb-4 flex items-center justify-between">
-                  <span>Campaign Expenses</span>
-                  <span className="text-xs font-semibold px-2.5 py-1 bg-red-50 text-red-700 rounded-full">{campaign.campaignExpenses?.length || 0} entries</span>
-                </h3>
-                {!campaign.campaignExpenses || campaign.campaignExpenses.length === 0 ? (
-                  <div className="text-center py-8">
-                    <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-gray-100 mb-3">
-                      <Receipt className="w-6 h-6 text-gray-400" />
-                    </div>
-                    <p className="text-xs text-gray-500 font-medium">No expenses recorded yet</p>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {campaign.campaignExpenses.map((expense, index) => (
-                      <div key={index} className="flex items-center justify-between p-4 rounded-xl border border-gray-100 bg-gradient-to-r from-red-50 to-white hover:border-red-200 transition-all">
-                        <div>
-                          <p className="text-sm font-semibold text-gray-900">{expense.title || 'Expense'}</p>
-                          {expense.date && <p className="text-xs text-gray-500 mt-1">{formatDate(expense.date)}</p>}
-                        </div>
-                        <div className="text-right">
-                          <p className="text-lg font-bold text-red-600">₹{(expense.amount || 0).toLocaleString('en-IN')}</p>
-                          {expense.proofUrl && (
-                            <a href={expense.proofUrl} target="_blank" className="text-xs text-emerald-600 hover:underline flex items-center justify-end gap-1 mt-1">
-                              View Proof <ExternalLink className="w-3 h-3" />
-                            </a>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      <CampaignAnalyticsDashboard 
+        campaign={campaignDetailResponse.campaign}
+        tpfExpensesRaised={tpfExpensesRaised}
+        onBack={() => { setView('list'); setSelectedCampaignId(null); }}
+      />
     );
   }
 
@@ -730,8 +479,9 @@ export default function CampaignAdminDashboard() {
             <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">{inactiveCampaigns}</p>
           </div>
           <div className="bg-gradient-to-br from-red-50 to-white rounded-xl sm:rounded-2xl shadow-sm border border-red-200 p-4 sm:p-6 hover:shadow-md transition-all transform hover:-translate-y-1">
-            <p className="text-xs sm:text-sm font-medium text-red-600 mb-1 sm:mb-2">Total Tip</p>
-            <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-red-600">₹{overallTotalTips.toLocaleString('en-IN')}</p>
+            <p className="text-xs sm:text-sm font-medium text-red-600 mb-1 sm:mb-2">Total Tip & TPF Raised</p>
+            <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-red-600">₹{(overallTotalTips + tpfExpensesRaised).toLocaleString('en-IN')}</p>
+            <p className="text-[10px] text-red-500 font-semibold mt-1">Tips: ₹{overallTotalTips.toLocaleString('en-IN')} + TPF: ₹{tpfExpensesRaised.toLocaleString('en-IN')}</p>
           </div>
           <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-200 p-4 sm:p-6 hover:shadow-md transition-all transform hover:-translate-y-1">
             <p className="text-xs sm:text-sm font-medium text-gray-500 mb-1 sm:mb-2">Raised</p>
@@ -838,7 +588,12 @@ export default function CampaignAdminDashboard() {
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border ${getStatusColor(campaign.campaignStatus)}`}>
+                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border ${
+                          campaign.isActive 
+                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200/60' 
+                            : 'bg-slate-50 text-slate-600 border-slate-200'
+                        }`}>
+                          <span className={`w-1.5 h-1.5 rounded-full ${campaign.isActive ? 'bg-emerald-500' : 'bg-slate-400'}`} />
                           {campaign.isActive ? 'Active' : 'Inactive'}
                         </span>
                       </td>
@@ -871,10 +626,10 @@ export default function CampaignAdminDashboard() {
                         <div className="flex items-center justify-end gap-2">
                           <button
                             onClick={() => { setSelectedCampaignId(campaign._id); setView('detail'); }}
-                            className="p-2 text-gray-600 cursor-pointer hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all"
-                            title="View Details"
+                            className="px-3 py-1.5 bg-slate-50 border border-slate-200 hover:bg-emerald-50 hover:border-emerald-200 hover:text-emerald-700 text-xs font-semibold text-slate-600 rounded-xl transition-all cursor-pointer flex items-center gap-1"
                           >
-                            <Eye className="w-4 h-4" />
+                            Analytics
+                            <ChevronRight size={12} />
                           </button>
                         </div>
                       </td>
@@ -975,9 +730,9 @@ export default function CampaignAdminDashboard() {
                   <div className="flex items-center gap-2 mt-4 pt-3 border-t border-gray-200">
                     <button
                       onClick={() => { setSelectedCampaignId(campaign._id); setView('detail'); }}
-                      className="flex-1 py-2.5 px-3 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600 text-white text-sm font-semibold rounded-xl transition-all shadow-sm hover:shadow-md transform hover:-translate-y-0.5"
+                      className="flex-1 py-2.5 px-3 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600 text-white text-sm font-semibold rounded-xl transition-all shadow-sm hover:shadow-md transform hover:-translate-y-0.5 cursor-pointer"
                     >
-                      View Details
+                      Campaign Analytics
                     </button>
                     <button className="p-2.5 border border-gray-300 hover:bg-gray-50 rounded-xl transition-colors">
                       <MoreVertical className="w-4 h-4 text-gray-600" />
