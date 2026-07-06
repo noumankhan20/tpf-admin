@@ -442,7 +442,7 @@ const DonationTypeBreakdown = () => {
                 text: '₹' + (total >= 100000 ? (total / 100000).toFixed(1) + 'L' : total.toLocaleString('en-IN')),
                 subtext: 'VOLUME',
                 left: 'center',
-                top: '40%',
+                top: '44%',
                 textStyle: { fontSize: 16, fontWeight: '700', color: '#0F172A', fontFamily: 'sans-serif' },
                 subtextStyle: { fontSize: 9, fontWeight: '600', color: '#64748B', fontFamily: 'sans-serif', margin: 4 }
             },
@@ -501,7 +501,7 @@ const DonationTypeBreakdown = () => {
                         <EmptyState message="No segmentations for this mode" />
                     ) : (
                         <>
-                            <div className="h-[180px] w-full relative">
+                            <div className="h-[280px] w-full relative">
                                 <ReactEcharts option={chartOption} style={{ height: '100%', width: '100%' }} />
                             </div>
                             <div className="grid grid-cols-1 gap-2 mt-2">
@@ -588,7 +588,7 @@ const ActivityHeatmap = React.memo(() => {
                 return `${daysFull[dayIndex]} ${fullHours[hrIndex]} : <b>${params.value[2]}</b> donations`;
             }
         },
-        grid: { top: '8%', bottom: '15%', left: '8%', right: '2%' },
+        grid: { top: '8%', bottom: '15%', left: '3%', right: '2%' },
         xAxis: {
             type: 'category',
             data: ['12a', '1a', '2a', '3a', '4a', '5a', '6a', '7a', '8a', '9a', '10a', '11a', '12p', '1p', '2p', '3p', '4p', '5p', '6p', '7p', '8p', '9p', '10p', '11p'],
@@ -691,7 +691,7 @@ const CampaignReferralsSection = () => {
 
     const sourceTotals = useMemo(() => {
         const totals = {
-            "Insta Influencer": 0,
+            "Influencer": 0,
             "Masjid": 0,
             "WhatsappAPI": 0,
             "Email Broadcast": 0,
@@ -716,7 +716,7 @@ const CampaignReferralsSection = () => {
     }, [referrals, selectedCampaignId]);
 
     const REF_COLORS = {
-        "Insta Influencer": "#EC4899",
+        "Influencer": "#EC4899",
         "Masjid": "#10B981",
         "WhatsappAPI": "#22C55E",
         "Email Broadcast": "#3B82F6",
@@ -760,7 +760,7 @@ const CampaignReferralsSection = () => {
         };
     }, [sourceTotals]);
 
-    const categories = ["ALL", "Insta Influencer", "Masjid", "WhatsappAPI", "Email Broadcast", "Meta Ads"];
+    const categories = ["ALL", "Influencer", "Masjid", "WhatsappAPI", "Email Broadcast", "Meta Ads"];
 
     return (
         <Card>
@@ -951,7 +951,7 @@ export default function DashboardOverview() {
                 {/* 2-Column Responsive Dashboard Grid */}
                 <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 items-start">
                     
-                    {/* Left Column (Main Metrics, Lines Chart, Referrals) */}
+                    {/* Left Column (Main Metrics, Lines Chart) */}
                     <div className="xl:col-span-2 flex flex-col gap-8">
                         {/* 1. Sparkline Cards Row */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -986,12 +986,9 @@ export default function DashboardOverview() {
 
                         {/* Donation Trend Line Chart */}
                         <DonationTrendChart />
-
-                        {/* Campaign Referrals breakdowns */}
-                        <CampaignReferralsSection />
                     </div>
 
-                    {/* Right Column (Donation Share, Goal Progress, Heatmap) */}
+                    {/* Right Column (Donation Share, Goal Progress) */}
                     <div className="xl:col-span-1 flex flex-col gap-8">
                         {/* Donation Share Donut Chart */}
                         <DonationTypeBreakdown />
@@ -1001,11 +998,14 @@ export default function DashboardOverview() {
                             progress={metrics.targetProgress}
                             targetLabel={`₹${(metrics.monthlyDonationCollected / 100000).toFixed(1)}L / ₹${(metrics.monthlyTarget / 100000).toFixed(0)}L`}
                         />
-
-                        {/* Activity Heatmap */}
-                        <ActivityHeatmap />
                     </div>
                 </div>
+
+                {/* Campaign Referrals breakdowns */}
+                <CampaignReferralsSection />
+
+                {/* Activity Heatmap */}
+                <ActivityHeatmap />
             </main>
         </div>
     );

@@ -2,14 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { X, Copy, Check, Link } from 'lucide-react';
 
 export default function ReferralLinkGeneratorModal({ isOpen, onClose, campaignSlug, campaignTitle }) {
-  const [category, setCategory] = useState('Insta Influencer');
+  const [category, setCategory] = useState('Influencer');
   const [name, setName] = useState('');
   const [city, setCity] = useState('');
   const [generatedLink, setGeneratedLink] = useState('');
   const [copied, setCopied] = useState(false);
 
   const categories = [
-    'Insta Influencer',
+    'Influencer',
     'Masjid',
     'WhatsappAPI',
     'Email Broadcast',
@@ -18,7 +18,7 @@ export default function ReferralLinkGeneratorModal({ isOpen, onClose, campaignSl
 
   useEffect(() => {
     if (isOpen) {
-      setCategory('Insta Influencer');
+      setCategory('Influencer');
       setName('');
       setCity('');
       setCopied(false);
@@ -32,7 +32,7 @@ export default function ReferralLinkGeneratorModal({ isOpen, onClose, campaignSl
     
     // Add referral parameters
     params.set('ref', category);
-    if ((category === 'Insta Influencer' || category === 'Masjid') && name.trim()) {
+    if ((category === 'Influencer' || category === 'Masjid') && name.trim()) {
       params.set('name', name.trim());
     }
     if (category === 'Masjid' && city.trim()) {
@@ -97,15 +97,15 @@ export default function ReferralLinkGeneratorModal({ isOpen, onClose, campaignSl
             </select>
           </div>
 
-          {/* Name Field (Insta Influencer or Masjid) */}
-          {(category === 'Insta Influencer' || category === 'Masjid') && (
+          {/* Name Field (Influencer or Masjid) */}
+          {(category === 'Influencer' || category === 'Masjid') && (
             <div>
               <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">
-                {category === 'Insta Influencer' ? 'Influencer Name' : 'Masjid Name'}
+                {category === 'Influencer' ? 'Influencer Name' : 'Masjid Name'}
               </label>
               <input
                 type="text"
-                placeholder={category === 'Insta Influencer' ? 'e.g. Ahmed Faraz' : 'e.g. Masjid Al-Aqsa'}
+                placeholder={category === 'Influencer' ? 'e.g. Ahmed Faraz' : 'e.g. Masjid Al-Aqsa'}
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 outline-none transition-all"

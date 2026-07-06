@@ -46,12 +46,17 @@ export default function CampaignAnalyticsDashboard({ campaign, tpfExpensesRaised
     return diffDays > 0 ? diffDays : 0;
   }, [campaign?.deadline]);
 
-  // Ration Kit Metrics
-  const COST_PER_KIT = 550; // Standard cost per kit
-  const totalKitsSponsored = Math.floor(netRaised / COST_PER_KIT);
-  const targetKits = Math.max(1000, Math.ceil(target / COST_PER_KIT));
-  const remainingKits = Math.max(0, targetKits - totalKitsSponsored);
-  const familiesHelped = totalKitsSponsored;
+  // Unit Configuration / Metrics
+  const unitConfig = campaign?.unitConfig;
+  const isUnitConfig = unitConfig?.configType === 'unit';
+  const costPerUnit = unitConfig?.unitCost || 550;
+  const unitName = unitConfig?.unitName || unitConfig?.itemName || 'Kit';
+  const unitNamePlural = unitConfig?.unitNamePlural || (unitName + 's');
+  
+  const totalUnitsSponsored = Math.floor(netRaised / costPerUnit);
+  const targetUnits = Math.max(1000, Math.ceil(target / costPerUnit));
+  const remainingUnits = Math.max(0, targetUnits - totalUnitsSponsored);
+  const familiesHelped = totalUnitsSponsored;
 
   // Expense Categories calculation
   const expenseBreakdown = useMemo(() => {
@@ -194,7 +199,9 @@ export default function CampaignAnalyticsDashboard({ campaign, tpfExpensesRaised
       insights.push({ text: `The average donor contribution is ₹${averageDonation.toLocaleString('en-IN')}.`, type: 'info' });
     }
 
-    insights.push({ text: `This campaign has funded ${totalKitsSponsored} out of ${targetKits} ration kits (${Math.round((totalKitsSponsored/targetKits)*100)}%).`, type: 'success' });
+    if (isUnitConfig) {
+      insights.push({ text: `This campaign has funded ${totalUnitsSponsored} out of ${targetUnits} ${unitNamePlural.toLowerCase()} (${Math.round((totalUnitsSponsored/targetUnits)*100)}%).`, type: 'success' });
+    }
 
     if (requiredDailyCollection > 0 && daysRemaining > 0) {
       insights.push({ text: `Need ₹${requiredDailyCollection.toLocaleString('en-IN')}/day to reach the target before the deadline (${daysRemaining} days left).`, type: 'warning' });
@@ -207,13 +214,32 @@ export default function CampaignAnalyticsDashboard({ campaign, tpfExpensesRaised
     }
 
     return insights;
-  }, [expenseRatio, averageDonation, totalKitsSponsored, targetKits, requiredDailyCollection, daysRemaining, campaignHealth]);
+  }, [expenseRatio, averageDonation, totalUnitsSponsored, targetUnits, requiredDailyCollection, daysRemaining, campaignHealth, isUnitConfig, unitNamePlural]);
 
   const handleShare = () => {
     navigator.clipboard.writeText(window.location.href);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
+
+  const activeSocialLinks = useMemo(() => {
+    const list = [];
+    const submissions = campaign?.socialMediaSubmissions || [];
+    submissions.forEach(sub => {
+      if (sub.links) {
+        Object.entries(sub.links).forEach(([platform, url]) => {
+          if (url && url.trim() !== '' && platform !== '_id') {
+            const capitalizedPlatform = platform.charAt(0).toUpperCase() + platform.slice(1);
+            list.push({
+              channel: `${capitalizedPlatform} Promotion`,
+              url: url.startsWith('http') ? url : `https://${url}`
+            });
+          }
+        });
+      }
+    });
+    return list;
+  }, [campaign?.socialMediaSubmissions]);
 
   const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6'];
 
@@ -246,14 +272,7 @@ export default function CampaignAnalyticsDashboard({ campaign, tpfExpensesRaised
           
           <div className="flex items-center gap-2.5">
             <button 
-              onClick={handleShare}
-              className="px-4 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600 hover:bg-slate-50 hover:border-slate-300 hover:text-slate-900 transition-all flex items-center gap-1.5 cursor-pointer"
-            >
-              {copied ? <Check size={14} className="text-emerald-500" /> : <Share2 size={14} />}
-              {copied ? 'Copied URL' : 'Share Portal'}
-            </button>
-            <button 
-              onClick={() => window.open(`https://www.tpfaid.org/campaign/${campaign?.slug || ''}`, '_blank')}
+              onClick={() => window.open(`https://tpfaid.org/campaign/${campaign?.slug || ''}`, '_blank')}
               className="px-4 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600 hover:bg-slate-50 hover:border-slate-300 hover:text-slate-900 transition-all flex items-center gap-1.5 cursor-pointer"
             >
               <ExternalLink size={14} />
@@ -281,7 +300,7 @@ export default function CampaignAnalyticsDashboard({ campaign, tpfExpensesRaised
                 { label: 'Net Balance', value: `₹${netBalance.toLocaleString('en-IN')}`, desc: 'Available for use', icon: TrendingUp, color: 'text-indigo-600 bg-indigo-50' },
                 { label: 'Total Donors', value: donorsCount, desc: 'Individual helpers', icon: Users, color: 'text-purple-600 bg-purple-50' },
                 { label: 'Average Donation', value: `₹${averageDonation.toLocaleString('en-IN')}`, desc: 'Per transaction', icon: Heart, color: 'text-pink-600 bg-pink-50' },
-                { label: 'Tip & TPF Raised', value: `₹ ${(totalTips + tpfExpensesRaised).toLocaleString('en-IN')}`, desc: `Tip: ₹${totalTips.toLocaleString('en-IN')} + TPF: ₹${tpfExpensesRaised.toLocaleString('en-IN')}`, icon: Award, color: 'text-amber-600 bg-amber-50' },
+                { label: 'Tip Raised', value: `₹ ${totalTips.toLocaleString('en-IN')}`, desc: `Tip amount raised`, icon: Award, color: 'text-amber-600 bg-amber-50' },
               ].map((kpi, idx) => {
                 const Icon = kpi.icon;
                 return (
@@ -347,7 +366,7 @@ export default function CampaignAnalyticsDashboard({ campaign, tpfExpensesRaised
                   <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Financial Breakdown</p>
                   {[
                     { label: 'Gross Donations', val: `₹${grossRaised.toLocaleString('en-IN')}`, change: '+12% this week', positive: true },
-                    { label: 'Platform Tips & TPF Raised', val: `₹ ${(totalTips + tpfExpensesRaised).toLocaleString('en-IN')}`, change: `Tips: ₹${totalTips.toLocaleString('en-IN')} + TPF: ₹${tpfExpensesRaised.toLocaleString('en-IN')}`, positive: true },
+                    { label: 'Platform Tips Raised', val: `₹ ${totalTips.toLocaleString('en-IN')}`, change: `Tips: ₹${totalTips.toLocaleString('en-IN')}`, positive: true },
                     { label: 'Total Expenses', val: `₹${totalExpenses.toLocaleString('en-IN')}`, change: `${expenseRatio}% of raised`, positive: false },
                     { label: 'Net Available Balance', val: `₹${netBalance.toLocaleString('en-IN')}`, change: 'Ready to disburse', positive: true },
                   ].map((item, idx) => (
@@ -447,71 +466,73 @@ export default function CampaignAnalyticsDashboard({ campaign, tpfExpensesRaised
               </div>
             </div>
 
-            {/* ── SECTION 5: RATION KIT ANALYTICS (GRID OF 1000 KITS) ── */}
-            <div className="bg-white border border-slate-200/80 rounded-3xl p-6 shadow-sm">
-              <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 pb-4 border-b border-slate-100 gap-4">
-                <div>
-                  <h3 className="text-base font-bold text-slate-900">Ration Kit Sponsorship Status</h3>
-                  <p className="text-xs text-slate-500">Visual mapping of sponsored vs remaining kits (1 kit = ₹{COST_PER_KIT})</p>
+            {/* ── SECTION 5: DYNAMIC UNIT CONFIG ANALYTICS ── */}
+            {isUnitConfig && (
+              <div className="bg-white border border-slate-200/80 rounded-3xl p-6 shadow-sm">
+                <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 pb-4 border-b border-slate-100 gap-4">
+                  <div>
+                    <h3 className="text-base font-bold text-slate-900">{unitName} Sponsorship Status</h3>
+                    <p className="text-xs text-slate-500">Visual mapping of sponsored vs remaining {unitNamePlural.toLowerCase()} (1 {unitName.toLowerCase()} = ₹{costPerUnit})</p>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <span className="flex items-center gap-1.5 text-xs font-semibold text-slate-500">
+                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-sm shadow-emerald-500/50"></span>
+                      Sponsored ({totalUnitsSponsored})
+                    </span>
+                    <span className="flex items-center gap-1.5 text-xs font-semibold text-slate-500">
+                      <span className="w-2.5 h-2.5 rounded-full bg-slate-200"></span>
+                      Remaining ({remainingUnits})
+                    </span>
+                  </div>
                 </div>
-                <div className="flex flex-wrap items-center gap-3">
-                  <span className="flex items-center gap-1.5 text-xs font-semibold text-slate-500">
-                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-sm shadow-emerald-500/50"></span>
-                    Sponsored ({totalKitsSponsored})
-                  </span>
-                  <span className="flex items-center gap-1.5 text-xs font-semibold text-slate-500">
-                    <span className="w-2.5 h-2.5 rounded-full bg-slate-200"></span>
-                    Remaining ({remainingKits})
-                  </span>
-                </div>
-              </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-                <div className="border border-slate-100 rounded-2xl p-4 text-center">
-                  <p className="text-xs text-slate-500 font-medium">Kits Sponsored</p>
-                  <p className="text-2xl font-black text-emerald-600 mt-1">{totalKitsSponsored}</p>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+                  <div className="border border-slate-100 rounded-2xl p-4 text-center">
+                    <p className="text-xs text-slate-500 font-medium">{unitNamePlural} Sponsored</p>
+                    <p className="text-2xl font-black text-emerald-600 mt-1">{totalUnitsSponsored}</p>
+                  </div>
+                  <div className="border border-slate-100 rounded-2xl p-4 text-center">
+                    <p className="text-xs text-slate-500 font-medium">Remaining Goal</p>
+                    <p className="text-2xl font-black text-slate-700 mt-1">{remainingUnits}</p>
+                  </div>
+                  <div className="border border-slate-100 rounded-2xl p-4 text-center">
+                    <p className="text-xs text-slate-500 font-medium">Families Helped</p>
+                    <p className="text-2xl font-black text-blue-600 mt-1">{familiesHelped}</p>
+                  </div>
+                  <div className="border border-slate-100 rounded-2xl p-4 text-center">
+                    <p className="text-xs text-slate-500 font-medium">Target {unitNamePlural.toLowerCase()}</p>
+                    <p className="text-2xl font-black text-slate-900 mt-1">{targetUnits}</p>
+                  </div>
                 </div>
-                <div className="border border-slate-100 rounded-2xl p-4 text-center">
-                  <p className="text-xs text-slate-500 font-medium">Remaining Goal</p>
-                  <p className="text-2xl font-black text-slate-700 mt-1">{remainingKits}</p>
-                </div>
-                <div className="border border-slate-100 rounded-2xl p-4 text-center">
-                  <p className="text-xs text-slate-500 font-medium">Families Helped</p>
-                  <p className="text-2xl font-black text-blue-600 mt-1">{familiesHelped}</p>
-                </div>
-                <div className="border border-slate-100 rounded-2xl p-4 text-center">
-                  <p className="text-xs text-slate-500 font-medium">Target kits</p>
-                  <p className="text-2xl font-black text-slate-900 mt-1">{targetKits}</p>
-                </div>
-              </div>
 
-              {/* 1000 Kits Grid */}
-              <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100">
-                <div className="flex justify-between items-center mb-3">
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Visual Grid: 1,000 Units</p>
-                  <p className="text-[10px] text-slate-400 font-semibold">{totalKitsSponsored} funded dots</p>
-                </div>
-                <div 
-                  className="grid gap-0.5 overflow-x-auto pb-2"
-                  style={{ gridTemplateColumns: 'repeat(50, minmax(0, 1fr))' }}
-                >
-                  {Array.from({ length: 1000 }).map((_, idx) => {
-                    const isFunded = idx < totalKitsSponsored;
-                    return (
-                      <div 
-                        key={idx}
-                        className={`w-[6px] h-[6px] rounded-[1px] transition-all duration-300 ${
-                          isFunded 
-                            ? 'bg-emerald-500 shadow-[0_0_2px_#10b981]' 
-                            : 'bg-slate-200'
-                        }`}
-                        title={`Kit #${idx + 1}: ${isFunded ? 'Sponsored' : 'Pending'}`}
-                      />
-                    );
-                  })}
+                {/* 1000 Units Grid */}
+                <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100">
+                  <div className="flex justify-between items-center mb-3">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Visual Grid: 1,000 {unitNamePlural}</p>
+                    <p className="text-[10px] text-slate-400 font-semibold">{totalUnitsSponsored} funded dots</p>
+                  </div>
+                  <div 
+                    className="grid gap-0.5 overflow-x-auto pb-2"
+                    style={{ gridTemplateColumns: 'repeat(50, minmax(0, 1fr))' }}
+                  >
+                    {Array.from({ length: 1000 }).map((_, idx) => {
+                      const isFunded = idx < totalUnitsSponsored;
+                      return (
+                        <div 
+                          key={idx}
+                          className={`w-[6px] h-[6px] rounded-[1px] transition-all duration-300 ${
+                            isFunded 
+                              ? 'bg-emerald-500 shadow-[0_0_2px_#10b981]' 
+                              : 'bg-slate-200'
+                          }`}
+                          title={`${unitName} #${idx + 1}: ${isFunded ? 'Sponsored' : 'Pending'}`}
+                        />
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
 
             {/* ── SECTION 6: EXPENSE ANALYTICS ── */}
             <div className="bg-white border border-slate-200/80 rounded-3xl p-6 shadow-sm">
@@ -604,26 +625,24 @@ export default function CampaignAnalyticsDashboard({ campaign, tpfExpensesRaised
               </div>
 
               {/* Social Channels / Links */}
-              <div className="bg-white border border-slate-200/80 rounded-3xl p-6 shadow-sm">
-                <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-100">
-                  <h3 className="text-sm font-bold text-slate-900">Social media & promotion</h3>
-                  <Share2 size={15} className="text-slate-400" />
+              {activeSocialLinks.length > 0 && (
+                <div className="bg-white border border-slate-200/80 rounded-3xl p-6 shadow-sm">
+                  <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-100">
+                    <h3 className="text-sm font-bold text-slate-900">Social media & promotion</h3>
+                    <Share2 size={15} className="text-slate-400" />
+                  </div>
+                  <div className="space-y-3">
+                    {activeSocialLinks.map((social, idx) => (
+                      <div key={idx} className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-100">
+                        <span className="text-xs font-semibold text-slate-700">{social.channel}</span>
+                        <a href={social.url} target="_blank" rel="noreferrer" className="text-xs font-bold text-emerald-600 hover:underline flex items-center gap-1">
+                          View link <ExternalLink size={12} />
+                        </a>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-                <div className="space-y-3">
-                  {[
-                    { channel: 'Instagram Campaign page', url: 'https://instagram.com/tpf_aid', active: true },
-                    { channel: 'Facebook page promotion', url: 'https://facebook.com/tpf_aid', active: true },
-                    { channel: 'WhatsApp Broadcast directory', url: 'https://wa.me/919411565185', active: true }
-                  ].map((social, idx) => (
-                    <div key={idx} className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-100">
-                      <span className="text-xs font-semibold text-slate-700">{social.channel}</span>
-                      <a href={social.url} target="_blank" rel="noreferrer" className="text-xs font-bold text-emerald-600 hover:underline flex items-center gap-1">
-                        View link <ExternalLink size={12} />
-                      </a>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              )}
             </div>
 
             {/* ── SECTION 8: AI INSIGHTS & ACTIONS ── */}
@@ -641,35 +660,6 @@ export default function CampaignAnalyticsDashboard({ campaign, tpfExpensesRaised
                     <p className="text-xs text-emerald-950 font-medium leading-relaxed">{insight.text}</p>
                   </div>
                 ))}
-              </div>
-            </div>
-
-            {/* ── SECTION 9: RECENT TIMELINE ACTIVITY ── */}
-            <div className="bg-white border border-slate-200/80 rounded-3xl p-6 shadow-sm">
-              <h3 className="text-base font-bold text-slate-900 mb-6 pb-2 border-b border-slate-100">Recent Activity Timeline</h3>
-              <div className="relative pl-6 border-l border-slate-200 space-y-6">
-                {[
-                  { title: 'New Donation received', desc: `₹2,500 contribution was made to the campaign.`, time: '2 hours ago', icon: Heart, color: 'bg-emerald-500' },
-                  { title: 'Campaign Expense registered', desc: `₹8,500 for ration kit sourcing and delivery.`, time: '5 hours ago', icon: Receipt, color: 'bg-red-500' },
-                  { title: 'Milestone Achievement reached', desc: `Campaign crossed ${fundingPercentage}% of total target.`, time: '1 day ago', icon: Award, color: 'bg-indigo-500' },
-                  { title: 'Social media broadcast sent', desc: `Broadcast message sent to the WhatsApp directory list.`, time: '2 days ago', icon: Share2, color: 'bg-blue-500' },
-                ].map((act, idx) => {
-                  const Icon = act.icon;
-                  return (
-                    <div key={idx} className="relative">
-                      {/* Dot icon */}
-                      <span className={`absolute -left-[31px] top-0 w-4 h-4 rounded-full flex items-center justify-center text-white p-0.5 ${act.color}`}>
-                      </span>
-                      <div>
-                        <div className="flex items-center justify-between">
-                          <p className="text-xs font-bold text-slate-900">{act.title}</p>
-                          <p className="text-[10px] text-slate-400 font-semibold">{act.time}</p>
-                        </div>
-                        <p className="text-xs text-slate-500 mt-1">{act.desc}</p>
-                      </div>
-                    </div>
-                  );
-                })}
               </div>
             </div>
 
