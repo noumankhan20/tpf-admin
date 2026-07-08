@@ -18,16 +18,25 @@ export default function CampaignAnalyticsDashboard({ campaign, tpfExpensesRaised
 
   // ── 1. DERIVED VALUES & METRICS ──────────────────────────────────────────
   const target = campaign?.targetAmount || 0;
-  const grossRaised = (campaign?.netRaisedAmount || 0) + (campaign?.totalTips || 0); // Include tips in gross
-  const netRaised = campaign?.netRaisedAmount || 0;
+  const grossRaised = Math.max(0, campaign?.raisedAmount || 0); // Gross receipts (raisedAmount in DB)
+  const totalTips = campaign?.totalTips || 0;
+  const netRaised = Math.max(0, grossRaised - totalTips); // raisedAmount minus the tip
+  const surplus = Math.max(0, grossRaised - target); // raisedAmount - targetAmount
   const remaining = Math.max(0, target - netRaised);
   
-  // Calculate expenses
+  // Calculate expenses (excluding BENEFICIARY)
   const expensesList = campaign?.campaignExpenses || [];
-  const totalExpenses = expensesList.reduce((sum, exp) => sum + (exp.amount || 0), 0);
+  const totalExpenses = Math.max(0, expensesList
+    .filter(exp => exp.expenseType !== 'BENEFICIARY')
+    .reduce((sum, exp) => sum + (exp.amount || 0), 0));
+
+  // Aid Delivered (BENEFICIARY type)
+  const aidDelivered = Math.max(0, expensesList
+    .filter(exp => exp.expenseType === 'BENEFICIARY')
+    .reduce((sum, exp) => sum + (exp.amount || 0), 0));
+
   const netBalance = Math.max(0, netRaised - totalExpenses);
   
-  const totalTips = campaign?.totalTips || 0;
   const donorsCount = campaign?.totalDonors || 0;
   
   // Average & Largest Donation
@@ -61,39 +70,37 @@ export default function CampaignAnalyticsDashboard({ campaign, tpfExpensesRaised
   // Expense Categories calculation
   const expenseBreakdown = useMemo(() => {
     const categories = {
-      'Beneficiary Payments': 0,
-      'Transportation': 0,
-      'Operations': 0,
-      'Salaries': 0,
-      'Platform Costs': 0
+      'Aid Delivered': 0,
+      'Operational Expense': 0,
+      'Salary': 0,
+      'Purchase': 0,
+      'Reimbursement': 0,
+      'Documentation': 0,
+      'Other': 0
     };
     
     expensesList.forEach(exp => {
-      const title = (exp.title || '').toLowerCase();
-      if (title.includes('payment') || title.includes('beneficiary')) {
-        categories['Beneficiary Payments'] += (exp.amount || 0);
-      } else if (title.includes('transport') || title.includes('fuel') || title.includes('delivery')) {
-        categories['Transportation'] += (exp.amount || 0);
-      } else if (title.includes('salary') || title.includes('staff')) {
-        categories['Salaries'] += (exp.amount || 0);
-      } else if (title.includes('platform') || title.includes('fee')) {
-        categories['Platform Costs'] += (exp.amount || 0);
+      if (exp.expenseType === 'BENEFICIARY') {
+        categories['Aid Delivered'] += (exp.amount || 0);
+      } else if (exp.expenseType === 'OPERATIONAL') {
+        categories['Operational Expense'] += (exp.amount || 0);
+      } else if (exp.expenseType === 'SALARY') {
+        categories['Salary'] += (exp.amount || 0);
+      } else if (exp.expenseType === 'PURCHASE') {
+        categories['Purchase'] += (exp.amount || 0);
+      } else if (exp.expenseType === 'REIMBURSEMENT') {
+        categories['Reimbursement'] += (exp.amount || 0);
+      } else if (exp.expenseType === 'DOCUMENTATION_SERVICE') {
+        categories['Documentation'] += (exp.amount || 0);
       } else {
-        categories['Operations'] += (exp.amount || 0);
+        categories['Other'] += (exp.amount || 0);
       }
     });
-
-    // Fallback if no expenses recorded but we have totalExpenses
-    if (totalExpenses > 0 && Object.values(categories).reduce((a,b)=>a+b,0) === 0) {
-      categories['Beneficiary Payments'] = Math.round(totalExpenses * 0.7);
-      categories['Operations'] = Math.round(totalExpenses * 0.2);
-      categories['Transportation'] = Math.round(totalExpenses * 0.1);
-    }
 
     return Object.entries(categories)
       .map(([name, value]) => ({ name, value }))
       .filter(item => item.value > 0);
-  }, [expensesList, totalExpenses]);
+  }, [expensesList]);
 
   // ── 2. CHART SIMULATIONS (Realistically Anchored to Actual Metrics) ──────
   // Donation Growth Simulation
@@ -295,8 +302,10 @@ export default function CampaignAnalyticsDashboard({ campaign, tpfExpensesRaised
                 { label: 'Total Raised', value: `₹${grossRaised.toLocaleString('en-IN')}`, desc: 'Gross receipts', icon: IndianRupee, color: 'text-emerald-600 bg-emerald-50' },
                 { label: 'Net Raised', value: `₹${netRaised.toLocaleString('en-IN')}`, desc: 'Excluding tips', icon: CircleDollarSign, color: 'text-teal-600 bg-teal-50' },
                 { label: 'Target Amount', value: `₹${target.toLocaleString('en-IN')}`, desc: 'Goal target', icon: Award, color: 'text-blue-600 bg-blue-50' },
+                { label: 'Surplus', value: `₹${surplus.toLocaleString('en-IN')}`, desc: 'Raised amount minus target', icon: Sparkles, color: 'text-emerald-700 bg-emerald-100' },
+                { label: 'Aid Delivered', value: `₹${aidDelivered.toLocaleString('en-IN')}`, desc: 'Beneficiary payouts', icon: CheckCircle2, color: 'text-green-600 bg-green-50' },
                 { label: 'Remaining Required', value: `₹${remaining.toLocaleString('en-IN')}`, desc: 'To meet goal', icon: HelpCircle, color: 'text-amber-600 bg-amber-50' },
-                { label: 'Total Expenses', value: `₹${totalExpenses.toLocaleString('en-IN')}`, desc: 'Operations & payouts', icon: Receipt, color: 'text-red-600 bg-red-50' },
+                { label: 'Total Expenses', value: `₹${totalExpenses.toLocaleString('en-IN')}`, desc: 'Operations & other expenses', icon: Receipt, color: 'text-red-600 bg-red-50' },
                 { label: 'Net Balance', value: `₹${netBalance.toLocaleString('en-IN')}`, desc: 'Available for use', icon: TrendingUp, color: 'text-indigo-600 bg-indigo-50' },
                 { label: 'Total Donors', value: donorsCount, desc: 'Individual helpers', icon: Users, color: 'text-purple-600 bg-purple-50' },
                 { label: 'Average Donation', value: `₹${averageDonation.toLocaleString('en-IN')}`, desc: 'Per transaction', icon: Heart, color: 'text-pink-600 bg-pink-50' },
@@ -544,7 +553,7 @@ export default function CampaignAnalyticsDashboard({ campaign, tpfExpensesRaised
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {totalExpenses > 0 ? (
+                {(totalExpenses + aidDelivered) > 0 ? (
                   <div className="h-[220px] flex items-center justify-center">
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
@@ -570,7 +579,7 @@ export default function CampaignAnalyticsDashboard({ campaign, tpfExpensesRaised
                     <p className="text-[10px] text-slate-400 mt-1">Disbursements are currently empty for this campaign.</p>
                   </div>
                 )}
-
+ 
                 <div className="lg:col-span-2 space-y-4">
                   <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Expense Categories</p>
                   {expenseBreakdown.length > 0 ? (
@@ -583,7 +592,7 @@ export default function CampaignAnalyticsDashboard({ campaign, tpfExpensesRaised
                           </div>
                           <div className="text-right">
                             <span className="text-xs font-bold text-slate-900">₹{item.value.toLocaleString('en-IN')}</span>
-                            <span className="text-[10px] text-slate-400 ml-1.5">({Math.round((item.value / totalExpenses) * 100)}%)</span>
+                            <span className="text-[10px] text-slate-400 ml-1.5">({Math.round((item.value / (totalExpenses + aidDelivered)) * 100)}%)</span>
                           </div>
                         </div>
                       ))}
@@ -686,8 +695,11 @@ export default function CampaignAnalyticsDashboard({ campaign, tpfExpensesRaised
 
               <div className="border-t border-slate-100 pt-5 space-y-3.5">
                 {[
-                  { label: 'Total Raised', value: `₹${netRaised.toLocaleString('en-IN')}` },
+                  { label: 'Total Raised', value: `₹${grossRaised.toLocaleString('en-IN')}` },
+                  { label: 'Net Raised', value: `₹${netRaised.toLocaleString('en-IN')}` },
                   { label: 'Target Amount', value: `₹${target.toLocaleString('en-IN')}` },
+                  { label: 'Surplus', value: `₹${surplus.toLocaleString('en-IN')}` },
+                  { label: 'Aid Delivered', value: `₹${aidDelivered.toLocaleString('en-IN')}` },
                   { label: 'Remaining Required', value: `₹${remaining.toLocaleString('en-IN')}` },
                   { label: 'Total Expenses', value: `₹${totalExpenses.toLocaleString('en-IN')}` },
                   { label: 'Available Balance', value: `₹${netBalance.toLocaleString('en-IN')}`, highlight: true }

@@ -290,23 +290,38 @@ export default function AddExpenseModal({
                                     </>
                                 )}
 
-                                {/* OPERATIONAL / OTHER: Optional Vendor */}
+                                {/* OPERATIONAL / OTHER: Optional Vendor & Campaign */}
                                 {(formData.expenseType === 'OPERATIONAL' || formData.expenseType === 'OTHER') && (
-                                    <div>
-                                        <div className="flex items-center justify-between mb-1.5">
-                                            <span className="text-xs font-medium text-gray-500">Vendor (Optional)</span>
-                                            <button type="button" onClick={onOpenAddVendor} className={addNewBtn}>
-                                                <Plus size={11} /> Add New
-                                            </button>
+                                    <div className="space-y-4">
+                                        <div>
+                                            <div className="flex items-center justify-between mb-1.5">
+                                                <span className="text-xs font-medium text-gray-500">Vendor (Optional)</span>
+                                                <button type="button" onClick={onOpenAddVendor} className={addNewBtn}>
+                                                    <Plus size={11} /> Add New
+                                                </button>
+                                            </div>
+                                            <DD dd={vendorDD} icon={<Building2 size={15} />} placeholder="Choose Vendor"
+                                                selectedLabel={selectedVendor?.fullName || null}
+                                                items={vendorDD.paginated.map((v) => ({ id: v._id, label: v.fullName }))}
+                                                selectedId={formData.vendorId}
+                                                onSelect={(id) => { setField('vendorId', id); vendorDD.setOpen(false); }}
+                                                emptyMessage="No vendors found."
+                                                searchPlaceholder="Search by vendor name or contact…"
+                                            />
                                         </div>
-                                        <DD dd={vendorDD} icon={<Building2 size={15} />} placeholder="Choose Vendor"
-                                            selectedLabel={selectedVendor?.fullName || null}
-                                            items={vendorDD.paginated.map((v) => ({ id: v._id, label: v.fullName }))}
-                                            selectedId={formData.vendorId}
-                                            onSelect={(id) => { setField('vendorId', id); vendorDD.setOpen(false); }}
-                                            emptyMessage="No vendors found."
-                                            searchPlaceholder="Search by vendor name or contact…"
-                                        />
+                                        <div>
+                                            <div className="flex items-center justify-between mb-1.5">
+                                                <span className="text-xs font-medium text-gray-500">Campaign (Optional)</span>
+                                            </div>
+                                            <DD dd={campaignDD} icon={<Users size={15} />} placeholder="Choose Campaign"
+                                                selectedLabel={selectedCampaign ? (selectedCampaign.isSpecialCase ? `[Special Case] ${selectedCampaign.title}` : selectedCampaign.title) : null}
+                                                required={false} hiddenValue={formData.campaignId}
+                                                items={campaignDD.paginated.map((c) => ({ id: c._id, label: c.isSpecialCase ? `[Special Case] ${c.title}` : c.title }))}
+                                                selectedId={formData.campaignId}
+                                                onSelect={(id) => { setField('campaignId', id); campaignDD.setOpen(false); }}
+                                                emptyMessage="No campaigns found."
+                                            />
+                                        </div>
                                     </div>
                                 )}
 

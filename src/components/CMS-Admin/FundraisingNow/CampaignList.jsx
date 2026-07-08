@@ -115,9 +115,11 @@ export default function CampaignList({
                     <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${categoryColors[card.category]}`}>
                       {card.category}
                     </span>
-                    <span className="text-xs text-gray-600 font-medium">
-                      ₹{(card.requiredAmount || 0).toLocaleString()}
-                    </span>
+                    {card.source !== 'FOUNDATION' && (
+                      <span className="text-xs text-gray-600 font-medium">
+                        ₹{(card.requiredAmount || 0).toLocaleString()}
+                      </span>
+                    )}
                     {card.deadline && (
                       <span className="flex items-center gap-1 text-xs text-gray-500">
                         <Clock size={12} />

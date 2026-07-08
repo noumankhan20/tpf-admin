@@ -25,6 +25,7 @@ export default function FundraisingCMS() {
   const router = useRouter();
   const [viewMode, setViewMode] = useState("view");
   const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
   const [editingCard, setEditingCard] = useState(null);
   const [readyCampaigns, setReadyCampaigns] = useState([]);
   const [selectedCampaign, setSelectedCampaign] = useState(null);
@@ -122,7 +123,7 @@ export default function FundraisingCMS() {
     data: fundraisersResponse,
     isLoading: isFundraisersLoading,
     isError: isFundraisersError,
-  } = useGetFundraisersQuery();
+  } = useGetFundraisersQuery({ page: currentPage, limit: 10 });
   const [createFundraiser, { isLoading: isCreating }] =
     useCreateFundraiserMutation();
 
@@ -562,6 +563,8 @@ export default function FundraisingCMS() {
                 setLinkGenCampaign(card);
                 setLinkGenOpen(true);
               }}
+              pagination={fundraisersResponse?.pagination}
+              onPageChange={setCurrentPage}
             />
           </>
         ) : (

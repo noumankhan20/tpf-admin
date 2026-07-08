@@ -565,6 +565,7 @@ export default function CampaignAdminDashboard() {
             <table className="w-full">
               <thead className="bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200">
                 <tr>
+                  <th className="px-6 py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Sr. No.</th>
                   <th className="px-6 py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Campaign</th>
                   <th className="px-6 py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Status</th>
                   <th className="px-6 py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Progress</th>
@@ -575,10 +576,14 @@ export default function CampaignAdminDashboard() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
-                {filteredCampaigns.map((campaign) => {
-                  const progress = getProgressPercentage(campaign.netRaisedAmount || 0, campaign.targetAmount || 0);
+                {filteredCampaigns.map((campaign, index) => {
+                  const progress = getProgressPercentage(campaign.raisedAmount || 0, campaign.targetAmount || 0);
+                  const srNo = (currentPage - 1) * limit + index + 1;
                   return (
                     <tr key={campaign._id} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-6 py-4 text-sm font-semibold text-gray-500">
+                        {srNo}
+                      </td>
                       <td className="px-6 py-4">
                         <div>
                           <p className="text-sm font-semibold text-gray-900">{campaign.title || campaign.beneficiaryName || 'Untitled Campaign'}</p>
@@ -590,7 +595,7 @@ export default function CampaignAdminDashboard() {
                       <td className="px-6 py-4">
                         <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border ${
                           campaign.isActive 
-                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200/60' 
+                             ? 'bg-emerald-50 text-emerald-700 border-emerald-200/60' 
                             : 'bg-slate-50 text-slate-600 border-slate-200'
                         }`}>
                           <span className={`w-1.5 h-1.5 rounded-full ${campaign.isActive ? 'bg-emerald-500' : 'bg-slate-400'}`} />
@@ -612,7 +617,7 @@ export default function CampaignAdminDashboard() {
                       </td>
                       <td className="px-6 py-4">
                         <div>
-                          <p className="text-sm font-bold text-gray-900">₹{(campaign.netRaisedAmount || 0).toLocaleString('en-IN')}</p>
+                          <p className="text-sm font-bold text-gray-900">₹{(campaign.raisedAmount || 0).toLocaleString('en-IN')}</p>
                           <p className="text-xs text-gray-500 mt-0.5">of ₹{(campaign.targetAmount || 0).toLocaleString('en-IN')}</p>
                         </div>
                       </td>
@@ -639,18 +644,22 @@ export default function CampaignAdminDashboard() {
               </tbody>
             </table>
           </div>
-
+ 
           {/* ── Mobile Cards ── */}
           <div className="lg:hidden divide-y divide-gray-200">
-            {filteredCampaigns.map((campaign) => {
-              const progress = getProgressPercentage(campaign.netRaisedAmount || 0, campaign.targetAmount || 0);
+            {filteredCampaigns.map((campaign, index) => {
+              const progress = getProgressPercentage(campaign.raisedAmount || 0, campaign.targetAmount || 0);
               const isExpanded = expandedRow === campaign._id;
+              const srNo = (currentPage - 1) * limit + index + 1;
               return (
                 <div key={campaign._id} className="p-4 hover:bg-gray-50 transition-colors">
                   <div className="mb-3">
                     <div className="flex items-start justify-between mb-2 gap-3">
                       <div className="flex-1 min-w-0">
-                        <h3 className="text-sm font-bold text-gray-900 mb-1 break-words">{campaign.title || campaign.beneficiaryName || 'Untitled Campaign'}</h3>
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-xs font-bold text-gray-400">#{srNo}</span>
+                          <h3 className="text-sm font-bold text-gray-900 break-words">{campaign.title || campaign.beneficiaryName || 'Untitled Campaign'}</h3>
+                        </div>
                         {campaign.title && campaign.beneficiaryName && (
                           <p className="text-xs text-gray-500 mb-1">{campaign.beneficiaryName}</p>
                         )}
@@ -663,14 +672,14 @@ export default function CampaignAdminDashboard() {
                         <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
                       </button>
                     </div>
-
+ 
                     <div className="flex flex-wrap gap-1.5 mb-3">
                       <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border ${getStatusColor(campaign.campaignStatus)}`}>
                         {campaign.campaignStatus?.replace(/_/g, ' ')}
                       </span>
                     </div>
                   </div>
-
+ 
                   <div className="mb-3">
                     <div className="flex items-center justify-between text-xs font-medium text-gray-600 mb-2">
                       <span>{progress.toFixed(0)}% funded</span>
@@ -683,10 +692,10 @@ export default function CampaignAdminDashboard() {
                       />
                     </div>
                   </div>
-
+ 
                   <div className="flex items-center justify-between mb-3">
                     <div>
-                      <p className="text-base font-bold text-gray-900">₹{(campaign.netRaisedAmount || 0).toLocaleString('en-IN')}</p>
+                      <p className="text-base font-bold text-gray-900">₹{(campaign.raisedAmount || 0).toLocaleString('en-IN')}</p>
                       <p className="text-xs text-gray-500">of ₹{(campaign.targetAmount || 0).toLocaleString('en-IN')}</p>
                     </div>
                     <div className="text-right">
@@ -694,7 +703,7 @@ export default function CampaignAdminDashboard() {
                       <p className="text-xs font-semibold text-gray-700">{formatDate(campaign.updatedAt)}</p>
                     </div>
                   </div>
-
+ 
                   {isExpanded && (
                     <div className="pt-3 border-t border-gray-200 space-y-3">
                       {campaign.impactGoals && campaign.impactGoals.length > 0 && (
@@ -712,7 +721,7 @@ export default function CampaignAdminDashboard() {
                       )}
                       <div className="grid grid-cols-3 gap-2">
                         <div className="text-center p-2.5 bg-gray-50 rounded-lg border border-gray-100">
-                          <p className="text-xs text-gray-500 mb-1">Tax</p>
+                           <p className="text-xs text-gray-500 mb-1">Tax</p>
                           <p className="text-xs font-bold text-gray-900">{campaign.taxBenefits ? '80G' : 'N/A'}</p>
                         </div>
                         <div className="text-center p-2.5 bg-gray-50 rounded-lg border border-gray-100">
@@ -726,7 +735,7 @@ export default function CampaignAdminDashboard() {
                       </div>
                     </div>
                   )}
-
+ 
                   <div className="flex items-center gap-2 mt-4 pt-3 border-t border-gray-200">
                     <button
                       onClick={() => { setSelectedCampaignId(campaign._id); setView('detail'); }}

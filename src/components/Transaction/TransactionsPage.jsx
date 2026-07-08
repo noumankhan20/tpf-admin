@@ -340,6 +340,9 @@ const FilterDrawer = ({ open, onClose, filters, onApply }) => {
 // ─────────────────────────────────────────────────────────
 // DETAIL MODAL
 // ─────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────
+// DETAIL MODAL
+// ─────────────────────────────────────────────────────────
 const TransactionDetailModal = ({ tx, onClose, isCA }) => {
     if (!tx) return null;
 
@@ -504,11 +507,11 @@ export default function TransactionsPage() {
     const [page, setPage] = useState(1);
     const [limit, setLimit] = useState(10);
 
-    // Filters state (applied)
+    // Filters state (applied) - using arrays for multi-select
     const EMPTY_FILTERS = {
         startDate: "", endDate: "", minAmount: "", maxAmount: "",
-        type: "", source: "", donationType: "", expenseType: "",
-        paymentMethod: "", status: "", campaignId: "",
+        type: [], source: [], donationType: [], expenseType: [],
+        paymentMethod: [], status: [], campaignId: "",
         sortBy: "date", sortOrder: "desc",
     };
     const [appliedFilters, setAppliedFilters] = useState(EMPTY_FILTERS);
@@ -523,7 +526,15 @@ export default function TransactionsPage() {
     const queryParams = useMemo(() => {
         const p = { page, limit };
         if (debouncedSearch?.length >= 2) p.search = debouncedSearch;
-        Object.entries(appliedFilters).forEach(([k, v]) => { if (v) p[k] = v; });
+        Object.entries(appliedFilters).forEach(([k, v]) => {
+            if (Array.isArray(v)) {
+                if (v.length > 0) {
+                    p[k] = v.join(",");
+                }
+            } else if (v) {
+                p[k] = v;
+            }
+        });
         return p;
     }, [page, limit, debouncedSearch, appliedFilters]);
 
@@ -533,7 +544,7 @@ export default function TransactionsPage() {
     const pagination = data?.pagination || { currentPage: 1, totalPages: 1, totalTransactions: 0 };
     const summary = data?.summary || { totalCredits: 0, totalDebits: 0, netBalance: 0, creditCount: 0, debitCount: 0, totalCount: 0 };
 
-    // Build active filter chips (exclude sort)
+    // Build active filter chips
     const activeChips = useMemo(() => {
         const chips = [];
         const labels = {
@@ -542,7 +553,10 @@ export default function TransactionsPage() {
             paymentMethod: "Method",
         };
         Object.entries(labels).forEach(([k, lbl]) => {
-            if (appliedFilters[k]) chips.push({ key: k, label: `${lbl}: ${appliedFilters[k]}` });
+            const vals = appliedFilters[k] || [];
+            vals.forEach(val => {
+                chips.push({ key: `${k}:${val}`, label: `${lbl}: ${EXPENSE_TYPE_LABELS[val] || val}` });
+            });
         });
         if (appliedFilters.startDate || appliedFilters.endDate) {
             chips.push({ key: "date", label: `Date: ${appliedFilters.startDate || "∞"} – ${appliedFilters.endDate || "∞"}` });
@@ -553,15 +567,32 @@ export default function TransactionsPage() {
         return chips;
     }, [appliedFilters]);
 
-    const removeChip = (key) => {
-        if (key === "date") setAppliedFilters((p) => ({ ...p, startDate: "", endDate: "" }));
-        else if (key === "amount") setAppliedFilters((p) => ({ ...p, minAmount: "", maxAmount: "" }));
-        else setAppliedFilters((p) => ({ ...p, [key]: "" }));
+    const removeChip = (chipKey) => {
+        if (chipKey === "date") {
+            setAppliedFilters((p) => ({ ...p, startDate: "", endDate: "" }));
+        } else if (chipKey === "amount") {
+            setAppliedFilters((p) => ({ ...p, minAmount: "", maxAmount: "" }));
+        } else {
+            const [k, val] = chipKey.split(":");
+            setAppliedFilters((p) => ({
+                ...p,
+                [k]: (p[k] || []).filter(x => x !== val)
+            }));
+        }
     };
 
-    const applyFilters = (f) => {
-        setAppliedFilters(f);
-        setPage(1);
+    const toggleFilterVal = (category, val) => {
+        setAppliedFilters(p => {
+            const current = p[category] || [];
+            const next = current.includes(val)
+                ? current.filter(x => x !== val)
+                : [...current, val];
+            return { ...p, [category]: next };
+        });
+    };
+
+    const handleFilterChange = (key, val) => {
+        setAppliedFilters(p => ({ ...p, [key]: val }));
     };
 
     return (
@@ -651,7 +682,7 @@ export default function TransactionsPage() {
                         </select>
 
                         {/* filter button */}
-                        <button onClick={() => setFilterOpen(true)}
+                        <button onClick={() => setFilterOpen(!filterOpen)}
                             className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors border"
                             style={activeChips.length > 0
                                 ? { background: "#ecfdf5", borderColor: "#6ee7b7", color: "#059669" }
@@ -665,6 +696,166 @@ export default function TransactionsPage() {
                             )}
                         </button>
                     </div>
+
+                    {/* Collapsible inline filter panel */}
+                    {filterOpen && (
+                        <div className="mt-4 pt-4 border-t border-gray-100 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 animate-fadeIn">
+                            {/* Date Range */}
+                            <div className="space-y-2">
+                                <p className="text-[11px] font-bold uppercase tracking-wider text-gray-400">Date Range</p>
+                                <div className="grid grid-cols-2 gap-2">
+                                    <input type="date" value={appliedFilters.startDate}
+                                        onChange={(e) => handleFilterChange("startDate", e.target.value)}
+                                        className="w-full border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs text-gray-700 focus:outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-500/10"
+                                    />
+                                    <input type="date" value={appliedFilters.endDate}
+                                        onChange={(e) => handleFilterChange("endDate", e.target.value)}
+                                        className="w-full border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs text-gray-700 focus:outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-500/10"
+                                    />
+                                </div>
+                            </div>
+                            
+                            {/* Amount Range */}
+                            <div className="space-y-2">
+                                <p className="text-[11px] font-bold uppercase tracking-wider text-gray-400">Amount Range (₹)</p>
+                                <div className="grid grid-cols-2 gap-2">
+                                    <input type="number" placeholder="Min" value={appliedFilters.minAmount}
+                                        onChange={(e) => handleFilterChange("minAmount", e.target.value)}
+                                        className="w-full border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs text-gray-700 focus:outline-none focus:border-emerald-400"
+                                    />
+                                    <input type="number" placeholder="Max" value={appliedFilters.maxAmount}
+                                        onChange={(e) => handleFilterChange("maxAmount", e.target.value)}
+                                        className="w-full border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs text-gray-700 focus:outline-none focus:border-emerald-400"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Sort Options */}
+                            <div className="space-y-2">
+                                <p className="text-[11px] font-bold uppercase tracking-wider text-gray-400">Sort By</p>
+                                <div className="grid grid-cols-2 gap-2">
+                                    <select value={appliedFilters.sortBy} onChange={(e) => handleFilterChange("sortBy", e.target.value)}
+                                        className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs text-gray-600 focus:outline-none focus:border-emerald-400">
+                                        <option value="date">Date</option>
+                                        <option value="amount">Amount</option>
+                                    </select>
+                                    <select value={appliedFilters.sortOrder} onChange={(e) => handleFilterChange("sortOrder", e.target.value)}
+                                        className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs text-gray-600 focus:outline-none focus:border-emerald-400">
+                                        <option value="desc">Newest First</option>
+                                        <option value="asc">Oldest First</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            {/* Type */}
+                            <div className="space-y-2">
+                                <p className="text-[11px] font-bold uppercase tracking-wider text-gray-400">Transaction Type</p>
+                                <div className="flex flex-wrap gap-1.5">
+                                    {["CREDIT", "DEBIT"].map(v => {
+                                        const active = appliedFilters.type?.includes(v);
+                                        return (
+                                            <button key={v} onClick={() => toggleFilterVal("type", v)}
+                                                className={`px-2.5 py-1 rounded-lg text-xs font-semibold border transition-all ${
+                                                    active ? "bg-emerald-500 border-emerald-500 text-white animate-scale" : "bg-white border-gray-200 text-gray-500 hover:bg-gray-50"
+                                                }`}>
+                                                {v === "CREDIT" ? "Credit (CR)" : "Debit (DR)"}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+
+                            {/* Source */}
+                            <div className="space-y-2">
+                                <p className="text-[11px] font-bold uppercase tracking-wider text-gray-400">Source</p>
+                                <div className="flex flex-wrap gap-1.5">
+                                    {SOURCES.map(v => {
+                                        const active = appliedFilters.source?.includes(v);
+                                        return (
+                                            <button key={v} onClick={() => toggleFilterVal("source", v)}
+                                                className={`px-2.5 py-1 rounded-lg text-xs font-semibold border transition-all ${
+                                                    active ? "bg-emerald-500 border-emerald-500 text-white animate-scale" : "bg-white border-gray-200 text-gray-500 hover:bg-gray-50"
+                                                }`}>
+                                                {v}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+
+                            {/* Status */}
+                            <div className="space-y-2">
+                                <p className="text-[11px] font-bold uppercase tracking-wider text-gray-400">Status</p>
+                                <div className="flex flex-wrap gap-1.5">
+                                    {STATUSES.map(v => {
+                                        const active = appliedFilters.status?.includes(v);
+                                        return (
+                                            <button key={v} onClick={() => toggleFilterVal("status", v)}
+                                                className={`px-2.5 py-1 rounded-lg text-xs font-semibold border transition-all ${
+                                                    active ? "bg-emerald-500 border-emerald-500 text-white animate-scale" : "bg-white border-gray-200 text-gray-500 hover:bg-gray-50"
+                                                }`}>
+                                                {v}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+
+                            {/* Donation Type */}
+                            <div className="space-y-2 col-span-1 sm:col-span-2">
+                                <p className="text-[11px] font-bold uppercase tracking-wider text-gray-400">Donation Type</p>
+                                <div className="flex flex-wrap gap-1.5">
+                                    {DONATION_TYPES.map(v => {
+                                        const active = appliedFilters.donationType?.includes(v);
+                                        return (
+                                            <button key={v} onClick={() => toggleFilterVal("donationType", v)}
+                                                className={`px-2.5 py-1 rounded-lg text-xs font-semibold border transition-all ${
+                                                    active ? "bg-emerald-500 border-emerald-500 text-white animate-scale" : "bg-white border-gray-200 text-gray-500 hover:bg-gray-50"
+                                                }`}>
+                                                {v}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+
+                            {/* Expense Type */}
+                            <div className="space-y-2 col-span-1 sm:col-span-2 lg:col-span-3">
+                                <p className="text-[11px] font-bold uppercase tracking-wider text-gray-400">Expense Type</p>
+                                <div className="flex flex-wrap gap-1.5">
+                                    {EXPENSE_TYPES.map(v => {
+                                        const active = appliedFilters.expenseType?.includes(v);
+                                        return (
+                                            <button key={v} onClick={() => toggleFilterVal("expenseType", v)}
+                                                className={`px-2.5 py-1 rounded-lg text-xs font-semibold border transition-all ${
+                                                    active ? "bg-emerald-500 border-emerald-500 text-white animate-scale" : "bg-white border-gray-200 text-gray-500 hover:bg-gray-50"
+                                                }`}>
+                                                {EXPENSE_TYPE_LABELS[v] || v}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+
+                            {/* Payment Method */}
+                            <div className="space-y-2 col-span-1 sm:col-span-2 lg:col-span-3 xl:col-span-4">
+                                <p className="text-[11px] font-bold uppercase tracking-wider text-gray-400">Payment Method</p>
+                                <div className="flex flex-wrap gap-1.5">
+                                    {PAYMENT_METHODS.map(v => {
+                                        const active = appliedFilters.paymentMethod?.includes(v);
+                                        return (
+                                            <button key={v} onClick={() => toggleFilterVal("paymentMethod", v)}
+                                                className={`px-2.5 py-1 rounded-lg text-xs font-semibold border transition-all ${
+                                                    active ? "bg-emerald-500 border-emerald-500 text-white animate-scale" : "bg-white border-gray-200 text-gray-500 hover:bg-gray-50"
+                                                }`}>
+                                                {v}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        </div>
+                    )}
 
                     {/* active chips */}
                     {activeChips.length > 0 && (
@@ -780,7 +971,7 @@ export default function TransactionsPage() {
                                                 </td>
                                                 <td className="px-5 py-3.5">
                                                     <button onClick={() => setSelected(tx)}
-                                                        className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 text-xs font-medium text-emerald-600 hover:text-emerald-800">
+                                                        className="flex items-center gap-1 text-xs font-medium text-emerald-600 hover:text-emerald-800">
                                                         <Eye size={13} />
                                                         View
                                                     </button>
@@ -855,14 +1046,6 @@ export default function TransactionsPage() {
                     </div>
                 )}
             </div>
-
-            {/* Filter Drawer */}
-            <FilterDrawer
-                open={filterOpen}
-                onClose={() => setFilterOpen(false)}
-                filters={appliedFilters}
-                onApply={applyFilters}
-            />
 
             {/* Detail Modal */}
             {selected && (

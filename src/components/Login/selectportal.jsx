@@ -63,12 +63,12 @@ import { Calendar as CalendarIcon } from 'lucide-react';
 
 const CATEGORIES = [
   { id: 'dashboard', name: 'Dashboard', icon: LayoutDashboard },
+  { id: 'administration', name: 'Administration', icon: Settings },
   { id: 'tpf-management', name: 'TPF-Management', icon: Users },
   { id: 'monitoring', name: 'Monitoring', icon: Layers },
   { id: 'work', name: 'Work', icon: FolderKanban },
   { id: 'resource', name: 'Resource Management', icon: Package },
   { id: 'hr', name: 'Human Resources', icon: Briefcase },
-  { id: 'administration', name: 'Administration', icon: Settings },
   { id: 'legal', name: 'Legal & Records', icon: Scale },
   { id: 'communication', name: 'Communication', icon: MessageSquare },
 ];

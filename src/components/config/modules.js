@@ -268,7 +268,7 @@ export const MODULES = [
     name: "Transaction Ledger",
     icon: IndianRupee,
     route: "/transaction-ledger",
-    category: "administration",
+    category: "dashboard",
     desc: "Ledger report for transactions",
   },
 
