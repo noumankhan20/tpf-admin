@@ -83,6 +83,56 @@ export default function CampaignForm({
   const [showMediaModal, setShowMediaModal] = useState(false);
   const [activeTab, setActiveTab] = useState('basic');
 
+  const [hasDraft, setHasDraft] = useState(false);
+  const [draftTime, setDraftTime] = useState("");
+
+  useEffect(() => {
+    const saved = localStorage.getItem('tpf_campaign_cms_draft');
+    if (saved) {
+      try {
+        const { timestamp } = JSON.parse(saved);
+        setHasDraft(true);
+        setDraftTime(new Date(timestamp).toLocaleString('en-IN'));
+      } catch (e) {
+        setHasDraft(false);
+      }
+    } else {
+      setHasDraft(false);
+    }
+  }, [formData]);
+
+  const handleSaveDraft = () => {
+    try {
+      localStorage.setItem('tpf_campaign_cms_draft', JSON.stringify({
+        formData,
+        timestamp: new Date().toISOString()
+      }));
+      alert('Draft saved successfully!');
+    } catch (e) {
+      console.error(e);
+      alert('Failed to save draft');
+    }
+  };
+
+  const handleRestoreDraft = () => {
+    try {
+      const saved = localStorage.getItem('tpf_campaign_cms_draft');
+      if (saved) {
+        const { formData: savedData } = JSON.parse(saved);
+        setFormData(savedData);
+        alert('Draft restored successfully!');
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Failed to restore draft');
+    }
+  };
+
+  const handleClearDraft = () => {
+    localStorage.removeItem('tpf_campaign_cms_draft');
+    setHasDraft(false);
+  };
+
   const textareaRef = useRef(null);
 
   const insertFormatting = (tagOpen, tagClose) => {
@@ -399,6 +449,29 @@ export default function CampaignForm({
         className="max-w-4xl mx-auto antialiased text-gray-900"
         style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}
       >
+        {/* Draft Restore Alert */}
+        {hasDraft && (
+          <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-2xl flex items-center justify-between animate-fadeIn">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-xl bg-amber-100 flex items-center justify-center text-amber-700">
+                <History size={16} />
+              </div>
+              <div>
+                <p className="text-xs font-bold text-amber-800">Saved Draft Available</p>
+                <p className="text-[10px] text-amber-600 font-medium">Last saved on {draftTime}</p>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <button onClick={handleRestoreDraft} className="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-xl transition-all cursor-pointer">
+                Restore Draft
+              </button>
+              <button onClick={handleClearDraft} className="px-3.5 py-1.5 bg-white border border-amber-200 text-amber-700 hover:bg-amber-100 text-xs font-bold rounded-xl transition-all cursor-pointer">
+                Clear Draft
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Tab Navigation */}
         <div className="flex flex-wrap gap-2 mb-6 bg-white p-2 rounded-2xl border-2 border-gray-100 shadow-sm">
           {tabs.map((tab) => (
@@ -1336,6 +1409,14 @@ export default function CampaignForm({
             </button>
 
             <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={handleSaveDraft}
+                className="px-6 py-3 border-2 border-dashed border-emerald-300 text-emerald-700 hover:bg-emerald-50 rounded-2xl font-bold uppercase text-xs transition-all cursor-pointer"
+              >
+                Save Draft
+              </button>
+
               {/* Unsaved changes indicator */}
               {isDirty && !isSaving && (
                 <span className="text-[10px] font-bold text-amber-500 uppercase tracking-wide animate-pulse">
