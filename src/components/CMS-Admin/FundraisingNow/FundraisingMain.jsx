@@ -275,11 +275,6 @@ export default function FundraisingCMS() {
       let allowedTypes = formData.allowedDonationTypes;
       if (formData.source !== "FOUNDATION") {
         allowedTypes = [];
-        if (formData.zakatVerified) allowedTypes.push("Zakat");
-        if (formData.sadaqahEligible) allowedTypes.push("Sadaqah");
-        if (formData.lillahEligible) allowedTypes.push("Lillah");
-        if (formData.imdadEligible) allowedTypes.push("Imdad");
-        if (formData.ribaEligible) allowedTypes.push("Riba");
       }
       form.append("allowedDonationTypes", JSON.stringify(allowedTypes));
 
