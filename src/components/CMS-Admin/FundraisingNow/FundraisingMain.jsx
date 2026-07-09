@@ -272,7 +272,16 @@ export default function FundraisingCMS() {
       form.append("category", finalCategory);
       form.append("source", formData.source);
       form.append("fundsDisbursed", formData.fundsDisbursed);
-      form.append("allowedDonationTypes", JSON.stringify(formData.allowedDonationTypes));
+      let allowedTypes = formData.allowedDonationTypes;
+      if (formData.source !== "FOUNDATION") {
+        allowedTypes = [];
+        if (formData.zakatVerified) allowedTypes.push("Zakat");
+        if (formData.sadaqahEligible) allowedTypes.push("Sadaqah");
+        if (formData.lillahEligible) allowedTypes.push("Lillah");
+        if (formData.imdadEligible) allowedTypes.push("Imdad");
+        if (formData.ribaEligible) allowedTypes.push("Riba");
+      }
+      form.append("allowedDonationTypes", JSON.stringify(allowedTypes));
 
       if (formData.source !== "FOUNDATION") {
         form.append("requiredAmount", formData.requiredAmount);
