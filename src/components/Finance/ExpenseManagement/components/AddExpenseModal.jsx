@@ -35,7 +35,7 @@ export default function AddExpenseModal({
     const showCampaign =
         formData.expenseType === 'BENEFICIARY' ||
         (formData.expenseType === 'SALARY' && formData.adminId) ||
-        (formData.expenseType === 'REIMBURSEMENT' && (formData.adminId || formData.volunteerId));
+        (formData.expenseType === 'REIMBURSEMENT' && formData.adminId);
 
     return (
         <AnimatePresence>
@@ -264,26 +264,38 @@ export default function AddExpenseModal({
                                                     />
                                                 </Field>
                                                 {formData.volunteerId && (
-                                                    <Field label="Select Voucher *">
-                                                        <div className="relative">
-                                                            <Receipt className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={15} />
-                                                            <select required value={formData.voucherId}
-                                                                onChange={(e) => {
-                                                                    const v = approvedVouchers.find((v) => v._id === e.target.value);
-                                                                    setFormData((p) => ({ ...p, voucherId: e.target.value, amount: v?.amount || '', description: v?.description || '' }));
-                                                                }}
-                                                                className={`${selectCls} pl-9`}
-                                                            >
-                                                                <option value="">Choose Approved Voucher</option>
-                                                                {approvedVouchers.map((v) => (
-                                                                    <option key={v._id} value={v._id}>#{v._id.slice(-6).toUpperCase()} – ₹{v.amount} ({v.description})</option>
-                                                                ))}
-                                                            </select>
-                                                        </div>
-                                                        {approvedVouchers.length === 0 && (
-                                                            <p className="text-xs text-amber-600 mt-1">No approved vouchers found for this volunteer.</p>
-                                                        )}
-                                                    </Field>
+                                                    <>
+                                                        <Field label="Select Voucher *">
+                                                            <div className="relative">
+                                                                <Receipt className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={15} />
+                                                                <select required value={formData.voucherId}
+                                                                    onChange={(e) => {
+                                                                        const v = approvedVouchers.find((v) => v._id === e.target.value);
+                                                                        setFormData((p) => ({ ...p, voucherId: e.target.value, amount: v?.amount || '', description: v?.description || '' }));
+                                                                    }}
+                                                                    className={`${selectCls} pl-9`}
+                                                                >
+                                                                    <option value="">Choose Approved Voucher</option>
+                                                                    {approvedVouchers.map((v) => (
+                                                                        <option key={v._id} value={v._id}>#{v._id.slice(-6).toUpperCase()} – ₹{v.amount} ({v.description})</option>
+                                                                    ))}
+                                                                </select>
+                                                            </div>
+                                                            {approvedVouchers.length === 0 && (
+                                                                <p className="text-xs text-amber-600 mt-1">No approved vouchers found for this volunteer.</p>
+                                                            )}
+                                                        </Field>
+                                                        <Field label="Campaign (Optional)">
+                                                            <DD dd={campaignDD} icon={<Users size={15} />} placeholder="Choose Campaign"
+                                                                selectedLabel={selectedCampaign ? (selectedCampaign.isSpecialCase ? `[Special Case] ${selectedCampaign.title}` : selectedCampaign.title) : null}
+                                                                required={false} hiddenValue={formData.campaignId}
+                                                                items={campaignDD.paginated.map((c) => ({ id: c._id, label: c.isSpecialCase ? `[Special Case] ${c.title}` : c.title }))}
+                                                                selectedId={formData.campaignId}
+                                                                onSelect={(id) => { setField('campaignId', id); campaignDD.setOpen(false); }}
+                                                                emptyMessage="No campaigns found."
+                                                            />
+                                                        </Field>
+                                                    </>
                                                 )}
                                             </div>
                                         )}

@@ -8,6 +8,7 @@ export const adminDashboardApiSlice = apiSlice.injectEndpoints({
                 url: `/admin/dashboard/calendar-events?month=${month}&year=${year}`,
                 method: "GET",
             }),
+            providesTags: ["CalendarEvents"],
             keepUnusedDataFor: 300,
         }),
         getSummaryMetrics: builder.query({
@@ -46,6 +47,14 @@ export const adminDashboardApiSlice = apiSlice.injectEndpoints({
             }),
             keepUnusedDataFor: 60,
         }),
+        addMeeting: builder.mutation({
+            query: (data) => ({
+                url: `/admin/dashboard/add-meeting`,
+                method: "POST",
+                body: data,
+            }),
+            invalidatesTags: ["CalendarEvents"],
+        }),
     }),
 });
 
@@ -55,4 +64,5 @@ export const {
     useGetDonationAnalyticsQuery,
     useGetActivityHeatmapQuery,
     useGetCampaignReferralsQuery,
+    useAddMeetingMutation,
 } = adminDashboardApiSlice;

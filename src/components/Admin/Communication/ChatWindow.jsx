@@ -4,9 +4,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
     useGetInternalMessagesQuery,
     useSendInternalMessageMutation,
-    useMarkMessagesAsReadMutation
+    useMarkMessagesAsReadMutation,
+    useCompleteInternalTaskMutation
 } from '@/utils/slices/internalCommunicationApiSlice';
-import { Send, Loader2, User, Globe, MessageCircle, ChevronUp, MoreVertical, Paperclip, Smile } from 'lucide-react';
+import { Send, Loader2, User, Globe, MessageCircle, ChevronUp, MoreVertical, Paperclip, Smile, CheckSquare, Square } from 'lucide-react';
 import { useSocket } from '@/utils/context/SocketContext';
 import { format, isToday, isYesterday } from 'date-fns';
 
@@ -37,6 +38,16 @@ export default function ChatWindow({ selectedAdmin, isGlobalMode, adminInfo }) {
 
     const [sendMessage, { isLoading: isSending }] = useSendInternalMessageMutation();
     const [markAsRead] = useMarkMessagesAsReadMutation();
+    const [completeTask] = useCompleteInternalTaskMutation();
+    const [isAssigningTask, setIsAssigningTask] = useState(false);
+
+    const handleCompleteTask = async (messageId) => {
+        try {
+            await completeTask({ messageId }).unwrap();
+        } catch (err) {
+            console.error("Failed to complete task:", err);
+        }
+    };
 
     // Reset when admin changes
     useEffect(() => {
@@ -178,19 +189,24 @@ export default function ChatWindow({ selectedAdmin, isGlobalMode, adminInfo }) {
                 sender: adminInfo,
                 createdAt: new Date().toISOString(),
                 readBy: [],
-                isGlobal: isGlobalMode
+                isGlobal: isGlobalMode,
+                isTask: isAssigningTask,
+                taskStatus: isAssigningTask ? "PENDING" : undefined
             };
 
             // Optimistic update for better UX
             setAllMessages(prev => [...prev, tempMessage]);
             const currentMsg = message;
+            const wasAssigningTask = isAssigningTask;
             setMessage('');
+            setIsAssigningTask(false);
             scrollToBottom();
 
             await sendMessage({
                 receiverId: selectedAdminId,
                 content: currentMsg,
-                isGlobal: isGlobalMode
+                isGlobal: isGlobalMode,
+                isTask: wasAssigningTask
             }).unwrap();
 
         } catch (err) {
@@ -307,9 +323,34 @@ export default function ChatWindow({ selectedAdmin, isGlobalMode, adminInfo }) {
                                                 </p>
                                             )}
 
-                                            <p className="text-[16px] text-[#111b21] leading-relaxed break-words whitespace-pre-wrap">
-                                                {msg.content}
-                                            </p>
+                                             {msg.isTask ? (
+                                                <div className="bg-white/90 p-3 rounded-lg border border-emerald-300 my-1 shadow-sm min-w-[200px]">
+                                                    <div className="flex items-center justify-between gap-4 mb-2 pb-1 border-b border-gray-100">
+                                                        <span className="text-[9px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded tracking-wide uppercase">Task</span>
+                                                        <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded tracking-wide uppercase ${
+                                                            msg.taskStatus === "COMPLETED" ? "bg-blue-100 text-blue-800" : "bg-amber-100 text-amber-800"
+                                                        }`}>
+                                                            {msg.taskStatus || "PENDING"}
+                                                        </span>
+                                                    </div>
+                                                    <p className="text-[14px] text-gray-800 font-medium break-words whitespace-pre-wrap">
+                                                        {msg.content}
+                                                    </p>
+                                                    {msg.taskStatus !== "COMPLETED" && !isOwn && (
+                                                        <button
+                                                            onClick={() => handleCompleteTask(msg._id)}
+                                                            className="w-full mt-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold py-1.5 rounded-md transition-colors flex items-center justify-center gap-1 shadow-sm cursor-pointer"
+                                                        >
+                                                            <CheckSquare size={12} />
+                                                            Mark Completed
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            ) : (
+                                                <p className="text-[16px] text-[#111b21] leading-relaxed break-words whitespace-pre-wrap">
+                                                    {msg.content}
+                                                </p>
+                                            )}
 
                                             <div className="flex items-center justify-end gap-1 mt-1">
                                                 <span className="text-[11px] text-gray-500 font-bold uppercase tracking-tight">
@@ -341,29 +382,42 @@ export default function ChatWindow({ selectedAdmin, isGlobalMode, adminInfo }) {
 
             {/* Input Area */}
             <footer className="p-3 bg-[#f0f2f5] border-t border-gray-200">
-                <form onSubmit={handleSend} className="flex items-center gap-3 max-w-4xl mx-auto">
+                                <form onSubmit={handleSend} className="flex items-center gap-3 max-w-4xl mx-auto">
+                                    {adminInfo?.isSuperAdmin && !isGlobalMode && (
+                                        <button
+                                            type="button"
+                                            onClick={() => setIsAssigningTask(prev => !prev)}
+                                            className={`h-10 px-3 rounded-full border text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 cursor-pointer ${
+                                                isAssigningTask
+                                                    ? 'bg-emerald-600 border-emerald-600 text-white shadow-sm'
+                                                    : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-55'
+                                            }`}
+                                        >
+                                            {isAssigningTask ? <CheckSquare size={14} /> : <Square size={14} />}
+                                            Task
+                                        </button>
+                                    )}
 
+                                    <div className="flex-1 relative flex items-center">
+                                        <input
+                                            type="text"
+                                            value={message}
+                                            onChange={(e) => handleInputChange(e.target.value)}
+                                            placeholder={isGlobalMode ? "Send to all administrators..." : (isAssigningTask ? "Assign a task..." : "Type a message")}
+                                            className="w-full bg-white border-none py-2.5 px-5 rounded-full focus:outline-none focus:ring-0 text-base shadow-sm placeholder-gray-500"
+                                        />
+                                    </div>
 
-                    <div className="flex-1 relative flex items-center">
-                        <input
-                            type="text"
-                            value={message}
-                            onChange={(e) => handleInputChange(e.target.value)}
-                            placeholder={isGlobalMode ? "Send to all administrators..." : "Type a message"}
-                            className="w-full bg-white border-none py-2.5 px-5 rounded-full focus:outline-none focus:ring-0 text-base shadow-sm placeholder-gray-500"
-                        />
-                    </div>
-
-                    <button
-                        type="submit"
-                        disabled={!message.trim() || isSending}
-                        className={`w-12 h-12 flex items-center justify-center rounded-full transition-all shadow-lg active:scale-90 ${!message.trim() ? 'bg-gray-300 cursor-not-allowed' : 'bg-[#00a884] hover:bg-[#008f72] text-white shadow-[#00a884]/20'
-                            }`}
-                    >
-                        {isSending ? <Loader2 className="w-6 h-6 animate-spin" /> : <Send className="w-6 h-6" />}
-                    </button>
-                </form>
-            </footer>
+                                    <button
+                                        type="submit"
+                                        disabled={!message.trim() || isSending}
+                                        className={`w-12 h-12 flex items-center justify-center rounded-full transition-all shadow-lg active:scale-90 cursor-pointer ${!message.trim() ? 'bg-gray-300 cursor-not-allowed' : 'bg-[#00a884] hover:bg-[#008f72] text-white shadow-[#00a884]/20'
+                                            }`}
+                                    >
+                                        {isSending ? <Loader2 className="w-6 h-6 animate-spin" /> : <Send className="w-6 h-6" />}
+                                    </button>
+                                </form>
+                            </footer>
 
             {/* 48 Hour Deletion Pulse */}
             <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-30 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity">

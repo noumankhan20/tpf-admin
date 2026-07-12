@@ -239,6 +239,54 @@ const NotificationBell = ({ moduleFilter = null }) => {
                     }
                 }
 
+                // Fetch Tickets
+                try {
+                    const ticketRes = await fetch(`${apiBase}/ticket/getall`, {
+                        credentials: 'include'
+                    });
+                    const ticketResult = await ticketRes.json();
+                    if (ticketResult.success && ticketResult.tickets) {
+                        const unresolvedTickets = ticketResult.tickets
+                            .filter(t => t.status === 'Unresolved')
+                            .map(t => ({
+                                id: t._id,
+                                type: 'TICKET',
+                                title: `New Ticket: ${t.queryType.toUpperCase()}`,
+                                subtitle: `From: ${t.fullName} (${t.email})`,
+                                time: t.createdAt,
+                                read: false,
+                                data: t
+                            }));
+                        allInitial = [...allInitial, ...unresolvedTickets];
+                    }
+                } catch (err) {
+                    console.error('Ticket Notification fetch failed:', err);
+                }
+
+                // Fetch Pending Vouchers
+                if (admin?.isSuperAdmin || admin?.modules?.includes('Finance & Accounting')) {
+                    try {
+                        const voucherRes = await fetch(`${apiBase}/vouchers/pending`, {
+                            credentials: 'include'
+                        });
+                        const voucherResult = await voucherRes.json();
+                        if (voucherResult.success && voucherResult.data) {
+                            const pendingVouchers = voucherResult.data.map(v => ({
+                                id: v._id,
+                                type: 'VOUCHER',
+                                title: `Pending Voucher: ₹${v.amount}`,
+                                subtitle: `By: ${v.volunteerId?.fullName || 'Volunteer'}`,
+                                time: v.createdAt,
+                                read: false,
+                                data: v
+                            }));
+                            allInitial = [...allInitial, ...pendingVouchers];
+                        }
+                    } catch (err) {
+                        console.error('Voucher Notification fetch failed:', err);
+                    }
+                }
+
                 // Filter by module if needed
                 const filtered = moduleFilter
                     ? allInitial.filter(n => n.type === 'FORM' || n.module === moduleFilter)
@@ -252,6 +300,13 @@ const NotificationBell = ({ moduleFilter = null }) => {
         };
 
         fetchInitialData();
+
+        // Add 10-second fallback polling interval to prevent notification delay
+        const pollInterval = setInterval(fetchInitialData, 10000);
+
+        return () => {
+            clearInterval(pollInterval);
+        };
     }, [admin, moduleFilter]);
 
     useEffect(() => {
@@ -379,11 +434,68 @@ const NotificationBell = ({ moduleFilter = null }) => {
             });
         };
 
+        const handleTicketCreated = (data) => {
+            const newNotification = {
+                id: data.id,
+                type: 'TICKET',
+                title: `New Ticket: ${data.queryType.toUpperCase()}`,
+                subtitle: `From: ${data.fullName}`,
+                time: data.time || new Date().toISOString(),
+                read: false,
+                data: data
+            };
+            setNotifications(prev => [newNotification, ...prev]);
+            setUnreadCount(prev => prev + 1);
+            toast.info(newNotification.title);
+        };
+
+        const handleTicketResolved = (data) => {
+            setNotifications(prev => {
+                const filtered = prev.filter(n => n.id !== data.id);
+                if (prev.length !== filtered.length) {
+                    setUnreadCount(prevUnread => Math.max(0, prevUnread - 1));
+                }
+                return filtered;
+            });
+        };
+
+        const handleVoucherCreated = (data) => {
+            const hasAccess = admin?.isSuperAdmin || admin?.modules?.includes('Finance & Accounting');
+            if (hasAccess) {
+                const newNotification = {
+                    id: data.id,
+                    type: 'VOUCHER',
+                    title: `Pending Voucher: ₹${data.amount}`,
+                    subtitle: `By: ${data.volunteerName}`,
+                    time: data.time || new Date().toISOString(),
+                    read: false,
+                    data: data
+                };
+                setNotifications(prev => [newNotification, ...prev]);
+                setUnreadCount(prev => prev + 1);
+                toast.info(newNotification.title);
+            }
+        };
+
+        const handleVoucherProcessed = (data) => {
+            setNotifications(prev => {
+                const filtered = prev.filter(n => n.id !== data.id);
+                if (prev.length !== filtered.length) {
+                    setUnreadCount(prevUnread => Math.max(0, prevUnread - 1));
+                }
+                return filtered;
+            });
+        };
+
         socket.on('taskAssigned', handleTaskAssigned);
         socket.on('formSubmitted', handleFormSubmitted);
         socket.on('deleteRequestCreated', handleDeleteRequestCreated);
         socket.on('offlineDonationCreated', handleOfflineDonationCreated);
         socket.on('offlineDonationProcessed', handleOfflineDonationProcessed);
+        socket.on('ticketCreated', handleTicketCreated);
+        socket.on('ticketResolved', handleTicketResolved);
+        socket.on('voucherCreated', handleVoucherCreated);
+        socket.on('voucherProcessed', handleVoucherProcessed);
 
         return () => {
             socket.off('taskAssigned', handleTaskAssigned);
@@ -391,6 +503,10 @@ const NotificationBell = ({ moduleFilter = null }) => {
             socket.off('deleteRequestCreated', handleDeleteRequestCreated);
             socket.off('offlineDonationCreated', handleOfflineDonationCreated);
             socket.off('offlineDonationProcessed', handleOfflineDonationProcessed);
+            socket.off('ticketCreated', handleTicketCreated);
+            socket.off('ticketResolved', handleTicketResolved);
+            socket.off('voucherCreated', handleVoucherCreated);
+            socket.off('voucherProcessed', handleVoucherProcessed);
         };
     }, [socket, admin, moduleFilter]);
 
@@ -404,7 +520,6 @@ const NotificationBell = ({ moduleFilter = null }) => {
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
-
 
     const handleNotificationClick = (notification) => {
         setShowDropdown(false);
@@ -426,11 +541,17 @@ const NotificationBell = ({ moduleFilter = null }) => {
             router.push('/tpf-management/approve-request');
         } else if (notification.type === 'OFFLINE_DONATION') {
             router.push('/donation-management');
+        } else if (notification.type === 'TICKET') {
+            router.push('/tickets-queries');
+        } else if (notification.type === 'VOUCHER') {
+            router.push('/tpf-management/volunteers');
         }
     };
 
     const getIcon = (type, module) => {
         if (type === 'FORM') return <FileText className="w-4 h-4 text-blue-500" />;
+        if (type === 'TICKET') return <FileText className="w-4 h-4 text-purple-500" />;
+        if (type === 'VOUCHER') return <Wallet className="w-4 h-4 text-emerald-500" />;
         switch (module) {
             case 'PHOTO_TASK': return <Camera className="w-4 h-4 text-emerald-500" />;
             case 'CMS_TASK': return <Star className="w-4 h-4 text-purple-500" />;
@@ -442,17 +563,22 @@ const NotificationBell = ({ moduleFilter = null }) => {
         }
     };
 
+    // Sort notifications descending by timestamp
+    const sortedNotifications = React.useMemo(() => {
+        return [...notifications].sort((a, b) => new Date(b.time) - new Date(a.time));
+    }, [notifications]);
+
     return (
         <div className="relative" ref={dropdownRef}>
             <button
                 onClick={() => setShowDropdown(!showDropdown)}
-                className="p-2 hover:bg-gray-100 rounded-full transition-all relative group"
+                className="p-1.5 hover:bg-gray-100/80 active:bg-gray-200/50 rounded-lg transition-all relative cursor-pointer"
             >
                 <Bell className={`w-5 h-5 ${unreadCount > 0 ? 'text-gray-800' : 'text-gray-500'}`} />
                 {unreadCount > 0 && (
-                    <span className="absolute top-1.5 right-1.5 flex h-2.5 w-2.5">
+                    <span className="absolute top-1 right-1 flex h-2 w-2">
                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500 border border-white"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500 border border-white"></span>
                     </span>
                 )}
             </button>
@@ -460,59 +586,69 @@ const NotificationBell = ({ moduleFilter = null }) => {
             <AnimatePresence>
                 {showDropdown && (
                     <motion.div
-                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                        initial={{ opacity: 0, y: 8, scale: 0.98 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                        className="absolute right-0 mt-3 w-80 bg-white rounded-2xl shadow-2xl border border-gray-100 py-2 z-[100] overflow-hidden"
+                        exit={{ opacity: 0, y: 8, scale: 0.98 }}
+                        transition={{ duration: 0.15 }}
+                        className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-lg border border-gray-200/80 z-[100] overflow-hidden animate-in fade-in slide-in-from-top-1"
                     >
-                        <div className="px-4 py-3 border-b border-gray-50 flex justify-between items-center bg-gray-50/50">
-                            <h3 className="font-bold text-gray-800 text-sm">Notifications</h3>
+                        {/* Header */}
+                        <div className="px-4 py-3 border-b border-gray-100 flex justify-between items-center bg-white">
+                            <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
+                                Notifications
+                            </span>
                             {unreadCount > 0 && (
-                                <span className="bg-emerald-100 text-emerald-600 text-[10px] font-bold px-2 py-0.5 rounded-full">
-                                    {unreadCount} New
+                                <span className="bg-emerald-50 text-emerald-700 border border-emerald-100 text-[10px] font-medium px-2 py-0.5 rounded-md">
+                                    {unreadCount} pending
                                 </span>
                             )}
                         </div>
 
-                        <div className="max-h-[400px] overflow-y-auto custom-scrollbar">
-                            {notifications.length > 0 ? (
-                                notifications.map((n) => (
+                        {/* List Area */}
+                        <div className="max-h-[350px] overflow-y-auto divide-y divide-gray-100/60 custom-scrollbar">
+                            {sortedNotifications.length > 0 ? (
+                                sortedNotifications.map((n) => (
                                     <div
                                         key={n.id}
                                         onClick={() => handleNotificationClick(n)}
-                                        className="px-4 py-3 hover:bg-gray-50 transition-colors cursor-pointer border-b border-gray-50 last:border-0 relative bg-blue-50/20"
+                                        className="px-4 py-2.5 hover:bg-gray-50/70 transition-colors cursor-pointer flex gap-3 relative bg-white"
                                     >
-                                        <div className="absolute left-1 top-1/2 -translate-y-1/2 w-1 h-8 bg-blue-500 rounded-full" />
-                                        <div className="flex gap-3">
-                                            <div className="w-9 h-9 bg-gray-100 rounded-xl flex items-center justify-center shrink-0">
-                                                {getIcon(n.type, n.module)}
+                                        {/* Minimal unread left dot (clean) */}
+                                        <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full absolute left-2 top-4 shrink-0" />
+                                        
+                                        {/* Icon wrapper */}
+                                        <div className="w-8 h-8 rounded-lg bg-gray-50 border border-gray-100 flex items-center justify-center shrink-0 ml-1">
+                                            {getIcon(n.type, n.module)}
+                                        </div>
+
+                                        {/* Text info */}
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex justify-between items-start gap-2">
+                                                <p className="text-[12px] font-medium text-gray-700 leading-snug truncate">
+                                                    {n.title}
+                                                </p>
+                                                <span className="text-[10px] text-gray-400 shrink-0 font-normal">
+                                                    {new Date(n.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                </span>
                                             </div>
-                                            <div className="flex-1 min-w-0">
-                                                <div className="flex justify-between items-start gap-2">
-                                                    <p className="text-sm leading-tight truncate font-bold text-gray-900">
-                                                        {n.title}
-                                                    </p>
-                                                    <span className="text-[10px] text-gray-400 whitespace-nowrap">
-                                                        {new Date(n.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                                    </span>
-                                                </div>
-                                                {n.subtitle && <p className="text-xs text-gray-500 mt-1 truncate">{n.subtitle}</p>}
-                                            </div>
+                                            {n.subtitle && (
+                                                <p className="text-[11px] text-gray-400 mt-0.5 truncate leading-tight">
+                                                    {n.subtitle}
+                                                </p>
+                                            )}
                                         </div>
                                     </div>
                                 ))
                             ) : (
-                                <div className="px-4 py-12 text-center">
-                                    <div className="w-12 h-12 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-3">
-                                        <Bell className="w-6 h-6 text-gray-300" />
+                                <div className="px-4 py-10 text-center">
+                                    <div className="w-10 h-10 bg-gray-50 border border-gray-100/50 rounded-full flex items-center justify-center mx-auto mb-2">
+                                        <Bell className="w-5 h-5 text-gray-300" />
                                     </div>
-                                    <p className="text-sm text-gray-500">No notifications yet</p>
-                                    <p className="text-xs text-gray-400 mt-1">We'll alert you when tasks arrive</p>
+                                    <p className="text-xs font-medium text-gray-400">No new notifications</p>
+                                    <p className="text-[11px] text-gray-400/70 mt-0.5">We'll alert you when actions are required</p>
                                 </div>
                             )}
                         </div>
-
-
                     </motion.div>
                 )}
             </AnimatePresence>

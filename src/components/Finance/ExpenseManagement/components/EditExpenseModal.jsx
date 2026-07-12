@@ -33,7 +33,7 @@ export default function EditExpenseModal({
     const showCampaign =
         formData.expenseType === 'BENEFICIARY' ||
         (formData.expenseType === 'SALARY' && formData.adminId) ||
-        (formData.expenseType === 'REIMBURSEMENT' && (formData.adminId || formData.volunteerId));
+        (formData.expenseType === 'REIMBURSEMENT' && formData.adminId);
 
     return (
         <AnimatePresence>
@@ -188,17 +188,32 @@ export default function EditExpenseModal({
                                                 />
                                             </Field>
                                         ) : (
-                                            <Field label="Select Volunteer *">
-                                                <DD dd={volunteerDD} icon={<Users size={15} />} placeholder="Choose Volunteer"
-                                                    selectedLabel={selectedVolunteer ? `${selectedVolunteer.fullName} (${selectedVolunteer.email})` : null}
-                                                    required hiddenValue={formData.volunteerId}
-                                                    items={volunteerDD.paginated.map((v) => ({ id: v._id, label: `${v.fullName} (${v.email})` }))}
-                                                    selectedId={formData.volunteerId}
-                                                    onSelect={(id) => { setFormData((p) => ({ ...p, volunteerId: id, voucherId: '' })); volunteerDD.setOpen(false); }}
-                                                    emptyMessage="No volunteers found."
-                                                    searchPlaceholder="Search volunteer name or email…"
-                                                />
-                                            </Field>
+                                            <div className="space-y-3">
+                                                <Field label="Select Volunteer *">
+                                                    <DD dd={volunteerDD} icon={<Users size={15} />} placeholder="Choose Volunteer"
+                                                        selectedLabel={selectedVolunteer ? `${selectedVolunteer.fullName} (${selectedVolunteer.email})` : null}
+                                                        required hiddenValue={formData.volunteerId}
+                                                        items={volunteerDD.paginated.map((v) => ({ id: v._id, label: `${v.fullName} (${v.email})` }))}
+                                                        selectedId={formData.volunteerId}
+                                                        onSelect={(id) => { setFormData((p) => ({ ...p, volunteerId: id, voucherId: '' })); volunteerDD.setOpen(false); }}
+                                                        emptyMessage="No volunteers found."
+                                                        searchPlaceholder="Search volunteer name or email…"
+                                                    />
+                                                </Field>
+                                                {formData.volunteerId && (
+                                                    <div className="mt-3">
+                                                        <span className="text-xs font-semibold text-gray-500 block mb-1.5">Campaign (Optional)</span>
+                                                        <DD dd={campaignDD} icon={<Users size={15} />} placeholder="Choose Campaign"
+                                                            selectedLabel={selectedCampaign ? (selectedCampaign.isSpecialCase ? `[Special Case] ${selectedCampaign.title}` : selectedCampaign.title) : null}
+                                                            required={false} hiddenValue={formData.campaignId}
+                                                            items={campaignDD.paginated.map((c) => ({ id: c._id, label: c.isSpecialCase ? `[Special Case] ${c.title}` : c.title }))}
+                                                            selectedId={formData.campaignId}
+                                                            onSelect={(id) => { setField('campaignId', id); campaignDD.setOpen(false); }}
+                                                            emptyMessage="No campaigns found."
+                                                        />
+                                                    </div>
+                                                )}
+                                            </div>
                                         )}
                                     </>
                                 )}

@@ -21,6 +21,7 @@ const EXPENSE_TYPES = ["SALARY", "BENEFICIARY", "PURCHASE", "REIMBURSEMENT", "OP
 const PAYMENT_METHODS = ["CASH", "BANK_TRANSFER", "UPI", "CHEQUE", "CARD", "OTHER", "RTGS", "NEFT", "IMPS"];
 const SOURCES = ["ONLINE", "OFFLINE", "EXPENSE"];
 const STATUSES = ["SUCCESS", "APPROVED", "PENDING", "FAILED", "REJECTED"];
+const REFERRAL_SOURCES = ["Influencer", "Masjid", "WhatsappAPI", "Email Broadcast", "Meta Ads"];
 
 const STATUS_CONFIG = {
     SUCCESS:  { label: "Success",  color: "bg-emerald-50 text-emerald-700 border-emerald-200", dot: "bg-emerald-500" },
@@ -423,6 +424,16 @@ const TransactionDetailModal = ({ tx, onClose, isCA }) => {
                         {tx.user?.location && <Row label="Location" value={tx.user?.location} />}
                     </div>
 
+                    {/* Referral Info */}
+                    {isCredit && (tx.referral?.refSource || tx.referral?.refName) && (
+                        <div className="mx-6 mb-4 p-4 bg-pink-50 border border-pink-100 rounded-xl">
+                            <p className="text-[10px] font-bold uppercase tracking-widest text-pink-400 mb-3">Referral Info</p>
+                            {tx.referral?.refSource && <Row label="Channel / Category" value={tx.referral.refSource} />}
+                            {tx.referral?.refName && <Row label="Influencer / Partner" value={tx.referral.refName} />}
+                            {tx.referral?.refCity && <Row label="City" value={tx.referral.refCity} />}
+                        </div>
+                    )}
+
                     {/* Meta */}
                     {tx.meta && Object.keys(tx.meta).filter(k => tx.meta[k]).length > 0 && (
                         <div className="mx-6 mb-6 p-4 border border-gray-100 rounded-xl">
@@ -512,6 +523,7 @@ export default function TransactionsPage() {
         startDate: "", endDate: "", minAmount: "", maxAmount: "",
         type: [], source: [], donationType: [], expenseType: [],
         paymentMethod: [], status: [], campaignId: "",
+        refSource: "", refName: "",
         sortBy: "date", sortOrder: "desc",
     };
     const [appliedFilters, setAppliedFilters] = useState(EMPTY_FILTERS);
@@ -558,6 +570,8 @@ export default function TransactionsPage() {
                 chips.push({ key: `${k}:${val}`, label: `${lbl}: ${EXPENSE_TYPE_LABELS[val] || val}` });
             });
         });
+        if (appliedFilters.refSource) chips.push({ key: "refSource", label: `Referral: ${appliedFilters.refSource}` });
+        if (appliedFilters.refName) chips.push({ key: "refName", label: `Influencer: ${appliedFilters.refName}` });
         if (appliedFilters.startDate || appliedFilters.endDate) {
             chips.push({ key: "date", label: `Date: ${appliedFilters.startDate || "∞"} – ${appliedFilters.endDate || "∞"}` });
         }
@@ -572,6 +586,10 @@ export default function TransactionsPage() {
             setAppliedFilters((p) => ({ ...p, startDate: "", endDate: "" }));
         } else if (chipKey === "amount") {
             setAppliedFilters((p) => ({ ...p, minAmount: "", maxAmount: "" }));
+        } else if (chipKey === "refSource") {
+            setAppliedFilters((p) => ({ ...p, refSource: "" }));
+        } else if (chipKey === "refName") {
+            setAppliedFilters((p) => ({ ...p, refName: "" }));
         } else {
             const [k, val] = chipKey.split(":");
             setAppliedFilters((p) => ({
@@ -783,6 +801,36 @@ export default function TransactionsPage() {
                                 </div>
                             </div>
 
+                            {/* Referral Source (Category) */}
+                            <div className="space-y-2">
+                                <p className="text-[11px] font-bold uppercase tracking-wider text-gray-400">Referral Source</p>
+                                <div className="flex flex-wrap gap-1.5">
+                                    {REFERRAL_SOURCES.map(v => {
+                                        const active = appliedFilters.refSource === v;
+                                        return (
+                                            <button key={v} onClick={() => handleFilterChange("refSource", active ? "" : v)}
+                                                className={`px-2.5 py-1 rounded-lg text-xs font-semibold border transition-all ${
+                                                    active ? "bg-pink-500 border-pink-500 text-white" : "bg-white border-gray-200 text-gray-500 hover:bg-gray-50"
+                                                }`}>
+                                                {v}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+
+                            {/* Referral Name (Influencer) */}
+                            <div className="space-y-2">
+                                <p className="text-[11px] font-bold uppercase tracking-wider text-gray-400">Influencer / Partner Name</p>
+                                <input
+                                    type="text"
+                                    placeholder="Search by name..."
+                                    value={appliedFilters.refName}
+                                    onChange={(e) => handleFilterChange("refName", e.target.value)}
+                                    className="w-full border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs text-gray-700 focus:outline-none focus:border-pink-400 focus:ring-1 focus:ring-pink-500/10"
+                                />
+                            </div>
+
                             {/* Status */}
                             <div className="space-y-2">
                                 <p className="text-[11px] font-bold uppercase tracking-wider text-gray-400">Status</p>
@@ -902,14 +950,18 @@ export default function TransactionsPage() {
                     <div className={`hidden lg:block bg-white rounded-xl border border-gray-100 overflow-hidden transition-opacity ${isFetching ? "opacity-60" : ""}`}
                         style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}>
                         <div className="overflow-x-auto">
-                            <table className="min-w-full">
+                            <table className="w-full table-fixed">
                                 <thead>
                                     <tr className="bg-gray-50 border-b border-gray-100">
-                                        {["Type", "Date & Time", "User", "Campaign", "Description", "Method", "Amount", "Status", ""].map((h) => (
-                                            <th key={h} className="px-5 py-3 text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wider whitespace-nowrap">
-                                                {h}
-                                            </th>
-                                        ))}
+                                        <th className="w-[10%] px-5 py-3 text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wider whitespace-nowrap">Type</th>
+                                        <th className="w-[12%] px-5 py-3 text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wider whitespace-nowrap">Date & Time</th>
+                                        <th className="w-[15%] px-5 py-3 text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wider whitespace-nowrap">User</th>
+                                        <th className="w-[15%] px-5 py-3 text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wider whitespace-nowrap">Campaign</th>
+                                        <th className="w-[18%] px-5 py-3 text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wider whitespace-nowrap">Description</th>
+                                        <th className="w-[10%] px-5 py-3 text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wider whitespace-nowrap">Method</th>
+                                        <th className="w-[10%] px-5 py-3 text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wider whitespace-nowrap">Amount</th>
+                                        <th className="w-[10%] px-5 py-3 text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wider whitespace-nowrap">Status</th>
+                                        <th className="w-[10%] px-2 py-3 text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wider whitespace-nowrap"></th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-50">
@@ -969,7 +1021,7 @@ export default function TransactionsPage() {
                                                 <td className="px-5 py-3.5">
                                                     <StatusBadge status={tx.status} />
                                                 </td>
-                                                <td className="px-5 py-3.5">
+                                                <td className="px-2 py-3.5">
                                                     <button onClick={() => setSelected(tx)}
                                                         className="flex items-center gap-1 text-xs font-medium text-emerald-600 hover:text-emerald-800">
                                                         <Eye size={13} />

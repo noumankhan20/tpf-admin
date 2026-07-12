@@ -40,6 +40,14 @@ export const internalCommunicationApiSlice = apiSlice.injectEndpoints({
             }),
             providesTags: ["InternalMessages"],
         }),
+        completeInternalTask: builder.mutation({
+            query: (data) => ({
+                url: "/admin/internal-communication/complete-task",
+                method: "POST",
+                body: data,
+            }),
+            invalidatesTags: ["InternalMessages"],
+        }),
     }),
 });
 
@@ -49,4 +57,5 @@ export const {
     useSendInternalMessageMutation,
     useMarkMessagesAsReadMutation,
     useGetConversationsQuery,
+    useCompleteInternalTaskMutation,
 } = internalCommunicationApiSlice;
