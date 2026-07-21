@@ -39,9 +39,9 @@ export default function OperationalStatus({ pending = {} }) {
     },
     {
       id: "volunteers",
-      label: "Volunteer Applications",
+      label: "Pending Volunteer Vouchers",
       count: pending.volunteerApplications || 0,
-      route: "/tpf-management/volunteers?status=pending",
+      route: "/tpf-management/volunteers",
       max: 20,
     },
     {

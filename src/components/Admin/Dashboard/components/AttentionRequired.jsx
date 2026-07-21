@@ -56,11 +56,11 @@ export default function AttentionRequired({ pending = {} }) {
     },
     {
       id: "volunteers",
-      title: "Volunteer Applications",
-      subtitle: "Pending Review",
+      title: "Volunteer Vouchers",
+      subtitle: "Pending Approval",
       count: pending.volunteerApplications || 0,
-      action: "Review Volunteers",
-      route: "/tpf-management/volunteers?status=pending",
+      action: "Review Vouchers",
+      route: "/tpf-management/volunteers",
       icon: Users,
     },
     {

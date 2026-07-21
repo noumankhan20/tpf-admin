@@ -29,6 +29,7 @@ const adminAuthSlice = createSlice({
 
       if (typeof window !== "undefined") {
         localStorage.removeItem("adminInfo");
+        localStorage.removeItem("adminToken");
       }
     },
   },

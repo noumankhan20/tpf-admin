@@ -12,6 +12,10 @@ export const adminApiSlice = apiSlice.injectEndpoints({
       async onQueryStarted(_, { dispatch, queryFulfilled }) {
         const { data } = await queryFulfilled;
 
+        if (data?.token && typeof window !== "undefined") {
+          localStorage.setItem("adminToken", data.token);
+        }
+
         // ✅ Saves to Redux + localStorage
         dispatch(setAdminCredentials(data.admin));
       },
@@ -36,6 +40,9 @@ export const adminApiSlice = apiSlice.injectEndpoints({
         try {
           await queryFulfilled;
         } finally {
+          if (typeof window !== "undefined") {
+            localStorage.removeItem("adminToken");
+          }
           dispatch(logoutAdminAction());
           dispatch(adminApiSlice.util.resetApiState()); // 🔥 REQUIRED
         }
