@@ -147,7 +147,7 @@ export default function VolunteerModule() {
             setSelectedVolunteerId(null);
             setSelectedVoucher(null);
         } else {
-            router.push('/select-portal?category=tpf_management');
+            router.back();
         }
     };
 
@@ -576,7 +576,7 @@ export default function VolunteerModule() {
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <button
-                            onClick={() => router.push('/select-portal?category=tpf_management')}
+                            onClick={() => router.back()}
                             className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors text-gray-500 cursor-pointer"
                         >
                             <ArrowLeft size={18} />

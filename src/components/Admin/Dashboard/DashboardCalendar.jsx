@@ -645,7 +645,7 @@ export default function DashboardCalendar() {
             <header className="flex items-center justify-between px-6 py-4 bg-white border-b border-gray-200 flex-shrink-0">
                 <div className="flex items-center gap-3">
                     <button
-                        onClick={() => router.push('/select-portal')}
+                        onClick={() => router.back()}
                         className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 hover:text-gray-700 transition-colors"
                     >
                         <ArrowLeft size={15} strokeWidth={2} />

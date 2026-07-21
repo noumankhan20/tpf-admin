@@ -1,5 +1,6 @@
-import DashboardSummary from "@/components/Admin/Dashboard/DashboardSummary";
+import { redirect } from "next/navigation";
 
 export default function SummaryPage() {
-    return <DashboardSummary />;
+    redirect("/admin/dashboard/overview");
 }
+

@@ -3,6 +3,21 @@ import { apiSlice } from "./apiSlice";
 
 export const adminDashboardApiSlice = apiSlice.injectEndpoints({
     endpoints: (builder) => ({
+        getDashboardAnalytics: builder.query({
+            query: ({ startDate, endDate, campaignId, campaignSearch }) => {
+                const params = new URLSearchParams();
+                if (startDate) params.append("startDate", startDate);
+                if (endDate) params.append("endDate", endDate);
+                if (campaignId) params.append("campaignId", campaignId);
+                if (campaignSearch) params.append("campaignSearch", campaignSearch);
+
+                return {
+                    url: `/admin/dashboard/analytics?${params.toString()}`,
+                    method: "GET",
+                };
+            },
+            keepUnusedDataFor: 300,
+        }),
         getCalendarEvents: builder.query({
             query: ({ month, year }) => ({
                 url: `/admin/dashboard/calendar-events?month=${month}&year=${year}`,
@@ -59,6 +74,7 @@ export const adminDashboardApiSlice = apiSlice.injectEndpoints({
 });
 
 export const {
+    useGetDashboardAnalyticsQuery,
     useGetCalendarEventsQuery,
     useGetSummaryMetricsQuery,
     useGetDonationAnalyticsQuery,
@@ -66,3 +82,4 @@ export const {
     useGetCampaignReferralsQuery,
     useAddMeetingMutation,
 } = adminDashboardApiSlice;
+

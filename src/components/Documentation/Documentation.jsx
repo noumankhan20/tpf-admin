@@ -164,7 +164,7 @@ export default function Documentation() {
             <div className="flex-1">
               <div className="flex items-center gap-3 mb-3">
                 <button
-                  onClick={() => router.push('/select-portal?category=legal')}
+                  onClick={() => router.back()}
                   className="p-2.5 hover:bg-white/10 rounded-lg cursor-pointer transition-all text-white/80 hover:text-white"
                 >
                   <ArrowLeft className="w-5 h-5" />

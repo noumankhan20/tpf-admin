@@ -177,7 +177,7 @@ export default function ExpenseManagement() {
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
                     <div className="flex items-center gap-4">
                         <button
-                            onClick={() => router.push('/select-portal?category=resource')}
+                            onClick={() => router.back()}
                             className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-500"
                         >
                             <ArrowLeft size={20} />

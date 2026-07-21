@@ -310,7 +310,7 @@ function Title({ isLoaded, totalModules }) {
       {/* Back button */}
       <div className="mb-4">
         <button
-          onClick={() => router.push('/select-portal?category=work')}
+          onClick={() => router.push('/select-portal')}
           className="flex items-center gap-2 text-gray-500 hover:text-emerald-600 transition-colors font-medium text-sm"
         >
           <ArrowLeft size={16} />

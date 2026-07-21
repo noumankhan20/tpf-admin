@@ -39,20 +39,12 @@ export const MODULES = [
   // DASHBOARD
   // ═══════════════════════════════════════
   {
-    id: "Admin Dashboard",           // ← stored in DB
-    name: "Overview",                // ← display only
+    id: "Admin Dashboard",
+    name: "Dashboard",
     icon: TrendingUp,
     route: "/admin/dashboard/overview",
     category: "dashboard",
-    desc: "Platform performance insights",
-  },
-  {
-    id: "Dashboard Summary",
-    name: "Summary",
-    icon: LayoutGrid,
-    route: "/admin/dashboard/summary",
-    category: "dashboard",
-    desc: "Key metrics and quick stats",
+    desc: "Platform operations & fundraising command center",
   },
 
   // ═══════════════════════════════════════

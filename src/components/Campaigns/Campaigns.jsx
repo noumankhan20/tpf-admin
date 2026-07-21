@@ -439,7 +439,7 @@ export default function CampaignAdminDashboard() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
           <div className="relative flex items-center justify-between flex-wrap gap-4">
             <button
-              onClick={() => router.push('/select-portal?category=work')}
+              onClick={() => router.back()}
               className="flex items-center cursor-pointer gap-2 px-4 py-2 rounded-xl text-sm font-medium text-gray-600 hover:text-gray-800 hover:bg-white transition-all border border-gray-300 shadow-sm"
             >
               <ArrowLeft className="w-4 h-4" />

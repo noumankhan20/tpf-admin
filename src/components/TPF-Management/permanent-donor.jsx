@@ -55,7 +55,7 @@ export default function PermanentDonorModule() {
   const totalPages = Math.ceil(filteredDonors.length / itemsPerPage);
 
   const handleBackToTPFManagementClick = () => {
-    router.push('/select-portal');
+    router.back();
   };
 
   const handleBackToDonorsClick = () => {

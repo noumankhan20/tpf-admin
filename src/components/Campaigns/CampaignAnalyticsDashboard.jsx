@@ -715,7 +715,7 @@ export default function CampaignAnalyticsDashboard({ campaign, tpfExpensesRaised
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Quick Admin Actions</p>
                 
                 <button 
-                  onClick={() => router.push(`/select-portal?category=work`)}
+                  onClick={() => router.back()}
                   className="w-full py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:border-slate-300 transition-all flex items-center justify-center gap-2 cursor-pointer"
                 >
                   <ArrowLeft size={13} />
