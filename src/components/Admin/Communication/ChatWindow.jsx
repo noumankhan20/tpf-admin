@@ -7,9 +7,11 @@ import {
     useMarkMessagesAsReadMutation,
     useCompleteInternalTaskMutation
 } from '@/utils/slices/internalCommunicationApiSlice';
-import { Send, Loader2, User, Globe, MessageCircle, ChevronUp, MoreVertical, Paperclip, Smile, CheckSquare, Square } from 'lucide-react';
+import { Send, Loader2, User, Globe, MessageCircle, ChevronUp, MoreVertical, Paperclip, Smile, CheckSquare, Square, FileText } from 'lucide-react';
 import { useSocket } from '@/utils/context/SocketContext';
 import { format, isToday, isYesterday } from 'date-fns';
+
+const TASK_CATEGORIES = ['General', 'Disburse Fund Task', 'Verification', 'Other'];
 
 export default function ChatWindow({ selectedAdmin, isGlobalMode, adminInfo }) {
     const [message, setMessage] = useState('');
@@ -23,6 +25,8 @@ export default function ChatWindow({ selectedAdmin, isGlobalMode, adminInfo }) {
 
     const [typingUser, setTypingUser] = useState(null);
     const typingTimeoutRef = useRef(null);
+
+    const isSuperAdminUser = adminInfo?.isSuperAdmin || adminInfo?.role?.toLowerCase().includes('super') || adminInfo?.modules?.length >= 30;
 
     const currentUserId = adminInfo?._id || adminInfo?.id;
     const selectedAdminId = selectedAdmin?._id || selectedAdmin?.id;
@@ -40,6 +44,8 @@ export default function ChatWindow({ selectedAdmin, isGlobalMode, adminInfo }) {
     const [markAsRead] = useMarkMessagesAsReadMutation();
     const [completeTask] = useCompleteInternalTaskMutation();
     const [isAssigningTask, setIsAssigningTask] = useState(false);
+    const [taskCategory, setTaskCategory] = useState('General');
+    const [taskFile, setTaskFile] = useState(null);
 
     const handleCompleteTask = async (messageId) => {
         try {
@@ -191,23 +197,43 @@ export default function ChatWindow({ selectedAdmin, isGlobalMode, adminInfo }) {
                 readBy: [],
                 isGlobal: isGlobalMode,
                 isTask: isAssigningTask,
-                taskStatus: isAssigningTask ? "PENDING" : undefined
+                taskStatus: isAssigningTask ? "PENDING" : undefined,
+                taskCategory: isAssigningTask ? taskCategory : null,
+                taskProofDocument: null // Optimistically, we won't have the key yet
             };
 
-            // Optimistic update for better UX
             setAllMessages(prev => [...prev, tempMessage]);
             const currentMsg = message;
             const wasAssigningTask = isAssigningTask;
+            const currentCategory = taskCategory;
+            const currentFile = taskFile;
+            
             setMessage('');
             setIsAssigningTask(false);
+            setTaskFile(null);
             scrollToBottom();
 
-            await sendMessage({
-                receiverId: selectedAdminId,
-                content: currentMsg,
-                isGlobal: isGlobalMode,
-                isTask: wasAssigningTask
-            }).unwrap();
+            let payload;
+            if (wasAssigningTask) {
+                payload = new FormData();
+                payload.append('receiverId', selectedAdminId);
+                payload.append('content', currentMsg);
+                payload.append('isGlobal', isGlobalMode);
+                payload.append('isTask', wasAssigningTask);
+                payload.append('taskCategory', currentCategory);
+                if (currentFile) {
+                    payload.append('taskProofDocument', currentFile);
+                }
+            } else {
+                payload = {
+                    receiverId: selectedAdminId,
+                    content: currentMsg,
+                    isGlobal: isGlobalMode,
+                    isTask: wasAssigningTask
+                };
+            }
+
+            await sendMessage(payload).unwrap();
 
         } catch (err) {
             console.error("Failed to send message:", err);
@@ -223,40 +249,34 @@ export default function ChatWindow({ selectedAdmin, isGlobalMode, adminInfo }) {
     };
 
     return (
-        <div className="flex flex-col h-full bg-[#e5ddd5] relative">
+        <div className="flex flex-col h-full bg-[#f8f9fa] relative">
             {/* Header */}
-            <header className="p-3 border-b border-gray-200 flex items-center justify-between bg-white shadow-sm z-20 min-h-[70px]">
-                <div className="flex items-center gap-3">
-                    <div className={`w-11 h-11 rounded-full flex items-center justify-center font-bold text-white shadow-md transition-transform hover:scale-105 cursor-pointer ${isGlobalMode
-                        ? 'bg-gradient-to-br from-emerald-500 to-teal-600'
-                        : 'bg-gradient-to-br from-emerald-500 to-teal-500'
-                        }`}>
+            <header className="px-8 py-5 border-b border-gray-100 flex items-center justify-between bg-white z-20 min-h-[76px]">
+                <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg bg-emerald-50 text-emerald-600 shadow-sm overflow-hidden border border-gray-100">
                         {isGlobalMode ? <Globe className="w-6 h-6" /> : selectedAdmin?.fullName?.charAt(0)}
                     </div>
                     <div>
-                        <h3 className="font-extrabold text-[#111b21] text-lg leading-tight">
-                            {isGlobalMode ? 'Internal Global Channel' : selectedAdmin?.fullName}
+                        <h3 className="font-black text-gray-900 text-[19px] tracking-tight">
+                            {isGlobalMode ? 'Global Announcements' : selectedAdmin?.fullName}
                         </h3>
-                        {typingUser && (
-                            <p className="text-[14px] text-emerald-600 font-bold italic animate-pulse">
+                        {typingUser ? (
+                            <p className="text-[13px] text-emerald-700 font-bold italic">
                                 {isGlobalMode ? `${typingUser} is typing...` : 'typing...'}
+                            </p>
+                        ) : (
+                            <p className="text-[13px] text-gray-600 font-medium">
+                                {isGlobalMode ? 'Company-wide channel' : 'Administrator'}
                             </p>
                         )}
                     </div>
                 </div>
-
             </header>
 
-            {/* Messages Area with WhatsApp Background Pattern */}
+            {/* Messages Area */}
             <div
                 ref={messagesContainerRef}
-                className="flex-1 overflow-y-auto p-4 md:p-8 space-y-4 relative custom-scrollbar"
-                style={{
-                    backgroundImage: `url("https://w0.peakpx.com/wallpaper/818/148/HD-wallpaper-whatsapp-background-whatsapp-theme-dot-pattern-light-background.jpg")`,
-                    backgroundSize: '400px',
-                    backgroundRepeat: 'repeat',
-                    backgroundBlendMode: 'soft-light'
-                }}
+                className="flex-1 overflow-y-auto p-4 md:p-8 space-y-4 relative custom-scrollbar bg-gray-50"
             >
                 {hasMore && (
                     <div className="flex justify-center pb-6">
@@ -305,59 +325,79 @@ export default function ChatWindow({ selectedAdmin, isGlobalMode, adminInfo }) {
                                             </span>
                                         </div>
                                     )}
-                                    <div className={`flex w-full mb-1 ${isOwn ? 'justify-end pl-12' : 'justify-start pr-12'}`}>
-                                        <div className={`relative px-4 py-3 shadow-sm min-w-[80px] group ${isOwn
-                                            ? 'bg-[#dcf8c6] rounded-l-xl rounded-br-xl rounded-tr-none'
-                                            : 'bg-white rounded-r-xl rounded-bl-xl rounded-tl-none'
+                                    <div className={`flex w-full mb-3 ${isOwn ? 'justify-end pl-12' : 'justify-start pr-12 gap-3'}`}>
+                                        {/* Avatar for incoming messages */}
+                                        {!isOwn && (
+                                            <div className="w-8 h-8 rounded-full flex-shrink-0 bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-500 mt-auto shadow-sm border border-gray-200">
+                                                {msg.sender?.fullName?.charAt(0) || <Globe className="w-4 h-4" />}
+                                            </div>
+                                        )}
+
+                                        <div className={`relative px-5 py-3.5 shadow-sm min-w-[120px] max-w-[85%] group ${isOwn
+                                            ? 'bg-emerald-50 text-gray-900 rounded-[20px] rounded-br-sm'
+                                            : 'bg-white text-gray-800 rounded-[20px] rounded-bl-sm border border-gray-100'
                                             }`}>
 
-                                            {/* Triangle tip for bubble */}
-                                            <div className={`absolute top-0 w-2 h-2 ${isOwn
-                                                ? '-right-1.5 bg-[#dcf8c6] [clip-path:polygon(0_0,0_100%,100%_0)]'
-                                                : '-left-1.5 bg-white [clip-path:polygon(100%_0,0_0,100%_100%)]'
-                                                }`}></div>
-
                                             {isGlobalMode && !isOwn && (
-                                                <p className="text-[12px] font-black text-emerald-600 mb-1 leading-none">
+                                                <p className="text-[12px] font-bold text-emerald-700 mb-1 leading-none">
                                                     {msg.sender?.fullName}
                                                 </p>
                                             )}
 
                                              {msg.isTask ? (
-                                                <div className="bg-white/90 p-3 rounded-lg border border-emerald-300 my-1 shadow-sm min-w-[200px]">
-                                                    <div className="flex items-center justify-between gap-4 mb-2 pb-1 border-b border-gray-100">
-                                                        <span className="text-[9px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded tracking-wide uppercase">Task</span>
-                                                        <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded tracking-wide uppercase ${
-                                                            msg.taskStatus === "COMPLETED" ? "bg-blue-100 text-blue-800" : "bg-amber-100 text-amber-800"
+                                                <div className={`p-4 rounded-xl border my-1 shadow-sm min-w-[250px] ${isOwn ? 'bg-white text-gray-800 border-emerald-100' : 'bg-gray-50 border-gray-200'}`}>
+                                                    <div className="flex items-center justify-between gap-4 mb-3 pb-2 border-b border-gray-200">
+                                                        <div className="flex flex-col gap-1">
+                                                            <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded uppercase tracking-wider w-fit">Task</span>
+                                                            {msg.taskCategory && (
+                                                                <span className="text-[11px] font-semibold text-gray-600">{msg.taskCategory}</span>
+                                                            )}
+                                                        </div>
+                                                        <span className={`text-[10px] font-bold px-2 py-1 rounded tracking-wide uppercase ${
+                                                            msg.taskStatus === "COMPLETED" ? "bg-green-100 text-green-800" : "bg-amber-100 text-amber-800"
                                                         }`}>
                                                             {msg.taskStatus || "PENDING"}
                                                         </span>
                                                     </div>
-                                                    <p className="text-[14px] text-gray-800 font-medium break-words whitespace-pre-wrap">
+                                                    
+                                                    <p className="text-[14px] font-medium break-words whitespace-pre-wrap mb-3 text-gray-800">
                                                         {msg.content}
                                                     </p>
+                                                    
+                                                    {msg.taskProofDocument && (
+                                                        <a 
+                                                            href={`${process.env.NEXT_PUBLIC_BACKEND_API}/media/${msg.taskProofDocument}`}
+                                                            target="_blank" 
+                                                            rel="noopener noreferrer"
+                                                            className="flex items-center gap-2 text-sm text-emerald-600 hover:text-emerald-800 font-medium mb-3 p-2 bg-emerald-50/50 rounded-lg transition-colors border border-emerald-100"
+                                                        >
+                                                            <FileText size={16} />
+                                                            View Proof Document
+                                                        </a>
+                                                    )}
+
                                                     {msg.taskStatus !== "COMPLETED" && !isOwn && (
                                                         <button
                                                             onClick={() => handleCompleteTask(msg._id)}
-                                                            className="w-full mt-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold py-1.5 rounded-md transition-colors flex items-center justify-center gap-1 shadow-sm cursor-pointer"
+                                                            className="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold py-2 rounded-lg transition-colors flex items-center justify-center gap-2 shadow-sm cursor-pointer mt-2"
                                                         >
-                                                            <CheckSquare size={12} />
+                                                            <CheckSquare size={16} />
                                                             Mark Completed
                                                         </button>
                                                     )}
                                                 </div>
                                             ) : (
-                                                <p className="text-[16px] text-[#111b21] leading-relaxed break-words whitespace-pre-wrap">
+                                                <p className="text-[15px] leading-relaxed break-words whitespace-pre-wrap">
                                                     {msg.content}
                                                 </p>
                                             )}
 
-                                            <div className="flex items-center justify-end gap-1 mt-1">
-                                                <span className="text-[11px] text-gray-500 font-bold uppercase tracking-tight">
+                                            <div className="flex items-center justify-end gap-1.5 mt-2 opacity-60">
+                                                <span className="text-[10px] font-medium tracking-wide">
                                                     {format(new Date(msg.createdAt), 'hh:mm a')}
                                                 </span>
                                                 {isOwn && (
-                                                    <span className={`text-[12px] font-bold ${msg.readBy?.length > 0 ? 'text-emerald-500' : 'text-gray-400'}`}>
+                                                    <span className="text-[12px] font-bold text-emerald-700">
                                                         {msg.readBy?.length > 0 ? '✓✓' : '✓'}
                                                     </span>
                                                 )}
@@ -381,43 +421,86 @@ export default function ChatWindow({ selectedAdmin, isGlobalMode, adminInfo }) {
             </div>
 
             {/* Input Area */}
-            <footer className="p-3 bg-[#f0f2f5] border-t border-gray-200">
-                                <form onSubmit={handleSend} className="flex items-center gap-3 max-w-4xl mx-auto">
-                                    {adminInfo?.isSuperAdmin && !isGlobalMode && (
-                                        <button
-                                            type="button"
-                                            onClick={() => setIsAssigningTask(prev => !prev)}
-                                            className={`h-10 px-3 rounded-full border text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 cursor-pointer ${
-                                                isAssigningTask
-                                                    ? 'bg-emerald-600 border-emerald-600 text-white shadow-sm'
-                                                    : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-55'
-                                            }`}
-                                        >
-                                            {isAssigningTask ? <CheckSquare size={14} /> : <Square size={14} />}
-                                            Task
-                                        </button>
-                                    )}
+            <footer className="bg-transparent pb-6 px-4 md:px-8 pt-2">
+                {isAssigningTask && (
+                    <div className="max-w-4xl mx-auto px-6 py-4 mb-2 bg-white rounded-2xl shadow-sm border border-emerald-100 flex flex-wrap items-center gap-4 animate-in slide-in-from-bottom-2 duration-200">
+                        <div className="flex items-center gap-2 text-sm">
+                            <span className="font-semibold text-gray-700">Category:</span>
+                            <select
+                                value={taskCategory}
+                                onChange={(e) => setTaskCategory(e.target.value)}
+                                className="border border-gray-200 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                            >
+                                {TASK_CATEGORIES.map(cat => (
+                                    <option key={cat} value={cat}>{cat}</option>
+                                ))}
+                            </select>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm border-l pl-4 border-gray-200">
+                            <span className="font-semibold text-gray-700">Proof:</span>
+                            <div className="flex items-center gap-2">
+                                <label className="cursor-pointer bg-white border border-gray-200 px-3 py-1.5 rounded-md hover:bg-gray-50 transition-colors flex items-center gap-2 text-emerald-600">
+                                    <Paperclip size={14} />
+                                    {taskFile ? 'Change File' : 'Upload Document (Optional)'}
+                                    <input 
+                                        type="file" 
+                                        className="hidden" 
+                                        onChange={(e) => setTaskFile(e.target.files[0])}
+                                    />
+                                </label>
+                                {taskFile && (
+                                    <span className="text-gray-600 truncate max-w-[150px]" title={taskFile.name}>
+                                        {taskFile.name}
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                )}
+                
+                <form onSubmit={handleSend} className="max-w-4xl mx-auto flex items-end gap-3 bg-white rounded-full p-2 shadow-sm border border-gray-200">
+                    <div className="flex-1 relative flex items-center bg-transparent transition-all ml-4">
+                        <textarea
+                            value={message}
+                            onChange={(e) => handleInputChange(e.target.value)}
+                            placeholder={isGlobalMode ? "Send to all administrators..." : (isAssigningTask ? "Describe the task..." : "Type a message...")}
+                            className="w-full bg-transparent border-none py-2.5 px-2 focus:outline-none focus:ring-0 text-[15px] placeholder-gray-400 resize-none max-h-[120px] min-h-[44px]"
+                            rows={1}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' && !e.shiftKey) {
+                                    e.preventDefault();
+                                    handleSend(e);
+                                }
+                            }}
+                        />
+                    </div>
 
-                                    <div className="flex-1 relative flex items-center">
-                                        <input
-                                            type="text"
-                                            value={message}
-                                            onChange={(e) => handleInputChange(e.target.value)}
-                                            placeholder={isGlobalMode ? "Send to all administrators..." : (isAssigningTask ? "Assign a task..." : "Type a message")}
-                                            className="w-full bg-white border-none py-2.5 px-5 rounded-full focus:outline-none focus:ring-0 text-base shadow-sm placeholder-gray-500"
-                                        />
-                                    </div>
-
-                                    <button
-                                        type="submit"
-                                        disabled={!message.trim() || isSending}
-                                        className={`w-12 h-12 flex items-center justify-center rounded-full transition-all shadow-lg active:scale-90 cursor-pointer ${!message.trim() ? 'bg-gray-300 cursor-not-allowed' : 'bg-[#00a884] hover:bg-[#008f72] text-white shadow-[#00a884]/20'
-                                            }`}
-                                    >
-                                        {isSending ? <Loader2 className="w-6 h-6 animate-spin" /> : <Send className="w-6 h-6" />}
-                                    </button>
-                                </form>
-                            </footer>
+                    <div className="flex items-center gap-2 pr-1 pb-1 shrink-0">
+                        {isSuperAdminUser && !isGlobalMode && (
+                            <button
+                                type="button"
+                                onClick={() => setIsAssigningTask(prev => !prev)}
+                                title="Create Task"
+                                className={`w-10 h-10 rounded-full flex items-center justify-center transition-all cursor-pointer ${
+                                    isAssigningTask
+                                        ? 'bg-emerald-100 text-emerald-600 shadow-sm'
+                                        : 'text-gray-400 hover:text-emerald-500 hover:bg-gray-50'
+                                }`}
+                            >
+                                {isAssigningTask ? <CheckSquare size={18} /> : <Square size={18} />}
+                            </button>
+                        )}
+                        <button
+                            type="submit"
+                            disabled={!message.trim() || isSending}
+                            className={`w-11 h-11 flex items-center justify-center rounded-full transition-all shadow-sm shrink-0 cursor-pointer ${!message.trim() ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-emerald-200/50 hover:shadow-md hover:-translate-y-0.5'
+                                }`}
+                        >
+                            {isSending ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5 ml-0.5" />}
+                        </button>
+                    </div>
+                </form>
+            </footer>
 
             {/* 48 Hour Deletion Pulse */}
             <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-30 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity">

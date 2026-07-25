@@ -1,4 +1,7 @@
 export const DATE_PRESETS = {
+  TODAY: "TODAY",
+  THIS_WEEK: "THIS_WEEK",
+  LAST_WEEK: "LAST_WEEK",
   LAST_MONTH: "LAST_MONTH",
   LAST_3_MONTHS: "LAST_3_MONTHS",
   LAST_6_MONTHS: "LAST_6_MONTHS",
@@ -21,6 +24,26 @@ export const getDashboardDateRange = (presetKey, customStart, customEnd) => {
   let startDate = new Date(endDate);
 
   switch (presetKey) {
+    case DATE_PRESETS.TODAY:
+      startDate.setHours(0, 0, 0, 0);
+      break;
+    case DATE_PRESETS.THIS_WEEK:
+      {
+        const day = startDate.getDay();
+        const diff = startDate.getDate() - day + (day === 0 ? -6 : 1);
+        startDate.setDate(diff);
+      }
+      break;
+    case DATE_PRESETS.LAST_WEEK:
+      {
+        const dayLast = startDate.getDay();
+        const diffLast = startDate.getDate() - dayLast + (dayLast === 0 ? -6 : 1) - 7;
+        startDate.setDate(diffLast);
+        endDate = new Date(startDate);
+        endDate.setDate(endDate.getDate() + 6);
+        endDate.setHours(23, 59, 59, 999);
+      }
+      break;
     case DATE_PRESETS.LAST_MONTH:
       startDate.setMonth(startDate.getMonth() - 1);
       break;

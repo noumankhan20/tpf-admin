@@ -202,7 +202,7 @@ const ActivityCalendar = () => {
                     <div className="grid grid-cols-7 gap-1">
                         {/* Empty leading cells */}
                         {Array.from({ length: firstDay }).map((_, i) => (
-                            <div key={`empty-${i}`} className="aspect-square" />
+                            <div key={`empty-${i}`} className="min-h-[120px]" />
                         ))}
 
                         {/* Day cells */}
@@ -222,39 +222,40 @@ const ActivityCalendar = () => {
                                     key={day}
                                     onClick={() => setSelectedDay(isSelected ? null : day)}
                                     className={`
-                                        relative aspect-square rounded-lg flex flex-col items-center justify-start pt-2 pb-1 px-1 cursor-pointer transition-all duration-150 group
+                                        relative min-h-[120px] rounded-xl flex flex-col items-center justify-start pt-3 pb-3 px-2 cursor-pointer transition-all duration-150 group border-2
                                         ${isToday
-                                            ? "bg-gray-900 text-white"
+                                            ? "bg-gray-900 text-white border-gray-900 shadow-md"
                                             : isSelected
-                                                ? "bg-gray-100 ring-1 ring-gray-300"
+                                                ? "bg-blue-50 border-blue-400 ring-4 ring-blue-100 ring-opacity-50"
                                                 : hasEvents
-                                                    ? "hover:bg-gray-50 text-gray-800"
-                                                    : "hover:bg-gray-50 text-gray-700"
+                                                    ? "bg-white border-gray-200 hover:border-gray-400 hover:shadow-md text-gray-900"
+                                                    : "bg-white border-gray-100 hover:border-gray-300 hover:bg-gray-50 text-gray-400"
                                         }
-                                        ${isWeekend && !isToday && !isSelected ? "text-gray-400" : ""}
+                                        ${isWeekend && !isToday && !isSelected && !hasEvents ? "bg-gray-50/50" : ""}
                                     `}
                                 >
-                                    <span className={`text-sm font-semibold leading-none ${isToday ? "text-white" : ""}`}>
+                                    <span className={`text-xl font-bold leading-none ${isToday ? "text-white" : isSelected ? "text-blue-700" : hasEvents ? "text-gray-900" : ""}`}>
                                         {day}
                                     </span>
 
                                     {/* Event indicator dots */}
                                     {hasEvents && (
-                                        <div className="flex items-center gap-0.5 mt-1.5">
+                                        <div className="flex flex-wrap items-center justify-center gap-1.5 mt-auto pt-3">
                                             {uniqueTypes.map((type, idx) => {
                                                 const cfg = getTypeConfig(type);
                                                 return (
                                                     <span
                                                         key={idx}
-                                                        className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                                                        className="w-3 h-3 rounded-full flex-shrink-0 shadow-sm"
                                                         style={{
-                                                            backgroundColor: isToday ? "rgba(255,255,255,0.7)" : cfg.color
+                                                            backgroundColor: isToday ? "rgba(255,255,255,0.95)" : cfg.color,
+                                                            border: isToday ? "none" : `1px solid ${cfg.text}`
                                                         }}
                                                     />
                                                 );
                                             })}
                                             {dailyEvents.length > 3 && (
-                                                <span className={`text-[9px] font-bold ml-0.5 ${isToday ? "text-white/70" : "text-gray-400"}`}>
+                                                <span className={`text-xs font-black ml-1 ${isToday ? "text-white" : "text-gray-800"}`}>
                                                     +{dailyEvents.length - 3}
                                                 </span>
                                             )}

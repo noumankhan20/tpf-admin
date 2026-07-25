@@ -70,10 +70,10 @@ export default function PeopleOverview({ overview = {} }) {
                   {card.title}
                 </span>
                 <h3 className="text-2xl font-extrabold text-[#0F172A] font-mono tracking-tight">
-                  {formatNumber(card.total)}
+                  +{formatNumber(card.newCount)}
                 </h3>
-                <p className="text-xs font-semibold text-[#10B981] font-mono mt-1">
-                  +{formatNumber(card.newCount)} new during period
+                <p className="text-xs font-semibold text-[#64748B] font-mono mt-1">
+                  {formatNumber(card.total)} total all time
                 </p>
               </div>
 

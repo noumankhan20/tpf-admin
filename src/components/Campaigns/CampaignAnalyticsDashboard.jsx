@@ -434,12 +434,18 @@ export default function CampaignAnalyticsDashboard({ campaign, tpfExpensesRaised
                     <BarChart data={donorDistributionData}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
                       <XAxis dataKey="range" stroke="#94a3b8" fontSize={10} tickLine={false} />
-                      <YAxis stroke="#94a3b8" fontSize={10} tickLine={false} />
+                      <YAxis yAxisId="left" stroke="#94a3b8" fontSize={10} tickLine={false} tickFormatter={(v) => `₹${(v/1000).toFixed(0)}k`} />
+                      <YAxis yAxisId="right" orientation="right" stroke="#94a3b8" fontSize={10} tickLine={false} />
                       <Tooltip 
                         contentStyle={{ backgroundColor: 'white', borderRadius: '12px', border: '1px solid #e2e8f0' }}
-                        formatter={(v) => [`${v} donations`, 'Volume']}
+                        formatter={(value, name) => {
+                          if (name === 'Amount') return [`₹${value.toLocaleString('en-IN')}`, 'Amount Raised'];
+                          return [`${value} donations`, 'Donation Count'];
+                        }}
                       />
-                      <Bar dataKey="count" fill="#3b82f6" radius={[6, 6, 0, 0]} maxBarSize={45} />
+                      <Legend wrapperStyle={{ fontSize: '10px' }} />
+                      <Bar yAxisId="left" dataKey="amount" name="Amount" fill="#10b981" radius={[4, 4, 0, 0]} maxBarSize={40} />
+                      <Bar yAxisId="right" dataKey="count" name="Count" fill="#3b82f6" radius={[4, 4, 0, 0]} maxBarSize={40} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>

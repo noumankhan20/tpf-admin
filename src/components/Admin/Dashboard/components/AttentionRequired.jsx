@@ -46,15 +46,6 @@ export default function AttentionRequired({ pending = {} }) {
       icon: UserCheck,
     },
     {
-      id: "campaigns",
-      title: "Campaign Approvals",
-      subtitle: "Pending Approval",
-      count: pending.campaignApproval || 0,
-      action: "Review Campaigns",
-      route: "/campaigns?status=DRAFT",
-      icon: FolderCheck,
-    },
-    {
       id: "volunteers",
       title: "Volunteer Vouchers",
       subtitle: "Pending Approval",

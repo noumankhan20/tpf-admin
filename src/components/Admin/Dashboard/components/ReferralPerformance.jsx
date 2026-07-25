@@ -19,9 +19,10 @@ const REF_COLORS = {
 
 const CATEGORIES = ["ALL", "Influencer", "Masjid", "WhatsappAPI", "Email Broadcast", "Meta Ads", "Direct / Unknown"];
 
-export default function ReferralPerformance() {
+export default function ReferralPerformance({ startDate, endDate }) {
   const { data: campaignRes, isLoading: isCampaignsLoading } = useGetCampaignListQuery();
-  const { data: referralsRes, isLoading: isReferralsLoading } = useGetCampaignReferralsQuery();
+  
+  const { data: referralsRes, isLoading: isReferralsLoading } = useGetCampaignReferralsQuery({ startDate, endDate });
 
   const [selectedCampaignId, setSelectedCampaignId] = useState("ALL");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);

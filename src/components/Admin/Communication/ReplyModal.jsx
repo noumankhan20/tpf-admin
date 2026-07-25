@@ -9,11 +9,17 @@ import { X, Send, Loader2, MessageSquare, User, Globe } from 'lucide-react';
 import { format } from 'date-fns';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Reply } from 'lucide-react';
+import { createPortal } from 'react-dom';
 
 export default function ReplyModal({ isOpen, onClose, message, adminInfo }) {
     const [reply, setReply] = useState('');
     const [sendInternalMessage, { isLoading: isSending }] = useSendInternalMessageMutation();
     const [markAsRead] = useMarkMessagesAsReadMutation();
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
 
     useEffect(() => {
         if (isOpen && message) {
@@ -21,7 +27,7 @@ export default function ReplyModal({ isOpen, onClose, message, adminInfo }) {
         }
     }, [isOpen, message, markAsRead]);
 
-    if (!isOpen || !message) return null;
+    if (!isOpen || !message || !mounted) return null;
 
     const handleSend = async (e) => {
         e.preventDefault();
@@ -135,6 +141,7 @@ export default function ReplyModal({ isOpen, onClose, message, adminInfo }) {
                     </div>
                 </motion.div>
             </div>
-        </AnimatePresence>
+        </AnimatePresence>,
+        document.body
     );
 }

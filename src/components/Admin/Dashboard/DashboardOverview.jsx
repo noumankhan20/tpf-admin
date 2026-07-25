@@ -40,7 +40,7 @@ export default function DashboardOverview() {
   const searchParams = useSearchParams();
 
   // Read initial preset / custom dates from URL query params if present
-  const initialPreset = searchParams.get("preset") || DATE_PRESETS.LAST_3_MONTHS;
+  const initialPreset = searchParams.get("preset") || DATE_PRESETS.TODAY;
   const initialStart = searchParams.get("start") || "";
   const initialEnd = searchParams.get("end") || "";
 
@@ -173,7 +173,7 @@ export default function DashboardOverview() {
 
         {/* 7. REFERRAL PERFORMANCE */}
         <div id="section-referrals" className="bg-pink-50/80 border-2 border-pink-200/90 p-3 sm:p-4 rounded-2xl shadow-xs transition-all">
-          <ReferralPerformance />
+          <ReferralPerformance startDate={startDate} endDate={endDate} />
         </div>
 
         {/* 8. OPERATIONAL STATUS */}

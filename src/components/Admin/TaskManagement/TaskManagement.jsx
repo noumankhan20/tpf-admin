@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useSelector } from 'react-redux';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     ArrowLeft,
@@ -31,13 +32,19 @@ import {
     useGetAllTasksQuery,
     useGetCampaignProgressQuery,
     useGetCampaignsOverviewQuery,
-    useGetTaskAnalyticsQuery
+    useGetTaskAnalyticsQuery,
+    useGetAllDirectTasksQuery
 } from '@/utils/slices/taskManagementApiSlice';
 
 export default function TaskManagementPage() {
     const router = useRouter();
-    const [activeTab, setActiveTab] = useState('overview'); // 'overview', 'tasks', 'campaigns'
+    const { adminInfo } = useSelector((state) => state.adminAuth);
+    const [activeTab, setActiveTab] = useState('overview'); // 'overview', 'tasks', 'campaigns', 'direct'
     const [selectedCampaign, setSelectedCampaign] = useState(null);
+
+    const isSuperAdminUser = adminInfo?.isSuperAdmin || 
+                             adminInfo?.role?.toLowerCase().includes('super') || 
+                             (adminInfo?.modules && adminInfo.modules.length >= 30);
 
     // Filters for tasks
     const [searchQuery, setSearchQuery] = useState('');
@@ -206,6 +213,14 @@ export default function TaskManagementPage() {
                         label="All Tasks"
                         count={tasksData?.pagination?.total}
                     />
+                    {isSuperAdminUser && (
+                        <TabButton
+                            active={activeTab === 'direct'}
+                            onClick={() => setActiveTab('direct')}
+                            icon={<Briefcase className="w-4 h-4" />}
+                            label="Direct Tasks"
+                        />
+                    )}
                 </div>
 
                 {/* Filter Bar */}
@@ -311,6 +326,10 @@ export default function TaskManagementPage() {
                         setCurrentPage={setCurrentPage}
                         setSelectedCampaign={setSelectedCampaign}
                     />
+                )}
+
+                {activeTab === 'direct' && isSuperAdminUser && (
+                    <DirectTasksTab />
                 )}
             </main>
 
@@ -733,5 +752,109 @@ function StatusBadge({ status }) {
         <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-semibold border ${config.bg} ${config.text} ${config.border}`}>
             {config.label}
         </span>
+    );
+}
+
+function DirectTasksTab() {
+    const [page, setPage] = useState(1);
+    const { data: directTasksData, isLoading } = useGetAllDirectTasksQuery({ page, limit: 20 });
+
+    if (isLoading) {
+        return <div className="text-center py-12 text-gray-500">Loading direct tasks...</div>;
+    }
+
+    const tasks = directTasksData?.data || [];
+    const pagination = directTasksData?.pagination || {};
+
+    if (tasks.length === 0) {
+        return (
+            <div className="bg-white rounded-xl border border-gray-200 p-12 text-center shadow-sm">
+                <Briefcase className="w-16 h-16 mx-auto mb-4 text-gray-300" />
+                <p className="text-gray-600 font-medium">No direct tasks found</p>
+            </div>
+        );
+    }
+
+    return (
+        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+            <div className="overflow-x-auto">
+                <table className="w-full">
+                    <thead className="bg-gray-50 border-b border-gray-200">
+                        <tr>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Content</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assigner</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assignee</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Proof</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created Date</th>
+                        </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                        {tasks.map((task) => (
+                            <tr key={task._id} className="hover:bg-gray-50 transition-colors">
+                                <td className="px-6 py-4">
+                                    <div className="text-sm font-medium text-gray-900 line-clamp-2 max-w-xs">{task.content}</div>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium border bg-blue-100 text-blue-800 border-blue-200 uppercase tracking-wide">
+                                        {task.taskCategory || 'General'}
+                                    </span>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                    <div className="text-sm text-gray-900">{task.sender?.fullName || 'Super Admin'}</div>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                    <div className="text-sm text-gray-900">{task.isGlobal ? 'Everyone' : (task.receiver?.fullName || 'Unknown')}</div>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                    <StatusBadge status={task.taskStatus} />
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                    {task.taskProofDocument ? (
+                                        <a href={`${process.env.NEXT_PUBLIC_BACKEND_API}/media/${task.taskProofDocument}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center gap-1">
+                                            <FileText size={16} /> View
+                                        </a>
+                                    ) : (
+                                        <span className="text-gray-400 text-sm">None</span>
+                                    )}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                    {new Date(task.createdAt).toLocaleDateString()}
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+
+            {/* Pagination */}
+            {pagination.totalPages > 1 && (
+                <div className="border-t border-gray-200 p-4 flex items-center justify-between bg-gray-50 fab-avoid">
+                    <div className="text-sm text-gray-600">
+                        Showing {((page - 1) * pagination.limit) + 1} to {Math.min(page * pagination.limit, pagination.total)} of {pagination.total} tasks
+                    </div>
+                    <div className="flex gap-2">
+                        <button
+                            onClick={() => setPage(p => Math.max(1, p - 1))}
+                            disabled={page === 1}
+                            className="px-3 py-1 border border-gray-300 rounded bg-white hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            <ChevronLeft className="w-4 h-4" />
+                        </button>
+                        <span className="px-3 py-1 text-sm font-medium">
+                            Page {page} of {pagination.totalPages}
+                        </span>
+                        <button
+                            onClick={() => setPage(p => Math.min(pagination.totalPages, p + 1))}
+                            disabled={page === pagination.totalPages}
+                            className="px-3 py-1 border border-gray-300 rounded bg-white hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            <ChevronRight className="w-4 h-4" />
+                        </button>
+                    </div>
+                </div>
+            )}
+        </div>
     );
 }

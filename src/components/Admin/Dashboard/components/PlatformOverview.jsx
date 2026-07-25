@@ -86,8 +86,8 @@ export default function PlatformOverview({ overview = {} }) {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
         <KpiCard
           title="Total Donations"
-          primaryValue={formatCurrency(overview.totalDonations)}
-          subText={`${formatCurrency(overview.periodDonations)} in selected period`}
+          primaryValue={formatCurrency(overview.periodDonations)}
+          subText={`${formatCurrency(overview.totalDonations)} all time`}
           change={donationChange}
           icon={IndianRupee}
           dark={true}
@@ -95,39 +95,39 @@ export default function PlatformOverview({ overview = {} }) {
 
         <KpiCard
           title="Total Donors"
-          primaryValue={formatNumber(overview.totalDonors)}
-          subText={`+${formatNumber(overview.periodNewDonors)} during period`}
+          primaryValue={formatNumber(overview.periodNewDonors)}
+          subText={`${formatNumber(overview.totalDonors)} all time`}
           change={donorChange}
           icon={HeartHandshake}
         />
 
         <KpiCard
           title="Volunteers"
-          primaryValue={formatNumber(overview.totalVolunteers)}
-          subText={`+${formatNumber(overview.periodNewVolunteers)} during period`}
+          primaryValue={formatNumber(overview.periodNewVolunteers)}
+          subText={`${formatNumber(overview.totalVolunteers)} all time`}
           change={volunteerChange}
           icon={Users}
         />
 
         <KpiCard
           title="Beneficiaries"
-          primaryValue={formatNumber(overview.totalBeneficiaries)}
-          subText={`+${formatNumber(overview.periodNewBeneficiaries)} during period`}
+          primaryValue={formatNumber(overview.periodNewBeneficiaries)}
+          subText={`${formatNumber(overview.totalBeneficiaries)} all time`}
           icon={UserCheck}
         />
 
         <KpiCard
           title="Total Users"
-          primaryValue={formatNumber(overview.totalUsers)}
-          subText={`+${formatNumber(overview.periodNewUsers)} registered`}
+          primaryValue={formatNumber(overview.periodNewUsers)}
+          subText={`${formatNumber(overview.totalUsers)} all time`}
           change={userChange}
           icon={Users}
         />
 
         <KpiCard
           title="Campaigns"
-          primaryValue={formatNumber(overview.totalCampaigns)}
-          subText={`${overview.activeCampaigns || 0} Active • ${overview.completedCampaigns || 0} Done`}
+          primaryValue={formatNumber(overview.periodNewCampaigns || 0)}
+          subText={`${overview.totalCampaigns || 0} all time`}
           icon={FolderKanban}
         />
       </div>

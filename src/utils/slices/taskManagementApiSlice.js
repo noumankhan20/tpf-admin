@@ -47,6 +47,15 @@ export const taskManagementApiSlice = apiSlice.injectEndpoints({
         getTaskAnalytics: builder.query({
             query: () => '/admin/task-management/analytics',
             providesTags: ['TaskManagement']
+        }),
+
+        // Get all direct tasks
+        getAllDirectTasks: builder.query({
+            query: ({ page = 1, limit = 20 }) => ({
+                url: '/admin/task-management/direct-tasks',
+                params: { page, limit }
+            }),
+            providesTags: ['DirectTasks']
         })
     })
 });
@@ -55,5 +64,6 @@ export const {
     useGetAllTasksQuery,
     useGetCampaignProgressQuery,
     useGetCampaignsOverviewQuery,
-    useGetTaskAnalyticsQuery
+    useGetTaskAnalyticsQuery,
+    useGetAllDirectTasksQuery
 } = taskManagementApiSlice;

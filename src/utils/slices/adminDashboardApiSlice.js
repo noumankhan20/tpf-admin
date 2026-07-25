@@ -56,10 +56,15 @@ export const adminDashboardApiSlice = apiSlice.injectEndpoints({
             keepUnusedDataFor: 300,
         }),
         getCampaignReferrals: builder.query({
-            query: () => ({
-                url: `/admin/dashboard/campaign-referrals`,
-                method: "GET",
-            }),
+            query: ({ startDate, endDate } = {}) => {
+                const params = new URLSearchParams();
+                if (startDate) params.append("startDate", startDate);
+                if (endDate) params.append("endDate", endDate);
+                return {
+                    url: `/admin/dashboard/campaign-referrals?${params.toString()}`,
+                    method: "GET",
+                };
+            },
             keepUnusedDataFor: 60,
         }),
         addMeeting: builder.mutation({

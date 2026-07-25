@@ -43,6 +43,7 @@ import {
 } from 'lucide-react';
 import LoginNotificationModal from '../Common/LoginNotificationModal';
 import NotificationDropdown from '../Admin/Communication/NotificationDropdown';
+import TaskNotificationDropdown from '../Admin/Communication/TaskNotificationDropdown';
 import NotificationBell from '../Common/NotificationBell';
 import LoadingScreen from '../Common/LoadingScreen';
 import { Calendar as CalendarIcon } from 'lucide-react';
@@ -147,6 +148,20 @@ export default function SelectPanel() {
           });
         }
 
+        // Direct Tasks (Internal Messages) for Task Management Module
+        if (admin?.isSuperAdmin || adminModules.includes('task-management')) {
+          const directTasksRes = await fetch(`${apiBase}/admin/internal-communication/messages`, { credentials: 'include' });
+          const directTasksResult = await directTasksRes.json();
+          if (directTasksResult.success && directTasksResult.data) {
+            const currentUserId = adminId;
+            const pendingDirectTasks = directTasksResult.data.filter(m => {
+              const senderId = m.sender?._id || m.sender?.id || m.sender;
+              return !m.readBy.includes(currentUserId) && senderId !== currentUserId && m.isTask && m.taskStatus !== "COMPLETED";
+            });
+            newCounts['task-management'] = (newCounts['task-management'] || 0) + pendingDirectTasks.length;
+          }
+        }
+
         // Financial Aid Verifications
         if (admin?.isSuperAdmin || adminModules.includes('Financial Aid')) {
           const formRes = await fetch(`${apiBase}/admin/verify/forms?status=pending`, { credentials: 'include' });
@@ -246,6 +261,18 @@ export default function SelectPanel() {
       });
     };
 
+    const handleNewInternalMessage = (data) => {
+      const currentUserId = admin?._id || admin?.id;
+      const receiverId = data.receiver?._id || data.receiver?.id || data.receiver;
+      if ((receiverId === currentUserId || data.isGlobal) && data.isTask) {
+        setModuleCounts(prev => {
+          const next = { ...prev };
+          next['task-management'] = (next['task-management'] || 0) + 1;
+          return next;
+        });
+      }
+    };
+
     const handleDeleteRequestCreated = (data) => {
       if (admin?.isSuperAdmin) {
         setModuleCounts(prev => {
@@ -277,6 +304,7 @@ export default function SelectPanel() {
     socket.on('deleteRequestCreated', handleDeleteRequestCreated);
     socket.on('offlineDonationCreated', handleOfflineDonationCreated);
     socket.on('offlineDonationProcessed', handleOfflineDonationProcessed);
+    socket.on('new_internal_message', handleNewInternalMessage);
 
     return () => {
       socket.off('taskAssigned', handleTaskAssigned);
@@ -284,6 +312,7 @@ export default function SelectPanel() {
       socket.off('deleteRequestCreated', handleDeleteRequestCreated);
       socket.off('offlineDonationCreated', handleOfflineDonationCreated);
       socket.off('offlineDonationProcessed', handleOfflineDonationProcessed);
+      socket.off('new_internal_message', handleNewInternalMessage);
     };
   }, [socket]);
 
@@ -397,6 +426,7 @@ function Header({ isLoaded, handleLogout, fullName }) {
           </div>
 
           <div className="flex items-center space-x-3">
+            <TaskNotificationDropdown />
             <NotificationDropdown />
             <NotificationBell />
 
