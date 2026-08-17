@@ -6,9 +6,7 @@ export const toTitleCase = (str) => {
     if (!str || typeof str !== 'string') return str;
     return str
         .toLowerCase()
-        .split(' ')
-        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-        .join(' ');
+        .replace(/(?:^|\s|-)\S/g, (match) => match.toUpperCase());
 };
 
 /**
@@ -16,42 +14,53 @@ export const toTitleCase = (str) => {
  * Used automatically by the Field component.
  */
 export const formatFieldValue = (label, value) => {
-    if (!value || typeof value !== 'string') return value;
+    if (value === null || value === undefined) return value;
+    const strVal = String(value).trim();
+    if (!strVal) return value;
 
     const lowerLabel = String(label).toLowerCase();
 
-    // Fields that should always be UPPERCASE
+    // Document numbers or registration codes that should always be UPPERCASE
     if (
         lowerLabel.includes('pan') ||
+        lowerLabel.includes('gst') ||
+        lowerLabel.includes('cin') ||
         lowerLabel.includes('ifsc') ||
+        lowerLabel.includes('80g') ||
+        lowerLabel.includes('fcra') ||
         lowerLabel.includes('id number') ||
         lowerLabel.includes('registration number') || 
-        lowerLabel.includes('id type')
+        lowerLabel.includes('document number') ||
+        lowerLabel.includes('id type') ||
+        lowerLabel.includes('doc number') ||
+        lowerLabel.includes('certificate number')
     ) {
-        return value.toUpperCase();
+        return strVal.toUpperCase();
     }
 
-    // Fields that should be passed EXACTLY as they are (Emails, Links)
+    // Fields that should be passed in lowercase (Emails, Web Links)
     if (
         lowerLabel.includes('email') ||
         lowerLabel.includes('website') ||
         lowerLabel.includes('url') || 
         lowerLabel.includes('link')
     ) {
-        return value.toLowerCase(); // usually emails are best displayed in lowercase for absolute clarity
+        return strVal.toLowerCase();
     }
 
-    // Fields that should just be normal sentences (no forced casing except maybe first letter)
+    // Paragraph text fields (Description, Notes, Statements, Reasons, Causes)
     if (
         lowerLabel.includes('about') ||
         lowerLabel.includes('description') ||
         lowerLabel.includes('reason') ||
         lowerLabel.includes('statement') ||
-        lowerLabel.includes('causes')
+        lowerLabel.includes('causes') ||
+        lowerLabel.includes('notes') ||
+        lowerLabel.includes('comments')
     ) {
-        return value; 
+        return strVal; 
     }
 
-    // Default formatting: Title Case (Names, States, Cities, Roles, Genders, etc.)
-    return toTitleCase(value);
+    // Default formatting: Capitalize Every Word (Names, States, Cities, Roles, Statuses, Domains, etc.)
+    return toTitleCase(strVal);
 };

@@ -225,142 +225,230 @@ export default function OrganizationVerifyPage() {
    };
 
    return (
-      <div className="min-h-screen bg-gray-50 font-sans flex flex-col">
-         {/* Notifications / Alerts */}
-
-         {/* Header */}
-         <header className="flex items-center justify-between px-6 py-4 bg-white border-b border-gray-200 shrink-0 shadow-sm">
-            <div className="flex items-center space-x-6">
-               <div className="flex items-center space-x-4">
+      <div className="min-h-screen bg-[#f7f8fa] font-sans flex flex-col">
+         
+         {/* Page Header */}
+         <header className="px-6 py-4 bg-white border-b border-slate-200/80 shrink-0 shadow-2xs no-print">
+            <div className="max-w-[1600px] mx-auto flex items-center justify-between">
+               <div className="flex items-center gap-3">
                   <button
                      onClick={() => router.back()}
-                     className="p-2 hover:bg-gray-100 rounded-full transition"
+                     className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-500 hover:text-slate-800 transition cursor-pointer"
+                     title="Go back"
                   >
-                     <ArrowLeft className="w-5 h-5 text-gray-600" />
+                     <ArrowLeft className="w-4 h-4" />
                   </button>
-                  <h1 className="text-xl font-bold text-gray-800">Organization Center</h1>
+                  <div>
+                     <h1 className="text-xl font-semibold text-slate-900 tracking-tight">Organization verification</h1>
+                     <p className="text-xs text-slate-500 font-normal">Review and process organization registrations, campaign proposals, and profile updates.</p>
+                  </div>
                </div>
-
-            </div>
-            <div className="flex items-center gap-4">
-               <NotificationBell moduleFilter="ORGANIZATION" />
+               <div className="flex items-center gap-4">
+                  <NotificationBell moduleFilter="ORGANIZATION" />
+               </div>
             </div>
          </header>
 
-         {/* Main Content */}
+         {/* Main Content Workspace */}
          <main className="flex-1 p-6 max-w-[1600px] mx-auto w-full overflow-hidden flex flex-col print:overflow-visible print:p-0">
 
-            <div className="flex bg-gray-100 p-1 rounded-xl w-fit mb-6">
+            {/* Navigation Tabs */}
+            <div className="flex items-center bg-slate-100/80 p-1 rounded-lg w-fit mb-6 border border-slate-200/60 no-print">
                <button
                   onClick={() => { setActiveTab('registrations'); setCurrentPage(1); }}
-                  className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'registrations' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                  className={`px-3.5 py-1.5 rounded-md text-xs font-medium transition-all cursor-pointer ${
+                     activeTab === 'registrations'
+                        ? 'bg-white text-slate-900 shadow-2xs'
+                        : 'text-slate-600 hover:text-slate-900'
+                  }`}
                >
-                  Registration Requests
+                  Registrations
                </button>
                <button
                   onClick={() => { setActiveTab('campaigns'); setCurrentPage(1); }}
-                  className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'campaigns' ? 'bg-white text-emerald-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                  className={`px-3.5 py-1.5 rounded-md text-xs font-medium transition-all cursor-pointer ${
+                     activeTab === 'campaigns'
+                        ? 'bg-white text-slate-900 shadow-2xs'
+                        : 'text-slate-600 hover:text-slate-900'
+                  }`}
                >
-                  Campaign Requests
+                  Campaign requests
                </button>
                <button
                   onClick={() => { setActiveTab('edits'); setCurrentPage(1); }}
-                  className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'edits' ? 'bg-white text-amber-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                  className={`px-3.5 py-1.5 rounded-md text-xs font-medium transition-all cursor-pointer inline-flex items-center gap-1.5 ${
+                     activeTab === 'edits'
+                        ? 'bg-white text-slate-900 shadow-2xs'
+                        : 'text-slate-600 hover:text-slate-900'
+                  }`}
                >
-                  Edit Requests
+                  <span>Profile changes</span>
+                  {editsList.length > 0 && (
+                     <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-amber-100 text-amber-800 font-medium">
+                        {editsList.length}
+                     </span>
+                  )}
                </button>
             </div>
 
-            <StatCards
-               totalCount={activeTab === 'registrations' ? totalCount : campaignsStats.total}
-               stats={activeTab === 'registrations' ? stats : campaignsStats}
-               isOrganization={activeTab === 'registrations'}
-            />
-
-            <FilterBar
-               searchQuery={searchQuery} setSearchQuery={setSearchQuery}
-               statusFilter={statusFilter} setStatusFilter={setStatusFilter}
-               dateFilter={dateFilter} setDateFilter={setDateFilter}
-               sortOrder={sortOrder} setSortOrder={setSortOrder}
-               activeFilterCount={activeFilterCount}
-               clearFilters={clearAllFilters}
-               isOrganization={true}
-            />
-
-            {/* Content Grid */}
-            <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 min-h-0">
-               {activeTab === 'registrations' ? (
-                  <>
-                     <RequestsList
-                        isLoading={isLoadingOrgs}
-                        displayForms={paginatedForms}
-                        selectedForm={selectedForm}
-                        setSelectedForm={setSelectedForm}
-                        totalCount={displayForms.length}
-                        startIndex={startIndex + 1}
-                        endIndex={Math.min(startIndex + itemsPerPage, displayForms.length)}
-                        activeFilterCount={activeFilterCount}
-                        clearFilters={clearAllFilters}
-                        currentPage={currentPage}
-                        setCurrentPage={setCurrentPage}
-                        totalPages={totalPages}
-                     />
-
-                     <RequestDetail
-                        selectedForm={selectedForm}
-                        onOpenGroundReport={handleOpenGroundReport}
-                     />
-                  </>
-               ) : activeTab === 'edits' ? (
-                  <>
-                     <RequestsList
-                        isLoading={isLoadingOrgs}
-                        displayForms={paginatedForms}
-                        selectedForm={selectedForm}
-                        setSelectedForm={setSelectedForm}
-                        totalCount={displayForms.length}
-                        startIndex={startIndex + 1}
-                        endIndex={Math.min(startIndex + itemsPerPage, displayForms.length)}
-                        activeFilterCount={activeFilterCount}
-                        clearFilters={clearAllFilters}
-                        currentPage={currentPage}
-                        setCurrentPage={setCurrentPage}
-                        totalPages={totalPages}
-                     />
-
-                     <EditRequestDetail
-                        org={selectedForm}
-                        onProcessed={() => {
-                           setSelectedForm(null);
-                           refetchOrgs();
-                        }}
-                     />
-                  </>
-               ) : (
-                  <>
-                     <CampaignRequestsList
-                        isLoading={isLoadingCampaigns}
-                        displayForms={paginatedForms}
-                        selectedForm={selectedCampaignRequest}
-                        setSelectedForm={setSelectedCampaignRequest}
-                        totalCount={displayForms.length}
-                        startIndex={startIndex + 1}
-                        endIndex={Math.min(startIndex + itemsPerPage, displayForms.length)}
-                        activeFilterCount={activeFilterCount}
-                        clearFilters={clearAllFilters}
-                        currentPage={currentPage}
-                        setCurrentPage={setCurrentPage}
-                        totalPages={totalPages}
-                     />
-
-                     <CampaignRequestDetail
-                        selectedRequest={selectedCampaignRequest}
-                        onOpenStatusUpdate={handleOpenGroundReport}
-                     />
-                  </>
-               )}
-            </div>
-         </main>
+             {/* Content Workspace */}
+             <div className="flex-1 flex flex-col min-h-0">
+                {activeTab === 'registrations' ? (
+                   selectedForm ? (
+                      <div className="space-y-4">
+                         <div className="flex items-center justify-between bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-2xs no-print">
+                            <button
+                               onClick={() => setSelectedForm(null)}
+                               className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200/80 text-slate-700 font-bold text-xs transition cursor-pointer"
+                            >
+                               <ArrowLeft size={15} />
+                               <span>Back to Queue List</span>
+                            </button>
+                            <span className="text-xs text-slate-500 font-medium">Viewing Registration Details</span>
+                         </div>
+                         <RequestDetail
+                            selectedForm={selectedForm}
+                            onOpenGroundReport={handleOpenGroundReport}
+                         />
+                      </div>
+                   ) : (
+                      <div className="space-y-6">
+                         <StatCards
+                            totalCount={totalCount}
+                            stats={stats}
+                            isOrganization={true}
+                         />
+                         <FilterBar
+                            searchQuery={searchQuery} setSearchQuery={setSearchQuery}
+                            statusFilter={statusFilter} setStatusFilter={setStatusFilter}
+                            dateFilter={dateFilter} setDateFilter={setDateFilter}
+                            sortOrder={sortOrder} setSortOrder={setSortOrder}
+                            activeFilterCount={activeFilterCount}
+                            clearFilters={clearAllFilters}
+                            isOrganization={true}
+                         />
+                         <RequestsList
+                            isLoading={isLoadingOrgs}
+                            displayForms={paginatedForms}
+                            selectedForm={selectedForm}
+                            setSelectedForm={setSelectedForm}
+                            totalCount={displayForms.length}
+                            startIndex={startIndex + 1}
+                            endIndex={Math.min(startIndex + itemsPerPage, displayForms.length)}
+                            activeFilterCount={activeFilterCount}
+                            clearFilters={clearAllFilters}
+                            currentPage={currentPage}
+                            setCurrentPage={setCurrentPage}
+                            totalPages={totalPages}
+                         />
+                      </div>
+                   )
+                ) : activeTab === 'edits' ? (
+                   selectedForm ? (
+                      <div className="space-y-4">
+                         <div className="flex items-center justify-between bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-2xs no-print">
+                            <button
+                               onClick={() => setSelectedForm(null)}
+                               className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200/80 text-slate-700 font-bold text-xs transition cursor-pointer"
+                            >
+                               <ArrowLeft size={15} />
+                               <span>Back to Queue List</span>
+                            </button>
+                            <span className="text-xs text-slate-500 font-medium">Viewing Edit Request Comparison</span>
+                         </div>
+                         <EditRequestDetail
+                            org={selectedForm}
+                            onProcessed={() => {
+                               setSelectedForm(null);
+                               refetchOrgs();
+                            }}
+                         />
+                      </div>
+                   ) : (
+                      <div className="space-y-6">
+                         <StatCards
+                            totalCount={totalCount}
+                            stats={stats}
+                            isOrganization={true}
+                         />
+                         <FilterBar
+                            searchQuery={searchQuery} setSearchQuery={setSearchQuery}
+                            statusFilter={statusFilter} setStatusFilter={setStatusFilter}
+                            dateFilter={dateFilter} setDateFilter={setDateFilter}
+                            sortOrder={sortOrder} setSortOrder={setSortOrder}
+                            activeFilterCount={activeFilterCount}
+                            clearFilters={clearAllFilters}
+                            isOrganization={true}
+                         />
+                         <RequestsList
+                            isLoading={isLoadingOrgs}
+                            displayForms={paginatedForms}
+                            selectedForm={selectedForm}
+                            setSelectedForm={setSelectedForm}
+                            totalCount={displayForms.length}
+                            startIndex={startIndex + 1}
+                            endIndex={Math.min(startIndex + itemsPerPage, displayForms.length)}
+                            activeFilterCount={activeFilterCount}
+                            clearFilters={clearAllFilters}
+                            currentPage={currentPage}
+                            setCurrentPage={setCurrentPage}
+                            totalPages={totalPages}
+                         />
+                      </div>
+                   )
+                ) : (
+                   selectedCampaignRequest ? (
+                      <div className="space-y-4">
+                         <div className="flex items-center justify-between bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-2xs no-print">
+                            <button
+                               onClick={() => setSelectedCampaignRequest(null)}
+                               className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200/80 text-slate-700 font-bold text-xs transition cursor-pointer"
+                            >
+                               <ArrowLeft size={15} />
+                               <span>Back to Campaign Queue</span>
+                            </button>
+                            <span className="text-xs text-slate-500 font-medium">Viewing Campaign Request Proposal</span>
+                         </div>
+                         <CampaignRequestDetail
+                            selectedRequest={selectedCampaignRequest}
+                            onOpenStatusUpdate={handleOpenGroundReport}
+                         />
+                      </div>
+                   ) : (
+                      <div className="space-y-6">
+                         <StatCards
+                            totalCount={campaignsStats.total}
+                            stats={campaignsStats}
+                            isOrganization={false}
+                         />
+                         <FilterBar
+                            searchQuery={searchQuery} setSearchQuery={setSearchQuery}
+                            statusFilter={statusFilter} setStatusFilter={setStatusFilter}
+                            dateFilter={dateFilter} setDateFilter={setDateFilter}
+                            sortOrder={sortOrder} setSortOrder={setSortOrder}
+                            activeFilterCount={activeFilterCount}
+                            clearFilters={clearAllFilters}
+                            isOrganization={false}
+                         />
+                         <CampaignRequestsList
+                            isLoading={isLoadingCampaigns}
+                            displayForms={paginatedForms}
+                            selectedForm={selectedCampaignRequest}
+                            setSelectedForm={setSelectedCampaignRequest}
+                            totalCount={displayForms.length}
+                            startIndex={startIndex + 1}
+                            endIndex={Math.min(startIndex + itemsPerPage, displayForms.length)}
+                            activeFilterCount={activeFilterCount}
+                            clearFilters={clearAllFilters}
+                            currentPage={currentPage}
+                            setCurrentPage={setCurrentPage}
+                            totalPages={totalPages}
+                         />
+                      </div>
+                   )
+                )}
+             </div>
+          </main>
 
          <GroundReportModal
             isOpen={isGroundReportModalOpen}

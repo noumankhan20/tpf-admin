@@ -66,3 +66,37 @@ svg:focus {
   scrollbar-width: thin;
   scrollbar-color: #10b981 transparent;
 }
+
+/* Printable Document Base Hidden State */
+.printable-document {
+  display: none;
+}
+
+/* Formal A4 Print Styles */
+@media print {
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  .printable-document,
+  #printable-form,
+  #printable-campaign {
+    display: block !important;
+    visibility: visible !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 24px !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    box-shadow: none !important;
+    z-index: 999999 !important;
+  }
+}

@@ -1,13 +1,12 @@
 import React from 'react';
 import {
     CheckCircle, XCircle, Printer, FileText,
-    Building, User, Mail, Briefcase,
-    LucideMessageSquareWarning, ExternalLink,
-    IndianRupee, Calendar, Image as ImageIcon,
-    Play, Target, Globe
+    Building, LucideMessageSquareWarning, ExternalLink,
+    Calendar, Image as ImageIcon, Target
 } from 'lucide-react';
 import { Badge } from './Badge';
 import { getMediaUrl } from '@/utils/media';
+import { toTitleCase } from '@/utils/formatters';
 
 export const CampaignRequestDetail = React.memo(({
     selectedRequest: request,
@@ -15,13 +14,15 @@ export const CampaignRequestDetail = React.memo(({
 }) => {
     if (!request) {
         return (
-            <div className="lg:col-span-8 bg-white rounded-xl border border-gray-200 overflow-hidden flex flex-col relative shadow-sm h-full">
-                <div className="h-full flex flex-col items-center justify-center text-gray-500 p-8 text-center bg-gray-50">
-                    <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-6 shadow-inner">
-                        <ImageIcon className="w-10 h-10 text-emerald-500/30" />
+            <div className="w-full bg-white rounded-xl border border-slate-200/80 overflow-hidden flex flex-col relative shadow-2xs h-full">
+                <div className="h-full flex flex-col items-center justify-center text-slate-400 p-8 text-center bg-slate-50/40">
+                    <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mb-3 border border-slate-200">
+                        <ImageIcon className="w-6 h-6 text-slate-400" />
                     </div>
-                    <h3 className="text-xl font-semibold text-gray-700 mb-2">No Campaign Selected</h3>
-                    <p className="max-w-xs mx-auto text-gray-600">Select a campaign request from the list on the left to review details and approve/reject.</p>
+                    <h3 className="text-base font-semibold text-slate-900 mb-1">No campaign selected</h3>
+                    <p className="max-w-xs mx-auto text-xs text-slate-500 font-normal leading-relaxed">
+                        Select a campaign request from the queue to review proposal media, financial goals, and approve publication.
+                    </p>
                 </div>
             </div>
         );
@@ -30,135 +31,135 @@ export const CampaignRequestDetail = React.memo(({
     const getDocUrl = (key) => getMediaUrl(key);
 
     return (
-        <div id="printable-campaign" className="lg:col-span-8 bg-white rounded-xl border border-gray-200 overflow-hidden flex flex-col relative shadow-sm">
+        <div id="printable-campaign" className="w-full bg-white rounded-xl border border-slate-200/80 overflow-hidden flex flex-col relative shadow-2xs">
             <div className="flex flex-col h-full">
-                {/* Detail Header */}
-                <div className="p-6 border-b border-gray-200 bg-white sticky top-0 z-10">
-                    <div className="flex justify-between items-start">
-                        <div className="flex gap-4">
+                
+                {/* Detail Identity Header */}
+                <div className="px-6 py-5 border-b border-slate-100 bg-white sticky top-0 z-10">
+                    <div className="flex justify-between items-center gap-6">
+                        <div className="flex items-center gap-4">
                             {request.organizationId?.organizationLogo ? (
                                 <img
                                     src={getDocUrl(request.organizationId.organizationLogo)}
                                     alt="Organization Logo"
-                                    className="w-24 h-24 rounded-lg object-contain border border-gray-100 shadow-sm p-1"
+                                    className="w-12 h-12 rounded-lg object-contain border border-slate-200 shrink-0 p-1 bg-white"
                                 />
                             ) : (
-                                <div className="w-24 h-24 rounded-lg bg-emerald-50 flex items-center justify-center border border-emerald-100">
-                                    <Building className="text-emerald-500" size={32} />
+                                <div className="w-12 h-12 rounded-lg bg-slate-100 text-slate-700 flex items-center justify-center font-semibold text-lg shrink-0 border border-slate-200">
+                                    <Building size={20} />
                                 </div>
                             )}
                             <div>
-                                <h2 className="text-2xl font-bold text-gray-800 mb-1">
+                                <h2 className="text-xl font-semibold text-slate-900 tracking-tight leading-snug">
                                     {request.title}
                                 </h2>
-                                <p className="text-emerald-600 font-bold mb-2 flex items-center gap-1.5">
-                                    <Building size={16} />
-                                    {request.organizationName}
-                                </p>
-                                <div className="flex items-center gap-3 text-sm">
-                                    <span className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full flex items-center gap-1.5 font-semibold text-xs">
-                                        {request.category}
-                                    </span>
-                                    <span className="text-gray-500 font-medium">ID: {request._id}</span>
+                                <p className="text-xs font-normal text-slate-500 mt-0.5 inline-flex items-center gap-2">
+                                    <span>{toTitleCase(request.organizationName)}</span>
+                                    <span>·</span>
+                                    <span>{toTitleCase(request.category || 'General')}</span>
+                                    <span>·</span>
                                     <button
                                         onClick={() => window.print()}
-                                        className="no-print p-1.5 hover:bg-gray-100 rounded-full text-gray-600 transition-colors"
+                                        className="no-print text-slate-500 hover:text-slate-900 font-medium hover:underline inline-flex items-center gap-1 cursor-pointer"
+                                        title="Print campaign details"
                                     >
-                                        <Printer size={18} />
+                                        <Printer size={12} />
+                                        <span>Print form</span>
                                     </button>
-                                </div>
+                                </p>
                             </div>
                         </div>
-                        <div className="text-right">
-                            <p className="text-[10px] text-gray-500 uppercase tracking-widest mb-1.5 font-bold">Request Status</p>
-                            <Badge status={request.status} size="large" />
+                        <div className="shrink-0">
+                            <Badge status={request.status} />
                         </div>
                     </div>
                 </div>
 
-                {/* SCROLLABLE DATA */}
-                <div className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar pb-32">
+                {/* SCROLLABLE WORKSPACE */}
+                <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6 custom-scrollbar pb-24">
 
-                    {/* Financials & Deadline */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {/* Financials & Beneficiary Summary Bar */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                         <StatusCard
-                            icon={<Target className="text-emerald-600" />}
-                            label="Target Amount"
-                            value={`₹${request.targetAmount?.toLocaleString()}`}
-                            bgColor="bg-emerald-50"
+                            icon={<Target className="text-emerald-600" size={16} />}
+                            label="Target goal amount"
+                            value={`₹${request.targetAmount?.toLocaleString() || 0}`}
+                            bgColor="bg-emerald-50/60 border-emerald-200/60"
                         />
                         <StatusCard
-                            icon={<Calendar className="text-blue-600" />}
-                            label="Deadline"
-                            value={new Date(request.deadline).toLocaleDateString()}
-                            bgColor="bg-blue-50"
+                            icon={<Calendar className="text-blue-600" size={16} />}
+                            label="Campaign deadline"
+                            value={new Date(request.deadline).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                            bgColor="bg-blue-50/60 border-blue-200/60"
                         />
                         <StatusCard
-                            icon={<User className="text-purple-600" />}
+                            icon={<Building className="text-purple-600" size={16} />}
                             label="Beneficiary"
-                            value={request.beneficiaryName || 'Not Specified'}
-                            bgColor="bg-purple-50"
+                            value={request.beneficiaryName ? toTitleCase(request.beneficiaryName) : 'Not specified'}
+                            bgColor="bg-purple-50/60 border-purple-200/60"
                         />
                     </div>
 
-                    {/* Campaign Media (Photo/Video) */}
+                    {/* Editorial Campaign Media Anchor */}
                     {(request.imageUrl || request.videoUrl) && (
-                        <DetailSection title="Campaign Media" icon={<ImageIcon className="text-emerald-600" />}>
-                            <div className="rounded-xl overflow-hidden border border-gray-100 bg-gray-50 max-h-[400px] flex justify-center">
+                        <DetailSection title="Campaign media preview">
+                            <div className="rounded-lg overflow-hidden border border-slate-200/80 bg-slate-950 max-h-[360px] flex justify-center">
                                 {request.mediaType === 'video' && request.videoUrl ? (
                                     <video
                                         src={getDocUrl(request.videoUrl)}
                                         controls
-                                        className="max-h-[400px] w-auto bg-black"
+                                        className="max-h-[360px] w-full object-contain bg-black"
                                     />
                                 ) : request.imageUrl ? (
                                     <img
                                         src={getDocUrl(request.imageUrl)}
                                         alt="Campaign Content"
-                                        className="max-h-[400px] w-auto object-contain"
+                                        className="max-h-[360px] w-full object-contain bg-slate-900"
                                     />
                                 ) : null}
                             </div>
                         </DetailSection>
                     )}
-                    <DetailSection title="About Campaign" icon={<FileText className="text-blue-600" />}>
-                        <p className="text-gray-700 text-sm leading-relaxed whitespace-pre-wrap">{request.about}</p>
+
+                    {/* Campaign Narrative */}
+                    <DetailSection title="Campaign narrative & proposal details">
+                        <p className="text-sm text-slate-700 leading-relaxed font-normal whitespace-pre-wrap">{request.about}</p>
                         {request.currentStatus && (
-                            <div className="mt-4 p-4 bg-blue-50/30 rounded-lg border border-blue-100">
-                                <p className="text-xs text-blue-700 uppercase font-bold mb-2">Current Status</p>
-                                <p className="text-gray-700 text-sm leading-relaxed">{request.currentStatus}</p>
+                            <div className="mt-4 p-3.5 bg-slate-50 rounded-lg border border-slate-200/80">
+                                <p className="text-xs font-medium text-slate-500 mb-1">Current milestone / update</p>
+                                <p className="text-xs text-slate-800 font-normal leading-relaxed">{request.currentStatus}</p>
                             </div>
                         )}
                     </DetailSection>
 
-                    {/* Badges & Flags */}
-                    <DetailSection title="Campaign Features" icon={<Target className="text-blue-600" />}>
-                        <div className="flex flex-wrap gap-3">
-                            <Flag label="Urgent" active={request.isUrgent} />
-                            <Flag label="Tax Benefits" active={request.taxBenefits} />
-                            <Flag label="Zakat Verified" active={request.zakatVerified} />
-                            <Flag label="Riba Eligible" active={request.ribaEligible} />
+                    {/* Attributes */}
+                    <DetailSection title="Compliance & campaign attributes">
+                        <div className="flex flex-wrap gap-2">
+                            <Flag label="Urgent need" active={request.isUrgent} />
+                            <Flag label="80G tax benefits" active={request.taxBenefits} />
+                            <Flag label="Zakat verified" active={request.zakatVerified} />
+                            <Flag label="Riba / Interest-free eligible" active={request.ribaEligible} />
                         </div>
                     </DetailSection>
 
                     {/* Impact Goals */}
                     {request.impactGoals?.length > 0 && (
-                        <DetailSection title="Impact Goals" icon={<Target className="text-blue-600" />}>
-                            <ul className="space-y-2">
+                        <DetailSection title="Expected impact goals">
+                            <ul className="space-y-1.5">
                                 {request.impactGoals.map((goal, idx) => (
-                                    <li key={idx} className="flex items-start gap-2 text-sm text-gray-700">
-                                        <div className="mt-1.5 w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
-                                        {goal}
+                                    <li key={idx} className="flex items-start gap-2 text-xs text-slate-700 font-normal">
+                                        <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                                        <span>{goal}</span>
                                     </li>
                                 ))}
                             </ul>
                         </DetailSection>
                     )}
 
-                    {/* Documents */}
+                    {/* Supporting Documents */}
                     {request.documents?.length > 0 && (
-                        <DetailSection title="Supporting Documents" icon={<FileText className="text-blue-600" />}>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <DetailSection title="Supporting verification documents">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                 {request.documents.map((doc, idx) => (
                                     <DocLink key={idx} label={doc.name || `Document ${idx + 1}`} url={getDocUrl(doc.fileUrl || doc)} />
                                 ))}
@@ -166,69 +167,73 @@ export const CampaignRequestDetail = React.memo(({
                         </DetailSection>
                     )}
 
-                    {/* Social Links */}
-                    {request.socialLinks && Object.values(request.socialLinks).some(v => v) && (
-                        <DetailSection title="Social Media Promotion" icon={<Globe className="text-blue-600" />}>
-                            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    {/* Social Promotion Links */}
+                    {request.socialLinks && Object.values(request.socialLinks).some(v => !!v) && (
+                        <DetailSection title="Social media channels">
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                                 {Object.entries(request.socialLinks).map(([platform, url]) => url && (
                                     <a
                                         key={platform}
                                         href={url}
                                         target="_blank"
-                                        className="flex items-center gap-2 p-2 rounded-lg bg-gray-50 border border-gray-100 hover:border-emerald-500 transition-all"
+                                        rel="noopener noreferrer"
+                                        className="flex items-center justify-between p-2.5 rounded-lg bg-slate-50/70 border border-slate-200/80 hover:bg-slate-100/70 transition group"
                                     >
-                                        <span className="text-xs font-bold capitalize">{platform}</span>
-                                        <ExternalLink size={10} className="text-gray-400" />
+                                        <span className="text-xs font-medium text-slate-800 capitalize group-hover:text-blue-600">{platform}</span>
+                                        <ExternalLink size={11} className="text-slate-400 group-hover:text-blue-600" />
                                     </a>
                                 ))}
                             </div>
                         </DetailSection>
                     )}
 
-                    {/* Admin Feedback Section */}
+                    {/* Admin Statement */}
                     {request.adminStatement && (
-                        <div className="bg-amber-50 rounded-xl p-5 border border-amber-200">
-                            <div className="flex items-center gap-2 mb-3">
-                                <LucideMessageSquareWarning className="text-amber-600" size={20} />
-                                <h3 className="text-lg font-bold text-amber-800">Latest Feedback</h3>
+                        <div className="bg-amber-50/80 rounded-lg p-4 border border-amber-200/80">
+                            <div className="flex items-center gap-2 mb-1">
+                                <LucideMessageSquareWarning className="text-amber-700" size={16} />
+                                <h3 className="text-xs font-semibold text-amber-900">Admin review feedback</h3>
                             </div>
-                            <p className="text-amber-900 text-sm italic">"{request.adminStatement}"</p>
+                            <p className="text-xs text-amber-900 font-normal leading-relaxed">"{request.adminStatement}"</p>
                         </div>
                     )}
 
-                    {/* Organization Statement / Comment */}
+                    {/* Organization Statement */}
                     {request.organizationStatement && (
-                        <div className="bg-emerald-50 rounded-xl p-5 border border-emerald-200">
-                            <div className="flex items-center gap-2 mb-3">
-                                <Building className="text-emerald-600" size={20} />
-                                <h3 className="text-lg font-bold text-emerald-800">Organization Response</h3>
+                        <div className="bg-emerald-50/80 rounded-lg p-4 border border-emerald-200/80">
+                            <div className="flex items-center gap-2 mb-1">
+                                <Building className="text-emerald-700" size={16} />
+                                <h3 className="text-xs font-semibold text-emerald-900">Organization response</h3>
                             </div>
-                            <p className="text-emerald-900 text-sm italic">"{request.organizationStatement}"</p>
+                            <p className="text-xs text-emerald-900 font-normal leading-relaxed">"{request.organizationStatement}"</p>
                         </div>
                     )}
                 </div>
 
-                {/* Footer Actions */}
+                {/* Sticky Action Bar */}
                 {request.status === 'pending' || request.status === 'clarification' ? (
-                    <div className="no-print border-t border-gray-200 p-6 bg-white absolute bottom-0 w-full z-20 shadow-[0_-4px_10px_rgba(0,0,0,0.03)] fab-avoid">
-                        <div className="flex justify-start gap-3">
+                    <div className="no-print border-t border-slate-200/80 px-6 py-3.5 bg-white sticky bottom-0 z-20">
+                        <div className="flex items-center justify-end gap-3">
                             <button
                                 onClick={() => onOpenStatusUpdate('clarification')}
-                                className="px-5 py-2.5 bg-amber-50 text-amber-600 hover:bg-amber-100 rounded-xl border border-amber-200 transition-all font-semibold text-sm"
+                                className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-amber-50 text-amber-800 hover:bg-amber-100/80 rounded-lg border border-amber-200/70 transition text-xs font-medium cursor-pointer"
                             >
-                                Request Clarification
+                                <LucideMessageSquareWarning size={14} />
+                                Request clarification
                             </button>
                             <button
                                 onClick={() => onOpenStatusUpdate('rejected')}
-                                className="px-5 py-2.5 bg-red-50 text-red-600 hover:bg-red-100 rounded-xl border border-red-200 transition-all font-semibold text-sm"
+                                className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-rose-50 text-rose-700 hover:bg-rose-100/80 rounded-lg border border-rose-200/70 transition text-xs font-medium cursor-pointer"
                             >
-                                Reject
+                                <XCircle size={14} />
+                                Reject campaign
                             </button>
                             <button
                                 onClick={() => onOpenStatusUpdate('approved')}
-                                className="px-8 py-2.5 bg-emerald-600 text-white hover:bg-emerald-700 rounded-xl shadow-lg shadow-emerald-500/20 transition-all font-bold"
+                                className="inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-600 text-white hover:bg-emerald-700 rounded-lg shadow-2xs transition text-xs font-medium cursor-pointer"
                             >
-                                Approve & Go Live
+                                <CheckCircle size={14} />
+                                Approve & publish
                             </button>
                         </div>
                     </div>
@@ -242,15 +247,10 @@ CampaignRequestDetail.displayName = 'CampaignRequestDetail';
 
 /* --- HELPER COMPONENTS --- */
 
-function DetailSection({ title, icon, children }) {
+function DetailSection({ title, children }) {
     return (
-        <div className="bg-white rounded-xl p-6 border border-gray-100 shadow-sm">
-            <div className="flex items-center gap-3 mb-5 border-b border-gray-50 pb-3">
-                <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center">
-                    {icon}
-                </div>
-                <h3 className="text-lg font-bold text-gray-800">{title}</h3>
-            </div>
+        <div className="pt-5 border-t border-slate-100 first:border-t-0 first:pt-0">
+            <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">{title}</h3>
             {children}
         </div>
     );
@@ -258,13 +258,13 @@ function DetailSection({ title, icon, children }) {
 
 function StatusCard({ icon, label, value, bgColor }) {
     return (
-        <div className={`${bgColor} rounded-xl p-4 border border-white/50 flex items-center gap-3`}>
-            <div className="p-2 bg-white rounded-lg shadow-sm">
+        <div className={`${bgColor} rounded-lg p-3.5 border flex items-center gap-3`}>
+            <div className="p-2 bg-white rounded-md shadow-2xs shrink-0 border border-slate-200/60">
                 {icon}
             </div>
-            <div>
-                <p className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">{label}</p>
-                <p className="text-gray-900 font-bold">{value}</p>
+            <div className="overflow-hidden">
+                <p className="text-xs font-medium text-slate-500">{label}</p>
+                <p className="text-slate-900 font-semibold text-sm truncate">{value}</p>
             </div>
         </div>
     );
@@ -272,10 +272,11 @@ function StatusCard({ icon, label, value, bgColor }) {
 
 function Flag({ label, active }) {
     return (
-        <div className={`px-3 py-1.5 rounded-lg border text-xs font-bold transition-all ${active
-            ? "bg-emerald-50 border-emerald-200 text-emerald-700"
-            : "bg-gray-50 border-gray-100 text-gray-400 opacity-50"
-            }`}>
+        <div className={`px-2.5 py-1 rounded text-xs font-medium border transition ${
+            active
+                ? "bg-emerald-50 text-emerald-700 border-emerald-200/60"
+                : "bg-slate-100 text-slate-400 border-slate-200/60 line-through opacity-60"
+        }`}>
             {label}
         </div>
     );
@@ -288,15 +289,16 @@ function DocLink({ label, url }) {
             href={url}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-3 p-3 bg-gray-50 border border-gray-100 hover:border-blue-500 rounded-xl transition-all group"
+            className="flex items-center justify-between p-3 bg-slate-50/70 hover:bg-slate-100/70 rounded-lg border border-slate-200/80 transition group"
         >
-            <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center shadow-sm">
-                <FileText className="text-blue-600 w-4 h-4" />
+            <div className="flex items-center gap-2.5 overflow-hidden">
+                <FileText className="text-slate-500 w-4 h-4 shrink-0" />
+                <span className="text-xs font-medium text-slate-800 truncate">{label}</span>
             </div>
-            <div className="overflow-hidden">
-                <p className="text-xs font-bold text-gray-800 truncate">{label}</p>
-                <p className="text-[10px] text-gray-400 font-bold uppercase">View file</p>
-            </div>
+            <span className="text-xs font-medium text-blue-600 group-hover:underline flex items-center gap-1 shrink-0 ml-2">
+                <span>Preview</span>
+                <ExternalLink size={11} />
+            </span>
         </a>
     );
 }
