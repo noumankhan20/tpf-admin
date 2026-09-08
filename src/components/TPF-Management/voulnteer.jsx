@@ -45,6 +45,10 @@ export default function VolunteerModule() {
     const [professionFilter, setProfessionFilter] = useState("");
     const [cityFilter, setCityFilter] = useState("");
     const [stateFilter, setStateFilter] = useState("");
+    const [communityFilter, setCommunityFilter] = useState("");
+    const [bloodGroupFilter, setBloodGroupFilter] = useState("");
+    const [pincodeFilter, setPincodeFilter] = useState("");
+
     const [selectedVolunteerId, setSelectedVolunteerId] = useState(null);
     const [voucherFilter, setVoucherFilter] = useState("all");
     const [currentPage, setCurrentPage] = useState(1);
@@ -59,7 +63,10 @@ export default function VolunteerModule() {
         search: searchQuery,
         profession: professionFilter,
         city: cityFilter,
-        state: stateFilter
+        state: stateFilter,
+        community: communityFilter,
+        bloodGroup: bloodGroupFilter,
+        pincode: pincodeFilter
     });
 
     const { data: volunteerDetailResponse, isLoading: isLoadingDetail } = useGetVolunteerByIdQuery(selectedVolunteerId, {
@@ -120,15 +127,21 @@ export default function VolunteerModule() {
             const profession = (volunteer.kycDetails?.profession || "").toLowerCase();
             const city = (volunteer.kycDetails?.city || "").toLowerCase();
             const state = (volunteer.kycDetails?.state || "").toLowerCase();
+            const pincode = (volunteer.kycDetails?.pincode || "").toLowerCase();
+            const bloodGroup = (volunteer.bloodGroup || "").toUpperCase();
+            const joinedCommunities = (volunteer.joinedCommunities || []).map(c => c.toLowerCase());
 
             const matchesProfession = !professionFilter || profession.includes(professionFilter.toLowerCase());
             const matchesCity = !cityFilter || city.includes(cityFilter.toLowerCase());
             const matchesState = !stateFilter || state.includes(stateFilter.toLowerCase());
+            const matchesPincode = !pincodeFilter || pincode.includes(pincodeFilter.toLowerCase());
+            const matchesBloodGroup = !bloodGroupFilter || bloodGroup === bloodGroupFilter.toUpperCase();
+            const matchesCommunity = !communityFilter || joinedCommunities.some(c => c.includes(communityFilter.toLowerCase()));
             const matchesOnlyPending = !onlyPendingVouchersFilter || volunteer.pendingVouchersCount > 0;
 
-            return matchesProfession && matchesCity && matchesState && matchesOnlyPending;
+            return matchesProfession && matchesCity && matchesState && matchesPincode && matchesBloodGroup && matchesCommunity && matchesOnlyPending;
         });
-    }, [processedVolunteers, professionFilter, cityFilter, stateFilter, onlyPendingVouchersFilter]);
+    }, [processedVolunteers, professionFilter, cityFilter, stateFilter, pincodeFilter, bloodGroupFilter, communityFilter, onlyPendingVouchersFilter]);
 
     // Stats
     const totalVolunteers = volunteersData.length;
@@ -278,9 +291,43 @@ export default function VolunteerModule() {
                                         <div>
                                             <p className="text-[10px] text-gray-400 font-medium uppercase tracking-wider">Address Location</p>
                                             <p className="text-xs font-semibold text-gray-700 mt-0.5">
-                                                {selectedVolunteer.kycDetails?.city || 'N/A'}, {selectedVolunteer.kycDetails?.state || 'N/A'}
+                                                {selectedVolunteer.kycDetails?.city || 'N/A'}, {selectedVolunteer.kycDetails?.state || 'N/A'} {selectedVolunteer.kycDetails?.pincode ? `(${selectedVolunteer.kycDetails.pincode})` : ''}
                                             </p>
+                                            {(selectedVolunteer.address || selectedVolunteer.kycDetails?.address) && (
+                                                <p className="text-xs font-normal text-gray-500 mt-1">
+                                                    {selectedVolunteer.address || selectedVolunteer.kycDetails?.address}
+                                                </p>
+                                            )}
                                         </div>
+                                    </div>
+
+                                    {/* Communities & Blood Group */}
+                                    <div className="pt-2 border-t border-gray-100 space-y-2">
+                                        <p className="text-[10px] text-gray-400 font-medium uppercase tracking-wider">Joined Communities</p>
+                                        <div className="flex flex-wrap gap-1.5">
+                                            {selectedVolunteer.bloodGroup && (
+                                                <span className="px-2 py-0.5 bg-rose-50 text-rose-700 border border-rose-200 font-bold rounded text-xs">
+                                                    🩸 {selectedVolunteer.bloodGroup}
+                                                </span>
+                                            )}
+                                            {(selectedVolunteer.joinedCommunities || []).length > 0 ? (
+                                                selectedVolunteer.joinedCommunities.map((c, i) => (
+                                                    <span key={i} className="px-2 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200 font-semibold rounded text-xs">
+                                                        {c}
+                                                    </span>
+                                                ))
+                                            ) : (
+                                                <span className="text-xs text-gray-400 font-medium italic">No community joined</span>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* Consent Status */}
+                                    <div className="pt-2 border-t border-gray-100">
+                                        <p className="text-[10px] text-gray-400 font-medium uppercase tracking-wider">Communication Consent</p>
+                                        <p className={`text-xs font-bold mt-0.5 ${selectedVolunteer.consentGiven ? 'text-emerald-600' : 'text-gray-400'}`}>
+                                            {selectedVolunteer.consentGiven ? '✓ Consent Given (Call/SMS/WhatsApp)' : 'Consent Pending'}
+                                        </p>
                                     </div>
 
                                     {selectedVolunteer.helpDescription && (
@@ -625,16 +672,45 @@ export default function VolunteerModule() {
 
                 {/* Filters toolbar */}
                 <div className="bg-white p-4 rounded-xl border border-gray-200/80 shadow-sm mb-6">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
                         <div className="relative">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={15} />
                             <input
                                 type="text"
-                                placeholder="Search by name or email..."
+                                placeholder="Name, email, mobile..."
                                 value={searchQuery}
                                 onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
                                 className="w-full pl-9 pr-4 py-2 bg-gray-50/50 border border-gray-200 rounded-lg outline-none focus:border-emerald-500 focus:bg-white transition-all text-xs font-semibold"
                             />
+                        </div>
+                        <div className="relative">
+                            <Users className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={15} />
+                            <select
+                                value={communityFilter}
+                                onChange={(e) => { setCommunityFilter(e.target.value); setCurrentPage(1); }}
+                                className="w-full pl-9 pr-8 py-2 bg-gray-50/50 border border-gray-200 rounded-lg outline-none focus:border-emerald-500 focus:bg-white transition-all text-xs font-semibold appearance-none cursor-pointer"
+                            >
+                                <option value="">All Communities</option>
+                                <option value="Blood Donors">Blood Donors</option>
+                                <option value="Medical Professionals">Medical Professionals</option>
+                                <option value="Law Professionals">Law Professionals</option>
+                                <option value="Intellectuals">Intellectuals</option>
+                            </select>
+                            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={13} />
+                        </div>
+                        <div className="relative">
+                            <Heart className="absolute left-3 top-1/2 -translate-y-1/2 text-red-500 pointer-events-none" size={15} />
+                            <select
+                                value={bloodGroupFilter}
+                                onChange={(e) => { setBloodGroupFilter(e.target.value); setCurrentPage(1); }}
+                                className="w-full pl-9 pr-8 py-2 bg-gray-50/50 border border-gray-200 rounded-lg outline-none focus:border-emerald-500 focus:bg-white transition-all text-xs font-semibold appearance-none cursor-pointer"
+                            >
+                                <option value="">All Blood Groups</option>
+                                {["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"].map(bg => (
+                                    <option key={bg} value={bg}>{bg}</option>
+                                ))}
+                            </select>
+                            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={13} />
                         </div>
                         <div className="relative">
                             <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={15} />
@@ -666,17 +742,13 @@ export default function VolunteerModule() {
                         </div>
                         <div className="relative">
                             <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={15} />
-                            <select
-                                value={stateFilter}
-                                onChange={(e) => { setStateFilter(e.target.value); setCurrentPage(1); }}
-                                className="w-full pl-9 pr-8 py-2 bg-gray-50/50 border border-gray-200 rounded-lg outline-none focus:border-emerald-500 focus:bg-white transition-all text-xs font-semibold appearance-none cursor-pointer"
-                            >
-                                <option value="">All States</option>
-                                {states.map(s => (
-                                    <option key={s} value={s}>{s}</option>
-                                ))}
-                            </select>
-                            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={13} />
+                            <input
+                                type="text"
+                                placeholder="Pincode..."
+                                value={pincodeFilter}
+                                onChange={(e) => { setPincodeFilter(e.target.value); setCurrentPage(1); }}
+                                className="w-full pl-9 pr-4 py-2 bg-gray-50/50 border border-gray-200 rounded-lg outline-none focus:border-emerald-500 focus:bg-white transition-all text-xs font-semibold"
+                            />
                         </div>
                     </div>
                 </div>
@@ -687,9 +759,10 @@ export default function VolunteerModule() {
                         <table className="w-full text-left">
                             <thead className="bg-gray-50/55 border-b border-gray-250/20">
                                 <tr>
-                                    <th className="px-5 py-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider">Volunteer</th>
+                                    <th className="px-5 py-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider">Volunteer Info</th>
+                                    <th className="px-5 py-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider">Communities & Group</th>
                                     <th className="px-5 py-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider hidden md:table-cell">Profession</th>
-                                    <th className="px-5 py-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider hidden lg:table-cell">Location</th>
+                                    <th className="px-5 py-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider hidden lg:table-cell">Location & Address</th>
                                     <th className="px-5 py-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider">Vouchers</th>
                                     <th className="px-5 py-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider text-right">Actions</th>
                                 </tr>
@@ -704,16 +777,48 @@ export default function VolunteerModule() {
                                                         {volunteer.fullName.charAt(0)}
                                                     </div>
                                                     <div className="min-w-0">
-                                                        <p className="font-semibold text-gray-900 text-xs truncate leading-snug">{volunteer.fullName}</p>
-                                                        <p className="text-[10px] text-gray-400 font-medium truncate mt-0.5">{volunteer.email}</p>
+                                                        <div className="flex items-center gap-1.5">
+                                                            <p className="font-semibold text-gray-900 text-xs truncate leading-snug">{volunteer.fullName}</p>
+                                                            {volunteer.consentGiven && (
+                                                                <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-emerald-50 text-emerald-700 border border-emerald-200" title="Consent given to TPF to contact for blood/volunteering">
+                                                                    Consent Given
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        <p className="text-[10px] text-gray-400 font-medium truncate mt-0.5">{volunteer.email} • {volunteer.mobileNo || 'No Phone'}</p>
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td className="px-5 py-3 hidden md:table-cell font-semibold text-xs text-gray-500">
-                                                {volunteer.kycDetails?.profession || 'N/A'}
+                                            <td className="px-5 py-3">
+                                                <div className="flex flex-wrap gap-1 items-center">
+                                                    {volunteer.bloodGroup && (
+                                                        <span className="px-2 py-0.5 bg-rose-50 text-rose-700 border border-rose-200 font-bold rounded text-[10px]">
+                                                            🩸 {volunteer.bloodGroup}
+                                                        </span>
+                                                    )}
+                                                    {(volunteer.joinedCommunities || []).length > 0 ? (
+                                                        volunteer.joinedCommunities.map((comm, idx) => (
+                                                            <span key={idx} className="px-2 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200 font-semibold rounded text-[10px]">
+                                                                {comm}
+                                                            </span>
+                                                        ))
+                                                    ) : (
+                                                        <span className="text-[10px] text-gray-400 font-medium italic">General</span>
+                                                    )}
+                                                </div>
                                             </td>
-                                            <td className="px-5 py-3 hidden lg:table-cell font-semibold text-xs text-gray-500 truncate max-w-[150px]">
-                                                {volunteer.kycDetails?.city || 'N/A'}, {volunteer.kycDetails?.state || 'N/A'}
+                                            <td className="px-5 py-3 hidden md:table-cell font-semibold text-xs text-gray-500">
+                                                {volunteer.kycDetails?.profession || volunteer.profession || 'N/A'}
+                                            </td>
+                                            <td className="px-5 py-3 hidden lg:table-cell font-semibold text-xs text-gray-500 truncate max-w-[200px]">
+                                                <div>
+                                                    <p className="truncate">{volunteer.kycDetails?.city || 'N/A'}, {volunteer.kycDetails?.state || 'N/A'} {volunteer.kycDetails?.pincode ? `(${volunteer.kycDetails.pincode})` : ''}</p>
+                                                    {(volunteer.address || volunteer.kycDetails?.address) && (
+                                                        <p className="text-[10px] text-gray-400 font-normal truncate mt-0.5" title={volunteer.address || volunteer.kycDetails?.address}>
+                                                            {volunteer.address || volunteer.kycDetails?.address}
+                                                        </p>
+                                                    )}
+                                                </div>
                                             </td>
                                             <td className="px-5 py-3">
                                                 <div className="inline-flex flex-col">

@@ -7,10 +7,8 @@ import { useGetDonationsQuery, useGetPendingCountQuery } from '@/utils/slices/do
 
 // Purpose Badge Component
 const PurposeBadge = ({ purpose }) => {
-    if (!purpose) return null;
-
     return (
-        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 border border-emerald-200">
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
             {purpose}
         </span>
     );
@@ -197,9 +195,7 @@ const DonationDetailsModal = ({ donation, onClose }) => {
                         <div>
                             <label className="text-xs sm:text-sm font-medium text-gray-500">Purpose</label>
                             <p className="mt-1">
-                                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs sm:text-sm font-medium bg-emerald-100 text-emerald-800">
-                                    {donation.purpose}
-                                </span>
+                                <PurposeBadge purpose={donation.purpose} />
                             </p>
                         </div>
                         <div>
@@ -460,25 +456,23 @@ export default function DonationManagement() {
                 </div>
                 {/* Search and Filters */}
                 <div className="bg-white rounded-lg shadow mb-4 sm:mb-6 p-3 sm:p-4">
-                    <div className="flex flex-col gap-3 sm:gap-4">
-                        <div className="flex gap-2">
-                            <div className="flex-1">
-                                <SearchBar value={searchQuery} onChange={setSearchQuery} />
-                            </div>
-                            <button
-                                onClick={() => setShowFilters(!showFilters)}
-                                className="sm:hidden px-3 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 active:bg-gray-100"
-                            >
-                                <Menu className="w-5 h-5" />
-                            </button>
-                            <button
-                                onClick={() => setShowFilterModal(true)}
-                                className="px-3 py-2 rounded-lg cursor-pointer border border-gray-300 text-gray-700 hover:bg-gray-50 flex items-center gap-2"
-                            >
-                                <Filter className="w-4 h-4" />
-                                <span className="hidden sm:inline">Filters</span>
-                            </button>
+                    <div className="flex gap-2">
+                        <div className="flex-1">
+                            <SearchBar value={searchQuery} onChange={setSearchQuery} />
                         </div>
+                        <button
+                            onClick={() => setShowFilters(!showFilters)}
+                            className="sm:hidden px-3 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 active:bg-gray-100"
+                        >
+                            <Menu className="w-5 h-5" />
+                        </button>
+                        <button
+                            onClick={() => setShowFilterModal(true)}
+                            className="px-3 py-2 rounded-lg cursor-pointer border border-gray-300 text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                        >
+                            <Filter className="w-4 h-4" />
+                            <span className="hidden sm:inline">Filters</span>
+                        </button>
                     </div>
                 </div>
 
