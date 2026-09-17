@@ -85,13 +85,17 @@ export default function FinancialAidVerifyPage() {
       if (!formsData?.data) return [];
 
       let filtered = formsData.data.filter(form => {
+         // Tab Filter (Myself vs Other)
+         const currentType = activeTab === 'myself' ? 'myself' : 'other';
+         if ((form.formType || 'myself').toLowerCase() !== currentType) return false;
+
          // Status Filter
          if (statusFilter !== 'all' && form.status !== statusFilter) return false;
 
          // Search Filter
          if (debouncedSearch) {
             const searchLower = debouncedSearch.toLowerCase();
-            const matchesName = (form.fullName || form.organizationName || '').toLowerCase().includes(searchLower);
+            const matchesName = (form.fullName || form.relationName || form.organizationName || '').toLowerCase().includes(searchLower);
             const matchesEmail = (form.email || '').toLowerCase().includes(searchLower);
             const matchesId = (form._id || '').toLowerCase().includes(searchLower);
             if (!matchesName && !matchesEmail && !matchesId) return false;
@@ -127,14 +131,10 @@ export default function FinancialAidVerifyPage() {
    const endIndex = Math.min(startIndex + itemsPerPage, displayForms.length);
    const paginatedForms = displayForms.slice(startIndex, endIndex);
 
-   // Auto-select first form if none selected
+   // Clear selection if filtered out
    useEffect(() => {
-      if (!selectedForm && displayForms.length > 0) {
-         // Optional: Auto SELECT first form?
-         // setSelectedForm(displayForms[0]);
-         // User preferred manual selection
-      } else if (selectedForm && !displayForms.find(f => f._id === selectedForm._id)) {
-         setSelectedForm(null); // Deselect if filtered out
+      if (selectedForm && !displayForms.find(f => f._id === selectedForm._id)) {
+         setSelectedForm(null);
       }
    }, [displayForms, selectedForm]);
 
@@ -211,10 +211,7 @@ export default function FinancialAidVerifyPage() {
 
          setIsGroundReportModalOpen(false);
          toast.success("Form status updated successfully!");
-
-         // Invalidate/Refetch handled by tag invalidation in slice
-         // Refetch handled automatically by RTK Query
-         setSelectedForm(null); // Clear selection or keep? Clearing feels safer
+         setSelectedForm(null);
       } catch (error) {
          console.error('Failed to update status:', error);
          toast.error(error?.data?.message || "Action failed! Please try again.");
@@ -235,64 +232,118 @@ export default function FinancialAidVerifyPage() {
    `;
 
    return (
-      <div className="min-h-screen bg-gray-50 font-sans flex flex-col">
+      <div className="min-h-screen bg-[#f7f8fa] font-sans flex flex-col">
          <style>{printStyles}</style>
 
-         {/* Notifications / Alerts */}
-
          {/* Header */}
-         <header className="flex items-center justify-between px-6 py-4 bg-white border-b border-gray-200 shrink-0 shadow-sm">
-            <div className="flex items-center space-x-4">
+         <header className="px-6 py-4 bg-white border-b border-slate-200/80 shrink-0 shadow-2xs no-print flex items-center justify-between">
+            <div className="flex items-center gap-3">
                <button
                   onClick={() => router.back()}
-                  className="p-2 hover:bg-gray-100 rounded-full transition"
+                  className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-500 hover:text-slate-800 transition cursor-pointer"
+                  title="Go back"
                >
-                  <ArrowLeft className="w-5 h-5 text-gray-600" />
+                  <ArrowLeft className="w-4 h-4" />
                </button>
-               <h1 className="text-xl font-bold text-gray-800">Verify Financial Aid Forms</h1>
+               <div>
+                  <h1 className="text-xl font-semibold text-slate-900 tracking-tight">Beneficiary Form Verification</h1>
+                  <p className="text-xs text-slate-500 font-normal">Review and process individual and relative beneficiary aid requests.</p>
+               </div>
             </div>
             <div className="flex items-center gap-4">
                <NotificationBell moduleFilter="FINANCIAL_AID" />
             </div>
          </header>
 
-         {/* Main Content */}
+         {/* Main Content Workspace */}
          <main className="flex-1 p-6 max-w-[1600px] mx-auto w-full overflow-hidden flex flex-col print:overflow-visible print:p-0">
 
-            <StatCards totalCount={totalCount} stats={stats} />
+            {/* Navigation Tabs */}
+            <div className="flex items-center bg-slate-100/80 p-1 rounded-lg w-fit mb-6 border border-slate-200/60 no-print">
+               <button
+                  onClick={() => { setActiveTab('myself'); setCurrentPage(1); setSelectedForm(null); }}
+                  className={`px-3.5 py-1.5 rounded-md text-xs font-medium transition-all cursor-pointer flex items-center gap-2 ${
+                     activeTab === 'myself'
+                        ? 'bg-white text-slate-900 shadow-2xs font-bold'
+                        : 'text-slate-600 hover:text-slate-900'
+                  }`}
+               >
+                  <span>Self / Own Applications</span>
+                  {tabCounts.myself > 0 && (
+                     <span className={`px-2 py-0.5 rounded-full text-[10px] ${
+                        activeTab === 'myself' ? 'bg-emerald-100 text-emerald-800 font-bold' : 'bg-slate-200 text-slate-600'
+                     }`}>
+                        {tabCounts.myself}
+                     </span>
+                  )}
+               </button>
+               <button
+                  onClick={() => { setActiveTab('other'); setCurrentPage(1); setSelectedForm(null); }}
+                  className={`px-3.5 py-1.5 rounded-md text-xs font-medium transition-all cursor-pointer flex items-center gap-2 ${
+                     activeTab === 'other'
+                        ? 'bg-white text-slate-900 shadow-2xs font-bold'
+                        : 'text-slate-600 hover:text-slate-900'
+                  }`}
+               >
+                  <span>Relative / Other Applications</span>
+                  {tabCounts.other > 0 && (
+                     <span className={`px-2 py-0.5 rounded-full text-[10px] ${
+                        activeTab === 'other' ? 'bg-emerald-100 text-emerald-800 font-bold' : 'bg-slate-200 text-slate-600'
+                     }`}>
+                        {tabCounts.other}
+                     </span>
+                  )}
+               </button>
+            </div>
 
-
-
-            <FilterBar
-               searchQuery={searchQuery} setSearchQuery={setSearchQuery}
-               statusFilter={statusFilter} setStatusFilter={setStatusFilter}
-               dateFilter={dateFilter} setDateFilter={setDateFilter}
-               sortOrder={sortOrder} setSortOrder={setSortOrder}
-               activeFilterCount={activeFilterCount}
-               clearFilters={clearAllFilters}
-            />
-
-            {/* Content Grid */}
-            <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 min-h-0">
-               <RequestsList
-                  isLoading={isLoading}
-                  displayForms={paginatedForms}
-                  selectedForm={selectedForm}
-                  setSelectedForm={setSelectedForm}
-                  totalCount={displayForms.length}
-                  startIndex={startIndex + 1}
-                  endIndex={Math.min(startIndex + itemsPerPage, displayForms.length)}
-                  activeFilterCount={activeFilterCount}
-                  clearFilters={clearAllFilters}
-                  currentPage={currentPage}
-                  setCurrentPage={setCurrentPage}
-                  totalPages={totalPages}
-               />
-
-               <RequestDetail
-                  selectedForm={selectedForm}
-                  onOpenGroundReport={handleOpenGroundReport}
-               />
+            {/* Content Workspace */}
+            <div className="flex-1 flex flex-col min-h-0">
+               {selectedForm ? (
+                  <div className="space-y-4">
+                     <div className="flex items-center justify-between bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-2xs no-print">
+                        <button
+                           onClick={() => setSelectedForm(null)}
+                           className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200/80 text-slate-700 font-bold text-xs transition cursor-pointer"
+                        >
+                           <ArrowLeft size={15} />
+                           <span>Back to Queue List</span>
+                        </button>
+                        <span className="text-xs text-slate-500 font-medium">
+                           Viewing {activeTab === 'myself' ? 'Self/Own' : 'Relative/Other'} Application Details
+                        </span>
+                     </div>
+                     <RequestDetail
+                        selectedForm={selectedForm}
+                        onOpenGroundReport={handleOpenGroundReport}
+                     />
+                  </div>
+               ) : (
+                  <div className="space-y-6">
+                     <StatCards totalCount={displayForms.length} stats={stats} />
+                     <FilterBar
+                        searchQuery={searchQuery} setSearchQuery={setSearchQuery}
+                        statusFilter={statusFilter} setStatusFilter={setStatusFilter}
+                        dateFilter={dateFilter} setDateFilter={setDateFilter}
+                        sortOrder={sortOrder} setSortOrder={setSortOrder}
+                        activeFilterCount={activeFilterCount}
+                        clearFilters={clearAllFilters}
+                     />
+                     <RequestsList
+                        isLoading={isLoading}
+                        displayForms={paginatedForms}
+                        selectedForm={selectedForm}
+                        setSelectedForm={setSelectedForm}
+                        totalCount={displayForms.length}
+                        startIndex={startIndex + 1}
+                        endIndex={Math.min(startIndex + itemsPerPage, displayForms.length)}
+                        activeFilterCount={activeFilterCount}
+                        clearFilters={clearAllFilters}
+                        currentPage={currentPage}
+                        setCurrentPage={setCurrentPage}
+                        totalPages={totalPages}
+                     />
+                  </div>
+               )}
             </div>
          </main>
 
