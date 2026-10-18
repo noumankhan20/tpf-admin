@@ -88,10 +88,9 @@ export const adminApiSlice = apiSlice.injectEndpoints({
     }),
 
     getPermanentDonors: builder.query({
-      query: ({ planType, status } = {}) => {
+      query: ({ status } = {}) => {
         const params = new URLSearchParams();
 
-        if (planType) params.append("planType", planType);
         if (status) params.append("status", status);
 
         return {

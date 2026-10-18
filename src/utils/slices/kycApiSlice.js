@@ -3,8 +3,12 @@ import { apiSlice } from "./apiSlice";
 export const kycApiSlice = apiSlice.injectEndpoints({
     endpoints: (builder) => ({
         getKycRequests: builder.query({
-            query: ({ page = 1, limit = 10, status, search, sortBy, sortOrder }) => {
-                const params = new URLSearchParams({ page, limit, sortBy, sortOrder });
+            query: ({ page = 1, limit = 10, status, search, sortOrder = 'desc', dateFrom, dateTo, state, city }) => {
+                const params = new URLSearchParams({ page, limit, sortOrder });
+                if (dateFrom) params.append("dateFrom", dateFrom);
+                if (dateTo) params.append("dateTo", dateTo);
+                if (state) params.append("state", state);
+                if (city) params.append("city", city);
                 if (status && status !== 'all') params.append("status", status);
                 if (search) params.append("search", search);
                 return `/admin/kyc/requests?${params.toString()}`;
