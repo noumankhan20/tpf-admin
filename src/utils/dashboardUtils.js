@@ -1,8 +1,12 @@
 export const DATE_PRESETS = {
   TODAY: "TODAY",
+  YESTERDAY: "YESTERDAY",
   THIS_WEEK: "THIS_WEEK",
   LAST_WEEK: "LAST_WEEK",
+  THIS_MONTH: "THIS_MONTH",
   LAST_MONTH: "LAST_MONTH",
+  THIS_FY: "THIS_FY",
+  LAST_FY: "LAST_FY",
   LAST_3_MONTHS: "LAST_3_MONTHS",
   LAST_6_MONTHS: "LAST_6_MONTHS",
   LAST_YEAR: "LAST_YEAR",
@@ -26,6 +30,27 @@ export const getDashboardDateRange = (presetKey, customStart, customEnd) => {
   switch (presetKey) {
     case DATE_PRESETS.TODAY:
       startDate.setHours(0, 0, 0, 0);
+      break;
+    case DATE_PRESETS.YESTERDAY:
+      startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+      endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1, 23, 59, 59, 999);
+      break;
+    case DATE_PRESETS.THIS_MONTH:
+      startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+      break;
+    // Indian financial year: 1 April to 31 March
+    case DATE_PRESETS.THIS_FY:
+      {
+        const fyStartYear = now.getMonth() >= 3 ? now.getFullYear() : now.getFullYear() - 1;
+        startDate = new Date(fyStartYear, 3, 1);
+      }
+      break;
+    case DATE_PRESETS.LAST_FY:
+      {
+        const lastFyStartYear = (now.getMonth() >= 3 ? now.getFullYear() : now.getFullYear() - 1) - 1;
+        startDate = new Date(lastFyStartYear, 3, 1);
+        endDate = new Date(lastFyStartYear + 1, 2, 31, 23, 59, 59, 999);
+      }
       break;
     case DATE_PRESETS.THIS_WEEK:
       {

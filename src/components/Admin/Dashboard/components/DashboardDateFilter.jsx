@@ -6,9 +6,13 @@ import { DATE_PRESETS } from "@/utils/dashboardUtils";
 
 const PRESET_OPTIONS = [
   { key: DATE_PRESETS.TODAY, label: "Today" },
+  { key: DATE_PRESETS.YESTERDAY, label: "Yesterday" },
   { key: DATE_PRESETS.THIS_WEEK, label: "This Week" },
   { key: DATE_PRESETS.LAST_WEEK, label: "Last Week" },
+  { key: DATE_PRESETS.THIS_MONTH, label: "This Month" },
   { key: DATE_PRESETS.LAST_MONTH, label: "Last Month" },
+  { key: DATE_PRESETS.THIS_FY, label: "This FY" },
+  { key: DATE_PRESETS.LAST_FY, label: "Last FY" },
   { key: DATE_PRESETS.LAST_3_MONTHS, label: "Last 3 Months" },
   { key: DATE_PRESETS.LAST_6_MONTHS, label: "Last 6 Months" },
   { key: DATE_PRESETS.LAST_YEAR, label: "Last Year" },

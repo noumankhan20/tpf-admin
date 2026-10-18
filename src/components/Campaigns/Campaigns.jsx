@@ -351,12 +351,19 @@ export default function CampaignAdminDashboard() {
   const totalNetRaised = apiResponse?.netRaised || 0;
   const totalExpenses = apiResponse?.totalExpenses || 0;
 
+  const operationalPool = apiResponse?.operationalPool;
   const tpfExpensesCampaign = campaigns.find(c => 
     c._id === '69bc2a365a3e070a84454f49' ||
     c.title?.toLowerCase().includes('tpf expenses') || 
     c.beneficiaryName?.toLowerCase().includes('tpf expenses')
   );
   const tpfExpensesRaised = tpfExpensesCampaign ? (tpfExpensesCampaign.raisedAmount || 0) : 0;
+
+  const operationalInflow = operationalPool?.totalOperationalInflow ?? (overallTotalTips + tpfExpensesRaised);
+  const microDonations = operationalPool?.microDonations ?? tpfExpensesRaised;
+  const permanentDonations = operationalPool?.permanentDonations ?? 0;
+  const operationalOutflow = operationalPool?.documentedOperationalExpenses ?? 0;
+  const netOperationalBalance = operationalPool?.netOperationalBalance ?? (operationalInflow - operationalOutflow);
 
   if (isLoading) {
     return (
@@ -478,10 +485,32 @@ export default function CampaignAdminDashboard() {
             <p className="text-xs sm:text-sm font-medium text-gray-500 mb-1 sm:mb-2">Inactive</p>
             <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">{inactiveCampaigns}</p>
           </div>
-          <div className="bg-gradient-to-br from-red-50 to-white rounded-xl sm:rounded-2xl shadow-sm border border-red-200 p-4 sm:p-6 hover:shadow-md transition-all transform hover:-translate-y-1">
-            <p className="text-xs sm:text-sm font-medium text-red-600 mb-1 sm:mb-2">Total Tip & TPF Raised</p>
-            <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-red-600">₹{(overallTotalTips + tpfExpensesRaised).toLocaleString('en-IN')}</p>
-            <p className="text-[10px] text-red-500 font-semibold mt-1">Tips: ₹{overallTotalTips.toLocaleString('en-IN')} + TPF: ₹{tpfExpensesRaised.toLocaleString('en-IN')}</p>
+          <div className="bg-gradient-to-br from-amber-50 via-white to-red-50 rounded-xl sm:rounded-2xl shadow-sm border border-amber-200 p-3 sm:p-4 hover:shadow-md transition-all transform hover:-translate-y-1">
+            <div className="flex items-center justify-between mb-1">
+              <p className="text-[11px] sm:text-xs font-bold text-amber-900">Unified Ops Fund</p>
+              <span className="text-[9px] bg-amber-100 text-amber-800 font-bold px-1.5 py-0.2 rounded-full">
+                {operationalPool?.financialYear || "FY"}
+              </span>
+            </div>
+            <p className="text-lg sm:text-xl lg:text-2xl font-black text-amber-800">₹{operationalInflow.toLocaleString('en-IN')}</p>
+            <div className="text-[10px] text-gray-600 font-medium mt-1.5 space-y-0.5 border-t border-amber-100 pt-1">
+              <p className="flex justify-between">
+                <span>Micro (≥50):</span>
+                <span className="font-semibold text-emerald-700">₹{microDonations.toLocaleString('en-IN')}</span>
+              </p>
+              <p className="flex justify-between">
+                <span>Perm (≥1k):</span>
+                <span className="font-semibold text-purple-700">₹{permanentDonations.toLocaleString('en-IN')}</span>
+              </p>
+              <p className="flex justify-between">
+                <span>Tips:</span>
+                <span className="font-semibold text-blue-700">₹{overallTotalTips.toLocaleString('en-IN')}</span>
+              </p>
+              <p className="flex justify-between border-t border-dashed border-gray-200 pt-0.5 text-red-600 font-semibold">
+                <span>Expenses:</span>
+                <span>-₹{operationalOutflow.toLocaleString('en-IN')}</span>
+              </p>
+            </div>
           </div>
           <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-200 p-4 sm:p-6 hover:shadow-md transition-all transform hover:-translate-y-1">
             <p className="text-xs sm:text-sm font-medium text-gray-500 mb-1 sm:mb-2">Raised</p>
