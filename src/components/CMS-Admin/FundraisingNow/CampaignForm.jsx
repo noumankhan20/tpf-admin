@@ -24,6 +24,24 @@ import { getMediaUrl } from '@/utils/media';
 import MediaSelectorModal from './MediaSelectorModal';
 import CampaignPreview from './CampaignPreview';
 import RichTextEditor from '../../Common/RichTextEditor';
+import {
+  CAMPAIGN_DRAFT_KEY,
+  serializeCampaignDraft,
+  restoreCampaignDraft,
+  rehydrateDraftFiles,
+  toFileRefs,
+  describeDropped,
+  readLocalDraft,
+  writeLocalDraft,
+  clearLocalDraft,
+  pickNewestDraft,
+} from './campaignDraft';
+import {
+  useGetAdminDraftQuery,
+  useSaveAdminDraftMutation,
+  useUploadAdminDraftFilesMutation,
+  useDeleteAdminDraftMutation,
+} from '@/utils/slices/draftApiSlice';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
@@ -83,54 +101,87 @@ export default function CampaignForm({
   const [showMediaModal, setShowMediaModal] = useState(false);
   const [activeTab, setActiveTab] = useState('basic');
 
-  const [hasDraft, setHasDraft] = useState(false);
-  const [draftTime, setDraftTime] = useState("");
+  // Draft lives on the server (per admin, across sessions) with localStorage as a fast/offline copy.
+  const { data: serverDraft } = useGetAdminDraftQuery(CAMPAIGN_DRAFT_KEY, { refetchOnMountOrArgChange: true });
+  const [saveAdminDraft] = useSaveAdminDraftMutation();
+  const [uploadAdminDraftFiles] = useUploadAdminDraftFilesMutation();
+  const [draftBusy, setDraftBusy] = useState(false);
+  const [deleteAdminDraft] = useDeleteAdminDraftMutation();
+  const [localDraft, setLocalDraft] = useState(null);
+  const [draftCleared, setDraftCleared] = useState(false);
 
   useEffect(() => {
-    const saved = localStorage.getItem('tpf_campaign_cms_draft');
-    if (saved) {
-      try {
-        const { timestamp } = JSON.parse(saved);
-        setHasDraft(true);
-        setDraftTime(new Date(timestamp).toLocaleString('en-IN'));
-      } catch (e) {
-        setHasDraft(false);
-      }
-    } else {
-      setHasDraft(false);
-    }
-  }, [formData]);
+    setLocalDraft(readLocalDraft());
+  }, []);
 
-  const handleSaveDraft = () => {
+  const draft = useMemo(
+    () => (draftCleared ? null : pickNewestDraft(serverDraft, localDraft)),
+    [draftCleared, serverDraft, localDraft]
+  );
+  const hasDraft = !!draft;
+  const draftTime = draft?.savedAt ? new Date(draft.savedAt).toLocaleString('en-IN') : '';
+
+  const handleSaveDraft = async () => {
+    if (draftBusy) return;
+    setDraftBusy(true);
+    const { data, entries } = serializeCampaignDraft(formData);
+    const savedAt = new Date().toISOString();
+    writeLocalDraft(data, savedAt);
+    setLocalDraft({ formData: data, files: [], savedAt });
+    setDraftCleared(false);
     try {
-      localStorage.setItem('tpf_campaign_cms_draft', JSON.stringify({
-        formData,
-        timestamp: new Date().toISOString()
-      }));
+      // Upload only files that aren't already stored with this draft.
+      const fresh = entries.filter((e) => !e.file.draftRef);
+      if (fresh.length) {
+        const body = new FormData();
+        fresh.forEach((e) => body.append('files', e.file));
+        const uploaded = await uploadAdminDraftFiles({ key: CAMPAIGN_DRAFT_KEY, body }).unwrap();
+        (uploaded?.data || []).forEach((ref, i) => {
+          fresh[i].file.draftRef = ref;
+        });
+      }
+      await saveAdminDraft({ key: CAMPAIGN_DRAFT_KEY, formData: data, files: toFileRefs(entries) }).unwrap();
       alert('Draft saved successfully!');
     } catch (e) {
       console.error(e);
-      alert('Failed to save draft');
+      const note = describeDropped(entries);
+      alert("Draft saved on this browser only - the server couldn't be reached." + (note ? '\n\n' + note : ''));
+    } finally {
+      setDraftBusy(false);
     }
   };
 
-  const handleRestoreDraft = () => {
+  const handleRestoreDraft = async () => {
+    if (!draft || draftBusy) return;
+    setDraftBusy(true);
     try {
-      const saved = localStorage.getItem('tpf_campaign_cms_draft');
-      if (saved) {
-        const { formData: savedData } = JSON.parse(saved);
-        setFormData(savedData);
-        alert('Draft restored successfully!');
-      }
+      const files = await rehydrateDraftFiles(draft.files, getMediaUrl);
+      const restored = restoreCampaignDraft(draft.formData, formData, files);
+      setFormData(restored);
+      const match = restored.campaignId && readyCampaigns?.find((c) => c._id === restored.campaignId);
+      if (match) setSelectedCampaign(match);
+      alert(
+        files.failed.length
+          ? 'Draft restored, but these files could not be loaded: ' + files.failed.join(', ') + '. Please re-attach them.'
+          : 'Draft restored successfully!'
+      );
     } catch (e) {
       console.error(e);
       alert('Failed to restore draft');
+    } finally {
+      setDraftBusy(false);
     }
   };
 
-  const handleClearDraft = () => {
-    localStorage.removeItem('tpf_campaign_cms_draft');
-    setHasDraft(false);
+  const handleClearDraft = async () => {
+    clearLocalDraft();
+    setLocalDraft(null);
+    setDraftCleared(true);
+    try {
+      await deleteAdminDraft(CAMPAIGN_DRAFT_KEY).unwrap();
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   const textareaRef = useRef(null);
@@ -462,8 +513,8 @@ export default function CampaignForm({
               </div>
             </div>
             <div className="flex gap-2">
-              <button onClick={handleRestoreDraft} className="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-xl transition-all cursor-pointer">
-                Restore Draft
+              <button onClick={handleRestoreDraft} disabled={draftBusy} className="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-xl transition-all cursor-pointer disabled:opacity-60 disabled:cursor-wait">
+                {draftBusy ? 'Working...' : 'Restore Draft'}
               </button>
               <button onClick={handleClearDraft} className="px-3.5 py-1.5 bg-white border border-amber-200 text-amber-700 hover:bg-amber-100 text-xs font-bold rounded-xl transition-all cursor-pointer">
                 Clear Draft
@@ -1412,9 +1463,10 @@ export default function CampaignForm({
               <button
                 type="button"
                 onClick={handleSaveDraft}
-                className="px-6 py-3 border-2 border-dashed border-emerald-300 text-emerald-700 hover:bg-emerald-50 rounded-2xl font-bold uppercase text-xs transition-all cursor-pointer"
+                disabled={draftBusy}
+                className="px-6 py-3 border-2 border-dashed border-emerald-300 text-emerald-700 hover:bg-emerald-50 rounded-2xl font-bold uppercase text-xs transition-all cursor-pointer disabled:opacity-60 disabled:cursor-wait"
               >
-                Save Draft
+                {draftBusy ? 'Saving...' : 'Save Draft'}
               </button>
 
               {/* Unsaved changes indicator */}
